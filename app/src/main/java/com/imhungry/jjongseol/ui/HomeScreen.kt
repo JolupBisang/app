@@ -31,7 +31,7 @@ fun HomeScreen(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                Text("홈 화면")
+                Text("홈 화면 test2")
             }
         }
     )
