@@ -1,6 +1,5 @@
-package com.imhungry.jjongseol.ui
+package com.imhungry.jjongseol.ui.login
 
-import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalIndication
@@ -24,39 +23,33 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.ui.theme.AppTheme
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(
     onGoogleClick: () -> Unit = {},
+    onLoginSuccess: () -> Unit,
     loginViewModel: LoginViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val loginResult by loginViewModel.loginResult
+    val isLoggedIn by loginViewModel.isLoggedIn.observeAsState(false)
 
-    LaunchedEffect(loginResult) {
-        loginResult?.let {
-            if (it.isSuccess) {
-                Toast.makeText(context, "성공", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(context, "실패: ${it.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
-            }
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            onLoginSuccess()
         }
-        loginViewModel.clearLoginResult()
     }
 
     Column(
@@ -118,7 +111,7 @@ fun GoogleLoginButton(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Text(
-                text = "Google로 계속하기",
+                text = stringResource(R.string.google_login_button),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -138,13 +131,5 @@ fun GoogleLoginButton(
                 )
             }
         }
-    }
-}
-
-@Preview(showSystemUi = true, showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    AppTheme {
-        LoginScreen()
     }
 }

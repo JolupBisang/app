@@ -1,38 +1,29 @@
 package com.imhungry.jjongseol.viewmodel
 
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
+import android.content.Context
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.imhungry.jjongseol.data.repository.AuthRepository
+import com.imhungry.jjongseol.data.repository.LoginRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class LoginViewModel @Inject constructor() : ViewModel() {
+class LoginViewModel @Inject constructor(
+    private val loginRepository: LoginRepository,
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
-    private val _loginResult = mutableStateOf<Result<String>?>(null)
-    val loginResult: State<Result<String>?> = _loginResult
+    val isLoggedIn: LiveData<Boolean> = MutableLiveData(loginRepository.isLoggedIn())
 
-    fun onGoogleLoginResult(account: GoogleSignInAccount?) {
-        viewModelScope.launch {
-            account?.idToken?.let { token ->
-                try {
-                    val result = sendTokenToServer(token)
-                    _loginResult.value = Result.success(result)
-                } catch (e: Exception) {
-                    _loginResult.value = Result.failure(e)
-                }
-            }
-        }
+    fun saveToken(token: String) {
+        loginRepository.saveToken(token)
+        (isLoggedIn as MutableLiveData).value = true
     }
 
-    private suspend fun sendTokenToServer(token: String): String {
-        return "Success" // 응답값 리턴
-    }
-
-    fun clearLoginResult() {
-        _loginResult.value = null
+    fun launchGoogleLogin(activityContext: Context) {
+        authRepository.launchGoogleOAuth(activityContext)
     }
 }
+
