@@ -19,16 +19,9 @@ class LoginViewModel @Inject constructor(
     private val _isLoggedIn = MutableLiveData(loginRepository.isLoggedIn())
     val isLoggedIn: LiveData<Boolean> get() = _isLoggedIn
 
-    /*fun saveToken(token: String) {
-        loginRepository.saveToken(token)
-        _isLoggedIn.value = true
-    }*/
-
     fun saveToken(token: String) {
         loginRepository.saveToken(token)
-        Log.d("LoginViewModel", "Token saved: $token")
         _isLoggedIn.value = true
-        Log.d("LoginViewModel", "isLoggIn value: ${isLoggedIn.value}")
     }
 
 

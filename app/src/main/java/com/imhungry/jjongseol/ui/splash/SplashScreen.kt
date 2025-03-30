@@ -1,6 +1,5 @@
 package com.imhungry.jjongseol.ui.splash
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -31,10 +30,8 @@ fun SplashScreen(
     LaunchedEffect(Unit) {
         delay(2000)
         if (isLoggedIn == true) {
-            Log.d("Splash", "Navigating to Home")
             onFinish(SilRokNavigation.Home)
         } else {
-            Log.d("Splash", "Navigating to Login")
             onFinish(SilRokNavigation.Login)
         }
     }
