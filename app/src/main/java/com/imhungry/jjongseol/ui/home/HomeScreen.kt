@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.ui
+package com.imhungry.jjongseol.ui.home
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
