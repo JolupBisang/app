@@ -1,6 +1,7 @@
 package com.imhungry.jjongseol.viewmodel
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -15,12 +16,21 @@ class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    val isLoggedIn: LiveData<Boolean> = MutableLiveData(loginRepository.isLoggedIn())
+    private val _isLoggedIn = MutableLiveData(loginRepository.isLoggedIn())
+    val isLoggedIn: LiveData<Boolean> get() = _isLoggedIn
+
+    /*fun saveToken(token: String) {
+        loginRepository.saveToken(token)
+        _isLoggedIn.value = true
+    }*/
 
     fun saveToken(token: String) {
         loginRepository.saveToken(token)
-        (isLoggedIn as MutableLiveData).value = true
+        Log.d("LoginViewModel", "Token saved: $token")
+        _isLoggedIn.value = true
+        Log.d("LoginViewModel", "isLoggIn value: ${isLoggedIn.value}")
     }
+
 
     fun launchGoogleLogin(activityContext: Context) {
         authRepository.launchGoogleOAuth(activityContext)

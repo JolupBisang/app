@@ -44,10 +44,8 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     loginViewModel: LoginViewModel = hiltViewModel()
 ) {
-    val isLoggedIn by loginViewModel.isLoggedIn.observeAsState(false)
-
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) {
+    LaunchedEffect(Unit) {
+        if (loginViewModel.isLoggedIn.value == true) {
             onLoginSuccess()
         }
     }
