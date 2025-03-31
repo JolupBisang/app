@@ -1,7 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("kotlin-kapt")
+    id("com.google.dagger.hilt.android")
 }
+
+val localProperties = Properties().apply {
+    load(rootProject.file("local.properties").inputStream())
+}
+
+val baseUrl = localProperties.getProperty("base_url") ?: ""
+val oAuthClientId = localProperties.getProperty("oauth_client_id") ?: ""
+val oAuthRedirectUri = localProperties.getProperty("oauth_redirect_uri") ?: ""
 
 android {
     namespace = "com.imhungry.jjongseol"
@@ -15,6 +27,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
+        buildConfigField("String", "OAUTH_CLIENT_ID", "\"$oAuthClientId\"")
+        buildConfigField("String", "OAUTH_REDIRECT_URI", "\"$oAuthRedirectUri\"")
     }
 
     buildTypes {
@@ -35,6 +51,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
@@ -64,4 +81,11 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling:1.7.5")
     implementation("androidx.compose.material3:material3:1.3.1")
     implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.browser:browser:1.7.0")
+    implementation("com.google.dagger:hilt-android:2.48")
+    kapt("com.google.dagger:hilt-compiler:2.48")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 }

@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.ui
+package com.imhungry.jjongseol.ui.home
 
 import android.content.Intent
 import android.widget.Toast
