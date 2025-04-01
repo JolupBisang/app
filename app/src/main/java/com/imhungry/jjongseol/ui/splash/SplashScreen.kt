@@ -32,7 +32,7 @@ fun SplashScreen(
         if (isLoggedIn == true) {
             onFinish(SilRokNavigation.Home)
         } else {
-            onFinish(SilRokNavigation.Login)
+            onFinish(SilRokNavigation.Home)
         }
     }
 

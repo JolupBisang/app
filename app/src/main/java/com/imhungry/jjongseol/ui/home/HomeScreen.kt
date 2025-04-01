@@ -16,20 +16,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 
 
 @Composable
-fun HomeScreen(
-) {
+fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { 
-                Toast.makeText( context,"test", Toast.LENGTH_SHORT).show()
-
-                val intent = Intent(context, CreateNewMeetingActivity::class.java)
-                context.startActivity(intent)
+            FloatingActionButton(onClick = { navController.navigate("createNewMeeting")
             }) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "추가")
             }
