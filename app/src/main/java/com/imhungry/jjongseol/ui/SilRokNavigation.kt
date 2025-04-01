@@ -7,6 +7,7 @@ sealed class SilRokNavigation(val route: String) {
     object Splash : SilRokNavigation("splash")
     object Login : SilRokNavigation("login")
     object Home : SilRokNavigation("home")
+    object Meeting : SilRokNavigation("meeting")
 }
 
 class SilRokNavigationActions(private val navController: NavHostController) {
