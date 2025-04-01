@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.imhungry.jjongseol.ui.home.HomeScreen
 import com.imhungry.jjongseol.ui.login.LoginScreen
+import com.imhungry.jjongseol.ui.meeting.MeetingScreen
 import com.imhungry.jjongseol.ui.splash.SplashScreen
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 
@@ -57,6 +58,10 @@ fun SilRokNavGraph(
 
         composable(SilRokNavigation.CreateNewMeeting.route) {
             CreateNewMeetingScreen(navController)
+        }
+
+        composable(SilRokNavigation.Meeting.route) {
+            MeetingScreen()
         }
     }
 }
