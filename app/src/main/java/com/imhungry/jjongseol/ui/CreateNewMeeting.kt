@@ -50,13 +50,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.booleanResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.constraintlayout.compose.Dimension
 import androidx.navigation.NavController
-import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import java.util.UUID
 
 @Composable
