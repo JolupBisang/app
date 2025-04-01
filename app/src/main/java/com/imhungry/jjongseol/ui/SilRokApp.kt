@@ -7,7 +7,5 @@ import com.imhungry.jjongseol.ui.theme.AppTheme
 fun SilRokApp(
     startDestination: SilRokNavigation
 ) {
-    AppTheme {
-        SilRokNavGraph(startDestination = startDestination)
-    }
+    SilRokNavGraph(startDestination = startDestination)
 }
