@@ -33,7 +33,7 @@ fun TopSheet(
     collapsedHeight: Dp = 60.dp,
     sheetBackgroundColor: Color = Color(0xFFF6F6F6),
     sheetShape: RoundedCornerShape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
-    sheetElevation: Dp = 0.dp,
+    sheetElevation: Dp = 1.dp,
     content: @Composable ColumnScope.() -> Unit,
     peekContent: @Composable () -> Unit
 ) {
@@ -49,7 +49,7 @@ fun TopSheet(
     ) {
         if (expanded) {
             content()
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         } else {
             peekContent()
         }
