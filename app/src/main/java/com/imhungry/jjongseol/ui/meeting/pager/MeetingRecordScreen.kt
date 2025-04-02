@@ -86,7 +86,6 @@ fun MeetingRecordScreen() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 0.dp)
         ) {
             TopSheet(
                 collapsedHeight = 60.dp,

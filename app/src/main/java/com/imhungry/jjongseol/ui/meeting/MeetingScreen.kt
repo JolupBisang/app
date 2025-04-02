@@ -1,6 +1,7 @@
 package com.imhungry.jjongseol.ui.meeting
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -14,7 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +33,7 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
+import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
@@ -72,12 +74,30 @@ fun MeetingScreen(
     MeetingScreenContent()
 }
 
+@SuppressLint("DefaultLocale")
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun MeetingScreenContent() {
+
+    var elapsedSeconds by remember { mutableStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(1000)
+            elapsedSeconds++
+        }
+    }
+
+    val timeText = remember(elapsedSeconds) {
+        val hours = elapsedSeconds / 3600
+        val minutes = (elapsedSeconds % 3600) / 60
+        val seconds = elapsedSeconds % 60
+        String.format("%02d:%02d:%02d", hours, minutes, seconds)
+    }
+
     Column(modifier = Modifier
         .fillMaxSize()
-        .background(MaterialTheme.colors.background)
+        .background(MaterialTheme.colorScheme.background)
     ) {
         val pagerState = rememberPagerState(initialPage = 1)
 
@@ -122,8 +142,12 @@ fun MeetingScreenContent() {
         MeetingControlPanel(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.20f)
-                .background(MaterialTheme.colors.background)
+                .weight(0.20f),
+            timeText = "00:03:11",
+            micEnabled = true,
+            micIcon = R.drawable.micoff,
+            logoutIcon = R.drawable.logout,
+            powerIcon = R.drawable.power
         )
     }
 }

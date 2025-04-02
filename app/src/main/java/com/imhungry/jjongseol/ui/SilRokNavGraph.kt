@@ -1,5 +1,7 @@
 package com.imhungry.jjongseol.ui
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -13,9 +15,12 @@ import androidx.navigation.compose.rememberNavController
 import com.imhungry.jjongseol.ui.home.HomeScreen
 import com.imhungry.jjongseol.ui.login.LoginScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingScreen
+import com.imhungry.jjongseol.ui.meeting.MeetingWaitingScreen
 import com.imhungry.jjongseol.ui.splash.SplashScreen
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SilRokNavGraph(
     startDestination: SilRokNavigation = SilRokNavigation.Splash,
@@ -61,7 +66,13 @@ fun SilRokNavGraph(
         }
 
         composable(SilRokNavigation.Meeting.route) {
-            MeetingScreen()
+            val meetingViewModel: MeetingViewModel = hiltViewModel()
+
+            MeetingScreen(meetingViewModel)
+        }
+
+        composable(SilRokNavigation.MeetingWaiting.route) {
+            MeetingWaitingScreen(navController)
         }
     }
 }

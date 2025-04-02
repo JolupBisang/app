@@ -29,12 +29,17 @@ import com.imhungry.jjongseol.R
 @Composable
 fun MeetingControlPanel(
     modifier: Modifier = Modifier,
+    timeText: String = "00:00:00",
+    micEnabled: Boolean = false,
+    onMicToggle: (() -> Unit)? = null,
+    micIcon: Int = R.drawable.inactive_mic,
+    logoutIcon: Int = R.drawable.inactive_logout,
+    powerIcon: Int = R.drawable.inactive_power,
 ) {
     var isMicOn by remember { mutableStateOf(true) }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         Box(
             modifier = Modifier
@@ -43,7 +48,7 @@ fun MeetingControlPanel(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "00:03:11",
+                text = timeText,
                 fontSize = 24.sp,
                 color = Color(0xFFB0B0B0)
             )
@@ -59,20 +64,26 @@ fun MeetingControlPanel(
             Spacer(modifier = Modifier.weight(1f))
 
             Box(
-                modifier = Modifier
-                    .weight(1f),
+                modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = if (isMicOn) R.drawable.mic else R.drawable.micoff),
-                    contentDescription = if (isMicOn) "마이크 켜짐" else "마이크 꺼짐",
+                    painter = painterResource(
+                        id = if (micEnabled && isMicOn) R.drawable.mic else micIcon
+                    ),
+                    contentDescription = "마이크",
                     modifier = Modifier
                         .size(36.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            isMicOn = !isMicOn
+                        .let { baseModifier ->
+                            if (micEnabled) {
+                                baseModifier.clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
+                                    isMicOn = !isMicOn
+                                    onMicToggle?.invoke()
+                                }
+                            } else baseModifier
                         }
                 )
             }
@@ -81,19 +92,18 @@ fun MeetingControlPanel(
                 modifier = Modifier
                     .weight(1f)
                     .padding(end = 16.dp),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.End
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.logout),
+                    painter = painterResource(id = logoutIcon),
                     contentDescription = "나가기",
-                    modifier = Modifier
-                        .size(36.dp)
+                    modifier = Modifier.size(36.dp)
                 )
 
                 Spacer(modifier = Modifier.size(12.dp))
 
                 Image(
-                    painter = painterResource(id = R.drawable.power),
+                    painter = painterResource(id = powerIcon),
                     contentDescription = "종료",
                     modifier = Modifier.size(36.dp)
                 )
