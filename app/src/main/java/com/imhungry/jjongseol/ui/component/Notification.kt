@@ -34,7 +34,7 @@ fun Notification(
                 .padding(horizontal = 24.dp)
                 .background(
                     color = Color(0xFFECECEC),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = MaterialTheme.shapes.large
                 )
         ) {
             Row(
