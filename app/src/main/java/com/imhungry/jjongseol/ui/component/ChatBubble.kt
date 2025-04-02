@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
@@ -46,8 +47,7 @@ private fun MyMessage(chatMessage: ChatMessage) {
 
         TimestampText(
             time = chatMessage.timestamp,
-            modifier = Modifier.padding(top = 2.dp, end = 1.dp),
-            fontSize = 9.sp
+            modifier = Modifier.padding(top = 2.dp, end = 1.dp)
         )
     }
 }
@@ -83,8 +83,7 @@ private fun OthersMessage(chatMessage: ChatMessage) {
 
     TimestampText(
         time = chatMessage.timestamp,
-        modifier = Modifier.padding(start = 45.dp, top = 2.dp),
-        fontSize = 10.sp
+        modifier = Modifier.padding(start = 45.dp, top = 2.dp)
     )
 }
 
@@ -111,7 +110,7 @@ private fun ChatBox(
 private fun TimestampText(
     time: String,
     modifier: Modifier = Modifier,
-    fontSize: androidx.compose.ui.unit.TextUnit = 10.sp
+    fontSize: TextUnit = 11.sp
 ) {
     Text(
         text = time,

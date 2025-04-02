@@ -49,7 +49,6 @@ fun MeetingRecordScreen() {
     val timestamp = remember { mutableStateOf("00:02:10") }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
