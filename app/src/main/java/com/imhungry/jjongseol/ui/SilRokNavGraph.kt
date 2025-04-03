@@ -13,6 +13,10 @@ import androidx.navigation.compose.rememberNavController
 import com.imhungry.jjongseol.ui.home.HomeScreen
 import com.imhungry.jjongseol.ui.login.LoginScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingScreen
+import com.imhungry.jjongseol.ui.newmeeting.CompletedNewMeeting
+import com.imhungry.jjongseol.ui.newmeeting.CreateNewMeetingScreen
+import com.imhungry.jjongseol.ui.profilecard.CompletedProfile
+import com.imhungry.jjongseol.ui.profilecard.MakeProfile
 import com.imhungry.jjongseol.ui.splash.SplashScreen
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 
@@ -60,8 +64,20 @@ fun SilRokNavGraph(
             CreateNewMeetingScreen(navController)
         }
 
-        composable(SilRokNavigation.Meeting.route) {
+        /*composable(SilRokNavigation.Meeting.route) {
             MeetingScreen()
+        }*/
+
+        composable(SilRokNavigation.MakeProfile.route) {
+            MakeProfile(navController)
+        }
+
+        composable(SilRokNavigation.CompleteProfile.route) {
+            CompletedProfile(navController)
+        }
+
+        composable(SilRokNavigation.CompleteNewMeeting.route) {
+            CompletedNewMeeting(navController)
         }
     }
 }
