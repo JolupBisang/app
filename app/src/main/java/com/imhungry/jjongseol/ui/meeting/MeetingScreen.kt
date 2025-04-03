@@ -34,6 +34,7 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
@@ -43,7 +44,8 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MeetingScreen(
-    viewModel: MeetingViewModel = hiltViewModel()
+    viewModel: MeetingViewModel = hiltViewModel(),
+    onFinish: (SilRokNavigation) -> Unit,
 ) {
     val context = LocalContext.current
     var permissionGranted by remember { mutableStateOf(false) }
@@ -71,13 +73,13 @@ fun MeetingScreen(
         }
     }
 
-    MeetingScreenContent()
+    MeetingScreenContent(onFinish)
 }
 
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun MeetingScreenContent() {
+fun MeetingScreenContent(onFinish: (SilRokNavigation) -> Unit) {
 
     var elapsedSeconds by remember { mutableStateOf(0) }
 
@@ -143,11 +145,12 @@ fun MeetingScreenContent() {
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(0.20f),
-            timeText = "00:03:11",
+            timeText = timeText,
             micEnabled = true,
             micIcon = R.drawable.micoff,
             logoutIcon = R.drawable.logout,
-            powerIcon = R.drawable.power
+            powerIcon = R.drawable.power,
+            onFinish = onFinish
         )
     }
 }

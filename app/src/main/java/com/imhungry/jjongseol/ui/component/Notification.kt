@@ -37,9 +37,9 @@ fun Notification(
     ) {
         Box(
             modifier = modifier
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 28.dp)
                 .background(
-                    color = Color(0xFFECECEC),
+                    color = Color(0xFFE8E8E8),
                     shape = MaterialTheme.shapes.large
                 )
         ) {
@@ -71,7 +71,7 @@ fun Notification(
                     Text(
                         text = time,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFFAFAFAF),
+                        color = Color(0xFF8A8A8A),
                         modifier = Modifier.constrainAs(timeRef) {
                             top.linkTo(parent.top)
                             bottom.linkTo(parent.bottom)

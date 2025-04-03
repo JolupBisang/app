@@ -1,20 +1,13 @@
 package com.imhungry.jjongseol.ui.meeting.pager
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Divider
 import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
@@ -22,16 +15,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.meeting.SummaryItem
-import com.imhungry.jjongseol.ui.component.ProportionalBarChart
-import com.imhungry.jjongseol.util.generateParticipantColors
+import com.imhungry.jjongseol.ui.component.ConversationSummaryBar
+import com.imhungry.jjongseol.ui.component.SummaryListItem
 
 @Composable
 fun MeetingSummaryScreen() {
-    val data = listOf(45f, 25f, 15f, 10f, 5f)
+    val data = listOf(45f, 30f, 20f, 10f, 5f)
     val names = listOf("지안", "상정", "원영", "유진", "은경")
     val summaryList = listOf(
         SummaryItem("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
@@ -69,23 +60,11 @@ fun MeetingSummaryScreen() {
                         .fillMaxWidth()
                         .padding(horizontal = 36.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "대화 점유율",
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Image(
-                            painter = painterResource(id = R.drawable.more),
-                            contentDescription = "더보기",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
+                    Text(
+                        text = "대화 점유율",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
 
                     ConversationSummaryBar(
                         participantData = data,
@@ -120,108 +99,6 @@ fun MeetingSummaryScreen() {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun ConversationSummaryBar(participantData: List<Float>, participantNames: List<String>) {
-    val colors = generateParticipantColors(participantData.size)
-
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        ProportionalBarChart(
-            proportions = participantData,
-            colors = colors,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        val splitIndex = (participantNames.size + 1) / 2
-        val leftColumn = participantNames.take(splitIndex)
-        val rightColumn = participantNames.drop(splitIndex)
-
-        Row(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                leftColumn.forEachIndexed { i, name ->
-                    LegendItem(name = name, color = colors.getOrElse(i) { Color.Gray })
-                }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                rightColumn.forEachIndexed { i, name ->
-                    val colorIndex = splitIndex + i
-                    LegendItem(name = name, color = colors.getOrElse(colorIndex) { Color.Gray })
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun LegendItem(name: String, color: Color) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(10.dp)
-                .background(color = color, shape = CircleShape)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = name,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-    }
-}
-
-@Composable
-fun SummaryListItem(item: SummaryItem) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .background(Color.DarkGray, shape = CircleShape)
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Text(
-                text = item.text,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Text(
-            text = item.time,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray,
-            modifier = Modifier
-                .align(Alignment.End)
-                .padding(top = 4.dp)
-        )
     }
 }
 

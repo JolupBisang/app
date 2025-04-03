@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.imhungry.jjongseol.ui.home.HomeScreen
 import com.imhungry.jjongseol.ui.login.LoginScreen
+import com.imhungry.jjongseol.ui.meeting.MeetingEndScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingWaitingScreen
 import com.imhungry.jjongseol.ui.splash.SplashScreen
@@ -37,11 +38,7 @@ fun SilRokNavGraph(
         composable(SilRokNavigation.Splash.route) {
             SplashScreen(
                 onFinish = { destination ->
-                    navController.navigate(destination.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            inclusive = true
-                        }
-                    }
+                    navActions.navigateTo(destination, SilRokNavigation.Splash)
                 }
             )
         }
@@ -53,7 +50,7 @@ fun SilRokNavGraph(
             LoginScreen(
                 loginViewModel = loginViewModel,
                 onGoogleClick = { loginViewModel.launchGoogleLogin(context) },
-                onLoginSuccess = { navActions.navigateTo(SilRokNavigation.Home) }
+                onLoginSuccess = { navActions.navigateTo(SilRokNavigation.Home, SilRokNavigation.Splash) }
             )
         }
 
@@ -68,11 +65,24 @@ fun SilRokNavGraph(
         composable(SilRokNavigation.Meeting.route) {
             val meetingViewModel: MeetingViewModel = hiltViewModel()
 
-            MeetingScreen(meetingViewModel)
+            MeetingScreen(
+                meetingViewModel,
+                onFinish = { destination ->
+                    navActions.navigateTo(destination, SilRokNavigation.Meeting)
+                }
+            )
         }
 
         composable(SilRokNavigation.MeetingWaiting.route) {
-            MeetingWaitingScreen(navController)
+            MeetingWaitingScreen(
+                onFinish = { destination ->
+                    navActions.navigateTo(destination, SilRokNavigation.MeetingWaiting)
+                }
+            )
+        }
+
+        composable(SilRokNavigation.MeetingEnd.route) {
+            MeetingEndScreen()
         }
     }
 }

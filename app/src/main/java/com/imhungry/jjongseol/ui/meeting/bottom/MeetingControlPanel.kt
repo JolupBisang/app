@@ -24,7 +24,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.ui.SilRokNavigation
+import com.imhungry.jjongseol.ui.component.CustomDialog
 
 @Composable
 fun MeetingControlPanel(
@@ -35,8 +38,11 @@ fun MeetingControlPanel(
     micIcon: Int = R.drawable.inactive_mic,
     logoutIcon: Int = R.drawable.inactive_logout,
     powerIcon: Int = R.drawable.inactive_power,
+    onFinish: (SilRokNavigation) -> Unit,
 ) {
     var isMicOn by remember { mutableStateOf(true) }
+    var showDialog by remember { mutableStateOf(false) }
+    var showLeaveDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier.fillMaxWidth()
@@ -97,7 +103,16 @@ fun MeetingControlPanel(
                 Image(
                     painter = painterResource(id = logoutIcon),
                     contentDescription = "나가기",
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            if (micEnabled) {
+                                showLeaveDialog = true
+                            }
+                        }
                 )
 
                 Spacer(modifier = Modifier.size(12.dp))
@@ -105,9 +120,44 @@ fun MeetingControlPanel(
                 Image(
                     painter = painterResource(id = powerIcon),
                     contentDescription = "종료",
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            if (micEnabled) {
+                                showDialog = true
+                            }
+                        }
                 )
             }
         }
+    }
+
+    if (showDialog) {
+        CustomDialog(
+            description = "회의를 종료하시겠습니까?",
+            confirmText = "종료",
+            dismissText = "취소",
+            onDismissRequest = { showDialog = false },
+            onConfirmExit = {
+                showDialog = false
+                onFinish(SilRokNavigation.MeetingEnd)
+            }
+        )
+    }
+
+    if (showLeaveDialog) {
+        CustomDialog(
+            description = "회의에서 나가시겠습니까?",
+            confirmText = "나가기",
+            dismissText = "취소",
+            onDismissRequest = { showLeaveDialog = false },
+            onConfirmExit = {
+                showLeaveDialog = false
+                onFinish(SilRokNavigation.Home)
+            }
+        )
     }
 }
