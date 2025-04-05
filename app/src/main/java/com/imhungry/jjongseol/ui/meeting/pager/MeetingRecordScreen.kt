@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.imhungry.jjongseol.data.chat.ChatMessage
 import com.imhungry.jjongseol.ui.component.ChatBubble
+import com.imhungry.jjongseol.ui.component.MeetingTerminationNotification
 import com.imhungry.jjongseol.ui.component.Notification
 import com.imhungry.jjongseol.ui.component.TopSheet
 
@@ -47,6 +48,8 @@ fun MeetingRecordScreen() {
     val showNotification = remember { mutableStateOf(false) }
     val message = remember { mutableStateOf("우리, 이쁜.딸. 얼굴만큼.고운.말 스자.^^ -엄마가") }
     val timestamp = remember { mutableStateOf("00:02:10") }
+
+    val showTerminationNotification = remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Box(
@@ -86,7 +89,6 @@ fun MeetingRecordScreen() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 0.dp)
         ) {
             TopSheet(
                 collapsedHeight = 60.dp,
@@ -117,6 +119,12 @@ fun MeetingRecordScreen() {
                     }
                 }
             )
+
+            if (showTerminationNotification.value) {
+                MeetingTerminationNotification(
+                    onDismiss = { showTerminationNotification.value = false }
+                )
+            }
 
             if (showNotification.value) {
                 Spacer(modifier = Modifier.height(8.dp))

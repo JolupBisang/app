@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "com.imhungry.jjongseol"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -90,4 +90,6 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("com.arthenica:ffmpeg-kit-full:6.0")
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar", "*.aar"))))
+
 }
