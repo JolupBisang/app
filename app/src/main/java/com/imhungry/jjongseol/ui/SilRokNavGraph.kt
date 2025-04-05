@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -87,9 +88,10 @@ fun SilRokNavGraph(
 
         composable(SilRokNavigation.MeetingEnd.route) {
             MeetingEndScreen()
-        /*composable(SilRokNavigation.Meeting.route) {
-            MeetingScreen()
-        }*/
+            /*composable(SilRokNavigation.Meeting.route) {
+                MeetingScreen()
+            }*/
+        }
 
         composable(SilRokNavigation.MakeProfile.route) {
             MakeProfile(navController)
