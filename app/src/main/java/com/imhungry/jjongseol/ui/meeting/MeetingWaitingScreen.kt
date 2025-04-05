@@ -27,7 +27,9 @@ import com.imhungry.jjongseol.ui.meeting.pager.CheckItem
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun MeetingWaitingScreen(onFinish: (SilRokNavigation) -> Unit) {
+fun MeetingWaitingScreen(
+    onFinish: (SilRokNavigation) -> Unit
+) {
     val topicItems = listOf(
         "저메추", "지구는 평평한가?", "35세는 어린이인가?", "가르마 왼쪽 vs 오른쪽", "왼손잡이는 똑똑할까?"
     )
@@ -88,7 +90,8 @@ fun MeetingWaitingScreen(onFinish: (SilRokNavigation) -> Unit) {
             micIcon = R.drawable.inactive_mic,
             logoutIcon = R.drawable.inactive_logout,
             powerIcon = R.drawable.inactive_power,
-            onFinish = onFinish
+            onFinish = onFinish,
+            onExitConfirmed = {}
         )
     }
 }

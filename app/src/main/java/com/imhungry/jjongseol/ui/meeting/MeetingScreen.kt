@@ -41,7 +41,6 @@ import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingSummaryScreen
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MeetingScreen(
     viewModel: MeetingViewModel = hiltViewModel(),
@@ -54,9 +53,6 @@ fun MeetingScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         permissionGranted = isGranted
-        if (isGranted) {
-            viewModel.startRecordingAndStreaming()
-        }
     }
 
     LaunchedEffect(Unit) {
@@ -67,19 +63,30 @@ fun MeetingScreen(
 
         if (hasPermission) {
             permissionGranted = true
-            viewModel.startRecordingAndStreaming()
         } else {
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 
-    MeetingScreenContent(onFinish)
+    LaunchedEffect(permissionGranted) {
+        if (permissionGranted) {
+            viewModel.startStreaming()
+        }
+    }
+
+    MeetingScreenContent(
+        onFinish = onFinish,
+        onExitConfirmed = { viewModel.stopStreaming() }
+    )
 }
 
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun MeetingScreenContent(onFinish: (SilRokNavigation) -> Unit) {
+fun MeetingScreenContent(
+    onFinish: (SilRokNavigation) -> Unit,
+    onExitConfirmed: () -> Unit
+) {
 
     var elapsedSeconds by remember { mutableStateOf(0) }
 
@@ -150,7 +157,8 @@ fun MeetingScreenContent(onFinish: (SilRokNavigation) -> Unit) {
             micIcon = R.drawable.micoff,
             logoutIcon = R.drawable.logout,
             powerIcon = R.drawable.power,
-            onFinish = onFinish
+            onFinish = onFinish,
+            onExitConfirmed = onExitConfirmed
         )
     }
 }

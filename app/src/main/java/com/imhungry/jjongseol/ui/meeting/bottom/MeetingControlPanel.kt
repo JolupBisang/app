@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.CustomDialog
@@ -39,6 +38,7 @@ fun MeetingControlPanel(
     logoutIcon: Int = R.drawable.inactive_logout,
     powerIcon: Int = R.drawable.inactive_power,
     onFinish: (SilRokNavigation) -> Unit,
+    onExitConfirmed: () -> Unit
 ) {
     var isMicOn by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
@@ -143,6 +143,7 @@ fun MeetingControlPanel(
             onDismissRequest = { showDialog = false },
             onConfirmExit = {
                 showDialog = false
+                onExitConfirmed()
                 onFinish(SilRokNavigation.MeetingEnd)
             }
         )

@@ -37,10 +37,6 @@
                     android:host="oauth2callback" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ui.CreateNewMeetingActivity"
-            android:exported="true"/>
-
     </application>
 
 </manifest>
