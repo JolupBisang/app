@@ -23,7 +23,9 @@ fun HomeScreen(navController: NavController) {
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("createNewMeeting")
+            FloatingActionButton(
+                //onClick = { navController.navigate("createNewMeeting")
+                onClick = { navController.navigate("makeProfile")
             }) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "추가")
             }

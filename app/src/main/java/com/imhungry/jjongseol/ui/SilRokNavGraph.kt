@@ -14,6 +14,10 @@ import com.imhungry.jjongseol.ui.login.LoginScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingEndScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingWaitingScreen
+import com.imhungry.jjongseol.ui.newmeeting.CompletedNewMeeting
+import com.imhungry.jjongseol.ui.newmeeting.CreateNewMeetingScreen
+import com.imhungry.jjongseol.ui.profilecard.CompletedProfile
+import com.imhungry.jjongseol.ui.profilecard.MakeProfile
 import com.imhungry.jjongseol.ui.splash.SplashScreen
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
@@ -34,7 +38,11 @@ fun SilRokNavGraph(
         composable(SilRokNavigation.Splash.route) {
             SplashScreen(
                 onFinish = { destination ->
-                    navActions.navigateTo(destination, SilRokNavigation.Splash)
+                    navController.navigate(destination.route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }
@@ -79,6 +87,20 @@ fun SilRokNavGraph(
 
         composable(SilRokNavigation.MeetingEnd.route) {
             MeetingEndScreen()
+        /*composable(SilRokNavigation.Meeting.route) {
+            MeetingScreen()
+        }*/
+
+        composable(SilRokNavigation.MakeProfile.route) {
+            MakeProfile(navController)
+        }
+
+        composable(SilRokNavigation.CompleteProfile.route) {
+            CompletedProfile(navController)
+        }
+
+        composable(SilRokNavigation.CompleteNewMeeting.route) {
+            CompletedNewMeeting(navController)
         }
     }
 }
