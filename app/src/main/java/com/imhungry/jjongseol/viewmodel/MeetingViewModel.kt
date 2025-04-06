@@ -1,11 +1,11 @@
 package com.imhungry.jjongseol.viewmodel
 
 import android.app.Application
-import android.util.Log
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
-import com.imhungry.jjongseol.data.audio.RealTimeAudioStreamer
-import com.imhungry.jjongseol.data.network.WebSocketManager
+import com.imhungry.jjongseol.service.AudioStreamingService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -13,30 +13,35 @@ import javax.inject.Inject
 class MeetingViewModel @Inject constructor(
     application: Application
 ) : AndroidViewModel(application) {
-
     private val context by lazy { application.applicationContext }
 
-    private var streamer: RealTimeAudioStreamer? = null
+    fun pauseEncoding() = AudioStreamingService.pauseEncoding()
+    fun resumeEncoding() = AudioStreamingService.resumeEncoding()
 
-    fun startStreaming() {
-        val ws = WebSocketManager().apply {
-            connect(
-                url = "ws://your.server/ws/audio",
-                onMessage = { Log.d("WebSocket", "응답: $it") },
-                onFailure = { Log.e("WebSocket", "오류", it) }
-            )
+    fun startStreamingService() {
+        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+        val alreadyStarted = prefs.contains("meetingStartedAt")
+        if (!alreadyStarted) {
+            prefs.edit()
+                .putBoolean("isMeetingOngoing", true)
+                .putLong("meetingStartedAt", System.currentTimeMillis())
+                .apply()
         }
 
-        streamer = RealTimeAudioStreamer(
-            userId = 1L,
-            meetingId = 1L,
-            webSocketManager = ws,
-            cacheDir = context.cacheDir
-        )
-        streamer?.start(viewModelScope)
+        val intent = Intent(context, AudioStreamingService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            context.startForegroundService(intent)
+        else
+            context.startService(intent)
     }
 
-    fun stopStreaming() {
-        streamer?.stop()
+    fun stopStreamingService() {
+        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+        prefs.edit()
+            .putBoolean("isMeetingOngoing", false)
+            .remove("meetingStartedAt")
+            .apply()
+
+        context.stopService(Intent(context, AudioStreamingService::class.java))
     }
 }
