@@ -33,7 +33,7 @@ fun MeetingControlPanel(
     modifier: Modifier = Modifier,
     timeText: String = "00:00:00",
     micEnabled: Boolean = false,
-    onMicToggle: (() -> Unit)? = null,
+    onMicToggle: ((Boolean) -> Unit)? = null,
     micIcon: Int = R.drawable.inactive_mic,
     logoutIcon: Int = R.drawable.inactive_logout,
     powerIcon: Int = R.drawable.inactive_power,
@@ -86,8 +86,9 @@ fun MeetingControlPanel(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-                                    isMicOn = !isMicOn
-                                    onMicToggle?.invoke()
+                                    val newState = !isMicOn
+                                    isMicOn = newState
+                                    onMicToggle?.invoke(newState)
                                 }
                             } else baseModifier
                         }

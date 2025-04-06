@@ -2,11 +2,11 @@ package com.imhungry.jjongseol.ui.meeting
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +40,7 @@ import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingSummaryScreen
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun MeetingScreen(
@@ -47,36 +48,60 @@ fun MeetingScreen(
     onFinish: (SilRokNavigation) -> Unit,
 ) {
     val context = LocalContext.current
-    var permissionGranted by remember { mutableStateOf(false) }
+    var audioPermissionGranted by remember { mutableStateOf(false) }
+    var notificationPermissionGranted by remember { mutableStateOf(false) }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        permissionGranted = isGranted
+        audioPermissionGranted = isGranted
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        notificationPermissionGranted = isGranted
     }
 
     LaunchedEffect(Unit) {
-        val hasPermission = ContextCompat.checkSelfPermission(
+        val audioGranted = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
 
-        if (hasPermission) {
-            permissionGranted = true
+        if (audioGranted) {
+            audioPermissionGranted = true
         } else {
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 
-    LaunchedEffect(permissionGranted) {
-        if (permissionGranted) {
-            viewModel.startStreaming()
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val notificationGranted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!notificationGranted) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                notificationPermissionGranted = true
+            }
+        } else {
+            notificationPermissionGranted = true
+        }
+    }
+
+    LaunchedEffect(audioPermissionGranted, notificationPermissionGranted) {
+        if (audioPermissionGranted && notificationPermissionGranted) {
+            viewModel.startStreamingService()
         }
     }
 
     MeetingScreenContent(
         onFinish = onFinish,
-        onExitConfirmed = { viewModel.stopStreaming() }
+        onExitConfirmed = { viewModel.stopStreamingService() }
     )
 }
 
@@ -85,15 +110,22 @@ fun MeetingScreen(
 @Composable
 fun MeetingScreenContent(
     onFinish: (SilRokNavigation) -> Unit,
-    onExitConfirmed: () -> Unit
+    onExitConfirmed: () -> Unit,
+    viewModel: MeetingViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val startTimeMillis = remember {
+        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+        prefs.getLong("meetingStartedAt", System.currentTimeMillis())
+    }
 
     var elapsedSeconds by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(1000)
-            elapsedSeconds++
+            val now = System.currentTimeMillis()
+            elapsedSeconds = ((now - startTimeMillis) / 1000).toInt()
+            delay(1000)
         }
     }
 
@@ -154,6 +186,13 @@ fun MeetingScreenContent(
                 .weight(0.20f),
             timeText = timeText,
             micEnabled = true,
+            onMicToggle = { isMicOn ->
+                if (isMicOn) {
+                    viewModel.resumeEncoding()
+                } else {
+                    viewModel.pauseEncoding()
+                }
+            },
             micIcon = R.drawable.micoff,
             logoutIcon = R.drawable.logout,
             powerIcon = R.drawable.power,

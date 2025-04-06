@@ -63,7 +63,7 @@ fun SilRokNavGraph(
             HomeScreen(navController)
         }
 
-        composable(SilRokNavigation.CreateNewMeeting.route) {
+       composable(SilRokNavigation.CreateNewMeeting.route) {
             CreateNewMeetingScreen(navController)
         }
 

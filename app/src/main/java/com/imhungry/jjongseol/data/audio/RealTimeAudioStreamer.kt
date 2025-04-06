@@ -3,9 +3,7 @@ package com.imhungry.jjongseol.data.audio
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import com.imhungry.jjongseol.data.network.WebSocketManager
 import com.imhungry.jjongseol.util.OpusEncoderWrapper
 import com.imhungry.jjongseol.util.buildPacket
@@ -34,8 +32,11 @@ class RealTimeAudioStreamer(
     private val encoder = OpusEncoderWrapper()
     private var isStreaming = false
     private var chunkId = 0
+    private var isEncodingPaused = false
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    fun pauseEncoding() { isEncodingPaused = true }
+    fun resumeEncoding() { isEncodingPaused = false }
+
     fun start(scope: CoroutineScope) {
         Log.d("Audio", "스트리밍 시작 준비 중...")
 
@@ -55,42 +56,23 @@ class RealTimeAudioStreamer(
             return
         }
 
-        val record = audioRecord ?: return
-
         encoder.init()
-        Log.d("Audio", "Opus 인코더 초기화 완료")
-
-        record.startRecording()
+        audioRecord?.startRecording()
         isStreaming = true
         Log.d("Audio", "녹음 시작됨")
 
         scope.launch(Dispatchers.IO) {
             val pcmBuffer = ByteArray(frameSize * 2)
-
             while (isActive && isStreaming) {
-                val read = record.read(pcmBuffer, 0, pcmBuffer.size)
-                if (read > 0) {
-                    Log.d("Audio", "PCM ${read} bytes 읽음")
-
+                val read = audioRecord?.read(pcmBuffer, 0, pcmBuffer.size) ?: 0
+                if (read > 0 && !isEncodingPaused) {
                     val pcmChunk = pcmBuffer.copyOf(read)
                     val opusData = encoder.encode(pcmChunk)
-
-                    if (opusData != null) {
-                        Log.d("Audio", "Opus 인코딩 완료: ${opusData.size} bytes")
-
-                        val packet = buildPacket(opusData, userId, meetingId, chunkId)
-                        Log.d("Audio", "패킷 생성 완료 - 청크 ID: $chunkId, 총 크기: ${packet.size} bytes")
-
+                    opusData?.let {
+                        val packet = buildPacket(it, userId, meetingId, chunkId++)
                         webSocketManager.sendBinary(packet)
-
                         savePacketToFile(packet, chunkId)
-
-                        chunkId++
-                    } else {
-                        Log.w("Audio", "Opus 인코딩 실패")
                     }
-                } else {
-                    Log.w("Audio", "PCM 데이터 읽기 실패 또는 0 bytes")
                 }
             }
         }
@@ -99,14 +81,9 @@ class RealTimeAudioStreamer(
     private fun savePacketToFile(packet: ByteArray, chunkId: Int) {
         try {
             val dir = File(cacheDir, "audio_packets/$meetingId/$userId")
-            if (!dir.exists()) {
-                val success = dir.mkdirs()
-                Log.d("Audio", "디렉토리 생성 성공 여부: $success, 경로: ${dir.absolutePath}")
-            }
-
+            if (!dir.exists()) dir.mkdirs()
             val file = File(dir, "packet_$chunkId.bin")
             FileOutputStream(file).use { it.write(packet) }
-
             Log.d("Audio", "패킷 저장: ${file.absolutePath}")
         } catch (e: Exception) {
             Log.e("Audio", "패킷 저장 실패", e)
@@ -117,9 +94,26 @@ class RealTimeAudioStreamer(
         isStreaming = false
         audioRecord?.stop()
         audioRecord?.release()
-        audioRecord = null
         encoder.release()
         webSocketManager.close()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            deleteAllPackets()
+        }
+
         Log.d("Audio", "스트리밍 종료")
+    }
+
+    private fun deleteAllPackets() {
+        try {
+            val dir = File(cacheDir, "audio_packets/$meetingId/$userId")
+            if (dir.exists()) {
+                dir.listFiles()?.forEach { it.delete() }
+                dir.delete()
+                Log.d("Audio", "모든 패킷 삭제 완료: ${dir.absolutePath}")
+            }
+        } catch (e: Exception) {
+            Log.e("Audio", "패킷 삭제 실패", e)
+        }
     }
 }
