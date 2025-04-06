@@ -1,11 +1,12 @@
 package com.imhungry.jjongseol.ui.meeting
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,52 +33,112 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
+import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingSummaryScreen
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
+import kotlinx.coroutines.delay
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MeetingScreen(
-    viewModel: MeetingViewModel = hiltViewModel()
+    viewModel: MeetingViewModel = hiltViewModel(),
+    onFinish: (SilRokNavigation) -> Unit,
 ) {
     val context = LocalContext.current
-    var permissionGranted by remember { mutableStateOf(false) }
+    var audioPermissionGranted by remember { mutableStateOf(false) }
+    var notificationPermissionGranted by remember { mutableStateOf(false) }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        permissionGranted = isGranted
-        if (isGranted) {
-            viewModel.startRecordingAndStreaming()
-        }
+        audioPermissionGranted = isGranted
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        notificationPermissionGranted = isGranted
     }
 
     LaunchedEffect(Unit) {
-        val hasPermission = ContextCompat.checkSelfPermission(
+        val audioGranted = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
 
-        if (hasPermission) {
-            permissionGranted = true
-            viewModel.startRecordingAndStreaming()
+        if (audioGranted) {
+            audioPermissionGranted = true
         } else {
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 
-    MeetingScreenContent()
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val notificationGranted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!notificationGranted) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                notificationPermissionGranted = true
+            }
+        } else {
+            notificationPermissionGranted = true
+        }
+    }
+
+    LaunchedEffect(audioPermissionGranted, notificationPermissionGranted) {
+        if (audioPermissionGranted && notificationPermissionGranted) {
+            viewModel.startStreamingService()
+        }
+    }
+
+    MeetingScreenContent(
+        onFinish = onFinish,
+        onExitConfirmed = { viewModel.stopStreamingService() }
+    )
 }
 
+@SuppressLint("DefaultLocale")
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun MeetingScreenContent() {
+fun MeetingScreenContent(
+    onFinish: (SilRokNavigation) -> Unit,
+    onExitConfirmed: () -> Unit,
+    viewModel: MeetingViewModel = hiltViewModel()
+) {
+    val context = LocalContext.current
+    val startTimeMillis = remember {
+        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+        prefs.getLong("meetingStartedAt", System.currentTimeMillis())
+    }
+
+    var elapsedSeconds by remember { mutableStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            val now = System.currentTimeMillis()
+            elapsedSeconds = ((now - startTimeMillis) / 1000).toInt()
+            delay(1000)
+        }
+    }
+
+    val timeText = remember(elapsedSeconds) {
+        val hours = elapsedSeconds / 3600
+        val minutes = (elapsedSeconds % 3600) / 60
+        val seconds = elapsedSeconds % 60
+        String.format("%02d:%02d:%02d", hours, minutes, seconds)
+    }
+
     Column(modifier = Modifier
         .fillMaxSize()
-        .background(MaterialTheme.colors.background)
+        .background(MaterialTheme.colorScheme.background)
     ) {
         val pagerState = rememberPagerState(initialPage = 1)
 
@@ -122,8 +183,21 @@ fun MeetingScreenContent() {
         MeetingControlPanel(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(0.20f)
-                .background(MaterialTheme.colors.background)
+                .weight(0.20f),
+            timeText = timeText,
+            micEnabled = true,
+            onMicToggle = { isMicOn ->
+                if (isMicOn) {
+                    viewModel.resumeEncoding()
+                } else {
+                    viewModel.pauseEncoding()
+                }
+            },
+            micIcon = R.drawable.micoff,
+            logoutIcon = R.drawable.logout,
+            powerIcon = R.drawable.power,
+            onFinish = onFinish,
+            onExitConfirmed = onExitConfirmed
         )
     }
 }

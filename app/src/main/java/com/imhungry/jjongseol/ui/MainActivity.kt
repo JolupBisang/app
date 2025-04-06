@@ -21,9 +21,11 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         handleIntent(intent)
 
+        val startDestination = getStartDestination()
+
         setContent {
             AppTheme {
-                SilRokApp(SilRokNavigation.Splash)
+                SilRokApp(startDestination = startDestination)
             }
         }
     }
@@ -36,6 +38,15 @@ class MainActivity : AppCompatActivity() {
     private fun handleIntent(intent: Intent?) {
         intent?.data?.getQueryParameter("token")?.let { token ->
             loginViewModel.saveToken(token)
+        }
+    }
+
+    private fun getStartDestination(): SilRokNavigation {
+        val prefs = getSharedPreferences("meeting_prefs", MODE_PRIVATE)
+        return if (prefs.getBoolean("isMeetingOngoing", false)) {
+            SilRokNavigation.Meeting
+        } else {
+            SilRokNavigation.Splash
         }
     }
 }
