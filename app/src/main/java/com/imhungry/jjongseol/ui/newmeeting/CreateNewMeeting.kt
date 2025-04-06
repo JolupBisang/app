@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.newmeeting
 
+import SearchScreen
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,7 +42,7 @@ import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 fun CreateNewMeetingScreen(navController: NavController){
     val meetingTitle = remember { mutableStateOf("") }
     val leaderName = remember { mutableStateOf("") }
-    val memberLists = remember { mutableStateOf("") }
+    //val memberLists = remember { mutableStateOf("") }
     val place = remember { mutableStateOf("") }
 
     ConstraintLayout (modifier = Modifier
@@ -182,31 +183,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
                     )
                 }
-
-                OutlinedTextField(
-                    value = memberLists.value,
-                    onValueChange = { memberLists.value = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                        .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
-                    singleLine = true,
-                    textStyle = TextStyle(fontSize = 16.sp),
-                    placeholder = {
-                        Text("이름, 이메일, 팀으로 검색",
-                            style = TextStyle(
-                                color = Color.LightGray
-                            )
-                        )
-                    },
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        textColor = Color.Black,
-                        cursorColor = Color.Black,
-                        backgroundColor = Color.White,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
-                    )
-                )
+                SearchScreen()
             }
             item {
                 Box(
