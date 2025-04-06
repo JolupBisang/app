@@ -4,10 +4,15 @@ import android.app.DatePickerDialog
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -50,16 +55,25 @@ fun DatePickerField() {
             },
         contentAlignment = Alignment.CenterStart
     ) {
-        Text(
-            text = dateText.value,
-            style = TextStyle(
-                color = textColor,
-                fontSize = 16.sp
-            ),
-            modifier = Modifier
-                .padding(10.dp)
-                .padding(start = 5.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = dateText.value,
+                style = TextStyle(
+                    color = textColor,
+                    fontSize = 16.sp
+                ),
+                modifier = Modifier.padding(start = 5.dp)
+            )
+            Spacer(Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.Filled.DateRange,
+                contentDescription = "회의 날짜",
+                modifier = Modifier.align(Alignment.CenterVertically)
+            )
+        }
     }
 }
 
