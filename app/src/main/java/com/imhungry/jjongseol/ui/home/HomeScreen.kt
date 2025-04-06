@@ -66,7 +66,7 @@ fun HomeScreen(navController: NavController) {
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            HomeSideBar(drawerState)
+            HomeSideBar(drawerState,navController)
         },
     ) {
         Scaffold(

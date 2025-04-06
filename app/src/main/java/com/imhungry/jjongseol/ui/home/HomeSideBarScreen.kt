@@ -14,9 +14,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
 @Composable
-fun HomeSideBar(drawerState: DrawerState) {
+fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
     val scope = rememberCoroutineScope()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val drawerWidth = screenWidth * 0.6f
@@ -54,7 +55,7 @@ fun HomeSideBar(drawerState: DrawerState) {
                 "새 회의 만들기",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { }
+                    .clickable { navController.navigate("createNewMeeting") }
                     .padding(vertical = 10.dp, horizontal = 20.dp),
                 style = TextStyle(fontSize = 20.sp)
             )
