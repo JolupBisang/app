@@ -15,7 +15,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
@@ -24,10 +24,12 @@ import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.TopSheet
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.ui.meeting.pager.CheckItem
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun MeetingWaitingScreen(
+    viewModel: MeetingViewModel = hiltViewModel(),
     onFinish: (SilRokNavigation) -> Unit
 ) {
     val topicItems = listOf(
@@ -91,7 +93,8 @@ fun MeetingWaitingScreen(
             logoutIcon = R.drawable.inactive_logout,
             powerIcon = R.drawable.inactive_power,
             onFinish = onFinish,
-            onExitConfirmed = {}
+            onExitConfirmed = {},
+            viewModel = viewModel
         )
     }
 }

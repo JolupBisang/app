@@ -1,6 +1,5 @@
 package com.imhungry.jjongseol.service
 
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -40,7 +39,7 @@ class AudioStreamingService : Service() {
 
         val ws = WebSocketManager().apply {
             connect(
-                url = "ws://your.server/ws/audio",
+                url = "ws://192.168.68.106:8080/ws/meeting",
                 onMessage = { Log.d("WebSocket", "서버 응답: $it") },
                 onFailure = { Log.e("WebSocket", "연결 실패", it) }
             )

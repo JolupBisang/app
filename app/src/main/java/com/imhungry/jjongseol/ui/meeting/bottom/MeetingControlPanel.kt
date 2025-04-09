@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.CustomDialog
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
 fun MeetingControlPanel(
@@ -38,7 +39,8 @@ fun MeetingControlPanel(
     logoutIcon: Int = R.drawable.inactive_logout,
     powerIcon: Int = R.drawable.inactive_power,
     onFinish: (SilRokNavigation) -> Unit,
-    onExitConfirmed: () -> Unit
+    onExitConfirmed: () -> Unit,
+    viewModel: MeetingViewModel
 ) {
     var isMicOn by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
@@ -158,6 +160,7 @@ fun MeetingControlPanel(
             onDismissRequest = { showLeaveDialog = false },
             onConfirmExit = {
                 showLeaveDialog = false
+                viewModel.pauseEncoding()
                 onFinish(SilRokNavigation.Home)
             }
         )

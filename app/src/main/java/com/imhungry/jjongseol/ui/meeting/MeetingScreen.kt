@@ -96,6 +96,7 @@ fun MeetingScreen(
     LaunchedEffect(audioPermissionGranted, notificationPermissionGranted) {
         if (audioPermissionGranted && notificationPermissionGranted) {
             viewModel.startStreamingService()
+            viewModel.resumeEncoding()
         }
     }
 
@@ -197,7 +198,8 @@ fun MeetingScreenContent(
             logoutIcon = R.drawable.logout,
             powerIcon = R.drawable.power,
             onFinish = onFinish,
-            onExitConfirmed = onExitConfirmed
+            onExitConfirmed = onExitConfirmed,
+            viewModel = viewModel
         )
     }
 }
