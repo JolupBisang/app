@@ -21,9 +21,9 @@ import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.SilRokNavigation
+import com.imhungry.jjongseol.ui.component.CheckItem
 import com.imhungry.jjongseol.ui.component.TopSheet
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
-import com.imhungry.jjongseol.ui.meeting.pager.CheckItem
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @OptIn(ExperimentalPagerApi::class)

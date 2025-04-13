@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.completedmeeting
 
+import CompletedMeetingRecordScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,7 +29,6 @@ import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.completedmeeting.bottom.CompletedMeetingControlPanel
 import com.imhungry.jjongseol.ui.component.CustomSeekBar
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
-import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingSummaryScreen
 import com.imhungry.jjongseol.viewmodel.CompletedMeetingViewModel
 import kotlinx.coroutines.delay
@@ -79,7 +79,7 @@ fun CompletedMeetingContent(
         ) { page ->
             when (page) {
                 0 -> MeetingSummaryScreen()
-                1 -> MeetingRecordScreen()
+                1 -> CompletedMeetingRecordScreen()
                 2 -> MeetingFeedbackScreen()
             }
         }
