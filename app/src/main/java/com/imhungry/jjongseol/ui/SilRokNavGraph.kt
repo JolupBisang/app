@@ -10,6 +10,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.imhungry.jjongseol.ui.completedmeeting.CompletedMeetingScreen
+import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
 import com.imhungry.jjongseol.ui.home.HomeScreen
 import com.imhungry.jjongseol.ui.login.LoginScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingEndScreen
@@ -21,7 +23,6 @@ import com.imhungry.jjongseol.ui.profilecard.CompletedProfile
 import com.imhungry.jjongseol.ui.profilecard.MakeProfile
 import com.imhungry.jjongseol.ui.splash.SplashScreen
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
-import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
 fun SilRokNavGraph(
@@ -68,10 +69,7 @@ fun SilRokNavGraph(
         }
 
         composable(SilRokNavigation.Meeting.route) {
-            val meetingViewModel: MeetingViewModel = hiltViewModel()
-
             MeetingScreen(
-                meetingViewModel,
                 onFinish = { destination ->
                     navActions.navigateTo(destination, SilRokNavigation.Meeting)
                 }
@@ -87,10 +85,10 @@ fun SilRokNavGraph(
         }
 
         composable(SilRokNavigation.MeetingEnd.route) {
-            MeetingEndScreen()
-            /*composable(SilRokNavigation.Meeting.route) {
-                MeetingScreen()
-            }*/
+            MeetingEndScreen(
+                onFinish = { destination ->
+                navActions.navigateTo(destination, SilRokNavigation.MeetingEnd)
+            })
         }
 
         composable(SilRokNavigation.MakeProfile.route) {
@@ -103,6 +101,19 @@ fun SilRokNavGraph(
 
         composable(SilRokNavigation.CompleteNewMeeting.route) {
             CompletedNewMeeting(navController)
+        }
+
+        composable(SilRokNavigation.CompletedMeeting.route) {
+            CompletedMeetingScreen(
+                navController,
+                onFinish = { destination ->
+                    navActions.navigateTo(destination, SilRokNavigation.CompletedMeeting)
+                }
+            )
+        }
+
+        composable(SilRokNavigation.CompletedMeetingSummary.route) {
+            CompletedMeetingSummaryScreen()
         }
     }
 }

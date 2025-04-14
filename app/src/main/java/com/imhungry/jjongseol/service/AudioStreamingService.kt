@@ -39,7 +39,7 @@ class AudioStreamingService : Service() {
 
         val ws = WebSocketManager().apply {
             connect(
-                url = "ws://192.168.68.106:8080/ws/meeting",
+                url = "ws://10.0.2.2:8080/ws/meeting",
                 onMessage = { Log.d("WebSocket", "서버 응답: $it") },
                 onFailure = { Log.e("WebSocket", "연결 실패", it) }
             )
