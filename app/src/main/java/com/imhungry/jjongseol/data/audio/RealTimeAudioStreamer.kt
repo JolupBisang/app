@@ -3,7 +3,9 @@ package com.imhungry.jjongseol.data.audio
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.imhungry.jjongseol.data.network.WebSocketManager
 import com.imhungry.jjongseol.util.OpusEncoderWrapper
 import com.imhungry.jjongseol.util.buildPacket
@@ -37,6 +39,7 @@ class RealTimeAudioStreamer(
     fun pauseEncoding() { isEncodingPaused = true }
     fun resumeEncoding() { isEncodingPaused = false }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun start(scope: CoroutineScope) {
         Log.d("Audio", "스트리밍 시작 준비 중...")
 
