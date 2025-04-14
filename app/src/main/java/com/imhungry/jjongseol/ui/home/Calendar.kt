@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.ui.component
+package com.imhungry.jjongseol.ui.home
 
 import android.os.Build
 import android.widget.NumberPicker
@@ -15,10 +15,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.TabRowDefaults.Divider
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,16 +39,59 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.ui.home.meetingdata.ScheduleItem
+import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+
+val schedules = listOf(
+    ScheduleItem("회의 1", "13:00", "2025.04.26"),
+    ScheduleItem("회의 2", "15:00", "2025.04.26"),
+    ScheduleItem("회의 1", "13:00", "2025.04.26"),
+    ScheduleItem("회의 2", "15:00", "2025.04.26"),
+    ScheduleItem("회의 1", "13:00", "2025.04.26"),
+    ScheduleItem("회의 2", "15:00", "2025.04.26"),
+    ScheduleItem("회의 1", "13:00", "2025.04.26"),
+    ScheduleItem("회의 2", "15:00", "2025.04.26"),
+    ScheduleItem("회의 1", "13:00", "2025.04.26"),
+    ScheduleItem("회의 2", "15:00", "2025.04.26"),
+    ScheduleItem("워크샵", "11:00", "2025.04.26"),
+    ScheduleItem("고객 미팅", "14:00", "2025.04.27"),
+    ScheduleItem("프로젝트 리뷰", "16:00", "2025.06.28"),
+    ScheduleItem("웹 세미나", "10:00", "2025.07.01"),
+    ScheduleItem("팀 런치", "12:00", "2025.07.01"),
+    ScheduleItem("제품 발표회", "15:00", "2025.07.02"),
+    ScheduleItem("경영진 회의", "09:00", "2025.07.03"),
+    ScheduleItem("기술 트레이닝", "13:30", "2025.07.03"),
+    ScheduleItem("마케팅 전략 논의", "11:00", "2025.07.04"),
+    ScheduleItem("영업 팀 회의", "15:00", "2025.07.04"),
+    ScheduleItem("개발자 컨퍼런스", "10:00", "2025.07.05"),
+    ScheduleItem("재무 검토 회의", "14:00", "2025.07.05")
+)
 
 @Composable
-fun CalendarScreen() {
+fun CalendarScreen(navController: NavController) {
     var currentYearMonth by remember { mutableStateOf(YearMonth.now()) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var showNumberPicker by remember { mutableStateOf(false) }
-
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(5.dp),
+        horizontalArrangement = Arrangement.End,
+    ) {
+        Text(
+            text = "오늘", color = md_theme_button_color_blue, modifier = Modifier
+                .padding(end = 5.dp)
+                .clickable {
+                    currentYearMonth = YearMonth.now()
+                    selectedDate = LocalDate.now()
+                }
+        )
+    }
     Column(modifier = Modifier
         .fillMaxSize()
         .padding(horizontal = 36.dp)) {
@@ -58,7 +104,8 @@ fun CalendarScreen() {
         CalendarGrid(
             yearMonth = currentYearMonth,
             selectedDate = selectedDate,
-            onDateSelected = { selectedDate = it }
+            onDateSelected = { selectedDate = it },
+            schedules = schedules
         )
     }
 
@@ -76,6 +123,20 @@ fun CalendarScreen() {
 
         )
     }
+
+    Divider(
+        color = Color.Gray,
+        thickness = 1.dp,
+        modifier = Modifier.padding(top = 30.dp,bottom = 10.dp)
+    )
+
+    val handleScheduleClick = { schedule: ScheduleItem ->
+        //navController.navigate("completeProfile")
+    }
+
+    DailyScheduleView(selectedDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")),
+        schedules, handleScheduleClick)
+
 }
 
 @Composable
@@ -91,18 +152,6 @@ fun CalendarHeader(
             .padding(start = 4.dp, top = 16.dp, bottom = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(R.drawable.prev),
-            contentDescription = "previous month",
-            modifier = Modifier
-                .size(24.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    onPrev()
-                }
-        )
 
         Text(
             text = "${yearMonth.year}년 ${yearMonth.monthValue}월",
@@ -115,6 +164,19 @@ fun CalendarHeader(
                     indication = null
                 ) {
                     onTextClick()
+                }
+        )
+        Spacer(Modifier.weight(1f))
+        Image(
+            painter = painterResource(R.drawable.prev),
+            contentDescription = "previous month",
+            modifier = Modifier
+                .size(24.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    onPrev()
                 }
         )
 
@@ -132,13 +194,13 @@ fun CalendarHeader(
         )
     }
 }
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CalendarGrid(
     yearMonth: YearMonth,
     selectedDate: LocalDate,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    schedules: List<ScheduleItem>
 ) {
     val firstDayOfMonth = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
@@ -151,9 +213,18 @@ fun CalendarGrid(
         date
     }
 
+    val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd")
+    val datesWithEvents = schedules
+        .filter { schedule ->
+            val scheduleDate = LocalDate.parse(schedule.date, formatter)
+            scheduleDate.month == yearMonth.month && scheduleDate.year == yearMonth.year
+        }
+        .map { LocalDate.parse(it.date, formatter) }
+        .toSet()
+
     Column {
         Row(Modifier.fillMaxWidth()) {
-            listOf("일", "월", "화", "수", "목", "금", "토").forEach {
+            listOf("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT").forEach {
                 Text(
                     text = it,
                     modifier = Modifier.weight(1f),
@@ -172,6 +243,7 @@ fun CalendarGrid(
                     val isCurrentMonth = date.month == yearMonth.month
                     val isSelected = date == selectedDate
                     val dayOfWeek = date.dayOfWeek.value % 7
+                    val hasEvent = date in datesWithEvents
 
                     Box(
                         modifier = Modifier
@@ -180,7 +252,8 @@ fun CalendarGrid(
                             .padding(2.dp)
                             .background(
                                 when {
-                                    isSelected && isCurrentMonth -> Color(0xFFDAF2FF)
+                                    isSelected && isCurrentMonth && hasEvent -> Color(0xFFDAF2FF) //일정이 있고 선택된 날
+                                    isSelected && isCurrentMonth -> Color(0xFFDAF2FF) //선택된 날
                                     !isCurrentMonth -> Color.White.copy(alpha = 0.3f)
                                     else -> Color.Transparent
                                 },
@@ -198,9 +271,10 @@ fun CalendarGrid(
                             text = date.dayOfMonth.toString(),
                             style = MaterialTheme.typography.bodyMedium,
                             color = when {
-                                isSelected -> Color.Blue
-                                isCurrentMonth && dayOfWeek == 0 -> Color.Red
-                                isCurrentMonth -> Color.Black
+                                isSelected && hasEvent -> md_theme_button_color_blue //일정이 있고 선택된 날
+                                hasEvent -> md_theme_button_color_blue //일정만 있는 날
+                                isCurrentMonth && dayOfWeek == 0 -> Color.Red //일요일
+                                isCurrentMonth -> Color.Black //일반
                                 else -> Color.White
                             }
                         )
@@ -210,6 +284,8 @@ fun CalendarGrid(
         }
     }
 }
+
+
 
 @Composable
 fun NumberPickerDialog(
@@ -224,25 +300,18 @@ fun NumberPickerDialog(
         onDismissRequest = onDismiss,
         containerColor = Color.White,
         confirmButton = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                TextButton(onClick = {
-                    onConfirm(YearMonth.of(selectedYear, selectedMonth))
-                }) {
-                    Text(text = "취소", color = Color(0xFF1E93EF))
-                }
-                Spacer(modifier = Modifier.width(40.dp))
-                TextButton(onClick = {
-                    onConfirm(YearMonth.of(selectedYear, selectedMonth))
-                }) {
-                    Text(text = "확인", color = Color(0xFF1E93EF))
-                }
+            TextButton(onClick = {
+                onConfirm(YearMonth.of(selectedYear, selectedMonth))
+            }) {
+                Text(text = "확인", color = Color(0xFF1E93EF))
             }
         },
-        dismissButton = {},
+        dismissButton = {
+            TextButton(onClick = {
+                onConfirm(YearMonth.of(selectedYear, selectedMonth))
+            }) {
+                Text(text = "취소", color = Color(0xFF1E93EF))
+            }},
         text = {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 AndroidView(
@@ -274,3 +343,39 @@ fun NumberPickerDialog(
     )
 }
 
+
+@Composable
+fun DailyScheduleView(selectedDate: String, schedules: List<ScheduleItem>, onScheduleClick: (ScheduleItem) -> Unit) {
+    val dailySchedules = schedules.filter { it.date == selectedDate }
+
+    if (dailySchedules.isEmpty()) {
+        Text("일정이 없습니다", modifier = Modifier.fillMaxWidth().widthIn(100.dp).padding(top=20.dp), textAlign = TextAlign.Center)
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xEDF3E7))
+                .padding(16.dp)
+        ) {
+            Text("일정 기록", style = androidx.compose.material.MaterialTheme.typography.h6)
+            Spacer(Modifier.height(20.dp))
+            dailySchedules.forEach { schedule ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                            .clickable { onScheduleClick(schedule) },
+                ) {
+                    Text(
+                        text = schedule.title,
+                        style = androidx.compose.material.MaterialTheme.typography.body1
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = schedule.time,
+                        style = androidx.compose.material.MaterialTheme.typography.body1
+                    )
+                }
+            }
+        }
+    }
+}
