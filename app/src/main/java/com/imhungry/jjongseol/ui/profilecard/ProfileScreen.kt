@@ -1,11 +1,14 @@
 package com.imhungry.jjongseol.ui.profilecard
 
 import android.app.DatePickerDialog
+import android.widget.NumberPicker
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,11 +21,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.Icon
 import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.TextButton
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -45,10 +50,14 @@ import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import java.util.Calendar
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.constraintlayout.compose.Dimension
+import androidx.constraintlayout.compose.VerticalAlign
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
+import java.time.LocalDate
+import java.time.YearMonth
 
 @Composable
 fun MakeProfile(navController: NavController) {
@@ -232,7 +241,7 @@ fun MakeProfile(navController: NavController) {
                                 )
                             )
                         }
-                        DatePickerField()
+                        DatePickerDialog()
                     }
                     Column(modifier = Modifier.weight(1f)){
                         Box(
@@ -526,7 +535,10 @@ fun MBTIPickerField() {
 
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Row(modifier = Modifier
-            .clickable { expanded = !expanded }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            )  { expanded = !expanded }
             .padding(8.dp)
             .height(55.dp)
             .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
@@ -555,54 +567,105 @@ fun MBTIPickerField() {
     }
 }
 
-
 @Composable
-fun DatePickerField() {
+fun DatePickerDialog() {
     val context = LocalContext.current
-    val calendar = remember { Calendar.getInstance() }
-    val year = calendar.get(Calendar.YEAR)
-    val month = calendar.get(Calendar.MONTH)
-    val day = calendar.get(Calendar.DAY_OF_MONTH)
+    val initialYearMonthDay = remember { LocalDate.now() }
+    var selectedYear by remember { mutableStateOf(initialYearMonthDay.year) }
+    var selectedMonth by remember { mutableStateOf(initialYearMonthDay.monthValue) }
+    var selectedDay by remember { mutableStateOf(initialYearMonthDay.dayOfMonth) }
+    var daysInMonth = remember(selectedYear, selectedMonth) {
+        YearMonth.of(selectedYear, selectedMonth).lengthOfMonth()
+    }
 
+    val showDatePickerDialog = remember { mutableStateOf(false) }
     val dateText = remember { mutableStateOf("YYYY / MM / DD") }
-    val textColor = if (dateText.value == "YYYY / MM / DD") Color.LightGray else Color.Black
 
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, selectedYear, selectedMonth, selectedDay ->
-            dateText.value = "${selectedYear} / ${selectedMonth + 1} / $selectedDay"
-        }, year, month, day
-    )
-
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(70.dp)
             .padding(8.dp)
+            .height(55.dp)
             .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
-            .clickable {
-                datePickerDialog.show()
-            },
-        contentAlignment = Alignment.CenterStart
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { showDatePickerDialog.value = true },
+        horizontalArrangement  = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = dateText.value,
-                style = TextStyle(
-                    color = textColor,
-                    fontSize = 16.sp
-                ),
-                modifier = Modifier.padding(start = 5.dp)
-            )
-            Spacer(Modifier.weight(1f))
-            Icon(
-                imageVector = Icons.Filled.DateRange,
-                contentDescription = "생일",
-                modifier = Modifier.align(Alignment.CenterVertically)
-            )
-        }
+        Text(
+            text = dateText.value,
+            style = TextStyle(fontSize = 16.sp, color = Color.Black),
+            modifier = Modifier.padding(start = 20.dp, top = 10.dp, bottom = 10.dp)
+        )
+        Spacer(Modifier.weight(1f))
+
+        Icon(
+            imageVector = Icons.Filled.DateRange,
+            contentDescription = "생일 선택",
+            modifier = Modifier.padding(end = 10.dp)
+        )
+    }
+
+    if (showDatePickerDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showDatePickerDialog.value = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    dateText.value = "$selectedYear / $selectedMonth / $selectedDay"
+                    showDatePickerDialog.value = false
+                }) {
+                    Text(text = "확인", color = md_theme_button_color_blue,
+                        modifier = Modifier.padding(10.dp))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePickerDialog.value = false }) {
+                    Text(text = "취소", color = md_theme_button_color_blue,
+                        modifier = Modifier.padding(10.dp))
+                }
+            },
+            text = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    NumberPickerComponent("", 1900, 2125, selectedYear) { newVal ->
+                        selectedYear = newVal
+                        daysInMonth = YearMonth.of(selectedYear, selectedMonth).lengthOfMonth()
+                        selectedDay = minOf(selectedDay, daysInMonth)
+                    }
+                    NumberPickerComponent("", 1, 12, selectedMonth) { newVal ->
+                        selectedMonth = newVal
+                        daysInMonth = YearMonth.of(selectedYear, selectedMonth).lengthOfMonth()
+                        selectedDay = minOf(selectedDay, daysInMonth)
+                    }
+                    NumberPickerComponent("", 1, daysInMonth, selectedDay) { newVal ->
+                        selectedDay = newVal
+                    }
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun NumberPickerComponent(label: String, min: Int, max: Int, value: Int, onValueChange: (Int) -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = label)
+        AndroidView(
+            factory = { context ->
+                NumberPicker(context).apply {
+                    minValue = min
+                    maxValue = max
+                    setValue(value)
+                    setOnValueChangedListener { _, _, newVal ->
+                        onValueChange(newVal)
+                    }
+                }
+            },
+            update = { it.maxValue = max; it.minValue = min; it.value = value }
+        )
     }
 }
