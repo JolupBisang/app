@@ -4,9 +4,13 @@ import SearchScreen
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,12 +20,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Icon
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,14 +38,21 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.navigation.NavController
+import com.imhungry.jjongseol.ui.home.CalendarGrid
+import com.imhungry.jjongseol.ui.home.CalendarScreen
+import com.imhungry.jjongseol.ui.home.DataPickerCalendar
+import com.imhungry.jjongseol.ui.home.schedules
 import com.imhungry.jjongseol.ui.newmeeting.agenda.AgendaListScreen
 import com.imhungry.jjongseol.ui.newmeeting.breaktime.BreakTimeRow
-import com.imhungry.jjongseol.ui.newmeeting.dateandtime.DatePickerField
 import com.imhungry.jjongseol.ui.newmeeting.dateandtime.TimeDurationPicker
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun CreateNewMeetingScreen(navController: NavController){
@@ -44,6 +60,11 @@ fun CreateNewMeetingScreen(navController: NavController){
     val leaderName = remember { mutableStateOf("") }
     //val memberLists = remember { mutableStateOf("") }
     val place = remember { mutableStateOf("") }
+
+    var currentYearMonth by remember { mutableStateOf(YearMonth.now()) }
+    var selectedDate: LocalDate? by remember { mutableStateOf(null) }
+    var dateText by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))) }
+    var showCalendarDialog by remember { mutableStateOf(false) }
 
     ConstraintLayout (modifier = Modifier
         .background(Color.White)
@@ -201,8 +222,37 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
                     )
                 }
-                DatePickerField()
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .height(55.dp)
+                        .background(Color.White, RoundedCornerShape(15.dp))
+                        .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
+                        .clickable(
+                            onClick = { showCalendarDialog = true },
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = dateText,
+                        style = TextStyle(fontSize = 16.sp, color = Color.Black),
+                        modifier = Modifier.padding(start = 20.dp, top = 10.dp, bottom = 10.dp)
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.Filled.DateRange,
+                        contentDescription = "회의 날짜 선택",
+                        modifier = Modifier.padding(end = 10.dp)
+                    )
+                }
             }
+
+
 
             item {
                 Box(
@@ -325,10 +375,24 @@ fun CreateNewMeetingScreen(navController: NavController){
                 }
             }
 
-
-
         }
 
+        if (showCalendarDialog) {
+            Dialog(onDismissRequest = { showCalendarDialog = false }) {
+                val defaultSelected = selectedDate ?: LocalDate.now()
+                DataPickerCalendar(
+                    navController = navController,
+                    initialSelectedDate = defaultSelected,
+                    onDateSelected = { date, isConfirmed ->
+                        if (isConfirmed) {
+                            selectedDate = date
+                            dateText = date.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
+                        }
+                        showCalendarDialog = false
+                    }
+                )
+            }
+        }
 
         Box(
             contentAlignment = Alignment.TopStart,
