@@ -153,6 +153,7 @@ fun HomeScreen(navController: NavController) {
 
 @Composable
 fun MainHomeScreen(navController: NavController){
+    var calendarToggle by remember { mutableStateOf(true) }
     ConstraintLayout (modifier = Modifier
         .background(Color.White)
         .fillMaxSize()){
@@ -160,7 +161,7 @@ fun MainHomeScreen(navController: NavController){
 
         LazyColumn(
             modifier = Modifier
-                .padding(30.dp)
+                .padding(top = 30.dp, start = 30.dp, bottom = 100.dp, end = 30.dp)
                 .fillMaxSize()
                 .constrainAs(scrollList) {
                     top.linkTo(parent.top)
@@ -172,23 +173,43 @@ fun MainHomeScreen(navController: NavController){
         ) {
             item {
                 Spacer(Modifier.height(60.dp))
+                Row(
+                    modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(5.dp),
+                    horizontalArrangement = Arrangement.End,
+                    ){
+                    Text(text = if(calendarToggle) "캘린더" else "리스트"
+                        ,color = md_theme_button_color_blue
+                        ,modifier = Modifier
+                            .padding(end = 5.dp)
+                            .clickable { calendarToggle = !calendarToggle })
+                }
                 Divider(
                     color = Color.Gray,
                     thickness = 1.dp,
                     modifier = Modifier.padding(vertical = 10.dp)
                 )
-                ScheduledMeetingScreen()
-                Canvas(modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)) {
-                    drawLine(
-                        color = Color.Gray,
-                        start = Offset(0f, 0f),
-                        end = Offset(size.width, 0f),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
-                    )
+                if(calendarToggle) {
+                    ScheduledMeetingScreen()
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                    ) {
+                        drawLine(
+                            color = Color.Gray,
+                            start = Offset(0f, 0f),
+                            end = Offset(size.width, 0f),
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                        )
+                    }
+                    MeetingRecordsScreen()
+
                 }
-                MeetingRecordsScreen()
+                else{
+                    CalendarScreen(navController)
+                }
             }
         }
 
@@ -302,3 +323,4 @@ fun MeetingCard() {
         }
     }
 }
+
