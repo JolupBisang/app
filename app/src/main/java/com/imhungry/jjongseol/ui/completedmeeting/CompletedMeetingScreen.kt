@@ -21,26 +21,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.completedmeeting.bottom.CompletedMeetingControlPanel
+import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
 import com.imhungry.jjongseol.ui.component.CustomSeekBar
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
-import com.imhungry.jjongseol.ui.meeting.pager.MeetingSummaryScreen
 import com.imhungry.jjongseol.viewmodel.CompletedMeetingViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun CompletedMeetingScreen(
+    navController: NavController,
     viewModel: CompletedMeetingViewModel = hiltViewModel(),
     onFinish: (SilRokNavigation) -> Unit,
 ) {
     val context = LocalContext.current
 
     CompletedMeetingContent(
+        navController,
         onFinish = onFinish,
     )
 }
@@ -48,6 +51,7 @@ fun CompletedMeetingScreen(
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun CompletedMeetingContent(
+    navController: NavController,
     onFinish: (SilRokNavigation) -> Unit,
     viewModel: CompletedMeetingViewModel = hiltViewModel()
 ) {
@@ -69,6 +73,7 @@ fun CompletedMeetingContent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         val pagerState = rememberPagerState(initialPage = 1)
+        val currentPage = pagerState.currentPage
 
         HorizontalPager(
             count = 3,
@@ -78,50 +83,52 @@ fun CompletedMeetingContent(
                 .weight(0.85f)
         ) { page ->
             when (page) {
-                0 -> MeetingSummaryScreen()
+                0 -> CompletedMeetingSummaryScreen()
                 1 -> CompletedMeetingRecordScreen()
                 2 -> MeetingFeedbackScreen()
             }
         }
 
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            HorizontalPagerIndicator(
-                pagerState = pagerState,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 4.dp, bottom = 4.dp),
-                activeColor = Color(0xFF1E93EF),
-                inactiveColor = Color.LightGray,
-                indicatorWidth = 6.dp,
-                spacing = 4.dp
-            )
-            Spacer(modifier = Modifier.padding(bottom = 4.dp))
-            CustomSeekBar(
-                currentPosition = currentPosition,
-                duration = duration,
-                onValueChange = { currentPosition = it }
-            )
-        }
+        if (currentPage != 0) {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                HorizontalPagerIndicator(
+                    pagerState = pagerState,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 4.dp, bottom = 4.dp),
+                    activeColor = Color(0xFF1E93EF),
+                    inactiveColor = Color.LightGray,
+                    indicatorWidth = 6.dp,
+                    spacing = 4.dp
+                )
+                Spacer(modifier = Modifier.padding(bottom = 4.dp))
+                CustomSeekBar(
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    onValueChange = { currentPosition = it }
+                )
+            }
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(0.15f)
-                .navigationBarsPadding()
-                .padding(bottom = 16.dp)
-        ) {
-            CompletedMeetingControlPanel(
-                currentPosition = currentPosition,
-                duration = duration,
-                onSeek = { currentPosition = it },
-                isPlaying = isPlaying,
-                onTogglePlay = { isPlaying = !isPlaying },
-                modifier = Modifier.fillMaxWidth(),
-                playbackSpeed = playbackSpeed,
-                onSpeedChange = { playbackSpeed = it }
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(0.15f)
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp)
+            ) {
+                CompletedMeetingControlPanel(
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    onSeek = { currentPosition = it },
+                    isPlaying = isPlaying,
+                    onTogglePlay = { isPlaying = !isPlaying },
+                    modifier = Modifier.fillMaxWidth(),
+                    playbackSpeed = playbackSpeed,
+                    onSpeedChange = { playbackSpeed = it }
+                )
+            }
         }
     }
 }

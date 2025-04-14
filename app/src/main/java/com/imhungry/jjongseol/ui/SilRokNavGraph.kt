@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.imhungry.jjongseol.ui.completedmeeting.CompletedMeetingScreen
+import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
 import com.imhungry.jjongseol.ui.home.HomeScreen
 import com.imhungry.jjongseol.ui.login.LoginScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingEndScreen
@@ -104,10 +105,15 @@ fun SilRokNavGraph(
 
         composable(SilRokNavigation.CompletedMeeting.route) {
             CompletedMeetingScreen(
+                navController,
                 onFinish = { destination ->
                     navActions.navigateTo(destination, SilRokNavigation.CompletedMeeting)
                 }
             )
+        }
+
+        composable(SilRokNavigation.CompletedMeetingSummary.route) {
+            CompletedMeetingSummaryScreen()
         }
     }
 }
