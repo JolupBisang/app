@@ -4,11 +4,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Divider
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -20,9 +32,10 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.model.AgendaDto
+import com.imhungry.jjongseol.data.model.agenda.AgendaDto
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.CheckItem
+import com.imhungry.jjongseol.ui.component.CustomDialog
 import com.imhungry.jjongseol.ui.component.TopSheet
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
@@ -36,13 +49,36 @@ fun MeetingWaitingScreen(
 ) {
     val agendas by viewModel.agendaItems.collectAsState()
     val checkedStates by viewModel.checkedStates.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val showDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadAgendas(meetingId)
     }
 
-    val lastCheckedIndex = remember { mutableStateOf(0) }
+    if (errorMessage != null) {
+        showDialog.value = true
+    }
 
+    if (showDialog.value && errorMessage != null) {
+        CustomDialog(
+            description = if (errorMessage == "TOKEN_EXPIRED") "로그인 정보가 만료되었어요. 다시 로그인해주세요." else errorMessage,
+            confirmText = if (errorMessage == "TOKEN_EXPIRED") "로그인 하기" else "홈으로",
+            showDismissButton = false,
+            onDismissRequest = {},
+            onConfirmExit = {
+                showDialog.value = false
+                viewModel.clearErrorMessage()
+                if (errorMessage == "TOKEN_EXPIRED") {
+                    onFinish(SilRokNavigation.Login)
+                } else {
+                    onFinish(SilRokNavigation.Home)
+                }
+            }
+        )
+    }
+
+    val lastCheckedIndex = remember { mutableStateOf(0) }
     val firstUncheckedIndex = checkedStates.indexOfFirst { !it }
     val peekIndex = if (firstUncheckedIndex == -1) lastCheckedIndex.value else firstUncheckedIndex
 
@@ -113,26 +149,36 @@ private fun MeetingContent(
     viewModel: MeetingViewModel
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.weight(0.2f))
-            Box(modifier = Modifier.weight(0.8f)) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "회의가 시작되길\n기다리는 중",
-                        style = MaterialTheme.typography.titleLarge,
-                        textAlign = TextAlign.Center,
-                        color = Color.LightGray
-                    )
-                    StartButtonText { onFinish(SilRokNavigation.Meeting) }
+        val isLoading = agendas.isEmpty() || checkedStates.isEmpty() || peekIndex !in agendas.indices
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color(0xFF86CC3B))
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.weight(0.2f))
+                Box(modifier = Modifier.weight(0.8f)) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "회의가 시작되길\n기다리는 중",
+                            style = MaterialTheme.typography.titleLarge,
+                            textAlign = TextAlign.Center,
+                            color = Color.LightGray
+                        )
+                        StartButtonText { onFinish(SilRokNavigation.Meeting) }
+                    }
                 }
             }
-        }
 
-        if (agendas.isNotEmpty() && checkedStates.isNotEmpty() && peekIndex in agendas.indices) {
             TopSheet(
                 collapsedHeight = 60.dp,
                 peekContent = {
@@ -156,8 +202,6 @@ private fun MeetingContent(
                     }
                 }
             )
-        } else {
-            Text("아젠다를 불러오는 중...", modifier = Modifier.padding(16.dp))
         }
     }
 }

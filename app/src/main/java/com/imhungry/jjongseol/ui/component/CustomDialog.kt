@@ -23,6 +23,7 @@ fun CustomDialog(
     description : String? = null,
     confirmText: String = "확인",
     dismissText: String = "취소",
+    showDismissButton: Boolean = true,
     onDismissRequest: () -> Unit,
     onConfirmExit: () -> Unit
 ) {
@@ -50,10 +51,12 @@ fun CustomDialog(
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                TextButton(onClick = onDismissRequest) {
-                    Text(text = dismissText, color = Color(0xFF1E93EF))
+                if (showDismissButton) {
+                    TextButton(onClick = onDismissRequest) {
+                        Text(text = dismissText, color = Color(0xFF1E93EF))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                 }
-                Spacer(modifier = Modifier.width(8.dp))
                 TextButton(onClick = onConfirmExit) {
                     Text(text = confirmText, color = Color(0xFF1E93EF))
                 }

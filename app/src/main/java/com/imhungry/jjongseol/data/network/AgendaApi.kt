@@ -1,6 +1,6 @@
 package com.imhungry.jjongseol.data.network
 
-import com.imhungry.jjongseol.data.model.AgendaListResponse
+import com.imhungry.jjongseol.data.model.agenda.AgendaListResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 
