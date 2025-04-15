@@ -13,7 +13,7 @@ val localProperties = Properties().apply {
 
 val baseUrl = localProperties.getProperty("base_url") ?: ""
 val oAuthClientId = localProperties.getProperty("oauth_client_id") ?: ""
-val oAuthRedirectUri = localProperties.getProperty("oauth_redirect_uri") ?: ""
+val oAuthRedirectUri = localProperties.getProperty("redirect-uris.app") ?: ""
 
 android {
     namespace = "com.imhungry.jjongseol"

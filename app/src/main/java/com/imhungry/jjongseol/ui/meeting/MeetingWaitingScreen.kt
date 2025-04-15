@@ -20,6 +20,7 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.model.AgendaDto
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.CheckItem
 import com.imhungry.jjongseol.ui.component.TopSheet
@@ -30,13 +31,16 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 @Composable
 fun MeetingWaitingScreen(
     viewModel: MeetingViewModel = hiltViewModel(),
-    onFinish: (SilRokNavigation) -> Unit
+    onFinish: (SilRokNavigation) -> Unit,
+    meetingId: Long = 1L
 ) {
-    val topicItems = listOf(
-        "저메추", "지구는 평평한가?", "35세는 어린이인가?", "가르마 왼쪽 vs 오른쪽", "왼손잡이는 똑똑할까?"
-    )
+    val agendas by viewModel.agendaItems.collectAsState()
+    val checkedStates by viewModel.checkedStates.collectAsState()
 
-    val checkedStates = remember { mutableStateListOf(false, false, false, false, false) }
+    LaunchedEffect(Unit) {
+        viewModel.loadAgendas(meetingId)
+    }
+
     val lastCheckedIndex = remember { mutableStateOf(0) }
 
     val firstUncheckedIndex = checkedStates.indexOfFirst { !it }
@@ -50,11 +54,11 @@ fun MeetingWaitingScreen(
         Box(modifier = Modifier.weight(0.70f)) {
             MeetingContent(
                 onFinish = onFinish,
-                items = topicItems,
+                agendas = agendas,
                 checkedStates = checkedStates,
-                lastCheckedIndex = lastCheckedIndex,
                 peekIndex = peekIndex,
-                firstUncheckedIndex = firstUncheckedIndex
+                firstUncheckedIndex = firstUncheckedIndex,
+                viewModel = viewModel
             )
         }
 
@@ -102,11 +106,11 @@ fun MeetingWaitingScreen(
 @Composable
 private fun MeetingContent(
     onFinish: (SilRokNavigation) -> Unit,
-    items: List<String>,
-    checkedStates: MutableList<Boolean>,
-    lastCheckedIndex: MutableState<Int>,
+    agendas: List<AgendaDto>,
+    checkedStates: List<Boolean>,
     peekIndex: Int,
-    firstUncheckedIndex: Int
+    firstUncheckedIndex: Int,
+    viewModel: MeetingViewModel
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -128,35 +132,33 @@ private fun MeetingContent(
             }
         }
 
-        TopSheet(
-            collapsedHeight = 60.dp,
-            peekContent = {
-                CheckItem(
-                    text = items[peekIndex],
-                    checked = checkedStates[peekIndex],
-                    isFocused = !checkedStates[peekIndex],
-                    onToggle = {
-                        checkedStates[peekIndex] = !checkedStates[peekIndex]
-                        if (checkedStates[peekIndex]) lastCheckedIndex.value = peekIndex
-                    }
-                )
-            },
-            content = {
-                Column {
-                    items.forEachIndexed { i, item ->
-                        CheckItem(
-                            text = item,
-                            checked = checkedStates[i],
-                            isFocused = !checkedStates[i] && firstUncheckedIndex == i,
-                            onToggle = {
-                                checkedStates[i] = !checkedStates[i]
-                                if (checkedStates[i]) lastCheckedIndex.value = i
-                            }
-                        )
+        if (agendas.isNotEmpty() && checkedStates.isNotEmpty() && peekIndex in agendas.indices) {
+            TopSheet(
+                collapsedHeight = 60.dp,
+                peekContent = {
+                    CheckItem(
+                        text = agendas[peekIndex].content,
+                        checked = checkedStates[peekIndex],
+                        isFocused = !checkedStates[peekIndex],
+                        onToggle = { viewModel.toggleAgendaChecked(peekIndex) }
+                    )
+                },
+                content = {
+                    Column {
+                        agendas.forEachIndexed { i, item ->
+                            CheckItem(
+                                text = item.content,
+                                checked = checkedStates[i],
+                                isFocused = !checkedStates[i] && firstUncheckedIndex == i,
+                                onToggle = { viewModel.toggleAgendaChecked(i) }
+                            )
+                        }
                     }
                 }
-            }
-        )
+            )
+        } else {
+            Text("아젠다를 불러오는 중...", modifier = Modifier.padding(16.dp))
+        }
     }
 }
 
