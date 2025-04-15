@@ -1,6 +1,6 @@
 package com.imhungry.jjongseol.data.repository
 
-import com.imhungry.jjongseol.data.model.AgendaDto
+import com.imhungry.jjongseol.data.model.agenda.AgendaDto
 import com.imhungry.jjongseol.data.network.AgendaApi
 import javax.inject.Inject
 

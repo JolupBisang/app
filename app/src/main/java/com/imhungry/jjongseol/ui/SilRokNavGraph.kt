@@ -72,7 +72,8 @@ fun SilRokNavGraph(
             MeetingScreen(
                 onFinish = { destination ->
                     navActions.navigateTo(destination, SilRokNavigation.Meeting)
-                }
+                },
+                meetingId = 1L
             )
         }
 

@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.data.model
+package com.imhungry.jjongseol.data.model.agenda
 
 data class AgendaDto(
     val agendaId: Long,

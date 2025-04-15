@@ -46,6 +46,7 @@ import kotlinx.coroutines.delay
 fun MeetingScreen(
     viewModel: MeetingViewModel = hiltViewModel(),
     onFinish: (SilRokNavigation) -> Unit,
+    meetingId: Long
 ) {
     val context = LocalContext.current
     var audioPermissionGranted by remember { mutableStateOf(false) }
@@ -102,7 +103,8 @@ fun MeetingScreen(
 
     MeetingScreenContent(
         onFinish = onFinish,
-        onExitConfirmed = { viewModel.stopStreamingService() }
+        onExitConfirmed = { viewModel.stopStreamingService() },
+        meetingId = meetingId
     )
 }
 
@@ -112,7 +114,8 @@ fun MeetingScreen(
 fun MeetingScreenContent(
     onFinish: (SilRokNavigation) -> Unit,
     onExitConfirmed: () -> Unit,
-    viewModel: MeetingViewModel = hiltViewModel()
+    viewModel: MeetingViewModel = hiltViewModel(),
+    meetingId: Long
 ) {
     val context = LocalContext.current
     val startTimeMillis = remember {
@@ -152,7 +155,7 @@ fun MeetingScreenContent(
         ) { page ->
             when (page) {
                 0 -> MeetingSummaryScreen()
-                1 -> MeetingRecordScreen()
+                1 -> MeetingRecordScreen(meetingId = meetingId)
                 2 -> MeetingFeedbackScreen()
             }
         }
