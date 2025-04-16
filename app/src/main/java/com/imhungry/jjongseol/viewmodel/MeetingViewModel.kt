@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.data.model.agenda.AgendaDto
 import com.imhungry.jjongseol.data.model.meeting.SummaryItem
+import com.imhungry.jjongseol.data.network.ParticipationRateApi
 import com.imhungry.jjongseol.data.network.SseClient
 import com.imhungry.jjongseol.data.network.SummaryApi
 import com.imhungry.jjongseol.data.repository.AgendaRepository
@@ -29,7 +30,8 @@ class MeetingViewModel @Inject constructor(
     application: Application,
     private val agendaRepository: AgendaRepository,
     private val sseClient: SseClient,
-    private val summaryApi: SummaryApi
+    private val summaryApi: SummaryApi,
+    private val participationRateApi: ParticipationRateApi
 ) : AndroidViewModel(application) {
     private val context by lazy { application.applicationContext }
 
@@ -109,7 +111,6 @@ class MeetingViewModel @Inject constructor(
         return saved?.split(",")?.map { it.toBooleanStrictOrNull() ?: false } ?: emptyList()
     }
 
-
     fun toggleAgendaChecked(index: Int) {
         val updated = _checkedStates.value.toMutableList()
         updated[index] = !updated[index]
@@ -148,6 +149,21 @@ class MeetingViewModel @Inject constructor(
         )
     }
 
+    private val _participationRate = MutableStateFlow<String?>(null)
+    val participationRate: StateFlow<String?> = _participationRate.asStateFlow()
+
+    fun subscribeToParticipationRate(meetingId: Long) {
+        sseClient.subscribeToParticipationRate(
+            meetingId = meetingId,
+            onEventReceived = { rate ->
+                _participationRate.value = rate
+            },
+            onError = { error ->
+                _errorMessage.value = "점유율 수신 실패: $error"
+            }
+        )
+    }
+
     private var summaryTestJob: Job? = null
 
     fun startSendingTestSummary(meetingId: Long) {
@@ -168,6 +184,28 @@ class MeetingViewModel @Inject constructor(
     fun stopSendingTestSummary() {
         summaryTestJob?.cancel()
         summaryTestJob = null
+    }
+
+    private var participationTestJob: Job? = null
+
+    fun startSendingTestParticipationRate(meetingId: Long) {
+        if (participationTestJob?.isActive == true) return
+
+        participationTestJob = viewModelScope.launch {
+            while (isActive) {
+                try {
+                    participationRateApi.sendParticipationRate(meetingId)
+                } catch (e: Exception) {
+                    println("점유율 전송 실패: ${e.message}")
+                }
+                delay(5000)
+            }
+        }
+    }
+
+    fun stopSendingTestParticipationRate() {
+        participationTestJob?.cancel()
+        participationTestJob = null
     }
 
     fun stopSse() {

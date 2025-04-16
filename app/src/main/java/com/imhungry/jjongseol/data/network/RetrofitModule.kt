@@ -60,4 +60,10 @@ object RetrofitModule {
     fun provideSummaryApi(retrofit: Retrofit): SummaryApi {
         return retrofit.create(SummaryApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideParticipationRateApi(retrofit: Retrofit): ParticipationRateApi {
+        return retrofit.create(ParticipationRateApi::class.java)
+    }
 }
