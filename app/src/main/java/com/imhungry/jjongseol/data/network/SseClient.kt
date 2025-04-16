@@ -127,7 +127,7 @@ class SseClient(
                 Log.e("SSE", "Feedback 연결 실패: ${t?.message}")
                 if (!isManuallyClosed) {
                     onError(t?.message ?: "알 수 없는 오류")
-                    reconnectSummary(meetingId, onEventReceived, onError)
+                    reconnectFeedback(meetingId, onEventReceived, onError)
                 }
             }
         })
