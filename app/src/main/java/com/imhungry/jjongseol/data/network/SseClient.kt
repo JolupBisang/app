@@ -15,6 +15,7 @@ class SseClient(
 ) {
     private var summaryEventSource: EventSource? = null
     private var participationEventSource: EventSource? = null
+    private var feedbackEventSource: EventSource? = null
     private var isManuallyClosed = false
 
     fun subscribeToSummary(
@@ -93,12 +94,53 @@ class SseClient(
         })
     }
 
+    fun subscribeToFeedback(
+        meetingId: Long,
+        onEventReceived: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        isManuallyClosed = false
+
+        val request = Request.Builder()
+            .url(BuildConfig.BASE_URL + "api/feedback/subscribe/$meetingId")
+            .header("Authorization", "Bearer ${cookieProvider()?.removePrefix("Bearer ")}")
+            .build()
+
+        val factory = EventSources.createFactory(client)
+        feedbackEventSource = factory.newEventSource(request, object : EventSourceListener() {
+            override fun onOpen(eventSource: EventSource, response: Response) {
+                Log.d("SSE", "Feedback 연결 성공")
+            }
+
+            override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
+                Log.d("SSE", "Feedback 이벤트 수신: $type, data=$data")
+                if (type == "FEEDBACK") {
+                    onEventReceived(data)
+                }
+            }
+
+            override fun onClosed(eventSource: EventSource) {
+                Log.d("SSE", "Feedback 연결 종료")
+            }
+
+            override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
+                Log.e("SSE", "Feedback 연결 실패: ${t?.message}")
+                if (!isManuallyClosed) {
+                    onError(t?.message ?: "알 수 없는 오류")
+                    reconnectSummary(meetingId, onEventReceived, onError)
+                }
+            }
+        })
+    }
+
     fun disconnect() {
         isManuallyClosed = true
         summaryEventSource?.cancel()
         summaryEventSource = null
         participationEventSource?.cancel()
         participationEventSource = null
+        feedbackEventSource?.cancel()
+        feedbackEventSource = null
         Log.d("SSE", "SSE 연결 해제")
     }
 
@@ -123,4 +165,16 @@ class SseClient(
             subscribeToParticipationRate(meetingId, onEventReceived, onError)
         }, 3000)
     }
+
+    private fun reconnectFeedback(
+        meetingId: Long,
+        onEventReceived: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        Handler(Looper.getMainLooper()).postDelayed({
+            Log.d("SSE", "Feedback SSE 재연결 시도 중...")
+            subscribeToSummary(meetingId, onEventReceived, onError)
+        }, 3000)
+    }
+
 }

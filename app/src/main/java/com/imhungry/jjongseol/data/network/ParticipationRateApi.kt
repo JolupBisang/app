@@ -5,5 +5,5 @@ import retrofit2.http.Path
 
 interface ParticipationRateApi {
     @POST("api/participation_rate/send/{meetingId}")
-    suspend fun sendParticipationRate(@Path("meetingId") meetingId: Long)
+    suspend fun sendTestParticipationRate(@Path("meetingId") meetingId: Long)
 }

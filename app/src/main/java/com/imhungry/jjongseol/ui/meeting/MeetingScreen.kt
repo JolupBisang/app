@@ -128,6 +128,8 @@ fun MeetingScreen(
             viewModel.startSendingTestSummary(meetingId)
             viewModel.subscribeToParticipationRate(meetingId)
             viewModel.startSendingTestParticipationRate(meetingId)
+            viewModel.subscribeToFeedback(meetingId) { currentTimeText }
+            viewModel.startSendingTestFeedback(meetingId)
         }
     }
 
@@ -137,6 +139,7 @@ fun MeetingScreen(
             viewModel.stopStreamingService()
             viewModel.stopSendingTestSummary()
             viewModel.stopSendingTestParticipationRate()
+            viewModel.stopSendingTestFeedback()
             viewModel.stopSse()
         },
         meetingId = meetingId,

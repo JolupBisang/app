@@ -7,7 +7,9 @@ import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.data.model.agenda.AgendaDto
+import com.imhungry.jjongseol.data.model.feedback.FeedbackItem
 import com.imhungry.jjongseol.data.model.meeting.SummaryItem
+import com.imhungry.jjongseol.data.network.FeedbackApi
 import com.imhungry.jjongseol.data.network.ParticipationRateApi
 import com.imhungry.jjongseol.data.network.SseClient
 import com.imhungry.jjongseol.data.network.SummaryApi
@@ -31,7 +33,8 @@ class MeetingViewModel @Inject constructor(
     private val agendaRepository: AgendaRepository,
     private val sseClient: SseClient,
     private val summaryApi: SummaryApi,
-    private val participationRateApi: ParticipationRateApi
+    private val participationRateApi: ParticipationRateApi,
+    private val feedbackApi: FeedbackApi
 ) : AndroidViewModel(application) {
     private val context by lazy { application.applicationContext }
 
@@ -141,7 +144,7 @@ class MeetingViewModel @Inject constructor(
                 val cleaned = rawSummary.trim('"')
                 val currentTime = timeProvider()
                 val newItem = SummaryItem(cleaned, currentTime)
-                _summaryList.value = _summaryList.value + newItem
+                _summaryList.value += newItem
             },
             onError = { error ->
                 _errorMessage.value = "요약 수신 실패: $error"
@@ -160,6 +163,24 @@ class MeetingViewModel @Inject constructor(
             },
             onError = { error ->
                 _errorMessage.value = "점유율 수신 실패: $error"
+            }
+        )
+    }
+
+    private val _feedbackList = MutableStateFlow<List<FeedbackItem>>(emptyList())
+    val feedbackList: StateFlow<List<FeedbackItem>> = _feedbackList.asStateFlow()
+
+    fun subscribeToFeedback(meetingId: Long, timeProvider: () -> String) {
+        sseClient.subscribeToFeedback(
+            meetingId = meetingId,
+            onEventReceived = { rawSummary ->
+                val cleaned = rawSummary.trim('"')
+                val currentTime = timeProvider()
+                val newItem = FeedbackItem(cleaned, currentTime)
+                _feedbackList.value += newItem
+            },
+            onError = { error ->
+                _errorMessage.value = "요약 수신 실패: $error"
             }
         )
     }
@@ -194,7 +215,7 @@ class MeetingViewModel @Inject constructor(
         participationTestJob = viewModelScope.launch {
             while (isActive) {
                 try {
-                    participationRateApi.sendParticipationRate(meetingId)
+                    participationRateApi.sendTestParticipationRate(meetingId)
                 } catch (e: Exception) {
                     println("점유율 전송 실패: ${e.message}")
                 }
@@ -206,6 +227,28 @@ class MeetingViewModel @Inject constructor(
     fun stopSendingTestParticipationRate() {
         participationTestJob?.cancel()
         participationTestJob = null
+    }
+
+    private var feedbackTestJob: Job? = null
+
+    fun startSendingTestFeedback(meetingId: Long) {
+        if (feedbackTestJob?.isActive == true) return
+
+        feedbackTestJob = viewModelScope.launch {
+            while (isActive) {
+                try {
+                    feedbackApi.sendTestFeedback(meetingId)
+                } catch (e: Exception) {
+                    println("요약 전송 실패: ${e.message}")
+                }
+                delay(5000)
+            }
+        }
+    }
+
+    fun stopSendingTestFeedback() {
+        feedbackTestJob?.cancel()
+        feedbackTestJob = null
     }
 
     fun stopSse() {
