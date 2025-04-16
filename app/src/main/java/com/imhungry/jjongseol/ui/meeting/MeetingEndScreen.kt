@@ -24,15 +24,25 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.ui.SilRokNavigation
 import kotlinx.coroutines.delay
 
 @Composable
-fun MeetingEndScreen() {
+fun MeetingEndScreen(
+    onFinish: (SilRokNavigation) -> Unit
+) {
     var isCompleted by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         delay(3000)
         isCompleted = true
+    }
+
+    LaunchedEffect(isCompleted) {
+        if (isCompleted) {
+            delay(1000)
+            onFinish(SilRokNavigation.CompletedMeeting)
+        }
     }
 
     Column(

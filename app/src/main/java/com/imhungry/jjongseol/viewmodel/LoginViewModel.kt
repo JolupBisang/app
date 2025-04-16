@@ -1,7 +1,6 @@
 package com.imhungry.jjongseol.viewmodel
 
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -23,7 +22,6 @@ class LoginViewModel @Inject constructor(
         loginRepository.saveToken(token)
         _isLoggedIn.value = true
     }
-
 
     fun launchGoogleLogin(activityContext: Context) {
         authRepository.launchGoogleOAuth(activityContext)

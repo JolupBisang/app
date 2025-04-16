@@ -22,8 +22,8 @@ class RealTimeAudioStreamer(
     private val webSocketManager: WebSocketManager,
     private val cacheDir: File
 ) {
-    private val sampleRate = 16000
-    private val frameSize = 320
+    private val sampleRate = 48000
+    private val frameSize = 960
     private val bufferSize = AudioRecord.getMinBufferSize(
         sampleRate,
         AudioFormat.CHANNEL_IN_MONO,

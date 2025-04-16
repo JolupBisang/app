@@ -12,33 +12,26 @@ import androidx.compose.material.Divider
 import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.imhungry.jjongseol.data.meeting.SummaryItem
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.jjongseol.ui.component.ConversationSummaryBar
 import com.imhungry.jjongseol.ui.component.SummaryListItem
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
-fun MeetingSummaryScreen() {
+fun MeetingSummaryScreen(
+    viewModel: MeetingViewModel = hiltViewModel()
+) {
+    val summaryList by viewModel.summaryList.collectAsState()
+    val participationRate by viewModel.participationRate.collectAsState()
+
     val data = listOf(45f, 30f, 20f, 10f, 5f)
     val names = listOf("지안", "상정", "원영", "유진", "은경")
-    val summaryList = listOf(
-        SummaryItem("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
-        SummaryItem("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
-        SummaryItem("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
-        SummaryItem("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
-        SummaryItem("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),
-        SummaryItem("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
-        SummaryItem("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
-        SummaryItem("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
-        SummaryItem("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
-        SummaryItem("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),SummaryItem("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
-        SummaryItem("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
-        SummaryItem("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
-        SummaryItem("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
-        SummaryItem("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),)
 
     Column(
         modifier = Modifier
@@ -66,10 +59,12 @@ fun MeetingSummaryScreen() {
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
 
-                    ConversationSummaryBar(
-                        participantData = data,
-                        participantNames = names
-                    )
+                    if (participationRate != null) {
+                        ConversationSummaryBar(
+                            participantData = data,
+                            participantNames = names
+                        )
+                    }
                 }
 
                 Divider(
@@ -92,9 +87,8 @@ fun MeetingSummaryScreen() {
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-
-                    summaryList.forEach { summary ->
-                        SummaryListItem(summary)
+                    summaryList.forEach { item ->
+                        SummaryListItem(item.text, item.time)
                     }
                 }
             }

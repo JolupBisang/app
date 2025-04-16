@@ -17,10 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.imhungry.jjongseol.data.meeting.SummaryItem
 
 @Composable
-fun SummaryListItem(item: SummaryItem) {
+fun SummaryListItem(
+    summary: String,
+    timeText: String
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -39,14 +41,14 @@ fun SummaryListItem(item: SummaryItem) {
             Spacer(modifier = Modifier.width(12.dp))
 
             Text(
-                text = item.text,
+                text = summary,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f)
             )
         }
 
         Text(
-            text = item.time,
+            text = timeText,
             style = MaterialTheme.typography.bodySmall,
             color = Color.Gray,
             modifier = Modifier

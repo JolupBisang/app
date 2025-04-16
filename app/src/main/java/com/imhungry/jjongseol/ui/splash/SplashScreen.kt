@@ -30,9 +30,9 @@ fun SplashScreen(
     LaunchedEffect(Unit) {
         delay(2000)
         if (isLoggedIn == true) {
-            onFinish(SilRokNavigation.Home)
+            onFinish(SilRokNavigation.MeetingWaiting)
         } else {
-            onFinish(SilRokNavigation.Home)
+            onFinish(SilRokNavigation.Login)
         }
     }
 

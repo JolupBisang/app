@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +47,7 @@ import kotlinx.coroutines.delay
 fun MeetingScreen(
     viewModel: MeetingViewModel = hiltViewModel(),
     onFinish: (SilRokNavigation) -> Unit,
+    meetingId: Long
 ) {
     val context = LocalContext.current
     var audioPermissionGranted by remember { mutableStateOf(false) }
@@ -62,6 +64,13 @@ fun MeetingScreen(
     ) { isGranted ->
         notificationPermissionGranted = isGranted
     }
+
+    val startTimeMillis = remember {
+        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+        prefs.getLong("meetingStartedAt", System.currentTimeMillis())
+    }
+
+    var elapsedSeconds by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
         val audioGranted = ContextCompat.checkSelfPermission(
@@ -93,34 +102,6 @@ fun MeetingScreen(
         }
     }
 
-    LaunchedEffect(audioPermissionGranted, notificationPermissionGranted) {
-        if (audioPermissionGranted && notificationPermissionGranted) {
-            viewModel.startStreamingService()
-        }
-    }
-
-    MeetingScreenContent(
-        onFinish = onFinish,
-        onExitConfirmed = { viewModel.stopStreamingService() }
-    )
-}
-
-@SuppressLint("DefaultLocale")
-@OptIn(ExperimentalPagerApi::class)
-@Composable
-fun MeetingScreenContent(
-    onFinish: (SilRokNavigation) -> Unit,
-    onExitConfirmed: () -> Unit,
-    viewModel: MeetingViewModel = hiltViewModel()
-) {
-    val context = LocalContext.current
-    val startTimeMillis = remember {
-        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-        prefs.getLong("meetingStartedAt", System.currentTimeMillis())
-    }
-
-    var elapsedSeconds by remember { mutableStateOf(0) }
-
     LaunchedEffect(Unit) {
         while (true) {
             val now = System.currentTimeMillis()
@@ -136,6 +117,46 @@ fun MeetingScreenContent(
         String.format("%02d:%02d:%02d", hours, minutes, seconds)
     }
 
+    val currentTimeText by rememberUpdatedState(timeText)
+
+    LaunchedEffect(audioPermissionGranted, notificationPermissionGranted) {
+        if (audioPermissionGranted && notificationPermissionGranted) {
+            viewModel.startStreamingService()
+            viewModel.resumeEncoding()
+
+            viewModel.subscribeToSummary(meetingId) { currentTimeText }
+            viewModel.startSendingTestSummary(meetingId)
+            viewModel.subscribeToParticipationRate(meetingId)
+            viewModel.startSendingTestParticipationRate(meetingId)
+            viewModel.subscribeToFeedback(meetingId) { currentTimeText }
+            viewModel.startSendingTestFeedback(meetingId)
+        }
+    }
+
+    MeetingScreenContent(
+        onFinish = onFinish,
+        onExitConfirmed = {
+            viewModel.stopStreamingService()
+            viewModel.stopSendingTestSummary()
+            viewModel.stopSendingTestParticipationRate()
+            viewModel.stopSendingTestFeedback()
+            viewModel.stopSse()
+        },
+        meetingId = meetingId,
+        timeText = timeText
+    )
+}
+
+@SuppressLint("DefaultLocale")
+@OptIn(ExperimentalPagerApi::class)
+@Composable
+fun MeetingScreenContent(
+    onFinish: (SilRokNavigation) -> Unit,
+    onExitConfirmed: () -> Unit,
+    viewModel: MeetingViewModel = hiltViewModel(),
+    meetingId: Long,
+    timeText: String
+) {
     Column(modifier = Modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)
@@ -151,7 +172,7 @@ fun MeetingScreenContent(
         ) { page ->
             when (page) {
                 0 -> MeetingSummaryScreen()
-                1 -> MeetingRecordScreen()
+                1 -> MeetingRecordScreen(meetingId = meetingId)
                 2 -> MeetingFeedbackScreen()
             }
         }
@@ -197,7 +218,8 @@ fun MeetingScreenContent(
             logoutIcon = R.drawable.logout,
             powerIcon = R.drawable.power,
             onFinish = onFinish,
-            onExitConfirmed = onExitConfirmed
+            onExitConfirmed = onExitConfirmed,
+            viewModel = viewModel
         )
     }
 }
