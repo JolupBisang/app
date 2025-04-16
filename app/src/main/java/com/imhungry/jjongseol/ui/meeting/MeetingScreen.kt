@@ -134,6 +134,7 @@ fun MeetingScreen(
         onExitConfirmed = {
             viewModel.stopStreamingService()
             viewModel.stopSendingTestSummary()
+            viewModel.stopSse()
         },
         meetingId = meetingId,
         timeText = timeText

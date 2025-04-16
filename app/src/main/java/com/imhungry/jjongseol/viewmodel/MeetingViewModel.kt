@@ -169,4 +169,8 @@ class MeetingViewModel @Inject constructor(
         summaryTestJob?.cancel()
         summaryTestJob = null
     }
+
+    fun stopSse() {
+        sseClient.disconnect()
+    }
 }
