@@ -31,11 +31,13 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,15 +52,25 @@ import java.util.UUID
 data class AgendaItem(val id: String = UUID.randomUUID().toString(), var text: String, var isPlaceholder: Boolean = true)
 
 @Composable
-fun AgendaListScreen() {
-    val itemList = remember { mutableStateListOf<AgendaItem>() }
+fun AgendaListScreen(agendaList: SnapshotStateList<String>){
+    val itemList = remember {
+        mutableStateListOf<AgendaItem>().apply {
+            agendaList.forEach { text -> add(AgendaItem(text = text, isPlaceholder = false)) }
+        }
+    }
+
+    LaunchedEffect(itemList.size) {
+        agendaList.clear()
+        agendaList.addAll(itemList.map { it.text })
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(modifier = Modifier
-            .fillMaxWidth()
-            .height(180.dp)
-            .padding(8.dp)
-            .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .padding(8.dp)
+                .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
         ) {
             items(items = itemList, key = { it.id }) { item ->
                 ListItemWithCircle(
@@ -66,19 +78,30 @@ fun AgendaListScreen() {
                     onEdit = { newText ->
                         item.text = newText
                         item.isPlaceholder = false
+                        agendaList.clear()
+                        agendaList.addAll(itemList.map { it.text })
                     },
-                    onDelete = { itemList.remove(item) }
+                    onDelete = {
+                        itemList.remove(item)
+                        agendaList.clear()
+                        agendaList.addAll(itemList.map { it.text })
+                    }
                 )
             }
         }
 
-        Button(modifier = Modifier.fillMaxWidth().padding(
-            start = 8.dp, end = 8.dp, top = 3.dp, bottom = 8.dp),
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, end = 8.dp, top = 3.dp, bottom = 8.dp),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(backgroundColor = Color.LightGray),
             onClick = {
-                itemList.add(AgendaItem(text = "새 아젠다", isPlaceholder = true))
-            }) {
+                val newItem = AgendaItem(text = "새 아젠다", isPlaceholder = true)
+                itemList.add(newItem)
+                agendaList.add(newItem.text)
+            }
+        ) {
             Text("+", style = TextStyle(color = md_theme_button_color_blue, fontSize = 25.sp))
         }
     }
@@ -129,16 +152,25 @@ fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () 
                     }*/
                     onEdit(editText)
                 },
-                textStyle = TextStyle(fontSize = 15.sp, color = if (item.isPlaceholder) Color.Black else Color.Black),
+                textStyle = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, color = if (item.isPlaceholder) Color.Black else Color.Black),
                 placeholder = {
-                    if (item.isPlaceholder) Text(item.text, style = TextStyle(color = Color.Gray))
+                    if (item.isPlaceholder) {
+                        Text(
+                            item.text,
+                            style = TextStyle(color = Color.Gray),
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                        )
+                    }
                 }
             )
         } else {
             Text(
                 text = editText,
-                style = TextStyle(fontSize = 15.sp, color = if (item.isPlaceholder) Color.Gray else Color.Black),
-                modifier = Modifier.weight(1f)
+                style = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, color = if (item.isPlaceholder) Color.Gray else Color.Black),
+                modifier = Modifier
+                    .weight(1f)
+                    .align(Alignment.CenterVertically),
+                maxLines = 1
             )
         }
 

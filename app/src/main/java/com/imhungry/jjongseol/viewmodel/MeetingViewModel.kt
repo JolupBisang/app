@@ -14,6 +14,8 @@ import com.imhungry.jjongseol.data.network.ParticipationRateApi
 import com.imhungry.jjongseol.data.network.SseClient
 import com.imhungry.jjongseol.data.network.SummaryApi
 import com.imhungry.jjongseol.data.repository.AgendaRepository
+import com.imhungry.jjongseol.data.model.MeetingReq
+import com.imhungry.jjongseol.data.network.MeetingApi
 import com.imhungry.jjongseol.service.AudioStreamingService
 import com.imhungry.jjongseol.util.handleHttpException
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,7 +36,8 @@ class MeetingViewModel @Inject constructor(
     private val sseClient: SseClient,
     private val summaryApi: SummaryApi,
     private val participationRateApi: ParticipationRateApi,
-    private val feedbackApi: FeedbackApi
+    private val feedbackApi: FeedbackApi,
+    private val meetingApi: MeetingApi
 ) : AndroidViewModel(application) {
 
     private val context by lazy { application.applicationContext }
@@ -58,6 +61,28 @@ class MeetingViewModel @Inject constructor(
         else
             context.startService(intent)
     }
+
+    //새 회의 생성
+    fun createMeeting(
+        meetingReq: MeetingReq,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val response = meetingApi.createMeeting(meetingReq)
+                if (response.isSuccessful) {
+                    onSuccess()
+                } else {
+                    onError("에러 발생: ${response.code()} - ${response.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                onError("예외 발생: ${e.message}")
+            }
+        }
+    }
+
+
 
     fun stopStreamingService() {
         context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE).edit()

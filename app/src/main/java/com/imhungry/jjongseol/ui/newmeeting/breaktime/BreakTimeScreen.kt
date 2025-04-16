@@ -10,10 +10,7 @@ import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,18 +19,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun BreakTimeRow() {
-    var breakTime by remember { mutableStateOf("") }
-    var breakTimeMinute by remember { mutableStateOf("") }
+fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<String>) {
 
     fun handleBreakTimeChange(newBreakTime: String) {
         if (newBreakTime.all { it.isDigit() }) {
-            breakTime = newBreakTime
-            if (breakTime.isNotEmpty() && breakTimeMinute.isNotEmpty()) {
-                val breakTimeInt = breakTime.toIntOrNull() ?: 0
-                val breakTimeMinuteInt = breakTimeMinute.toIntOrNull() ?: 0
+            breakTime.value = newBreakTime
+            if (breakTime.value.isNotEmpty() && breakTimeMinute.value.isNotEmpty()) {
+                val breakTimeInt = breakTime.value.toIntOrNull() ?: 0
+                val breakTimeMinuteInt = breakTimeMinute.value.toIntOrNull() ?: 0
                 if (breakTimeInt <= breakTimeMinuteInt) {
-                    breakTimeMinute = "0"
+                    breakTimeMinute.value = "0"
                 }
             }
         }
@@ -41,12 +36,12 @@ fun BreakTimeRow() {
 
     fun handleBreakTimeMinuteChange(newBreakTimeMinute: String) {
         if (newBreakTimeMinute.all { it.isDigit() }) {
-            val breakTimeInt = breakTime.toIntOrNull() ?: 0
+            val breakTimeInt = breakTime.value.toIntOrNull() ?: 0
             val newBreakTimeMinuteInt = newBreakTimeMinute.toIntOrNull() ?: 0
-            if (breakTime.isNotEmpty() && newBreakTimeMinuteInt >= breakTimeInt) {
-                breakTimeMinute = "0"
+            if (breakTime.value.isNotEmpty() && newBreakTimeMinuteInt >= breakTimeInt) {
+                breakTimeMinute.value = "0"
             } else {
-                breakTimeMinute = newBreakTimeMinute
+                breakTimeMinute.value = newBreakTimeMinute
             }
         }
     }
@@ -55,7 +50,7 @@ fun BreakTimeRow() {
         Row(modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
-                value = breakTime,
+                value = breakTime.value,
                 onValueChange = ::handleBreakTimeChange,
                 modifier = Modifier
                     .weight(1f)
@@ -64,12 +59,7 @@ fun BreakTimeRow() {
                 singleLine = true,
                 textStyle = TextStyle(fontSize = 16.sp),
                 placeholder = {
-                    Text(
-                        "",
-                        style = TextStyle(
-                            color = Color.LightGray
-                        )
-                    )
+                    Text("", style = TextStyle(color = Color.LightGray))
                 },
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     textColor = Color.Black,
@@ -89,7 +79,7 @@ fun BreakTimeRow() {
             Spacer(Modifier.width(20.dp))
 
             OutlinedTextField(
-                value = breakTimeMinute,
+                value = breakTimeMinute.value,
                 onValueChange = ::handleBreakTimeMinuteChange,
                 modifier = Modifier
                     .weight(1f)
@@ -98,12 +88,7 @@ fun BreakTimeRow() {
                 singleLine = true,
                 textStyle = TextStyle(fontSize = 16.sp),
                 placeholder = {
-                    Text(
-                        "",
-                        style = TextStyle(
-                            color = Color.LightGray
-                        )
-                    )
+                    Text("", style = TextStyle(color = Color.LightGray))
                 },
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     textColor = Color.Black,
