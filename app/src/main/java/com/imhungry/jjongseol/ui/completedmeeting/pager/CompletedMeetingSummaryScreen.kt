@@ -34,7 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.meeting.SummaryItem
+import com.imhungry.jjongseol.data.model.meeting.SummaryItem
 import com.imhungry.jjongseol.ui.component.ConversationSummaryBar
 import com.imhungry.jjongseol.ui.component.SummaryListItem
 
@@ -161,7 +161,7 @@ fun CompletedMeetingSummaryScreen() {
                             .padding(horizontal = 36.dp)
                     ) {
                         summaryList.forEach { summary ->
-                            SummaryListItem(summary)
+                            SummaryListItem(summary.text, "11:51:50")
                         }
                     }
                 },
