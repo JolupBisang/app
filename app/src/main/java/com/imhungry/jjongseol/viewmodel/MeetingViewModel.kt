@@ -36,15 +36,16 @@ class MeetingViewModel @Inject constructor(
     private val participationRateApi: ParticipationRateApi,
     private val feedbackApi: FeedbackApi
 ) : AndroidViewModel(application) {
+
     private val context by lazy { application.applicationContext }
 
+    // 음성 Streaming control
     fun pauseEncoding() = AudioStreamingService.pauseEncoding()
     fun resumeEncoding() = AudioStreamingService.resumeEncoding()
 
     fun startStreamingService() {
         val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-        val alreadyStarted = prefs.contains("meetingStartedAt")
-        if (!alreadyStarted) {
+        if (!prefs.contains("meetingStartedAt")) {
             prefs.edit()
                 .putBoolean("isMeetingOngoing", true)
                 .putLong("meetingStartedAt", System.currentTimeMillis())
@@ -59,15 +60,14 @@ class MeetingViewModel @Inject constructor(
     }
 
     fun stopStreamingService() {
-        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-        prefs.edit()
+        context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE).edit()
             .putBoolean("isMeetingOngoing", false)
             .remove("meetingStartedAt")
             .apply()
-
         context.stopService(Intent(context, AudioStreamingService::class.java))
     }
 
+    // 아젠다 state
     private val _agendaItems = MutableStateFlow<List<AgendaDto>>(emptyList())
     val agendaItems: StateFlow<List<AgendaDto>> = _agendaItems.asStateFlow()
 
@@ -86,22 +86,12 @@ class MeetingViewModel @Inject constructor(
             try {
                 val agendas = agendaRepository.getAgendas(meetingId)
                 _agendaItems.value = agendas
-
                 val savedStates = loadCheckedStatesFromPrefs(meetingId)
-                _checkedStates.value = if (savedStates.size == agendas.size) {
-                    savedStates
-                } else {
-                    agendas.map { it.isCompleted }
-                }
-
+                _checkedStates.value = if (savedStates.size == agendas.size) savedStates else agendas.map { it.isCompleted }
                 loadedMeetingId = meetingId
             } catch (e: HttpException) {
                 val error = handleHttpException(e)
-                if (e.code() == 401) {
-                    _errorMessage.value = "TOKEN_EXPIRED"
-                } else {
-                    _errorMessage.value = error.message
-                }
+                _errorMessage.value = if (e.code() == 401) "TOKEN_EXPIRED" else error.message
             } catch (e: Exception) {
                 _errorMessage.value = "알 수 없는 오류가 발생했습니다."
             }
@@ -109,87 +99,85 @@ class MeetingViewModel @Inject constructor(
     }
 
     private fun loadCheckedStatesFromPrefs(meetingId: Long): List<Boolean> {
-        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-        val saved = prefs.getString("checked_states_$meetingId", null)
+        val saved = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+            .getString("checked_states_$meetingId", null)
         return saved?.split(",")?.map { it.toBooleanStrictOrNull() ?: false } ?: emptyList()
     }
 
     fun toggleAgendaChecked(index: Int) {
-        val updated = _checkedStates.value.toMutableList()
-        updated[index] = !updated[index]
+        val updated = _checkedStates.value.toMutableList().apply {
+            this[index] = !this[index]
+        }
         _checkedStates.value = updated
-
         saveCheckedStatesToPrefs()
     }
 
     private fun saveCheckedStatesToPrefs() {
-        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-        val editor = prefs.edit()
         val states = _checkedStates.value.joinToString(",") { it.toString() }
-        editor.putString("checked_states_${loadedMeetingId ?: -1}", states)
-        editor.apply()
+        context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE).edit()
+            .putString("checked_states_${loadedMeetingId ?: -1}", states)
+            .apply()
     }
 
     fun clearErrorMessage() {
         _errorMessage.value = null
     }
 
+    // Summary SSE
     private val _summaryList = MutableStateFlow<List<SummaryItem>>(emptyList())
     val summaryList: StateFlow<List<SummaryItem>> = _summaryList.asStateFlow()
 
     fun subscribeToSummary(meetingId: Long, timeProvider: () -> String) {
         sseClient.subscribeToSummary(
-            meetingId = meetingId,
-            onEventReceived = { rawSummary ->
-                val cleaned = rawSummary.trim('"')
-                val currentTime = timeProvider()
-                val newItem = SummaryItem(cleaned, currentTime)
-                _summaryList.value += newItem
+            meetingId,
+            onEventReceived = {
+                _summaryList.value += SummaryItem(it.trim('"'), timeProvider())
             },
-            onError = { error ->
-                _errorMessage.value = "요약 수신 실패: $error"
+            onError = {
+                _errorMessage.value = "요약 수신 실패: $it"
             }
         )
     }
 
+    // Participation SSE
     private val _participationRate = MutableStateFlow<String?>(null)
     val participationRate: StateFlow<String?> = _participationRate.asStateFlow()
 
     fun subscribeToParticipationRate(meetingId: Long) {
         sseClient.subscribeToParticipationRate(
-            meetingId = meetingId,
-            onEventReceived = { rate ->
-                _participationRate.value = rate
+            meetingId,
+            onEventReceived = {
+                _participationRate.value = it
             },
-            onError = { error ->
-                _errorMessage.value = "점유율 수신 실패: $error"
+            onError = {
+                _errorMessage.value = "점유율 수신 실패: $it"
             }
         )
     }
 
+    // Feedback SSE
     private val _feedbackList = MutableStateFlow<List<FeedbackItem>>(emptyList())
     val feedbackList: StateFlow<List<FeedbackItem>> = _feedbackList.asStateFlow()
 
     fun subscribeToFeedback(meetingId: Long, timeProvider: () -> String) {
         sseClient.subscribeToFeedback(
-            meetingId = meetingId,
-            onEventReceived = { rawSummary ->
-                val cleaned = rawSummary.trim('"')
-                val currentTime = timeProvider()
-                val newItem = FeedbackItem(cleaned, currentTime)
-                _feedbackList.value += newItem
+            meetingId,
+            onEventReceived = {
+                _feedbackList.value += FeedbackItem(it.trim('"'), timeProvider())
             },
-            onError = { error ->
-                _errorMessage.value = "요약 수신 실패: $error"
+            onError = {
+                _errorMessage.value = "피드백 수신 실패: $it"
             }
         )
     }
 
+    // Test send jobs
     private var summaryTestJob: Job? = null
+    private var participationTestJob: Job? = null
+    private var feedbackTestJob: Job? = null
 
     fun startSendingTestSummary(meetingId: Long) {
         if (summaryTestJob?.isActive == true) return
-
         summaryTestJob = viewModelScope.launch {
             while (isActive) {
                 try {
@@ -207,11 +195,8 @@ class MeetingViewModel @Inject constructor(
         summaryTestJob = null
     }
 
-    private var participationTestJob: Job? = null
-
     fun startSendingTestParticipationRate(meetingId: Long) {
         if (participationTestJob?.isActive == true) return
-
         participationTestJob = viewModelScope.launch {
             while (isActive) {
                 try {
@@ -229,17 +214,14 @@ class MeetingViewModel @Inject constructor(
         participationTestJob = null
     }
 
-    private var feedbackTestJob: Job? = null
-
     fun startSendingTestFeedback(meetingId: Long) {
         if (feedbackTestJob?.isActive == true) return
-
         feedbackTestJob = viewModelScope.launch {
             while (isActive) {
                 try {
                     feedbackApi.sendTestFeedback(meetingId)
                 } catch (e: Exception) {
-                    println("요약 전송 실패: ${e.message}")
+                    println("피드백 전송 실패: ${e.message}")
                 }
                 delay(5000)
             }
