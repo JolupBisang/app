@@ -14,6 +14,7 @@ val localProperties = Properties().apply {
 val baseUrl = localProperties.getProperty("base_url") ?: ""
 val oAuthClientId = localProperties.getProperty("oauth_client_id") ?: ""
 val oAuthRedirectUri = localProperties.getProperty("redirect-uris.app") ?: ""
+val ipAddress = localProperties.getProperty("ip_address") ?: ""
 
 android {
     namespace = "com.imhungry.jjongseol"
@@ -31,6 +32,7 @@ android {
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
         buildConfigField("String", "OAUTH_CLIENT_ID", "\"$oAuthClientId\"")
         buildConfigField("String", "OAUTH_REDIRECT_URI", "\"$oAuthRedirectUri\"")
+        buildConfigField("String", "IP_ADDRESS", "\"$ipAddress\"")
     }
 
     buildTypes {
@@ -91,5 +93,6 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("com.arthenica:ffmpeg-kit-full:6.0")
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar", "*.aar"))))
-
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp-sse:4.12.0")
 }

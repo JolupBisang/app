@@ -7,22 +7,29 @@ import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.data.model.agenda.AgendaDto
+import com.imhungry.jjongseol.data.model.meeting.SummaryItem
+import com.imhungry.jjongseol.data.network.SseClient
+import com.imhungry.jjongseol.data.network.SummaryApi
 import com.imhungry.jjongseol.data.repository.AgendaRepository
 import com.imhungry.jjongseol.service.AudioStreamingService
 import com.imhungry.jjongseol.util.handleHttpException
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
-import java.io.IOException
 import javax.inject.Inject
 
 @HiltViewModel
 class MeetingViewModel @Inject constructor(
     application: Application,
-    private val agendaRepository: AgendaRepository
+    private val agendaRepository: AgendaRepository,
+    private val sseClient: SseClient,
+    private val summaryApi: SummaryApi
 ) : AndroidViewModel(application) {
     private val context by lazy { application.applicationContext }
 
@@ -121,5 +128,45 @@ class MeetingViewModel @Inject constructor(
 
     fun clearErrorMessage() {
         _errorMessage.value = null
+    }
+
+    private val _summaryList = MutableStateFlow<List<SummaryItem>>(emptyList())
+    val summaryList: StateFlow<List<SummaryItem>> = _summaryList.asStateFlow()
+
+    fun subscribeToSummary(meetingId: Long, timeProvider: () -> String) {
+        sseClient.subscribeToSummary(
+            meetingId = meetingId,
+            onEventReceived = { rawSummary ->
+                val cleaned = rawSummary.trim('"')
+                val currentTime = timeProvider()
+                val newItem = SummaryItem(cleaned, currentTime)
+                _summaryList.value = _summaryList.value + newItem
+            },
+            onError = { error ->
+                _errorMessage.value = "요약 수신 실패: $error"
+            }
+        )
+    }
+
+    private var summaryTestJob: Job? = null
+
+    fun startSendingTestSummary(meetingId: Long) {
+        if (summaryTestJob?.isActive == true) return
+
+        summaryTestJob = viewModelScope.launch {
+            while (isActive) {
+                try {
+                    summaryApi.sendTestSummary(meetingId)
+                } catch (e: Exception) {
+                    println("요약 전송 실패: ${e.message}")
+                }
+                delay(5000)
+            }
+        }
+    }
+
+    fun stopSendingTestSummary() {
+        summaryTestJob?.cancel()
+        summaryTestJob = null
     }
 }

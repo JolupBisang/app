@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.imhungry.jjongseol.BuildConfig
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.audio.RealTimeAudioStreamer
 import com.imhungry.jjongseol.data.network.WebSocketManager
@@ -39,7 +40,7 @@ class AudioStreamingService : Service() {
 
         val ws = WebSocketManager().apply {
             connect(
-                url = "ws://10.0.2.2:8080/ws/meeting",
+                url = "ws://" + BuildConfig.IP_ADDRESS + ":8080/ws/meeting",
                 onMessage = { Log.d("WebSocket", "서버 응답: $it") },
                 onFailure = { Log.e("WebSocket", "연결 실패", it) }
             )
