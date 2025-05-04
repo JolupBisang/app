@@ -37,6 +37,10 @@ class MeetingViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    fun setErrorMessage(message: String) {
+        _errorMessage.value = message
+    }
+
     fun clearErrorMessage() {
         _errorMessage.value = null
     }

@@ -2,6 +2,7 @@ package com.imhungry.jjongseol.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.data.model.agenda.AgendaDto
@@ -15,8 +16,10 @@ import javax.inject.Inject
 @HiltViewModel
 class AgendaViewModel @Inject constructor(
     private val agendaRepository: AgendaRepository,
-    private val context: Application
+    private val context: Application,
 ) : AndroidViewModel(context) {
+
+    var onError: ((String) -> Unit)? = null
 
     private val _agendaItems = MutableStateFlow<List<AgendaDto>>(emptyList())
     val agendaItems: StateFlow<List<AgendaDto>> = _agendaItems
@@ -27,13 +30,16 @@ class AgendaViewModel @Inject constructor(
     private var loadedMeetingId: Long? = null
 
     fun loadAgendas(meetingId: Long) {
-        if (loadedMeetingId == meetingId && _agendaItems.value.isNotEmpty()) return
-
         viewModelScope.launch {
-            val agendas = agendaRepository.getAgendas(meetingId)
-            _agendaItems.value = agendas
-            _checkedStates.value = loadCheckedStatesFromPrefs(meetingId, agendas)
-            loadedMeetingId = meetingId
+            try {
+                val agendas = agendaRepository.getAgendas(meetingId)
+                _agendaItems.value = agendas
+                _checkedStates.value = loadCheckedStatesFromPrefs(meetingId, agendas)
+                loadedMeetingId = meetingId
+            } catch (e: Exception) {
+                Log.e("Agenda", "아젠다 로딩 실패", e)
+                onError?.invoke("아젠다 로딩 실패: ${e.message}")
+            }
         }
     }
 
