@@ -8,7 +8,8 @@ class AgendaRepository @Inject constructor(
     private val agendaApi: AgendaApi
 ) {
     suspend fun getAgendas(meetingId: Long): List<AgendaDto> {
-        return agendaApi.getAgendas(meetingId).agendaDetails
+        val response = agendaApi.getAgendas(meetingId)
+        return response.data.agendaDetails
     }
 }
 

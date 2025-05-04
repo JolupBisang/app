@@ -149,7 +149,7 @@ private fun MeetingContent(
     viewModel: MeetingViewModel
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
-        val isLoading = agendas.isEmpty() || checkedStates.isEmpty() || peekIndex !in agendas.indices
+        val isLoading = agendas.isNullOrEmpty() || checkedStates.isNullOrEmpty() || peekIndex !in agendas.indices
 
         if (isLoading) {
             Box(

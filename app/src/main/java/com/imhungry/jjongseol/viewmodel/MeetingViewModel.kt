@@ -69,12 +69,12 @@ class MeetingViewModel @Inject constructor(
 
     // 아젠다 state
     private val _agendaItems = MutableStateFlow<List<AgendaDto>>(emptyList())
-    val agendaItems: StateFlow<List<AgendaDto>> = _agendaItems.asStateFlow()
+    val agendaItems: StateFlow<List<AgendaDto>> = _agendaItems
 
     private var loadedMeetingId: Long? = null
 
     private val _checkedStates = MutableStateFlow<List<Boolean>>(emptyList())
-    val checkedStates: StateFlow<List<Boolean>> = _checkedStates.asStateFlow()
+    val checkedStates: StateFlow<List<Boolean>> = _checkedStates
 
     val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
