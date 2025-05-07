@@ -107,9 +107,7 @@ fun MeetingScreen(
                 onFinish = onFinish,
                 onExitConfirmed = {
                     meetingViewModel.stopStreamingService()
-                    meetingViewModel.stopSendingTestSummary()
-                    meetingViewModel.stopSendingTestParticipationRate()
-                    meetingViewModel.stopSendingTestFeedback()
+                    meetingViewModel.stopSendingTestData()
                     meetingViewModel.stopSse()
                 },
                 viewModel = meetingViewModel,
@@ -132,11 +130,9 @@ private fun MeetingInitController(
             meetingViewModel.startStreamingService()
             meetingViewModel.resumeEncoding()
             meetingViewModel.subscribeToSummary(meetingId, timeProvider)
-            meetingViewModel.startSendingTestSummary(meetingId)
             meetingViewModel.subscribeToParticipationRate(meetingId)
-            meetingViewModel.startSendingTestParticipationRate(meetingId)
             meetingViewModel.subscribeToFeedback(meetingId, timeProvider)
-            meetingViewModel.startSendingTestFeedback(meetingId)
+            meetingViewModel.startSendingTestData(meetingId)
         }
     }
 }
