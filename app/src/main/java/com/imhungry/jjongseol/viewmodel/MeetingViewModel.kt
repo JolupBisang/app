@@ -5,14 +5,17 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.controller.StreamingController
 import com.imhungry.jjongseol.controller.TestDataSender
+import com.imhungry.jjongseol.data.model.MeetingReq
 import com.imhungry.jjongseol.data.model.error.ApiError
 import com.imhungry.jjongseol.data.model.feedback.FeedbackItem
 import com.imhungry.jjongseol.data.model.meeting.SummaryItem
+import com.imhungry.jjongseol.data.network.MeetingApi
 import com.imhungry.jjongseol.data.network.SseClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -20,7 +23,8 @@ class MeetingViewModel @Inject constructor(
     application: Application,
     private val sseClient: SseClient,
     private val streamingController: StreamingController,
-    private val testDataSender: TestDataSender
+    private val testDataSender: TestDataSender,
+    private val meetingApi: MeetingApi
 ) : AndroidViewModel(application) {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -35,6 +39,26 @@ class MeetingViewModel @Inject constructor(
 
     fun clearErrorMessage() {
         _errorMessage.value = null
+    }
+
+    //새 회의 생성
+    fun createMeeting(
+        meetingReq: MeetingReq,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val response = meetingApi.createMeeting(meetingReq)
+                if (response.isSuccessful) {
+                    onSuccess()
+                } else {
+                    onError("에러 발생: ${response.code()} - ${response.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                onError("예외 발생: ${e.message}")
+            }
+        }
     }
 
     fun startStreamingService() = streamingController.startStreamingService()
