@@ -8,10 +8,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,28 +47,30 @@ fun MeetingControlPanel(
     var showDialog by remember { mutableStateOf(false) }
     var showLeaveDialog by remember { mutableStateOf(false) }
 
+    val iconColor = Color(0xFFB0B0B0)
+
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .wrapContentHeight()
+            .padding(vertical = 20.dp, horizontal = 16.dp)
     ) {
         Box(
-            modifier = Modifier
-                .weight(0.35f)
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = timeText,
                 fontSize = 24.sp,
-                color = Color(0xFFB0B0B0)
+                color = iconColor
             )
         }
 
         Row(
             modifier = Modifier
-                .weight(0.65f)
                 .fillMaxWidth()
-                .fillMaxHeight()
-                .padding(top = 8.dp)
+                .padding(top = 18.dp)
         ) {
             Spacer(modifier = Modifier.weight(1f))
 
@@ -75,94 +78,100 @@ fun MeetingControlPanel(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(
-                        id = if (micEnabled && isMicOn) R.drawable.mic else micIcon
-                    ),
-                    contentDescription = "마이크",
-                    modifier = Modifier
-                        .size(36.dp)
-                        .let { baseModifier ->
-                            if (micEnabled) {
-                                baseModifier.clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    val newState = !isMicOn
-                                    isMicOn = newState
-                                    onMicToggle?.invoke(newState)
-                                }
-                            } else baseModifier
-                        }
+                ControlIcon(
+                    resId = if (micEnabled && isMicOn) R.drawable.mic else micIcon,
+                    description = "마이크",
+                    enabled = micEnabled,
+                    onClick = {
+                        isMicOn = !isMicOn
+                        onMicToggle?.invoke(isMicOn)
+                    }
                 )
             }
 
             Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 16.dp),
+                modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.End
             ) {
-                Image(
-                    painter = painterResource(id = logoutIcon),
-                    contentDescription = "나가기",
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            if (micEnabled) {
-                                showLeaveDialog = true
-                            }
-                        }
+                ControlIcon(
+                    resId = logoutIcon,
+                    description = "나가기",
+                    enabled = micEnabled,
+                    onClick = { showLeaveDialog = true }
                 )
 
                 Spacer(modifier = Modifier.size(12.dp))
 
-                Image(
-                    painter = painterResource(id = powerIcon),
-                    contentDescription = "종료",
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            if (micEnabled) {
-                                showDialog = true
-                            }
-                        }
+                ControlIcon(
+                    resId = powerIcon,
+                    description = "종료",
+                    enabled = micEnabled,
+                    onClick = { showDialog = true }
                 )
             }
         }
     }
 
     if (showDialog) {
-        CustomDialog(
+        ExitDialog(
             description = "회의를 종료하시겠습니까?",
             confirmText = "종료",
-            dismissText = "취소",
-            onDismissRequest = { showDialog = false },
-            onConfirmExit = {
+            onConfirm = {
                 showDialog = false
                 onExitConfirmed()
                 onFinish(SilRokNavigation.MeetingEnd)
-            }
+            },
+            onDismiss = { showDialog = false }
         )
     }
 
     if (showLeaveDialog) {
-        CustomDialog(
+        ExitDialog(
             description = "회의에서 나가시겠습니까?",
             confirmText = "나가기",
-            dismissText = "취소",
-            onDismissRequest = { showLeaveDialog = false },
-            onConfirmExit = {
+            onConfirm = {
                 showLeaveDialog = false
                 viewModel.pauseEncoding()
                 onFinish(SilRokNavigation.Home)
-            }
+            },
+            onDismiss = { showLeaveDialog = false }
         )
     }
 }
+
+@Composable
+private fun ControlIcon(
+    resId: Int,
+    description: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Image(
+        painter = painterResource(id = resId),
+        contentDescription = description,
+        modifier = Modifier
+            .size(36.dp)
+            .let { if (enabled) it.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ) else it }
+    )
+}
+
+@Composable
+private fun ExitDialog(
+    description: String,
+    confirmText: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    CustomDialog(
+        description = description,
+        confirmText = confirmText,
+        dismissText = "취소",
+        onConfirmExit = onConfirm,
+        onDismissRequest = onDismiss
+    )
+}
+

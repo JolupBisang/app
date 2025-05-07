@@ -1,10 +1,11 @@
 package com.imhungry.jjongseol.data.network
 
+import com.imhungry.jjongseol.data.model.ApiResponse
 import com.imhungry.jjongseol.data.model.agenda.AgendaListResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 
 interface AgendaApi {
     @GET("api/agendas/{meetingId}")
-    suspend fun getAgendas(@Path("meetingId") meetingId: Long): AgendaListResponse
+    suspend fun getAgendas(@Path("meetingId") meetingId: Long): ApiResponse<AgendaListResponse>
 }
