@@ -1,6 +1,5 @@
 package com.imhungry.jjongseol.ui.newmeeting
 
-import SearchScreen
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,6 +27,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,7 +41,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import android.util.Log
+import com.imhungry.jjongseol.data.model.MeetingReq
 import com.imhungry.jjongseol.ui.home.CalendarGrid
 import com.imhungry.jjongseol.ui.home.CalendarScreen
 import com.imhungry.jjongseol.ui.home.DataPickerCalendar
@@ -49,22 +52,39 @@ import com.imhungry.jjongseol.ui.home.schedules
 import com.imhungry.jjongseol.ui.newmeeting.agenda.AgendaListScreen
 import com.imhungry.jjongseol.ui.newmeeting.breaktime.BreakTimeRow
 import com.imhungry.jjongseol.ui.newmeeting.dateandtime.TimeDurationPicker
+import com.imhungry.jjongseol.ui.newmeeting.invite.SearchScreen
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
+import com.imhungry.jjongseol.viewmodel.UserViewModel
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun CreateNewMeetingScreen(navController: NavController){
+    val meetingViewModel: MeetingViewModel = hiltViewModel()
+    val userViewModel: UserViewModel = hiltViewModel()
+
     val meetingTitle = remember { mutableStateOf("") }
     val leaderName = remember { mutableStateOf("") }
-    //val memberLists = remember { mutableStateOf("") }
+
+    val selectedMembers = remember { mutableStateOf(listOf<String>()) }
+
+    var selectedDate: LocalDate? by remember { mutableStateOf(null) }
+    var dateText by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))) }
+    var showCalendarDialog by remember { mutableStateOf(false) }
+
+    var startTime by remember { mutableStateOf("") }
+    var endTime by remember { mutableStateOf("") }
+    var durationInMinutes by remember { mutableStateOf(0) }
+
     val place = remember { mutableStateOf("") }
 
-    var currentYearMonth by remember { mutableStateOf(YearMonth.now()) }
-    var selectedDate: LocalDate? by remember { mutableStateOf(null) }
-    var dateText by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))) }
-    var showCalendarDialog by remember { mutableStateOf(false) }
+    val agendaList = remember { mutableStateListOf<String>() }
+
+    val breakTime = remember { mutableStateOf("") }
+    val breakTimeMinute = remember { mutableStateOf("") }
 
     ConstraintLayout (modifier = Modifier
         .background(Color.White)
@@ -204,7 +224,10 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
                     )
                 }
-                SearchScreen()
+                SearchScreen(
+                    selectedEmails = selectedMembers,
+                    userApi = userViewModel.userApi
+                )
             }
             item {
                 Box(
@@ -270,7 +293,11 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
                     )
                 }
-                TimeDurationPicker()
+                TimeDurationPicker(
+                    onStartTimeChanged = { startTime = it },
+                    onEndTimeChanged = { endTime = it },
+                    onDurationChanged = { durationInMinutes = it }
+                )
             }
 
             item {
@@ -332,7 +359,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                     )
                 }
 
-                AgendaListScreen()
+                AgendaListScreen(agendaList = agendaList)
             }
 
             item{
@@ -353,7 +380,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
                     }
 
-                    BreakTimeRow()
+                    BreakTimeRow(breakTime = breakTime, breakTimeMinute = breakTimeMinute)
                 }
 
             }
@@ -369,7 +396,38 @@ fun CreateNewMeetingScreen(navController: NavController){
                     ),
                     elevation = null,
                     onClick = {
-                        navController.navigate("CompleteNewMeeting")
+                        val agendas = agendaList.toList()
+                        val participants = selectedMembers.value
+
+                        if (agendas.isEmpty() || participants.isEmpty()) {
+                            Log.e("MeetingCreate", "참석자나 아젠다가 비어있음")
+                            return@Button
+                        }
+
+                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+                        val scheduledStartTime = LocalDateTime.parse("${dateText}T$startTime", formatter)
+
+                        val meetingReq = MeetingReq(
+                            title = meetingTitle.value,
+                            leader = leaderName.value,
+                            location = place.value,
+                            targetTime = durationInMinutes,
+                            restInterval = breakTime.value.toIntOrNull() ?: 0,
+                            scheduledStartTime = scheduledStartTime.toString(),
+                            agendas = agendas,
+                            participants = participants
+                        )
+
+
+                        meetingViewModel.createMeeting(
+                            meetingReq = meetingReq,
+                            onSuccess = {
+                                navController.navigate("CompleteNewMeeting")
+                            },
+                            onError = { errorMessage ->
+                                Log.e("MeetingCreate", errorMessage)
+                            }
+                        )
                     }) {
                     Text("생성하기", style = TextStyle(color = md_theme_button_color_blue, fontSize = 25.sp))
                 }
@@ -386,7 +444,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                     onDateSelected = { date, isConfirmed ->
                         if (isConfirmed) {
                             selectedDate = date
-                            dateText = date.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"))
+                            dateText = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                         }
                         showCalendarDialog = false
                     }

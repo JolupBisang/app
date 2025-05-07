@@ -1,3 +1,5 @@
+package com.imhungry.jjongseol.ui.newmeeting.invite
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -6,58 +8,56 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.*
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Surface
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
+import com.imhungry.jjongseol.data.network.UserApi
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.imhungry.jjongseol.viewmodel.UserViewModel
 
 @Composable
-fun SearchScreen() {
-    val itemList = listOf(
-        "yujin@example.com"
-        ,"yujin123@example.com"
-        ,"wonyoung@example.com"
-        ,"wonyoung2025@example.com"
-        ,"eunkyung@example.com"
-        ,"ek_kyung@example.com"
-        ,"jian_k@example.com"
-        ,"ji_an@example.com"
-        ,"sangjeong@example.com"
-        ,"s_jeong@example.com"
-        ,"yujin3000@example.com"
-        ,"yujin_office@example.com"
-        ,"wonyoung_star@example.com"
-        ,"wonyoung1999@example.com"
-        ,"eunkyung_pro@example.com"
-        ,"ek_love@example.com"
-        ,"jian_music@example.com"
-        ,"ji_an_life@example.com"
-        ,"sangjeong_tech@example.com"
-        ,"s_jeong123@example.com"
-        ,"sangjeong_new@example.com"
-        ,"jian_hobby@example.com"
-        ,"eunkyung_joy@example.com"
-        ,"won_2027@example.com"
-        ,"yu_jin2025@example.com"
-    )
+fun SearchScreen(
+    selectedEmails: MutableState<List<String>>,
+    userApi: UserApi
+) {
     var query by remember { mutableStateOf("") }
-    var selectedEmails by remember { mutableStateOf(listOf<String>()) }
+    var matchedEmail by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
-    Column() {
+    Column {
         OutlinedTextField(
             value = query,
-            onValueChange = { query = it },
+            onValueChange = {
+                query = it
+                matchedEmail = null
+                if (it.isNotBlank()) {
+                    scope.launch {
+                        try {
+                            val response = userApi.getUserByEmail(it)
+                            matchedEmail = response.email
+                        } catch (e: HttpException) {
+                            if (e.code() == 404) {
+                                matchedEmail = null
+                            }
+                        }
+                    }
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp)
@@ -78,28 +78,24 @@ fun SearchScreen() {
             )
         )
 
-        if (query.isNotEmpty()) {
-            val filteredList = itemList.filter { it.startsWith(query, ignoreCase = true) && !selectedEmails.contains(it) }
-            LazyColumn(modifier = Modifier.heightIn(max = 120.dp)
+        if (matchedEmail != null && !selectedEmails.value.contains(matchedEmail)) {
+            Column(modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 15.dp, end = 15.dp, bottom = 8.dp)
-                .border(1.dp, Color.Gray,RoundedCornerShape(10.dp)),) {
-                items(filteredList) { item ->
-                    Text(
-                        text = item,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 15.dp)
-                            .clickable {
-                                selectedEmails = selectedEmails + item
-                                query = ""
-                            }
-                            .padding(8.dp),
-                        color = Color.DarkGray,
-                        fontSize = 13.sp
-                    )
-
-                }
+                .padding(horizontal = 15.dp)
+                .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))) {
+                Text(
+                    text = matchedEmail!!,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            selectedEmails.value = selectedEmails.value + matchedEmail!!
+                            query = ""
+                            matchedEmail = null
+                        }
+                        .padding(8.dp),
+                    color = Color.DarkGray,
+                    fontSize = 13.sp
+                )
             }
         }
 
@@ -109,8 +105,10 @@ fun SearchScreen() {
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            selectedEmails.forEach { email ->
-                Chip(email, onRemove = { selectedEmails = selectedEmails - email })
+            selectedEmails.value.forEach { email ->
+                Chip(email, onRemove = {
+                    selectedEmails.value = selectedEmails.value - email
+                })
             }
         }
     }

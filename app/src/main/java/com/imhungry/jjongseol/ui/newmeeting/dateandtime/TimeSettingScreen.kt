@@ -18,12 +18,54 @@ import androidx.compose.ui.viewinterop.AndroidView
 import java.util.*
 
 @Composable
-fun TimeDurationPicker() {
+fun TimeDurationPicker(
+    onStartTimeChanged: (String) -> Unit,
+    onEndTimeChanged: (String) -> Unit,
+    onDurationChanged: (Int) -> Unit
+) {
     var startTime by remember { mutableStateOf("HH:MM") }
     var endTime by remember { mutableStateOf("HH:MM") }
     var durationInMinutes by remember { mutableStateOf("") }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
+
+    LaunchedEffect(startTime) {
+        if (startTime.matches(Regex("\\d{2}:\\d{2}"))) {
+            onStartTimeChanged(startTime)
+            durationInMinutes.toIntOrNull()?.let { duration ->
+                calculateEndTime(startTime, duration) {
+                    endTime = it
+                    onEndTimeChanged(it)
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(endTime) {
+        if (endTime.matches(Regex("\\d{2}:\\d{2}"))) {
+            onEndTimeChanged(endTime)
+            if (startTime.matches(Regex("\\d{2}:\\d{2}"))) {
+                updateDurationFromTimes(startTime, endTime) {
+                    durationInMinutes = it.toString()
+                    onDurationChanged(it)
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(durationInMinutes) {
+        if (durationInMinutes.isNotEmpty()) {
+            durationInMinutes.toIntOrNull()?.let { duration ->
+                onDurationChanged(duration)
+                if (startTime.matches(Regex("\\d{2}:\\d{2}"))) {
+                    calculateEndTime(startTime, duration) {
+                        endTime = it
+                        onEndTimeChanged(it)
+                    }
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth().padding(8.dp),
@@ -31,7 +73,7 @@ fun TimeDurationPicker() {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier=Modifier.weight(10f)) {
-                TimePickerButton("시작 시간", startTime,Modifier ) {
+                TimePickerButton("시작 시간", startTime) {
                     showStartTimePicker = true
                 }
             }
@@ -39,7 +81,7 @@ fun TimeDurationPicker() {
             Text("~", style = MaterialTheme.typography.h6)
             Spacer(Modifier.weight(1f))
             Box(modifier=Modifier.weight(10f)) {
-                TimePickerButton("종료 시간", endTime, Modifier) {
+                TimePickerButton("종료 시간", endTime) {
                     showEndTimePicker = true
                 }
             }
@@ -48,11 +90,6 @@ fun TimeDurationPicker() {
                 Box(modifier=Modifier.weight(4f)) {
                     DurationInput(durationInMinutes, onDurationChange = { newValue ->
                         durationInMinutes = newValue
-                        if (startTime != "HH:MM" && newValue.isNotEmpty()) {
-                            calculateEndTime(startTime, newValue.toInt()) { calculatedEndTime ->
-                                endTime = calculatedEndTime
-                            }
-                        }
                     })
                 }
                 Spacer(Modifier.width(10.dp))
@@ -66,11 +103,6 @@ fun TimeDurationPicker() {
                 onConfirm = { selectedTime ->
                     startTime = selectedTime
                     showStartTimePicker = false
-                    if (endTime != "HH:MM") {
-                        updateDurationFromTimes(startTime, endTime) {
-                            durationInMinutes = it.toString()
-                        }
-                    }
                 },
                 onDismiss = {
                     showStartTimePicker = false
@@ -84,18 +116,12 @@ fun TimeDurationPicker() {
                 onConfirm = { selectedTime ->
                     endTime = selectedTime
                     showEndTimePicker = false
-                    if (startTime != "HH:MM") {
-                        updateDurationFromTimes(startTime, endTime) {
-                            durationInMinutes = it.toString()
-                        }
-                    }
                 },
                 onDismiss = {
                     showEndTimePicker = false
                 }
             )
         }
-
     }
 }
 
