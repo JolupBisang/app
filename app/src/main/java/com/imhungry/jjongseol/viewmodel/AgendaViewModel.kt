@@ -2,15 +2,17 @@ package com.imhungry.jjongseol.viewmodel
 
 import android.app.Application
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.data.model.agenda.AgendaDto
+import com.imhungry.jjongseol.data.model.error.ApiError
 import com.imhungry.jjongseol.data.repository.AgendaRepository
+import com.imhungry.jjongseol.util.handleHttpException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -19,7 +21,7 @@ class AgendaViewModel @Inject constructor(
     private val context: Application,
 ) : AndroidViewModel(context) {
 
-    var onError: ((String) -> Unit)? = null
+    var onError: ((ApiError) -> Unit)? = null
 
     private val _agendaItems = MutableStateFlow<List<AgendaDto>>(emptyList())
     val agendaItems: StateFlow<List<AgendaDto>> = _agendaItems
@@ -36,10 +38,13 @@ class AgendaViewModel @Inject constructor(
                 _agendaItems.value = agendas
                 _checkedStates.value = loadCheckedStatesFromPrefs(meetingId, agendas)
                 loadedMeetingId = meetingId
+            } catch (e: HttpException) {
+                val apiError = handleHttpException(e)
+                onError?.invoke(apiError)
             } catch (e: Exception) {
-                Log.e("Agenda", "아젠다 로딩 실패", e)
-                onError?.invoke("아젠다 로딩 실패: ${e.message}")
+                onError?.invoke(ApiError(message = e.message, errorId = null))
             }
+
         }
     }
 

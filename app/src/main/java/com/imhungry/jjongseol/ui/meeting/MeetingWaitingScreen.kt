@@ -49,10 +49,9 @@ fun MeetingWaitingScreen(
     val errorMessage by meetingViewModel.errorMessage.collectAsState()
     val showDialog = remember { mutableStateOf(false) }
 
-    // 아젠다 로딩 시작
     LaunchedEffect(meetingId) {
-        agendaViewModel.onError = {
-            meetingViewModel.setErrorMessage(it)
+        agendaViewModel.onError = { apiError ->
+            meetingViewModel.setError(apiError)
         }
         agendaViewModel.loadAgendas(meetingId)
     }
@@ -113,19 +112,20 @@ private fun ErrorDialogSection(
     meetingViewModel: MeetingViewModel
 ) {
     if (errorMessage != null) showDialog.value = true
+    val isTokenExpired = errorMessage == "TOKEN_EXPIRED"
 
     if (showDialog.value && errorMessage != null) {
         CustomDialog(
-            description = if (errorMessage == "TOKEN_EXPIRED")
-                "로그인 정보가 만료되었어요. 다시 로그인해주세요."
+            description = if (isTokenExpired)
+                "로그인 정보가 만료되었어요.\n다시 로그인해주세요."
             else errorMessage,
-            confirmText = if (errorMessage == "TOKEN_EXPIRED") "로그인 하기" else "홈으로",
+            confirmText = if (isTokenExpired) "로그인 하기" else "홈으로",
             showDismissButton = false,
             onDismissRequest = {},
             onConfirmExit = {
                 showDialog.value = false
                 meetingViewModel.clearErrorMessage()
-                val destination = if (errorMessage == "TOKEN_EXPIRED") SilRokNavigation.Login else SilRokNavigation.Home
+                val destination = if (isTokenExpired) SilRokNavigation.Login else SilRokNavigation.Home
                 onFinish(destination)
             }
         )

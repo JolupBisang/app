@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.controller.StreamingController
 import com.imhungry.jjongseol.controller.TestDataSender
+import com.imhungry.jjongseol.data.model.error.ApiError
 import com.imhungry.jjongseol.data.model.feedback.FeedbackItem
 import com.imhungry.jjongseol.data.model.meeting.SummaryItem
 import com.imhungry.jjongseol.data.network.SseClient
@@ -25,8 +26,11 @@ class MeetingViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    fun setErrorMessage(message: String) {
-        _errorMessage.value = message
+    fun setError(apiError: ApiError) {
+        _errorMessage.value = when (apiError.message) {
+            "만료된 토큰입니다." -> "TOKEN_EXPIRED"
+            else -> apiError.message ?: "알 수 없는 오류 발생"
+        }
     }
 
     fun clearErrorMessage() {
