@@ -76,8 +76,10 @@ class MeetingViewModel @Inject constructor(
     val feedbackList: StateFlow<List<FeedbackItem>> = _feedbackList.asStateFlow()
 
     fun subscribeToSummary(meetingId: Long, timeProvider: () -> String) {
-        sseClient.subscribeToSummary(
-            meetingId,
+        sseClient.subscribeToEvent(
+            endpoint = "summary",
+            meetingId = meetingId,
+            eventType = "SUMMARY",
             onEventReceived = {
                 _summaryList.value += SummaryItem(it.trim('"'), timeProvider())
             },
@@ -88,8 +90,10 @@ class MeetingViewModel @Inject constructor(
     }
 
     fun subscribeToParticipationRate(meetingId: Long) {
-        sseClient.subscribeToParticipationRate(
-            meetingId,
+        sseClient.subscribeToEvent(
+            endpoint = "participation_rate",
+            meetingId = meetingId,
+            eventType = "PARTICIPATION_RATE",
             onEventReceived = {
                 _participationRate.value = it
             },
@@ -100,8 +104,10 @@ class MeetingViewModel @Inject constructor(
     }
 
     fun subscribeToFeedback(meetingId: Long, timeProvider: () -> String) {
-        sseClient.subscribeToFeedback(
-            meetingId,
+        sseClient.subscribeToEvent(
+            endpoint = "feedback",
+            meetingId = meetingId,
+            eventType = "FEEDBACK",
             onEventReceived = {
                 _feedbackList.value += FeedbackItem(it.trim('"'), timeProvider())
             },
