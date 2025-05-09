@@ -123,4 +123,10 @@ class MeetingViewModel @Inject constructor(
         testDataSender.stopParticipation()
         testDataSender.stopFeedback()
     }
+
+    fun markAllFeedbackAsRead() {
+        _feedbackList.value = _feedbackList.value.map {
+            if (!it.isRead) it.copy(isRead = true) else it
+        }
+    }
 }
