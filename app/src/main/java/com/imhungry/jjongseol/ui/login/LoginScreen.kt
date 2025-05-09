@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -52,14 +53,14 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(Color(0xFFF1EBE0)),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.weight(1.6f))
 
         Image(
-            painter = painterResource(id = R.drawable.login_image),
-            contentDescription = "login image",
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "logo",
             modifier = Modifier.size(200.dp)
         )
 
