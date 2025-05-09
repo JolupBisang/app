@@ -44,11 +44,8 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import android.util.Log
-import com.imhungry.jjongseol.data.model.MeetingReq
-import com.imhungry.jjongseol.ui.home.CalendarGrid
-import com.imhungry.jjongseol.ui.home.CalendarScreen
+import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.ui.home.DataPickerCalendar
-import com.imhungry.jjongseol.ui.home.schedules
 import com.imhungry.jjongseol.ui.newmeeting.agenda.AgendaListScreen
 import com.imhungry.jjongseol.ui.newmeeting.breaktime.BreakTimeRow
 import com.imhungry.jjongseol.ui.newmeeting.dateandtime.TimeDurationPicker
@@ -58,7 +55,6 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import com.imhungry.jjongseol.viewmodel.UserViewModel
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 @Composable

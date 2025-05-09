@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.SilRokNavigation
-import com.imhungry.jjongseol.ui.component.CustomDialog
+import com.imhungry.jjongseol.ui.component.dialog.CustomDialog
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable

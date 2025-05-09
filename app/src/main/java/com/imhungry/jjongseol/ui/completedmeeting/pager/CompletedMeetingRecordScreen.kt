@@ -41,9 +41,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.chat.ChatMessage
-import com.imhungry.jjongseol.ui.component.ChatBubble
-import com.imhungry.jjongseol.ui.component.CheckItem
+import com.imhungry.jjongseol.data.model.chat.ChatMessage
+import com.imhungry.jjongseol.ui.component.chat.ChatBubble
+import com.imhungry.jjongseol.ui.component.checklist.CheckItem
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable

@@ -29,7 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.ui.component.PlaybackSpeedBottomSheet
+import com.imhungry.jjongseol.ui.component.summary.PlaybackSpeedBottomSheet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

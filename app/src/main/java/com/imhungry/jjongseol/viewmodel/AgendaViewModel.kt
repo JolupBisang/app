@@ -7,7 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.data.model.agenda.AgendaDto
 import com.imhungry.jjongseol.data.model.error.ApiError
 import com.imhungry.jjongseol.data.repository.AgendaRepository
-import com.imhungry.jjongseol.util.handleHttpException
+import com.imhungry.jjongseol.data.network.client.handleHttpException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

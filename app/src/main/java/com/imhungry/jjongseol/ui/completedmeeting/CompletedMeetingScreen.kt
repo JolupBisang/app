@@ -29,7 +29,7 @@ import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.completedmeeting.bottom.CompletedMeetingControlPanel
 import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
-import com.imhungry.jjongseol.ui.component.CustomSeekBar
+import com.imhungry.jjongseol.ui.component.seekbar.CustomSeekBar
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.viewmodel.CompletedMeetingViewModel
 import kotlinx.coroutines.delay

@@ -38,7 +38,7 @@ import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.SilRokNavigation
-import com.imhungry.jjongseol.ui.component.CustomDialog
+import com.imhungry.jjongseol.ui.component.dialog.CustomDialog
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen

@@ -13,7 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.imhungry.jjongseol.ui.component.Notification
+import com.imhungry.jjongseol.ui.component.feedback.Notification
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable

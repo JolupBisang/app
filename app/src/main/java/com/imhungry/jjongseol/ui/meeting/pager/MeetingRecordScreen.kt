@@ -1,7 +1,6 @@
 package com.imhungry.jjongseol.ui.meeting.pager
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,12 +27,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.imhungry.jjongseol.data.chat.ChatMessage
-import com.imhungry.jjongseol.ui.component.ChatBubble
-import com.imhungry.jjongseol.ui.component.CheckItem
-import com.imhungry.jjongseol.ui.component.MeetingTerminationNotification
-import com.imhungry.jjongseol.ui.component.Notification
-import com.imhungry.jjongseol.ui.component.TopSheet
+import com.imhungry.jjongseol.data.model.chat.ChatMessage
+import com.imhungry.jjongseol.ui.component.chat.ChatBubble
+import com.imhungry.jjongseol.ui.component.checklist.CheckItem
+import com.imhungry.jjongseol.ui.component.dialog.MeetingTerminationNotification
+import com.imhungry.jjongseol.ui.component.feedback.Notification
+import com.imhungry.jjongseol.ui.component.layout.TopSheet
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.coroutineScope
