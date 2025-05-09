@@ -41,7 +41,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".service.AudioStreamingService"
+            android:name=".feature.audio.AudioStreamingService"
             android:foregroundServiceType="microphone"
             android:exported="false"/>
     </application>

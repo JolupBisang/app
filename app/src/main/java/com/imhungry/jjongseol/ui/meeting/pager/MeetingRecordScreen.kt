@@ -1,11 +1,12 @@
 package com.imhungry.jjongseol.ui.meeting.pager
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,19 +17,27 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerInputScope
+import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.imhungry.jjongseol.data.chat.ChatMessage
-import com.imhungry.jjongseol.ui.component.ChatBubble
-import com.imhungry.jjongseol.ui.component.CheckItem
-import com.imhungry.jjongseol.ui.component.MeetingTerminationNotification
-import com.imhungry.jjongseol.ui.component.Notification
-import com.imhungry.jjongseol.ui.component.TopSheet
+import com.imhungry.jjongseol.data.model.chat.ChatMessage
+import com.imhungry.jjongseol.ui.component.chat.ChatBubble
+import com.imhungry.jjongseol.ui.component.checklist.CheckItem
+import com.imhungry.jjongseol.ui.component.dialog.MeetingTerminationNotification
+import com.imhungry.jjongseol.ui.component.feedback.Notification
+import com.imhungry.jjongseol.ui.component.layout.TopSheet
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun MeetingRecordScreen(
@@ -38,7 +47,7 @@ fun MeetingRecordScreen(
 ) {
     val agendas by agendaViewModel.agendaItems.collectAsState()
     val checkedStates by agendaViewModel.checkedStates.collectAsState()
-
+    val feedbackList by meetingViewModel.feedbackList.collectAsState()
 
     LaunchedEffect(meetingId) {
         agendaViewModel.loadAgendas(meetingId)
@@ -47,13 +56,7 @@ fun MeetingRecordScreen(
     val lastCheckedIndex = remember { mutableStateOf(0) }
     val firstUncheckedIndex = checkedStates.indexOfFirst { !it }
     val peekIndex = if (firstUncheckedIndex == -1) lastCheckedIndex.value else firstUncheckedIndex
-
-    val showNotification = remember { mutableStateOf(false) }
-    val message = remember { mutableStateOf("우리, 이쁜.딸. 얼굴만큼.고운.말 스자.^^ -엄마가") }
-    val timestamp = remember { mutableStateOf("00:02:10") }
-
     val showTerminationNotification = remember { mutableStateOf(false) }
-
     val isLoading = agendas.isEmpty() || checkedStates.isEmpty() || peekIndex !in agendas.indices
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -130,16 +133,89 @@ fun MeetingRecordScreen(
                     )
                 }
 
-                if (showNotification.value) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Notification(
-                        visible = true,
-                        message = message.value,
-                        time = timestamp.value,
-                        isRead = true
+                val latestFeedback = feedbackList.lastOrNull()
+                var visible by remember(latestFeedback) { mutableStateOf(latestFeedback != null) }
+
+                LaunchedEffect(latestFeedback) {
+                    if (latestFeedback != null) {
+                        visible = true
+                        delay(4000)
+                        visible = false
+                    }
+                }
+
+                if (latestFeedback != null && visible) {
+                    SwipeToDismissNotification(
+                        message = latestFeedback.text,
+                        time = latestFeedback.time,
+                        onDismiss = { visible = false }
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun SwipeToDismissNotification(
+    message: String,
+    time: String,
+    onDismiss: () -> Unit
+) {
+    val offsetX = remember { Animatable(0f) }
+    val threshold = 200f
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .pointerInput(Unit) {
+                coroutineScope {
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { _, dragAmount ->
+                            launch {
+                                val newOffset = offsetX.value + dragAmount
+                                offsetX.snapTo(newOffset.coerceIn(-1000f, 1000f))
+                            }
+                        }
+                    )
+                }
+            }
+            .pointerInput(Unit) {
+                coroutineScope {
+                    detectDragEnd {
+                        if (kotlin.math.abs(offsetX.value) > threshold) {
+                            onDismiss()
+                        } else {
+                            launch {
+                                offsetX.animateTo(0f)
+                            }
+                        }
+                    }
+                }
+            }
+            .offset { IntOffset(offsetX.value.toInt(), 0) }
+    ) {
+        Notification(
+            visible = true,
+            message = message,
+            time = time,
+            isRead = true
+        )
+    }
+}
+
+suspend fun PointerInputScope.detectDragEnd(onDragEnd: () -> Unit) {
+    coroutineScope {
+        awaitPointerEventScope {
+            do {
+                val event = awaitPointerEvent()
+                val change = event.changes.firstOrNull()
+                if (change?.changedToUpIgnoreConsumed() == true) {
+                    onDragEnd()
+                    break
+                }
+            } while (true)
         }
     }
 }

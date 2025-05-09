@@ -1,13 +1,11 @@
 package com.imhungry.jjongseol.ui.newmeeting.invite
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Surface
 import androidx.compose.material.TextFieldDefaults
@@ -19,16 +17,13 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
-import com.imhungry.jjongseol.data.network.UserApi
+import com.imhungry.jjongseol.data.network.api.UserApi
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.imhungry.jjongseol.viewmodel.UserViewModel
 
 @Composable
 fun SearchScreen(

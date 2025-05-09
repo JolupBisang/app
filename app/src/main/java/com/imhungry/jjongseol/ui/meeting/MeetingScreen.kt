@@ -38,7 +38,7 @@ import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.SilRokNavigation
-import com.imhungry.jjongseol.ui.component.CustomDialog
+import com.imhungry.jjongseol.ui.component.dialog.CustomDialog
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
@@ -131,12 +131,14 @@ private fun MeetingInitController(
 ) {
     LaunchedEffect(allReady) {
         if (allReady) {
-            meetingViewModel.startStreamingService()
-            meetingViewModel.resumeEncoding()
-            meetingViewModel.subscribeToSummary(meetingId, timeProvider)
-            meetingViewModel.subscribeToParticipationRate(meetingId)
-            meetingViewModel.subscribeToFeedback(meetingId, timeProvider)
-            meetingViewModel.startSendingTestData(meetingId)
+            meetingViewModel.apply {
+                startStreamingService()
+                resumeEncoding()
+                subscribeToSummary(meetingId, timeProvider)
+                subscribeToParticipationRate(meetingId)
+                subscribeToFeedback(meetingId, timeProvider)
+                startSendingTestData(meetingId)
+            }
         }
     }
 }
@@ -182,18 +184,17 @@ private fun PermissionHandler(onGranted: @Composable () -> Unit) {
     }
 
     LaunchedEffect(Unit) {
-        val audio = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-        val notify = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        } else true
+        val requiredPermissions = mutableListOf(Manifest.permission.RECORD_AUDIO)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requiredPermissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
 
-        granted = audio && notify
+        granted = requiredPermissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
 
         if (!granted) {
-            val req = mutableListOf(Manifest.permission.RECORD_AUDIO)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                req.add(Manifest.permission.POST_NOTIFICATIONS)
-            launcher.launch(req.toTypedArray())
+            launcher.launch(requiredPermissions.toTypedArray())
         }
     }
 

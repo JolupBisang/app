@@ -1,9 +1,8 @@
 package com.imhungry.jjongseol.data.repository
 
-import android.util.Log
 import com.imhungry.jjongseol.data.model.agenda.AgendaDto
-import com.imhungry.jjongseol.data.network.AgendaApi
-import com.imhungry.jjongseol.util.handleHttpException
+import com.imhungry.jjongseol.data.network.api.AgendaApi
+import com.imhungry.jjongseol.data.network.client.handleHttpException
 import retrofit2.HttpException
 import javax.inject.Inject
 

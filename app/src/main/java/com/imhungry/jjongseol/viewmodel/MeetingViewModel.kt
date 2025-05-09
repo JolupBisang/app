@@ -3,14 +3,14 @@ package com.imhungry.jjongseol.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.imhungry.jjongseol.controller.StreamingController
-import com.imhungry.jjongseol.controller.TestDataSender
-import com.imhungry.jjongseol.data.model.MeetingReq
+import com.imhungry.jjongseol.feature.audio.StreamingController
+import com.imhungry.jjongseol.feature.audio.devtool.TestDataSender
+import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.model.error.ApiError
 import com.imhungry.jjongseol.data.model.feedback.FeedbackItem
 import com.imhungry.jjongseol.data.model.meeting.SummaryItem
-import com.imhungry.jjongseol.data.network.MeetingApi
-import com.imhungry.jjongseol.data.network.SseClient
+import com.imhungry.jjongseol.data.network.api.MeetingApi
+import com.imhungry.jjongseol.data.network.client.SseClient
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -76,37 +76,34 @@ class MeetingViewModel @Inject constructor(
     val feedbackList: StateFlow<List<FeedbackItem>> = _feedbackList.asStateFlow()
 
     fun subscribeToSummary(meetingId: Long, timeProvider: () -> String) {
-        sseClient.subscribeToSummary(
-            meetingId,
+        sseClient.subscribeToEvent(
+            endpoint = "summary",
+            meetingId = meetingId,
+            eventType = "SUMMARY",
             onEventReceived = {
                 _summaryList.value += SummaryItem(it.trim('"'), timeProvider())
-            },
-            onError = {
-                _errorMessage.value = "요약 수신 실패: $it"
             }
         )
     }
 
     fun subscribeToParticipationRate(meetingId: Long) {
-        sseClient.subscribeToParticipationRate(
-            meetingId,
+        sseClient.subscribeToEvent(
+            endpoint = "participation_rate",
+            meetingId = meetingId,
+            eventType = "PARTICIPATION_RATE",
             onEventReceived = {
                 _participationRate.value = it
-            },
-            onError = {
-                _errorMessage.value = "점유율 수신 실패: $it"
             }
         )
     }
 
     fun subscribeToFeedback(meetingId: Long, timeProvider: () -> String) {
-        sseClient.subscribeToFeedback(
-            meetingId,
+        sseClient.subscribeToEvent(
+            endpoint = "feedback",
+            meetingId = meetingId,
+            eventType = "FEEDBACK",
             onEventReceived = {
                 _feedbackList.value += FeedbackItem(it.trim('"'), timeProvider())
-            },
-            onError = {
-                _errorMessage.value = "피드백 수신 실패: $it"
             }
         )
     }
@@ -125,5 +122,11 @@ class MeetingViewModel @Inject constructor(
         testDataSender.stopSummary()
         testDataSender.stopParticipation()
         testDataSender.stopFeedback()
+    }
+
+    fun markAllFeedbackAsRead() {
+        _feedbackList.value = _feedbackList.value.map {
+            if (!it.isRead) it.copy(isRead = true) else it
+        }
     }
 }

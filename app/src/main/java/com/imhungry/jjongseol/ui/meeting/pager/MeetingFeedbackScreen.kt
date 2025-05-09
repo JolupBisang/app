@@ -7,17 +7,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.imhungry.jjongseol.ui.component.Notification
+import com.imhungry.jjongseol.ui.component.feedback.Notification
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
 fun MeetingFeedbackScreen(viewModel: MeetingViewModel = hiltViewModel()) {
     val feedbackList by viewModel.feedbackList.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.markAllFeedbackAsRead()
+    }
 
     Column(
         modifier = Modifier
@@ -36,3 +41,4 @@ fun MeetingFeedbackScreen(viewModel: MeetingViewModel = hiltViewModel()) {
         }
     }
 }
+

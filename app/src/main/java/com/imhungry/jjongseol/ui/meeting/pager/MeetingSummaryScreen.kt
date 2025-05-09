@@ -19,8 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.imhungry.jjongseol.ui.component.ConversationSummaryBar
-import com.imhungry.jjongseol.ui.component.SummaryListItem
+import com.imhungry.jjongseol.ui.component.summary.ConversationSummaryBar
+import com.imhungry.jjongseol.ui.component.summary.SummaryListItem
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable

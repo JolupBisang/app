@@ -30,9 +30,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.agenda.AgendaDto
 import com.imhungry.jjongseol.ui.SilRokNavigation
-import com.imhungry.jjongseol.ui.component.CheckItem
-import com.imhungry.jjongseol.ui.component.CustomDialog
-import com.imhungry.jjongseol.ui.component.TopSheet
+import com.imhungry.jjongseol.ui.component.checklist.CheckItem
+import com.imhungry.jjongseol.ui.component.dialog.CustomDialog
+import com.imhungry.jjongseol.ui.component.layout.TopSheet
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
