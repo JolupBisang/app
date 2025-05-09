@@ -82,9 +82,6 @@ class MeetingViewModel @Inject constructor(
             eventType = "SUMMARY",
             onEventReceived = {
                 _summaryList.value += SummaryItem(it.trim('"'), timeProvider())
-            },
-            onError = {
-                _errorMessage.value = "요약 수신 실패: $it"
             }
         )
     }
@@ -96,9 +93,6 @@ class MeetingViewModel @Inject constructor(
             eventType = "PARTICIPATION_RATE",
             onEventReceived = {
                 _participationRate.value = it
-            },
-            onError = {
-                _errorMessage.value = "점유율 수신 실패: $it"
             }
         )
     }
@@ -110,9 +104,6 @@ class MeetingViewModel @Inject constructor(
             eventType = "FEEDBACK",
             onEventReceived = {
                 _feedbackList.value += FeedbackItem(it.trim('"'), timeProvider())
-            },
-            onError = {
-                _errorMessage.value = "피드백 수신 실패: $it"
             }
         )
     }

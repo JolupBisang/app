@@ -21,7 +21,6 @@ class SseClient(
         meetingId: Long,
         eventType: String,
         onEventReceived: (String) -> Unit,
-        onError: (String) -> Unit
     ) {
         isManuallyClosed = false
 
@@ -50,8 +49,7 @@ class SseClient(
             override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
                 Log.e("SSE", "$eventType 연결 실패: ${t?.message}")
                 if (!isManuallyClosed) {
-                    onError(t?.message ?: "알 수 없는 오류")
-                    reconnect(meetingId, eventType, onEventReceived, onError)
+                    reconnect(meetingId, eventType, onEventReceived)
                 }
             }
         })
@@ -67,12 +65,11 @@ class SseClient(
     private fun reconnect(
         meetingId: Long,
         eventType: String,
-        onEventReceived: (String) -> Unit,
-        onError: (String) -> Unit
+        onEventReceived: (String) -> Unit
     ) {
         Handler(Looper.getMainLooper()).postDelayed({
             Log.d("SSE", "$eventType SSE 재연결 시도 중...")
-            subscribeToEvent(eventType.lowercase(), meetingId, eventType, onEventReceived, onError)
+            subscribeToEvent(eventType.lowercase(), meetingId, eventType, onEventReceived)
         }, 3000)
     }
 }
