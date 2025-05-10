@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.dialog.CustomDialog
@@ -46,7 +47,7 @@ fun MeetingControlPanel(
     isWaiting: Boolean = false
 ) {
     val context = LocalContext.current
-    val micEnabled by viewModel.micEnabled.collectAsState()
+    val micEnabled by viewModel.streamController.micEnabled.collectAsState()
     val isMicOn = if (isWaiting) false else micEnabled
     var showDialog by remember { mutableStateOf(false) }
     var showLeaveDialog by remember { mutableStateOf(false) }
@@ -87,7 +88,7 @@ fun MeetingControlPanel(
                     description = "마이크",
                     enabled = true,
                     onClick = {
-                        viewModel.toggleMic(context, !micEnabled)
+                        viewModel.streamController.toggleMic(!micEnabled)
                     }
                 )
             }
@@ -139,7 +140,7 @@ fun MeetingControlPanel(
             confirmText = "나가기",
             onConfirm = {
                 showLeaveDialog = false
-                viewModel.pauseEncoding()
+                viewModel.streamController.pauseEncoding()
                 onFinish(SilRokNavigation.Home)
             },
             onDismiss = { showLeaveDialog = false }
