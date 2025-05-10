@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.meeting.bottom
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,16 +37,17 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 fun MeetingControlPanel(
     modifier: Modifier = Modifier,
     timeText: String = "00:00:00",
-    micEnabled: Boolean = false,
-    onMicToggle: ((Boolean) -> Unit)? = null,
     micIcon: Int = R.drawable.inactive_mic,
     logoutIcon: Int = R.drawable.inactive_logout,
     powerIcon: Int = R.drawable.inactive_power,
     onFinish: (SilRokNavigation) -> Unit,
     onExitConfirmed: () -> Unit,
-    viewModel: MeetingViewModel
+    viewModel: MeetingViewModel,
+    isWaiting: Boolean = false
 ) {
-    var isMicOn by remember { mutableStateOf(true) }
+    val context = LocalContext.current
+    val micEnabled by viewModel.micEnabled.collectAsState()
+    val isMicOn = if (isWaiting) false else micEnabled
     var showDialog by remember { mutableStateOf(false) }
     var showLeaveDialog by remember { mutableStateOf(false) }
 
@@ -79,12 +83,11 @@ fun MeetingControlPanel(
                 contentAlignment = Alignment.Center
             ) {
                 ControlIcon(
-                    resId = if (micEnabled && isMicOn) R.drawable.mic else micIcon,
+                    resId = if (isMicOn) R.drawable.mic else micIcon,
                     description = "마이크",
-                    enabled = micEnabled,
+                    enabled = true,
                     onClick = {
-                        isMicOn = !isMicOn
-                        onMicToggle?.invoke(isMicOn)
+                        viewModel.toggleMic(context, !micEnabled)
                     }
                 )
             }
@@ -96,7 +99,7 @@ fun MeetingControlPanel(
                 ControlIcon(
                     resId = logoutIcon,
                     description = "나가기",
-                    enabled = micEnabled,
+                    enabled = true,
                     onClick = { showLeaveDialog = true }
                 )
 
@@ -105,7 +108,7 @@ fun MeetingControlPanel(
                 ControlIcon(
                     resId = powerIcon,
                     description = "종료",
-                    enabled = micEnabled,
+                    enabled = true,
                     onClick = { showDialog = true }
                 )
             }
@@ -118,9 +121,14 @@ fun MeetingControlPanel(
             confirmText = "종료",
             onConfirm = {
                 showDialog = false
+
+                val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+                prefs.edit().putBoolean("isMeetingOngoing", false).apply()
+
                 onExitConfirmed()
                 onFinish(SilRokNavigation.MeetingEnd)
-            },
+            }
+            ,
             onDismiss = { showDialog = false }
         )
     }

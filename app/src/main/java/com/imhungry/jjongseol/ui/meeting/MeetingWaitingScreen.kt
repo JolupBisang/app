@@ -93,13 +93,13 @@ fun MeetingWaitingScreen(
 
         MeetingControlPanel(
             timeText = "00:00:00",
-            micEnabled = false,
             micIcon = R.drawable.inactive_mic,
             logoutIcon = R.drawable.inactive_logout,
             powerIcon = R.drawable.inactive_power,
             onFinish = onFinish,
             onExitConfirmed = {},
-            viewModel = meetingViewModel
+            viewModel = meetingViewModel,
+            isWaiting = true
         )
     }
 }

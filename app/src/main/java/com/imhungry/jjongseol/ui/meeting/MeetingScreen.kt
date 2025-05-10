@@ -54,12 +54,18 @@ fun MeetingScreen(
     onFinish: (SilRokNavigation) -> Unit,
     meetingId: Long
 ) {
+    val context = LocalContext.current
+
     val agendaItems by agendaViewModel.agendaItems.collectAsState()
     val checkedStates by agendaViewModel.checkedStates.collectAsState()
     val isAgendaLoading = agendaItems.isEmpty() || checkedStates.size != agendaItems.size
     val errorMessage by meetingViewModel.errorMessage.collectAsState()
     val showDialog = remember { mutableStateOf(false) }
     val timeText by rememberMeetingStartTime()
+
+    LaunchedEffect(Unit) {
+        meetingViewModel.loadMicState(context)
+    }
 
     LaunchedEffect(meetingId) {
         agendaViewModel.onError = { apiError ->
@@ -129,8 +135,13 @@ private fun MeetingInitController(
     meetingId: Long,
     timeProvider: () -> String
 ) {
+    val context = LocalContext.current
+
     LaunchedEffect(allReady) {
         if (allReady) {
+            val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("isMeetingOngoing", true).apply()
+
             meetingViewModel.apply {
                 startStreamingService()
                 resumeEncoding()
@@ -264,8 +275,6 @@ fun MeetingScreenContent(
 
         MeetingControlPanel(
             timeText = timeText,
-            micEnabled = true,
-            onMicToggle = { if (it) viewModel.resumeEncoding() else viewModel.pauseEncoding() },
             micIcon = R.drawable.micoff,
             logoutIcon = R.drawable.logout,
             powerIcon = R.drawable.power,

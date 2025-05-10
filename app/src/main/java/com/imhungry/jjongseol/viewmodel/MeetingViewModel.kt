@@ -1,6 +1,7 @@
 package com.imhungry.jjongseol.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.feature.audio.StreamingController
@@ -128,5 +129,24 @@ class MeetingViewModel @Inject constructor(
         _feedbackList.value = _feedbackList.value.map {
             if (!it.isRead) it.copy(isRead = true) else it
         }
+    }
+
+    private val _micEnabled = MutableStateFlow(true) // 기본값: 켜짐
+    val micEnabled: StateFlow<Boolean> = _micEnabled.asStateFlow()
+
+    fun toggleMic(context: Context, enabled: Boolean) {
+        _micEnabled.value = enabled
+        if (enabled) resumeEncoding() else pauseEncoding()
+        saveMicState(context, enabled)
+    }
+
+    fun loadMicState(context: Context) {
+        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+        _micEnabled.value = prefs.getBoolean("mic_enabled", true)
+    }
+
+    private fun saveMicState(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("mic_enabled", enabled).apply()
     }
 }
