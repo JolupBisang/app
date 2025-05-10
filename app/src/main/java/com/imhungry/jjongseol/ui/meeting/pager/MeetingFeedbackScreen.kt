@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -20,8 +21,10 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 fun MeetingFeedbackScreen(viewModel: MeetingViewModel = hiltViewModel()) {
     val feedbackList by viewModel.feedbackList.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.markAllFeedbackAsRead()
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.markAllFeedbackAsRead()
+        }
     }
 
     Column(
