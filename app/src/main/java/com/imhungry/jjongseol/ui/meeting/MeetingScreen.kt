@@ -32,6 +32,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
@@ -64,7 +65,7 @@ fun MeetingScreen(
     val timeText by rememberMeetingStartTime()
 
     LaunchedEffect(Unit) {
-        meetingViewModel.loadMicState(context)
+        meetingViewModel.streamController.loadMicState()
     }
 
     LaunchedEffect(meetingId) {
@@ -116,9 +117,9 @@ fun MeetingScreen(
             MeetingScreenContent(
                 onFinish = onFinish,
                 onExitConfirmed = {
-                    meetingViewModel.stopStreamingService()
-                    meetingViewModel.stopSendingTestData()
-                    meetingViewModel.stopSse()
+                    meetingViewModel.streamController.stopStreaming()
+                    meetingViewModel.streamController.stopSendingTestData()
+                    meetingViewModel.sseSubscriber.stopSse()
                 },
                 viewModel = meetingViewModel,
                 meetingId = meetingId,
@@ -142,14 +143,16 @@ private fun MeetingInitController(
             val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
             prefs.edit().putBoolean("isMeetingOngoing", true).apply()
 
-            meetingViewModel.apply {
-                startStreamingService()
+            meetingViewModel.streamController.apply {
+                startStreaming()
                 resumeEncoding()
+            }
+            meetingViewModel.sseSubscriber.apply {
                 subscribeToSummary(meetingId, timeProvider)
                 subscribeToParticipationRate(meetingId)
                 subscribeToFeedback(meetingId, timeProvider)
-                startSendingTestData(meetingId)
             }
+            meetingViewModel.streamController.startSendingTestData(meetingId, meetingViewModel.viewModelScope)
         }
     }
 }

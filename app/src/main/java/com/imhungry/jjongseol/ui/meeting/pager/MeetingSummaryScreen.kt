@@ -27,8 +27,8 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 fun MeetingSummaryScreen(
     viewModel: MeetingViewModel = hiltViewModel()
 ) {
-    val summaryList by viewModel.summaryList.collectAsState()
-    val participationRate by viewModel.participationRate.collectAsState()
+    val summaryList by viewModel.sseSubscriber.summaryList.collectAsState()
+    val participationRate by viewModel.sseSubscriber.participationRate.collectAsState()
 
     val data = listOf(45f, 30f, 20f, 10f, 5f)
     val names = listOf("지안", "상정", "원영", "유진", "은경")

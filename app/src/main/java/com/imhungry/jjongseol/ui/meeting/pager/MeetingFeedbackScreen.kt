@@ -19,11 +19,11 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
 fun MeetingFeedbackScreen(viewModel: MeetingViewModel = hiltViewModel()) {
-    val feedbackList by viewModel.feedbackList.collectAsState()
+    val feedbackList by viewModel.sseSubscriber.feedbackList.collectAsState()
 
     DisposableEffect(Unit) {
         onDispose {
-            viewModel.markAllFeedbackAsRead()
+            viewModel.sseSubscriber.markAllFeedbackAsRead()
         }
     }
 

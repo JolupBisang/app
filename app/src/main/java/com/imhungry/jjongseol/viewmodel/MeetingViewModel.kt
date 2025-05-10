@@ -1,17 +1,13 @@
 package com.imhungry.jjongseol.viewmodel
 
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.imhungry.jjongseol.feature.audio.StreamingController
-import com.imhungry.jjongseol.feature.audio.devtool.TestDataSender
-import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.model.error.ApiError
-import com.imhungry.jjongseol.data.model.feedback.FeedbackItem
-import com.imhungry.jjongseol.data.model.meeting.SummaryItem
+import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.network.api.MeetingApi
-import com.imhungry.jjongseol.data.network.client.SseClient
+import com.imhungry.jjongseol.feature.meeting.MeetingSseSubscriber
+import com.imhungry.jjongseol.feature.meeting.MeetingStreamController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,10 +18,9 @@ import javax.inject.Inject
 @HiltViewModel
 class MeetingViewModel @Inject constructor(
     application: Application,
-    private val sseClient: SseClient,
-    private val streamingController: StreamingController,
-    private val testDataSender: TestDataSender,
-    private val meetingApi: MeetingApi
+    private val meetingApi: MeetingApi,
+    val streamController: MeetingStreamController,
+    val sseSubscriber: MeetingSseSubscriber
 ) : AndroidViewModel(application) {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -42,7 +37,6 @@ class MeetingViewModel @Inject constructor(
         _errorMessage.value = null
     }
 
-    //새 회의 생성
     fun createMeeting(
         meetingReq: MeetingReq,
         onSuccess: () -> Unit,
@@ -60,93 +54,5 @@ class MeetingViewModel @Inject constructor(
                 onError("예외 발생: ${e.message}")
             }
         }
-    }
-
-    fun startStreamingService() = streamingController.startStreamingService()
-    fun stopStreamingService() = streamingController.stopStreamingService()
-    fun pauseEncoding() = streamingController.pauseEncoding()
-    fun resumeEncoding() = streamingController.resumeEncoding()
-
-    private val _summaryList = MutableStateFlow<List<SummaryItem>>(emptyList())
-    val summaryList: StateFlow<List<SummaryItem>> = _summaryList.asStateFlow()
-
-    private val _participationRate = MutableStateFlow<String?>(null)
-    val participationRate: StateFlow<String?> = _participationRate.asStateFlow()
-
-    private val _feedbackList = MutableStateFlow<List<FeedbackItem>>(emptyList())
-    val feedbackList: StateFlow<List<FeedbackItem>> = _feedbackList.asStateFlow()
-
-    fun subscribeToSummary(meetingId: Long, timeProvider: () -> String) {
-        sseClient.subscribeToEvent(
-            endpoint = "summary",
-            meetingId = meetingId,
-            eventType = "SUMMARY",
-            onEventReceived = {
-                _summaryList.value += SummaryItem(it.trim('"'), timeProvider())
-            }
-        )
-    }
-
-    fun subscribeToParticipationRate(meetingId: Long) {
-        sseClient.subscribeToEvent(
-            endpoint = "participation_rate",
-            meetingId = meetingId,
-            eventType = "PARTICIPATION_RATE",
-            onEventReceived = {
-                _participationRate.value = it
-            }
-        )
-    }
-
-    fun subscribeToFeedback(meetingId: Long, timeProvider: () -> String) {
-        sseClient.subscribeToEvent(
-            endpoint = "feedback",
-            meetingId = meetingId,
-            eventType = "FEEDBACK",
-            onEventReceived = {
-                _feedbackList.value += FeedbackItem(it.trim('"'), timeProvider())
-            }
-        )
-    }
-
-    fun stopSse() {
-        sseClient.disconnect()
-    }
-
-    fun startSendingTestData(meetingId: Long) {
-        testDataSender.startSummary(meetingId, viewModelScope)
-        testDataSender.startParticipation(meetingId, viewModelScope)
-        testDataSender.startFeedback(meetingId, viewModelScope)
-    }
-
-    fun stopSendingTestData() {
-        testDataSender.stopSummary()
-        testDataSender.stopParticipation()
-        testDataSender.stopFeedback()
-    }
-
-    fun markAllFeedbackAsRead() {
-        _feedbackList.value = _feedbackList.value.map {
-            if (!it.isRead) it.copy(isRead = true) else it
-        }
-    }
-
-    private val _micEnabled = MutableStateFlow(true) // 기본값: 켜짐
-    val micEnabled: StateFlow<Boolean> = _micEnabled.asStateFlow()
-
-    fun toggleMic(context: Context, enabled: Boolean) {
-        _micEnabled.value = enabled
-        if (enabled) resumeEncoding() else pauseEncoding()
-        saveMicState(context, enabled)
-    }
-
-    fun loadMicState(context: Context) {
-        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-        _micEnabled.value = prefs.getBoolean("mic_enabled", true)
-    }
-
-    private fun saveMicState(context: Context, enabled: Boolean) {
-        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("mic_enabled", enabled).apply()
     }
 }

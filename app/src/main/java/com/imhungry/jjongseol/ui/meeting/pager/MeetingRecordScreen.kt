@@ -47,7 +47,7 @@ fun MeetingRecordScreen(
 ) {
     val agendas by agendaViewModel.agendaItems.collectAsState()
     val checkedStates by agendaViewModel.checkedStates.collectAsState()
-    val feedbackList by meetingViewModel.feedbackList.collectAsState()
+    val feedbackList by meetingViewModel.sseSubscriber.feedbackList.collectAsState()
 
     LaunchedEffect(meetingId) {
         agendaViewModel.loadAgendas(meetingId)
