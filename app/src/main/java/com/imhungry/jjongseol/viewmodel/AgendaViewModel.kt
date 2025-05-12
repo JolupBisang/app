@@ -49,10 +49,20 @@ class AgendaViewModel @Inject constructor(
     }
 
     fun toggleAgendaChecked(index: Int) {
-        _checkedStates.value = _checkedStates.value.toMutableList().apply {
-            this[index] = !this[index]
-        }
+        val current = _checkedStates.value.toMutableList()
+        val newValue = !current[index]
+        current[index] = newValue
+        _checkedStates.value = current
         saveCheckedStatesToPrefs()
+
+        val agendaId = _agendaItems.value.getOrNull(index)?.agendaId ?: return
+        viewModelScope.launch {
+            try {
+                agendaRepository.changeAgendaStatus(agendaId, newValue)
+            } catch (e: Exception) {
+                onError?.invoke(ApiError(message = e.message, errorId = null))
+            }
+        }
     }
 
     private fun loadCheckedStatesFromPrefs(meetingId: Long, agendas: List<AgendaDto>): List<Boolean> {
