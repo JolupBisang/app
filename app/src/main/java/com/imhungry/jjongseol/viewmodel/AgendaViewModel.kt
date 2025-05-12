@@ -2,12 +2,14 @@ package com.imhungry.jjongseol.viewmodel
 
 import android.app.Application
 import android.content.Context
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.imhungry.jjongseol.data.model.agenda.AgendaDto
+import com.imhungry.jjongseol.data.model.agenda.AgendaUiModel
 import com.imhungry.jjongseol.data.model.error.ApiError
-import com.imhungry.jjongseol.data.repository.AgendaRepository
 import com.imhungry.jjongseol.data.network.client.handleHttpException
+import com.imhungry.jjongseol.data.repository.AgendaRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,15 +21,9 @@ import javax.inject.Inject
 class AgendaViewModel @Inject constructor(
     private val agendaRepository: AgendaRepository,
     private val context: Application,
-) : AndroidViewModel(context) {
-
-    var onError: ((ApiError) -> Unit)? = null
-
-    private val _agendaItems = MutableStateFlow<List<AgendaDto>>(emptyList())
-    val agendaItems: StateFlow<List<AgendaDto>> = _agendaItems
-
-    private val _checkedStates = MutableStateFlow<List<Boolean>>(emptyList())
-    val checkedStates: StateFlow<List<Boolean>> = _checkedStates
+) : BaseAndroidViewModel(context) {
+    private val _agendaUiItems = MutableStateFlow<List<AgendaUiModel>>(emptyList())
+    val agendaUiItems: StateFlow<List<AgendaUiModel>> = _agendaUiItems
 
     private var loadedMeetingId: Long? = null
 
@@ -35,48 +31,53 @@ class AgendaViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val agendas = agendaRepository.getAgendas(meetingId)
-                _agendaItems.value = agendas
-                _checkedStates.value = loadCheckedStatesFromPrefs(meetingId, agendas)
+                val prefs = loadCheckedStatesFromPrefs(meetingId, agendas)
+                _agendaUiItems.value = agendas.mapIndexed { i, dto ->
+                    AgendaUiModel(dto, prefs.getOrElse(i) { dto.isCompleted })
+                }
                 loadedMeetingId = meetingId
             } catch (e: HttpException) {
-                val apiError = handleHttpException(e)
-                onError?.invoke(apiError)
+                setError(handleHttpException(e)) // <-- 직접 호출
             } catch (e: Exception) {
-                onError?.invoke(ApiError(message = e.message, errorId = null))
+                setError(ApiError(message = e.message, errorId = null))
             }
-
         }
     }
 
     fun toggleAgendaChecked(index: Int) {
-        val current = _checkedStates.value.toMutableList()
-        val newValue = !current[index]
-        current[index] = newValue
-        _checkedStates.value = current
-        saveCheckedStatesToPrefs()
+        val updated = _agendaUiItems.value.toMutableList()
+        val current = updated[index]
+        val newValue = !current.isChecked
+        val newModel = current.copy(isChecked = newValue)
+        updated[index] = newModel
+        _agendaUiItems.value = updated
+        saveCheckedStatesToPrefs(updated)
 
-        val agendaId = _agendaItems.value.getOrNull(index)?.agendaId ?: return
         viewModelScope.launch {
             try {
-                agendaRepository.changeAgendaStatus(agendaId, newValue)
+                val success = agendaRepository.changeAgendaStatus(current.dto.agendaId, newValue)
+                if (!success) throw Exception("상태 변경 실패")
             } catch (e: Exception) {
-                onError?.invoke(ApiError(message = e.message, errorId = null))
+                updated[index] = current
+                _agendaUiItems.value = updated
+                setError(ApiError(message = e.message, errorId = null))
             }
         }
     }
 
-    private fun loadCheckedStatesFromPrefs(meetingId: Long, agendas: List<AgendaDto>): List<Boolean> {
-        val saved = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-            .getString("checked_states_$meetingId", null)
-        return saved?.split(",")?.map { it.toBooleanStrictOrNull() ?: false }
-            ?.takeIf { it.size == agendas.size }
-            ?: agendas.map { it.isCompleted }
+    private fun saveCheckedStatesToPrefs(items: List<AgendaUiModel>) {
+        val map = items.associate { it.dto.agendaId.toString() to it.isChecked.toString() }
+        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("checked_map_${loadedMeetingId ?: -1}", Gson().toJson(map)).apply()
     }
 
-    private fun saveCheckedStatesToPrefs() {
-        val states = _checkedStates.value.joinToString(",") { it.toString() }
-        context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE).edit()
-            .putString("checked_states_${loadedMeetingId ?: -1}", states)
-            .apply()
+    private fun loadCheckedStatesFromPrefs(meetingId: Long, agendas: List<AgendaDto>): List<Boolean> {
+        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+        val json = prefs.getString("checked_map_$meetingId", null)
+        val map: Map<String, String> = if (json != null) Gson().fromJson(json, object : TypeToken<Map<String, String>>(){}.type) else emptyMap()
+
+        return agendas.map { dto ->
+            map[dto.agendaId.toString()]?.toBooleanStrictOrNull() ?: dto.isCompleted
+        }
     }
 }

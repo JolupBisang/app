@@ -16,7 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,10 +27,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.model.agenda.AgendaDto
+import com.imhungry.jjongseol.data.model.agenda.AgendaUiModel
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
-import com.imhungry.jjongseol.ui.component.dialog.CustomDialog
+import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
 import com.imhungry.jjongseol.ui.component.layout.TopSheet
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
@@ -44,32 +43,33 @@ fun MeetingWaitingScreen(
     onFinish: (SilRokNavigation) -> Unit,
     meetingId: Long = 1L
 ) {
-    val agendas by agendaViewModel.agendaItems.collectAsState()
-    val checkedStates by agendaViewModel.checkedStates.collectAsState()
+    val agendaUiItems by agendaViewModel.agendaUiItems.collectAsState()
     val errorMessage by meetingViewModel.errorMessage.collectAsState()
     val showDialog = remember { mutableStateOf(false) }
 
     LaunchedEffect(meetingId) {
-        agendaViewModel.onError = { apiError ->
-            meetingViewModel.setError(apiError)
-        }
+        meetingViewModel.loadMeetingDetail(meetingId)
         agendaViewModel.loadAgendas(meetingId)
     }
 
-    val firstUncheckedIndex = checkedStates.indexOfFirst { !it }
-    val peekIndex = if (firstUncheckedIndex == -1) checkedStates.lastIndex else firstUncheckedIndex
-    val isLoading = agendas.isEmpty() || checkedStates.isEmpty() || peekIndex !in agendas.indices
+    val firstUncheckedIndex = agendaUiItems.indexOfFirst { !it.isChecked }
+    val peekIndex = if (firstUncheckedIndex == -1) agendaUiItems.lastIndex else firstUncheckedIndex
+    val isLoading = agendaUiItems.isEmpty()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        ErrorDialogSection(errorMessage, showDialog, onFinish, meetingViewModel)
+        ErrorDialogHandler(
+            errorMessage = errorMessage,
+            showDialog = showDialog,
+            onFinish = onFinish,
+            clearError = { meetingViewModel.clearErrorMessage() }
+        )
 
         AgendaSection(
-            agendas = agendas,
-            checkedStates = checkedStates,
+            items = agendaUiItems,
             isLoading = isLoading,
             peekIndex = peekIndex,
             firstUncheckedIndex = firstUncheckedIndex,
@@ -105,60 +105,32 @@ fun MeetingWaitingScreen(
 }
 
 @Composable
-private fun ErrorDialogSection(
-    errorMessage: String?,
-    showDialog: MutableState<Boolean>,
-    onFinish: (SilRokNavigation) -> Unit,
-    meetingViewModel: MeetingViewModel
-) {
-    if (errorMessage != null) showDialog.value = true
-    val isTokenExpired = errorMessage == "TOKEN_EXPIRED"
-
-    if (showDialog.value && errorMessage != null) {
-        CustomDialog(
-            description = if (isTokenExpired)
-                "로그인 정보가 만료되었어요.\n다시 로그인해주세요."
-            else errorMessage,
-            confirmText = if (isTokenExpired) "로그인 하기" else "홈으로",
-            showDismissButton = false,
-            onDismissRequest = {},
-            onConfirmExit = {
-                showDialog.value = false
-                meetingViewModel.clearErrorMessage()
-                val destination = if (isTokenExpired) SilRokNavigation.Login else SilRokNavigation.Home
-                onFinish(destination)
-            }
-        )
-    }
-}
-
-@Composable
 private fun AgendaSection(
-    agendas: List<AgendaDto>,
-    checkedStates: List<Boolean>,
+    items: List<AgendaUiModel>,
     isLoading: Boolean,
     peekIndex: Int,
     firstUncheckedIndex: Int,
     onToggle: (Int) -> Unit
 ) {
-    if (!isLoading && peekIndex in agendas.indices) {
+    if (!isLoading && peekIndex in items.indices) {
         TopSheet(
             collapsedHeight = 60.dp,
             peekContent = {
+                val peekItem = items[peekIndex]
                 CheckItem(
-                    text = agendas[peekIndex].content,
-                    checked = checkedStates[peekIndex],
-                    isFocused = !checkedStates[peekIndex],
+                    text = peekItem.dto.content,
+                    checked = peekItem.isChecked,
+                    isFocused = !peekItem.isChecked,
                     onToggle = { onToggle(peekIndex) }
                 )
             },
             content = {
                 Column {
-                    agendas.forEachIndexed { i, item ->
+                    items.forEachIndexed { i, item ->
                         CheckItem(
-                            text = item.content,
-                            checked = checkedStates[i],
-                            isFocused = !checkedStates[i] && firstUncheckedIndex == i,
+                            text = item.dto.content,
+                            checked = item.isChecked,
+                            isFocused = !item.isChecked && firstUncheckedIndex == i,
                             onToggle = { onToggle(i) }
                         )
                     }
