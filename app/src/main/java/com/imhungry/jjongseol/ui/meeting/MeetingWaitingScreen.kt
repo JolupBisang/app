@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -27,7 +28,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.model.agenda.AgendaUiModel
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
 import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
@@ -35,6 +35,9 @@ import com.imhungry.jjongseol.ui.component.layout.TopSheet
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun MeetingWaitingScreen(
@@ -43,18 +46,22 @@ fun MeetingWaitingScreen(
     onFinish: (SilRokNavigation) -> Unit,
     meetingId: Long = 1L
 ) {
-    val agendaUiItems by agendaViewModel.agendaUiItems.collectAsState()
+    val agendas by agendaViewModel.agendaItems.collectAsState()
     val errorMessage by meetingViewModel.errorMessage.collectAsState()
     val showDialog = remember { mutableStateOf(false) }
+    val checkedStates = remember(agendas) { mutableStateListOf<Boolean>().apply { addAll(agendas.map { it.isCompleted }) } }
+    val isSaving = remember { mutableStateOf(false) }
 
     LaunchedEffect(meetingId) {
-        meetingViewModel.loadMeetingDetail(meetingId)
-        agendaViewModel.loadAgendas(meetingId)
+        val success = meetingViewModel.loadMeetingDetail(meetingId)
+        if (success) {
+            agendaViewModel.loadAgendas(meetingId)
+        }
     }
 
-    val firstUncheckedIndex = agendaUiItems.indexOfFirst { !it.isChecked }
-    val peekIndex = if (firstUncheckedIndex == -1) agendaUiItems.lastIndex else firstUncheckedIndex
-    val isLoading = agendaUiItems.isEmpty()
+    val firstUncheckedIndex = checkedStates.indexOfFirst { !it }
+    val peekIndex = if (firstUncheckedIndex == -1) checkedStates.lastIndex else firstUncheckedIndex
+    val isLoading = agendas.isEmpty()
 
     Column(
         modifier = Modifier
@@ -68,13 +75,31 @@ fun MeetingWaitingScreen(
             clearError = { meetingViewModel.clearErrorMessage() }
         )
 
-        AgendaSection(
-            items = agendaUiItems,
-            isLoading = isLoading,
-            peekIndex = peekIndex,
-            firstUncheckedIndex = firstUncheckedIndex,
-            onToggle = { agendaViewModel.toggleAgendaChecked(it) }
-        )
+        if (!isLoading && peekIndex in agendas.indices) {
+            TopSheet(
+                collapsedHeight = 60.dp,
+                peekContent = {
+                    CheckItem(
+                        text = agendas[peekIndex].content,
+                        checked = checkedStates[peekIndex],
+                        isFocused = !checkedStates[peekIndex],
+                        onToggle = { checkedStates[peekIndex] = !checkedStates[peekIndex] }
+                    )
+                },
+                content = {
+                    Column {
+                        agendas.forEachIndexed { i, item ->
+                            CheckItem(
+                                text = item.content,
+                                checked = checkedStates[i],
+                                isFocused = !checkedStates[i] && firstUncheckedIndex == i,
+                                onToggle = { checkedStates[i] = !checkedStates[i] }
+                            )
+                        }
+                    }
+                }
+            )
+        }
 
         Box(
             modifier = Modifier
@@ -82,7 +107,39 @@ fun MeetingWaitingScreen(
                 .fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
-            MeetingContentSection(isLoading = isLoading, onStart = { onFinish(SilRokNavigation.Meeting) })
+            if (isLoading) {
+                CircularProgressIndicator(color = Color(0xFF86CC3B))
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "회의가 시작되길\n기다리는 중",
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
+                        color = Color.LightGray
+                    )
+                    StartButton(
+                        onClick = {
+                            isSaving.value = true
+                            CoroutineScope(Dispatchers.IO).launch {
+                                agendas.forEachIndexed { index, agenda ->
+                                    agendaViewModel.saveAgendaCompletionStatusToServer(
+                                        agendaId = agenda.agendaId,
+                                        isCompleted = checkedStates[index]
+                                    )
+                                }
+
+                                launch(Dispatchers.Main) {
+                                    isSaving.value = false
+                                    onFinish(SilRokNavigation.Meeting)
+                                }
+                            }
+                        }
+                    )
+                }
+            }
         }
 
         Divider(
@@ -99,67 +156,9 @@ fun MeetingWaitingScreen(
             onFinish = onFinish,
             onExitConfirmed = {},
             viewModel = meetingViewModel,
+            agendaViewModel = agendaViewModel,
             isWaiting = true
         )
-    }
-}
-
-@Composable
-private fun AgendaSection(
-    items: List<AgendaUiModel>,
-    isLoading: Boolean,
-    peekIndex: Int,
-    firstUncheckedIndex: Int,
-    onToggle: (Int) -> Unit
-) {
-    if (!isLoading && peekIndex in items.indices) {
-        TopSheet(
-            collapsedHeight = 60.dp,
-            peekContent = {
-                val peekItem = items[peekIndex]
-                CheckItem(
-                    text = peekItem.dto.content,
-                    checked = peekItem.isChecked,
-                    isFocused = !peekItem.isChecked,
-                    onToggle = { onToggle(peekIndex) }
-                )
-            },
-            content = {
-                Column {
-                    items.forEachIndexed { i, item ->
-                        CheckItem(
-                            text = item.dto.content,
-                            checked = item.isChecked,
-                            isFocused = !item.isChecked && firstUncheckedIndex == i,
-                            onToggle = { onToggle(i) }
-                        )
-                    }
-                }
-            }
-        )
-    }
-}
-
-@Composable
-private fun MeetingContentSection(
-    isLoading: Boolean,
-    onStart: () -> Unit
-) {
-    if (isLoading) {
-        CircularProgressIndicator(color = Color(0xFF86CC3B))
-    } else {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "회의가 시작되길\n기다리는 중",
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center,
-                color = Color.LightGray
-            )
-            StartButton(onClick = onStart)
-        }
     }
 }
 
@@ -182,4 +181,3 @@ fun StartButton(onClick: () -> Unit) {
             )
     )
 }
-

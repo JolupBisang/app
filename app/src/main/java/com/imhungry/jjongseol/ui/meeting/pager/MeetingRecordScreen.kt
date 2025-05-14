@@ -53,11 +53,9 @@ fun MeetingRecordScreen(
         agendaViewModel.loadAgendas(meetingId)
     }
 
-    val lastCheckedIndex = remember { mutableStateOf(0) }
-    val firstUncheckedIndex = checkedStates.indexOfFirst { !it }
-    val peekIndex = if (firstUncheckedIndex == -1) lastCheckedIndex.value else firstUncheckedIndex
+    val peekIndex = checkedStates.indexOfFirst { !it }.let { if (it == -1) agendas.lastIndex else it }
+    val isLoading = agendas.isEmpty()
     val showTerminationNotification = remember { mutableStateOf(false) }
-    val isLoading = agendas.isEmpty() || checkedStates.isEmpty() || peekIndex !in agendas.indices
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (isLoading) {
@@ -106,10 +104,12 @@ fun MeetingRecordScreen(
                 TopSheet(
                     collapsedHeight = 60.dp,
                     peekContent = {
+                        val content = agendas[peekIndex].content
+                        val checked = checkedStates[peekIndex]
                         CheckItem(
-                            text = agendas[peekIndex].content,
-                            checked = checkedStates[peekIndex],
-                            isFocused = !checkedStates[peekIndex],
+                            text = content,
+                            checked = checked,
+                            isFocused = !checked,
                             onToggle = { agendaViewModel.toggleAgendaChecked(peekIndex) }
                         )
                     },
@@ -119,7 +119,7 @@ fun MeetingRecordScreen(
                                 CheckItem(
                                     text = item.content,
                                     checked = checkedStates[i],
-                                    isFocused = !checkedStates[i] && firstUncheckedIndex == i,
+                                    isFocused = !checkedStates[i] && peekIndex == i,
                                     onToggle = { agendaViewModel.toggleAgendaChecked(i) }
                                 )
                             }

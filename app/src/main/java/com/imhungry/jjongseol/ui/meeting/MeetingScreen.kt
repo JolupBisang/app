@@ -1,7 +1,6 @@
 package com.imhungry.jjongseol.ui.meeting
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -16,11 +15,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -55,148 +53,122 @@ fun MeetingScreen(
     onFinish: (SilRokNavigation) -> Unit,
     meetingId: Long
 ) {
-    val context = LocalContext.current
-
-    val agendaUiItems by agendaViewModel.agendaUiItems.collectAsState()
-    val isAgendaLoading = agendaUiItems.isEmpty()
+    val agendas by agendaViewModel.agendaItems.collectAsState()
+    val checkedStates by agendaViewModel.checkedStates.collectAsState()
+    val isAgendaLoading = agendas.isEmpty() || checkedStates.isEmpty()
     val errorMessage by meetingViewModel.errorMessage.collectAsState()
     val showDialog = remember { mutableStateOf(false) }
-    val timeText by rememberMeetingStartTime()
 
-    LaunchedEffect(Unit) {
-        meetingViewModel.streamController.loadMicState()
-    }
+    var permissionGranted by remember { mutableStateOf(false) }
+    var startTimeMillis by remember { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(meetingId) {
         agendaViewModel.loadAgendas(meetingId)
     }
 
-    if (errorMessage != null) {
-        showDialog.value = true
-    }
-
+    if (errorMessage != null) showDialog.value = true
     ErrorDialogHandler(
         errorMessage = errorMessage,
         showDialog = showDialog,
         onFinish = onFinish,
-        clearError = { meetingViewModel.clearErrorMessage() }
+        clearError = {
+            meetingViewModel.clearErrorMessage()
+            meetingViewModel.cleanupSession()
+        }
     )
 
-    PermissionHandler {
-        MeetingInitController(
-            allReady = !isAgendaLoading,
-            meetingViewModel = meetingViewModel,
-            meetingId = meetingId,
-            timeProvider = { timeText }
-        )
+    PermissionHandler { granted ->
+        permissionGranted = granted
+    }
 
-        if (isAgendaLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = Color(0xFF86CC3B))
-            }
-        } else {
-            MeetingScreenContent(
-                onFinish = onFinish,
-                onExitConfirmed = {
-                    meetingViewModel.streamController.stopStreaming()
-                    meetingViewModel.streamController.stopSendingTestData()
-                    meetingViewModel.sseSubscriber.stopSse()
-                },
-                viewModel = meetingViewModel,
+    val allReady = permissionGranted && !isAgendaLoading
+    LaunchedEffect(allReady) {
+        if (allReady && startTimeMillis == null) {
+            startTimeMillis = System.currentTimeMillis()
+
+            meetingViewModel.initializeSession(
                 meetingId = meetingId,
-                timeText = timeText,
+                timeProvider = {
+                    val elapsed = (System.currentTimeMillis() - (startTimeMillis ?: 0L)) / 1000
+                    String.format("%02d:%02d:%02d", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60)
+                },
+                scope = meetingViewModel.viewModelScope
             )
         }
     }
-}
 
-@Composable
-private fun MeetingInitController(
-    allReady: Boolean,
-    meetingViewModel: MeetingViewModel,
-    meetingId: Long,
-    timeProvider: () -> String
-) {
-    val context = LocalContext.current
+    val timeText = rememberMeetingElapsedTime(startTimeMillis)
 
-    LaunchedEffect(allReady) {
-        if (allReady) {
-            val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-            prefs.edit().putBoolean("isMeetingOngoing", true).apply()
-
-            meetingViewModel.streamController.apply {
-                startStreaming()
-                resumeEncoding()
-            }
-            meetingViewModel.sseSubscriber.apply {
-                subscribeToSummary(meetingId, timeProvider)
-                subscribeToParticipationRate(meetingId)
-                subscribeToFeedback(meetingId, timeProvider)
-            }
-            meetingViewModel.streamController.startSendingTestData(meetingId, meetingViewModel.viewModelScope)
+    if (isAgendaLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color(0xFF86CC3B))
         }
+    } else {
+        MeetingScreenContent(
+            onFinish = onFinish,
+            onExitConfirmed = {
+                meetingViewModel.cleanupSession()
+                onFinish(SilRokNavigation.MeetingEnd)
+            },
+            viewModel = meetingViewModel,
+            agendaViewModel = agendaViewModel,
+            meetingId = meetingId,
+            timeText = timeText
+        )
     }
 }
 
 @Composable
-private fun rememberMeetingStartTime(): State<String> {
-    val context = LocalContext.current
-    val startTime = remember {
-        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-        prefs.getLong("meetingStartedAt", System.currentTimeMillis())
-    }
-
-    var elapsedSeconds by remember { mutableStateOf(0) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            elapsedSeconds = ((System.currentTimeMillis() - startTime) / 1000).toInt()
+fun rememberMeetingElapsedTime(startTimeMillis: Long?): String {
+    val elapsedTime = produceState(initialValue = "00:00:00", startTimeMillis) {
+        while (startTimeMillis != null) {
+            val elapsed = (System.currentTimeMillis() - startTimeMillis) / 1000
+            val h = elapsed / 3600
+            val m = (elapsed % 3600) / 60
+            val s = elapsed % 60
+            value = String.format("%02d:%02d:%02d", h, m, s)
             delay(1000)
         }
     }
-
-    return remember(elapsedSeconds) {
-        derivedStateOf {
-            val h = elapsedSeconds / 3600
-            val m = (elapsedSeconds % 3600) / 60
-            val s = elapsedSeconds % 60
-            String.format("%02d:%02d:%02d", h, m, s)
-        }
-    }
+    return elapsedTime.value
 }
 
 @Composable
-private fun PermissionHandler(onGranted: @Composable () -> Unit) {
+private fun PermissionHandler(
+    onGranted: (Boolean) -> Unit
+) {
     val context = LocalContext.current
-    var granted by remember { mutableStateOf(false) }
-
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { perms ->
-        granted = perms[Manifest.permission.RECORD_AUDIO] == true &&
+        val granted = perms[Manifest.permission.RECORD_AUDIO] == true &&
                 (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                         perms[Manifest.permission.POST_NOTIFICATIONS] == true)
+        onGranted(granted)
     }
 
     LaunchedEffect(Unit) {
         val requiredPermissions = mutableListOf(Manifest.permission.RECORD_AUDIO)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            requiredPermissions.add(Manifest.permission.BLUETOOTH_CONNECT)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requiredPermissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        granted = requiredPermissions.all {
+        val allGranted = requiredPermissions.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
 
-        if (!granted) {
+        if (allGranted) {
+            onGranted(true)
+        } else {
             launcher.launch(requiredPermissions.toTypedArray())
         }
     }
-
-    if (granted) onGranted()
 }
 
 @OptIn(ExperimentalPagerApi::class)
@@ -205,6 +177,7 @@ fun MeetingScreenContent(
     onFinish: (SilRokNavigation) -> Unit,
     onExitConfirmed: () -> Unit,
     viewModel: MeetingViewModel,
+    agendaViewModel: AgendaViewModel,
     meetingId: Long,
     timeText: String
 ) {
@@ -268,6 +241,7 @@ fun MeetingScreenContent(
             onFinish = onFinish,
             onExitConfirmed = onExitConfirmed,
             viewModel = viewModel,
+            agendaViewModel = agendaViewModel,
             modifier = Modifier
                 .constrainAs(control) {
                     bottom.linkTo(parent.bottom)

@@ -1,23 +1,27 @@
 package com.imhungry.jjongseol.feature.audio
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import com.imhungry.jjongseol.data.network.client.WebSocketManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
-import java.io.FileOutputStream
 
 class RealTimeAudioStreamer(
+    private val context: Context,
     private val userId: Long,
     private val meetingId: Long,
-    private val webSocketManager: WebSocketManager,
+    private val webSocketManager: WebSocketManager?,
     private val cacheDir: File
 ) {
     private val sampleRate = 48000
@@ -39,7 +43,15 @@ class RealTimeAudioStreamer(
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun start(scope: CoroutineScope) {
-        Log.d("Audio", "스트리밍 시작 준비 중...")
+        Log.d("Audio", "start() 호출됨")
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val permission = Manifest.permission.RECORD_AUDIO
+            if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                Log.e("Audio", "RECORD_AUDIO 권한 없음")
+                return
+            }
+        }
 
         try {
             audioRecord = AudioRecord(
@@ -48,30 +60,29 @@ class RealTimeAudioStreamer(
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
                 bufferSize
-            )
-        } catch (e: SecurityException) {
-            Log.e("Audio", "AudioRecord 생성 실패: 권한 부족", e)
-            return
-        } catch (e: IllegalArgumentException) {
-            Log.e("Audio", "AudioRecord 파라미터 오류", e)
+            ).apply {
+                startRecording()
+            }
+            Log.d("Audio", "AudioRecord 생성 및 녹음 시작")
+        } catch (e: Exception) {
+            Log.e("Audio", "AudioRecord 생성 실패", e)
             return
         }
 
         encoder.init()
-        audioRecord?.startRecording()
         isStreaming = true
-        Log.d("Audio", "녹음 시작됨")
+        Log.d("Audio", "Opus 인코더 초기화 완료")
 
-        scope.launch(Dispatchers.IO) {
+        scope.launch {
             val pcmBuffer = ByteArray(frameSize * 2)
             while (isActive && isStreaming) {
                 val read = audioRecord?.read(pcmBuffer, 0, pcmBuffer.size) ?: 0
                 if (read > 0 && !isEncodingPaused) {
                     val pcmChunk = pcmBuffer.copyOf(read)
-                    val opusData = encoder.encode(pcmChunk)
-                    opusData?.let {
-                        val packet = buildPacket(it, userId, meetingId, chunkId++)
-                        webSocketManager.sendBinary(packet)
+                    encoder.encode(pcmChunk)?.let { opusData ->
+                        val packet = buildPacket(opusData, userId, meetingId, chunkId++)
+                        webSocketManager?.sendBinary(packet)
+                        Log.d("Audio", "패킷 전송: chunkId=$chunkId, size=${packet.size}")
                         savePacketToFile(packet, chunkId)
                     }
                 }
@@ -79,42 +90,37 @@ class RealTimeAudioStreamer(
         }
     }
 
-    private fun savePacketToFile(packet: ByteArray, chunkId: Int) {
-        try {
-            val dir = File(cacheDir, "audio_packets/$meetingId/$userId")
-            if (!dir.exists()) dir.mkdirs()
-            val file = File(dir, "packet_$chunkId.bin")
-            FileOutputStream(file).use { it.write(packet) }
-            Log.d("Audio", "패킷 저장: ${file.absolutePath}")
-        } catch (e: Exception) {
-            Log.e("Audio", "패킷 저장 실패", e)
-        }
-    }
-
     fun stop() {
         isStreaming = false
-        audioRecord?.stop()
-        audioRecord?.release()
-        encoder.release()
-        webSocketManager.close()
-
-        CoroutineScope(Dispatchers.IO).launch {
-            deleteAllPackets()
+        audioRecord?.run {
+            stop()
+            release()
         }
+        encoder.release()
+        webSocketManager?.close()
 
-        Log.d("Audio", "스트리밍 종료")
+        CoroutineScope(Dispatchers.IO).launch { deleteAllPackets() }
+    }
+
+    private fun savePacketToFile(packet: ByteArray, chunkId: Int) {
+        runCatching {
+            val dir = File(cacheDir, "audio_packets/$meetingId/$userId").apply { mkdirs() }
+            File(dir, "packet_$chunkId.bin").outputStream().use { it.write(packet) }
+        }.onFailure {
+            Log.e("Audio", "패킷 저장 실패", it)
+        }
     }
 
     private fun deleteAllPackets() {
-        try {
+        runCatching {
             val dir = File(cacheDir, "audio_packets/$meetingId/$userId")
             if (dir.exists()) {
                 dir.listFiles()?.forEach { it.delete() }
                 dir.delete()
-                Log.d("Audio", "모든 패킷 삭제 완료: ${dir.absolutePath}")
+                Log.d("Audio", "녹음 데이터 삭제 완료")
             }
-        } catch (e: Exception) {
-            Log.e("Audio", "패킷 삭제 실패", e)
+        }.onFailure {
+            Log.e("Audio", "삭제 실패", it)
         }
     }
 }

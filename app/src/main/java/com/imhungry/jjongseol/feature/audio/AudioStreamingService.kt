@@ -9,23 +9,22 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.imhungry.jjongseol.BuildConfig
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.network.client.WebSocketManager
 import com.imhungry.jjongseol.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 
 class AudioStreamingService : Service() {
     private val CHANNEL_ID = "audio_streaming_channel"
     private val NOTIFICATION_ID = 1
 
-    private lateinit var scope: CoroutineScope
-    private var streamer: RealTimeAudioStreamer? = null
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private lateinit var streamer: RealTimeAudioStreamer
 
     companion object {
-        private var instance: AudioStreamingService? = null
+        @Volatile private var instance: AudioStreamingService? = null
 
         fun pauseEncoding() = instance?.streamer?.pauseEncoding()
         fun resumeEncoding() = instance?.streamer?.resumeEncoding()
@@ -34,30 +33,29 @@ class AudioStreamingService : Service() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        scope = CoroutineScope(Dispatchers.IO)
+        Log.d("Audio", "서비스 onCreate 호출됨")
         startForegroundWithNotification()
 
-        val ws = WebSocketManager().apply {
-            connect(
-                url = "ws://" + BuildConfig.IP_ADDRESS + ":8080/ws/meeting",
-                onMessage = { Log.d("WebSocket", "서버 응답: $it") },
-                onFailure = { Log.e("WebSocket", "연결 실패", it) }
-            )
-        }
-
         streamer = RealTimeAudioStreamer(
+            context = applicationContext,
             userId = 1L,
             meetingId = 1L,
-            webSocketManager = ws,
+            webSocketManager = null,
             cacheDir = cacheDir
-        ).also {
-            it.start(scope)
-        }
+        )
+
+        streamer.start(serviceScope)
+        Log.d("Audio", "RealTimeAudioStreamer 시작됨")
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        stopSelf()
     }
 
     override fun onDestroy() {
-        streamer?.stop()
-        scope.cancel()
+        streamer.stop()
+        serviceScope.cancel()
+        instance = null
         super.onDestroy()
     }
 
@@ -68,9 +66,9 @@ class AudioStreamingService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Audio Streaming Channel",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "회의 음성을 전송하기 위한 Foreground Service"
+                description = "오디오 스트리밍을 위한 포그라운드 서비스"
             }
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
@@ -78,19 +76,20 @@ class AudioStreamingService : Service() {
         val pendingIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                putExtra("resumeMeeting", true)
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("녹음 중..")
+            .setContentTitle("회의 녹음 중")
             .setSmallIcon(R.drawable.mic)
             .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setOngoing(true)
             .build()
 
         startForeground(NOTIFICATION_ID, notification)
     }
 }
+
