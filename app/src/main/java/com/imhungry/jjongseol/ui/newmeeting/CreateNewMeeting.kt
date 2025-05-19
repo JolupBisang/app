@@ -409,6 +409,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                             location = place.value,
                             targetTime = durationInMinutes,
                             restInterval = breakTime.value.toIntOrNull() ?: 0,
+                            restDuration = breakTimeMinute.value.toIntOrNull() ?: 0,
                             scheduledStartTime = scheduledStartTime.toString(),
                             agendas = agendas,
                             participants = participants
