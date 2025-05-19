@@ -44,7 +44,7 @@ fun SearchScreen(
                     scope.launch {
                         try {
                             val response = userApi.getUserByEmail(it)
-                            matchedEmail = response.email
+                            matchedEmail = response.data.email
                         } catch (e: HttpException) {
                             if (e.code() == 404) {
                                 matchedEmail = null
