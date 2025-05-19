@@ -24,25 +24,27 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
     fun handleBreakTimeChange(newBreakTime: String) {
         if (newBreakTime.all { it.isDigit() }) {
             breakTime.value = newBreakTime
-            if (breakTime.value.isNotEmpty() && breakTimeMinute.value.isNotEmpty()) {
+            //쉬는시간과 간격에 제한을 둘건가
+            /*if (breakTime.value.isNotEmpty() && breakTimeMinute.value.isNotEmpty()) {
                 val breakTimeInt = breakTime.value.toIntOrNull() ?: 0
                 val breakTimeMinuteInt = breakTimeMinute.value.toIntOrNull() ?: 0
                 if (breakTimeInt <= breakTimeMinuteInt) {
                     breakTimeMinute.value = "0"
                 }
-            }
+            }*/
         }
     }
 
     fun handleBreakTimeMinuteChange(newBreakTimeMinute: String) {
         if (newBreakTimeMinute.all { it.isDigit() }) {
-            val breakTimeInt = breakTime.value.toIntOrNull() ?: 0
+            breakTimeMinute.value = newBreakTimeMinute
+            /*val breakTimeInt = breakTime.value.toIntOrNull() ?: 0
             val newBreakTimeMinuteInt = newBreakTimeMinute.toIntOrNull() ?: 0
             if (breakTime.value.isNotEmpty() && newBreakTimeMinuteInt >= breakTimeInt) {
                 breakTimeMinute.value = "0"
             } else {
                 breakTimeMinute.value = newBreakTimeMinute
-            }
+            }*/
         }
     }
 

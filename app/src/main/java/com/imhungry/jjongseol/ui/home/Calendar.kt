@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,44 +40,28 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.ui.home.meetingdata.ScheduleItem
+import com.imhungry.jjongseol.data.model.home.MeetingResponse
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
+import com.imhungry.jjongseol.viewmodel.ScheduleViewModel
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
-val schedules = listOf(
-    ScheduleItem("회의 1", "13:00", "2025.04.26"),
-    ScheduleItem("회의 2", "15:00", "2025.04.26"),
-    ScheduleItem("회의 1", "13:00", "2025.04.26"),
-    ScheduleItem("회의 2", "15:00", "2025.04.26"),
-    ScheduleItem("회의 1", "13:00", "2025.04.26"),
-    ScheduleItem("회의 2", "15:00", "2025.04.26"),
-    ScheduleItem("회의 1", "13:00", "2025.04.26"),
-    ScheduleItem("회의 2", "15:00", "2025.04.26"),
-    ScheduleItem("회의 1", "13:00", "2025.04.26"),
-    ScheduleItem("회의 2", "15:00", "2025.04.26"),
-    ScheduleItem("워크샵", "11:00", "2025.04.26"),
-    ScheduleItem("고객 미팅", "14:00", "2025.04.27"),
-    ScheduleItem("프로젝트 리뷰", "16:00", "2025.06.28"),
-    ScheduleItem("웹 세미나", "10:00", "2025.07.01"),
-    ScheduleItem("팀 런치", "12:00", "2025.07.01"),
-    ScheduleItem("제품 발표회", "15:00", "2025.07.02"),
-    ScheduleItem("경영진 회의", "09:00", "2025.07.03"),
-    ScheduleItem("기술 트레이닝", "13:30", "2025.07.03"),
-    ScheduleItem("마케팅 전략 논의", "11:00", "2025.07.04"),
-    ScheduleItem("영업 팀 회의", "15:00", "2025.07.04"),
-    ScheduleItem("개발자 컨퍼런스", "10:00", "2025.07.05"),
-    ScheduleItem("재무 검토 회의", "14:00", "2025.07.05")
-)
-
 @Composable
-fun CalendarScreen(navController: NavController) {
+fun CalendarScreen(navController: NavController, viewModel: ScheduleViewModel = hiltViewModel()) {
     var currentYearMonth by remember { mutableStateOf(YearMonth.now()) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var showNumberPicker by remember { mutableStateOf(false) }
+    val meetings by viewModel.meetings
+
+    LaunchedEffect(currentYearMonth) {
+        viewModel.loadMeetings(currentYearMonth)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -105,7 +90,7 @@ fun CalendarScreen(navController: NavController) {
             yearMonth = currentYearMonth,
             selectedDate = selectedDate,
             onDateSelected = { selectedDate = it },
-            schedules = schedules
+            meetings = meetings
         )
     }
 
@@ -130,12 +115,17 @@ fun CalendarScreen(navController: NavController) {
         modifier = Modifier.padding(top = 30.dp,bottom = 10.dp)
     )
 
-    val handleScheduleClick = { schedule: ScheduleItem ->
+    val handleScheduleClick = { schedule: MeetingResponse ->
         //navController.navigate("completeProfile")
     }
 
-    DailyScheduleView(selectedDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd")),
-        schedules, handleScheduleClick)
+    val selectedDateStr = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
+    DailyScheduleView(
+        selectedDate = selectedDateStr,
+        schedules = meetings,
+        onScheduleClick = handleScheduleClick
+    )
 
 }
 
@@ -194,14 +184,16 @@ fun CalendarHeader(
         )
     }
 }
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CalendarGrid(
     yearMonth: YearMonth,
     selectedDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
-    schedules: List<ScheduleItem>
+    meetings: List<MeetingResponse>
 ) {
+    val today = LocalDate.now()
     val firstDayOfMonth = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
     val firstDayOfWeek = firstDayOfMonth.dayOfWeek.value % 7
@@ -209,18 +201,12 @@ fun CalendarGrid(
 
     val dates = (0 until totalCells).map { index ->
         val dayOffset = index - firstDayOfWeek
-        val date = firstDayOfMonth.plusDays(dayOffset.toLong())
-        date
+        firstDayOfMonth.plusDays(dayOffset.toLong())
     }
 
-    val formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd")
-    val datesWithEvents = schedules
-        .filter { schedule ->
-            val scheduleDate = LocalDate.parse(schedule.date, formatter)
-            scheduleDate.month == yearMonth.month && scheduleDate.year == yearMonth.year
-        }
-        .map { LocalDate.parse(it.date, formatter) }
-        .toSet()
+    val scheduleMap = meetings.groupBy {
+        LocalDateTime.parse(it.scheduledStartTime).toLocalDate()
+    }
 
     Column {
         Row(Modifier.fillMaxWidth()) {
@@ -242,23 +228,38 @@ fun CalendarGrid(
                 week.forEach { date ->
                     val isCurrentMonth = date.month == yearMonth.month
                     val isSelected = date == selectedDate
-                    val dayOfWeek = date.dayOfWeek.value % 7
-                    val hasEvent = date in datesWithEvents
+                    val hasMeeting = scheduleMap.containsKey(date)
+                    val meetingsOnDate = scheduleMap[date].orEmpty()
+
+                    val hasCompleted = meetingsOnDate.any { it.status == "COMPLETED" }
+                    val hasWaiting = meetingsOnDate.any { it.status == "WAITING" }
+                    //진행중이거나 취소된 회의는 어떻게 표시할건지
+
+                    val backgroundColor = if (isSelected) {
+                        Color(0xFFDAF2FF)
+                    } else {
+                        Color.Transparent
+                    }
+
+                    //색상은 임시지정
+                    val textColor = when {
+                        //isSelected -> Color.Black
+                        date.isAfter(today) && hasMeeting -> Color.Yellow //미래 회의
+                        date.isBefore(today) && hasCompleted -> md_theme_button_color_blue //완료된 회의
+                        date.isBefore(today) && hasWaiting -> Color.Green //대기 중 회의
+                        isCurrentMonth && date.dayOfWeek.value % 7 == 0 -> Color.Red //일요일
+                        isCurrentMonth && date.dayOfWeek.value % 7 == 6 -> Color.Blue //토요일
+                        isCurrentMonth -> Color.Black //일반
+                        else -> Color.White
+                        //else -> Color.LightGray //다크 모드 하면 이걸로
+                    }
 
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f)
                             .padding(2.dp)
-                            .background(
-                                when {
-                                    isSelected && isCurrentMonth && hasEvent -> Color(0xFFDAF2FF) //일정이 있고 선택된 날
-                                    isSelected && isCurrentMonth -> Color(0xFFDAF2FF) //선택된 날
-                                    !isCurrentMonth -> Color.White.copy(alpha = 0.3f)
-                                    else -> Color.Transparent
-                                },
-                                shape = RoundedCornerShape(100)
-                            )
+                            .background(backgroundColor, shape = RoundedCornerShape(100))
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
@@ -270,13 +271,7 @@ fun CalendarGrid(
                         Text(
                             text = date.dayOfMonth.toString(),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = when {
-                                isSelected && hasEvent -> md_theme_button_color_blue //일정이 있고 선택된 날
-                                hasEvent -> md_theme_button_color_blue //일정만 있는 날
-                                isCurrentMonth && dayOfWeek == 0 -> Color.Red //일요일
-                                isCurrentMonth -> Color.Black //일반
-                                else -> Color.White
-                            }
+                            color = textColor
                         )
                     }
                 }
@@ -345,8 +340,8 @@ fun NumberPickerDialog(
 
 
 @Composable
-fun DailyScheduleView(selectedDate: String, schedules: List<ScheduleItem>, onScheduleClick: (ScheduleItem) -> Unit) {
-    val dailySchedules = schedules.filter { it.date == selectedDate }
+fun DailyScheduleView(selectedDate: String, schedules: List<MeetingResponse>, onScheduleClick: (MeetingResponse) -> Unit) {
+    val dailySchedules = schedules.filter { it.scheduledStartTime.startsWith(selectedDate) }
 
     if (dailySchedules.isEmpty()) {
         Text("일정이 없습니다", modifier = Modifier.fillMaxWidth().widthIn(100.dp).padding(top=20.dp), textAlign = TextAlign.Center)
@@ -371,7 +366,9 @@ fun DailyScheduleView(selectedDate: String, schedules: List<ScheduleItem>, onSch
                     )
                     Spacer(Modifier.weight(1f))
                     Text(
-                        text = schedule.time,
+                        text = LocalDateTime.parse(schedule.scheduledStartTime)
+                            .toLocalTime()
+                            .format(DateTimeFormatter.ofPattern("HH:mm")),
                         style = androidx.compose.material.MaterialTheme.typography.body1
                     )
                 }

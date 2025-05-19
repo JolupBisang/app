@@ -33,6 +33,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,9 +52,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.launch
 
 
@@ -153,7 +157,15 @@ fun HomeScreen(navController: NavController) {
 
 @Composable
 fun MainHomeScreen(navController: NavController){
+    val viewModel: MeetingViewModel = hiltViewModel()
+    val meetings by viewModel.meetings.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadMeetings()
+    }
+
     var calendarToggle by remember { mutableStateOf(true) }
+
     ConstraintLayout (modifier = Modifier
         .background(Color.White)
         .fillMaxSize()){
@@ -223,7 +235,12 @@ fun MainHomeScreen(navController: NavController){
                     bottom.linkTo(parent.bottom)
                 }
         ) {
-            MeetingCard()
+            MeetingCardList(
+                meetings = meetings,
+                onJoinMeeting = { meeting ->
+                    //navController.navigate("meeting/${meeting.id}")
+                }
+            )
         }
 
         Box(
@@ -271,56 +288,6 @@ fun CreateNewMeetingButton(onClick: () -> Unit) {
                 )
             }
         )
-    }
-}
-
-@Composable
-fun MeetingCard() {
-    var isVisible by remember { mutableStateOf(true) }
-
-    if (isVisible) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-                .height(180.dp),
-            elevation = 2.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "현재 진행 중인 회의가 있어요!",
-                    color = Color.DarkGray,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "종설 회의",
-                    color = Color.DarkGray,
-                )
-                Text(
-                    text = "2025.04.01. 18:00~20:00",
-                    color = Color.DarkGray,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("참여하지 않기", Modifier.clickable{isVisible = false}
-                        .padding(10.dp),
-                        color = md_theme_button_color_blue)
-                    Spacer(Modifier.weight(1f))
-                    Text("바로 참여하기 >", Modifier.clickable {}
-                        .padding(10.dp),
-                        color = md_theme_button_color_blue)
-                }
-            }
-        }
     }
 }
 

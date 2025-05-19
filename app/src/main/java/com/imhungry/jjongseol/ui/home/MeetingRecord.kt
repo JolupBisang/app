@@ -12,46 +12,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.jjongseol.ui.home.meetingdata.MeetingRecord
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
-fun MeetingRecordsScreen() {
+fun MeetingRecordsScreen(viewModel: MeetingViewModel = hiltViewModel()) {
     var showDetails by remember { mutableStateOf(false) }
     var pagingIndex by remember { mutableStateOf(10) }
-    val meetingRecordList = listOf(
-        MeetingRecord("회의 1", "2025.1.2"),
-        MeetingRecord("회의 2", "2025.1.2"),
-        MeetingRecord("회의 3", "2026.1.2"),
-        MeetingRecord("회의 4", "2026.1.2"),
-        MeetingRecord("회의 1", "2022.1.2"),
-        MeetingRecord("회의 2", "2022.10.25"),
-        MeetingRecord("회의 3", "2022.11.20"),
-        MeetingRecord("회의 4", "2022.12.27"),
-        MeetingRecord("회의 5", "2023.1.2"),
-        MeetingRecord("회의 6", "2024.10.6"),
-        MeetingRecord("회의 1", "2022.1.2"),
-        MeetingRecord("회의 2", "2022.10.25"),
-        MeetingRecord("회의 3", "2022.11.20"),
-        MeetingRecord("회의 4", "2022.12.27"),
-        MeetingRecord("회의 5", "2023.1.2"),
-        MeetingRecord("회의 6", "2024.10.6"),
-        MeetingRecord("회의 1", "2025.1.2"),
-        MeetingRecord("회의 2", "2025.1.2"),
-        MeetingRecord("회의 3", "2026.1.2"),
-        MeetingRecord("회의 4", "2026.1.2"),
-        MeetingRecord("회의 1", "2022.1.2"),
-        MeetingRecord("회의 2", "2022.10.25"),
-        MeetingRecord("회의 3", "2022.11.20"),
-        MeetingRecord("회의 4", "2022.12.27"),
-        MeetingRecord("회의 5", "2023.1.2"),
-        MeetingRecord("회의 6", "2024.10.6"),
-        MeetingRecord("회의 1", "2022.1.2"),
-        MeetingRecord("회의 2", "2022.10.25"),
-        MeetingRecord("회의 3", "2022.11.20"),
-        MeetingRecord("회의 4", "2022.12.27"),
-        MeetingRecord("회의 5", "2023.1.2"),
-        MeetingRecord("회의 6", "2024.10.6")
-    )
+
+    val pastMeetings by viewModel.pastMeetings.collectAsState()
+    val currentList = pastMeetings.take(pagingIndex)
 
     Column(
         modifier = Modifier
@@ -68,26 +39,24 @@ fun MeetingRecordsScreen() {
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "회의 기록",
-                style = MaterialTheme.typography.titleLarge
-            )
+            Text("지난 회의", style = MaterialTheme.typography.titleLarge)
             Icon(
                 imageVector = Icons.Filled.ArrowDropDown,
                 contentDescription = "토글 버튼",
                 modifier = Modifier
                     .size(30.dp)
-                    .graphicsLayer {
-                        rotationZ = if (showDetails) 0f else 270f
-                    }
+                    .graphicsLayer { rotationZ = if (showDetails) 0f else 270f }
             )
         }
+
         if (showDetails) {
-            val currentList = meetingRecordList.take(pagingIndex)
-            currentList.forEach { record ->
-                MeetingRecordButton(record)
+            currentList.forEach {
+                MeetingRecordButton(
+                    MeetingRecord(it.title, it.startDateTime.toLocalDate().toString())
+                )
             }
-            if (pagingIndex < meetingRecordList.size) {
+
+            if (pagingIndex < pastMeetings.size) {
                 Text(
                     text = "더보기",
                     style = MaterialTheme.typography.bodyLarge.copy(color = Color.Gray),
@@ -95,7 +64,7 @@ fun MeetingRecordsScreen() {
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
                         .clickable {
-                            pagingIndex = (pagingIndex + 10).coerceAtMost(meetingRecordList.size)
+                            pagingIndex = (pagingIndex + 10).coerceAtMost(pastMeetings.size)
                         }
                 )
             }
