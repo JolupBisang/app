@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
@@ -206,16 +208,27 @@ fun TextField(
     placeholder: @Composable (() -> Unit)? = null
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val interactionSource = remember { MutableInteractionSource() }
+    var isFocused by remember { mutableStateOf(false) }
 
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier,
+        modifier = modifier.onFocusChanged { focusState ->
+            if (isFocused && !focusState.isFocused) {
+                onDone()
+                keyboardController?.hide()
+            }
+            isFocused = focusState.isFocused
+        },
         singleLine = true,
+        interactionSource = interactionSource,
         keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = {
             onDone()
             keyboardController?.hide()
+            focusManager.clearFocus()
         }),
         textStyle = textStyle,
         placeholder = placeholder
