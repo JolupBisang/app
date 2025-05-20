@@ -22,7 +22,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,18 +36,21 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(
-    onGoogleClick: () -> Unit = {},
+    onGoogleClick: () -> Unit,
     onLoginSuccess: () -> Unit,
-    loginViewModel: LoginViewModel = hiltViewModel()
+    loginViewModel: LoginViewModel
 ) {
-    LaunchedEffect(Unit) {
-        if (loginViewModel.isLoggedIn.value == true) {
+    val isLoggedIn by loginViewModel.isLoggedIn.collectAsState()
+    val alreadyNavigated = remember { mutableStateOf(false) }
+
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn && !alreadyNavigated.value) {
+            alreadyNavigated.value = true
             onLoginSuccess()
         }
     }

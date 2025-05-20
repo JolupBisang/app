@@ -14,16 +14,18 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private val loginViewModel: LoginViewModel by viewModels()
-    private val startDestinationState = mutableStateOf<SilRokNavigation>(SilRokNavigation.Splash)
+
+    private val startDestinationState = mutableStateOf(SilRokNavigation.Splash)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         handleIntent(intent)
 
         setContent {
             AppTheme {
-                SilRokApp(startDestinationState)
+                SilRokApp(startDestinationState, loginViewModel)
             }
         }
     }
@@ -31,23 +33,12 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
-
-        if (intent.getBooleanExtra("resumeMeeting", false)) {
-            val prefs = getSharedPreferences("meeting_prefs", MODE_PRIVATE)
-            prefs.edit().putBoolean("navigateToMeeting", true).apply()
-        }
+        startDestinationState.value = SilRokNavigation.Splash
     }
 
     private fun handleIntent(intent: Intent?) {
         intent?.data?.getQueryParameter("token")?.let { token ->
             loginViewModel.saveToken(token)
-        }
-
-        val prefs = getSharedPreferences("meeting_prefs", MODE_PRIVATE)
-        if (prefs.getBoolean("isMeetingOngoing", false)) {
-            startDestinationState.value = SilRokNavigation.Meeting
-        } else {
-            startDestinationState.value = SilRokNavigation.Splash
         }
     }
 }

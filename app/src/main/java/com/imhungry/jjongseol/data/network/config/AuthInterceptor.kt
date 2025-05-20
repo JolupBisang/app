@@ -9,12 +9,20 @@ class AuthInterceptor @Inject constructor(
     private val loginRepository: LoginRepository
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val token = loginRepository.getToken()
+        val request = chain.request().newBuilder().apply {
+            loginRepository.getToken()?.let {
+                addHeader("Authorization", "Bearer $it")
+            }
+        }.build()
 
-        val newRequest = chain.request().newBuilder()
-        if (!token.isNullOrEmpty()) {
-            newRequest.addHeader("Authorization", "Bearer $token")
+        val response = chain.proceed(request)
+
+        if (!response.isSuccessful && response.code == 401) {
+            loginRepository.clearToken()
         }
-        return chain.proceed(newRequest.build())
+
+        return response
     }
 }
+
+

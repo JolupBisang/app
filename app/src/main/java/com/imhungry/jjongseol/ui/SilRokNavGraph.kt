@@ -4,12 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.imhungry.jjongseol.ui.completedmeeting.CompletedMeetingScreen
 import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
 import com.imhungry.jjongseol.ui.home.HomeScreen
@@ -26,8 +24,9 @@ import com.imhungry.jjongseol.viewmodel.LoginViewModel
 
 @Composable
 fun SilRokNavGraph(
-    startDestination: SilRokNavigation = SilRokNavigation.Splash,
-    navController: NavHostController = rememberNavController(),
+    startDestination: SilRokNavigation,
+    navController: NavHostController,
+    loginViewModel: LoginViewModel,
     modifier: Modifier = Modifier
 ) {
     val navActions = remember(navController) { SilRokNavigationActions(navController) }
@@ -51,8 +50,6 @@ fun SilRokNavGraph(
 
         composable(SilRokNavigation.Login.route) {
             val context = LocalContext.current
-            val loginViewModel: LoginViewModel = hiltViewModel()
-
             LoginScreen(
                 loginViewModel = loginViewModel,
                 onGoogleClick = { loginViewModel.launchGoogleLogin(context) },

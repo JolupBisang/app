@@ -1,30 +1,25 @@
 package com.imhungry.jjongseol.viewmodel
 
 import android.content.Context
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.imhungry.jjongseol.data.repository.AuthRepository
 import com.imhungry.jjongseol.data.repository.LoginRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val loginRepository: LoginRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val loginRepository: LoginRepository
 ) : ViewModel() {
 
-    private val _isLoggedIn = MutableLiveData(loginRepository.isLoggedIn())
-    val isLoggedIn: LiveData<Boolean> get() = _isLoggedIn
+    val isLoggedIn: StateFlow<Boolean> = loginRepository.isLoggedInFlow
 
-    fun saveToken(token: String) {
-        loginRepository.saveToken(token)
-        _isLoggedIn.value = true
-    }
+    fun saveToken(token: String) = loginRepository.saveToken(token)
 
-    fun launchGoogleLogin(activityContext: Context) {
-        authRepository.launchGoogleOAuth(activityContext)
-    }
+    fun clearToken() = loginRepository.clearToken()
+
+    fun launchGoogleLogin(context: Context) = authRepository.launchGoogleOAuth(context)
 }
 
