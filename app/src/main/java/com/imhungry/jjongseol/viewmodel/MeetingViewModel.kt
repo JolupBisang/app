@@ -2,6 +2,7 @@ package com.imhungry.jjongseol.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
@@ -78,6 +79,7 @@ class MeetingViewModel @Inject constructor(
         val token = getJwtToken()
 
         if (streamController.startStreamingSafely(meetingId, token)) {
+            Log.d("MeetingScreen", "initializeSession 호출됨")
             streamController.resumeEncoding()
         }
 

@@ -6,21 +6,12 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Divider
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,16 +45,41 @@ fun MeetingScreen(
     meetingId: Long
 ) {
     val agendas by agendaViewModel.agendaItems.collectAsState()
-    val checkedStates by agendaViewModel.checkedStates.collectAsState()
-    val isAgendaLoading = agendas.isEmpty() || checkedStates.isEmpty()
+    val isAgendaLoading = agendas.isEmpty()
     val errorMessage by meetingViewModel.errorMessage.collectAsState()
     val showDialog = remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
     var permissionGranted by remember { mutableStateOf(false) }
+    var permissionRequested by remember { mutableStateOf(false) }
     var startTimeMillis by remember { mutableStateOf<Long?>(null) }
+
+    val requiredPermissions = remember {
+        buildList {
+            add(Manifest.permission.RECORD_AUDIO)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        permissionGranted = requiredPermissions.all {
+            perms[it] == true
+        }
+        permissionRequested = true
+    }
 
     LaunchedEffect(meetingId) {
         agendaViewModel.loadAgendas(meetingId)
+        permissionGranted = requiredPermissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+        if (!permissionGranted && !permissionRequested) {
+            launcher.launch(requiredPermissions.toTypedArray())
+        }
     }
 
     if (errorMessage != null) showDialog.value = true
@@ -76,10 +92,6 @@ fun MeetingScreen(
             meetingViewModel.cleanupSession()
         }
     )
-
-    PermissionHandler { granted ->
-        permissionGranted = granted
-    }
 
     val allReady = permissionGranted && !isAgendaLoading
     LaunchedEffect(allReady) {
@@ -99,7 +111,7 @@ fun MeetingScreen(
 
     val timeText = rememberMeetingElapsedTime(startTimeMillis)
 
-    if (isAgendaLoading) {
+    if (!allReady) {
         Box(
             modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
@@ -114,7 +126,6 @@ fun MeetingScreen(
                 onFinish(SilRokNavigation.MeetingEnd)
             },
             viewModel = meetingViewModel,
-            agendaViewModel = agendaViewModel,
             meetingId = meetingId,
             timeText = timeText
         )
@@ -136,48 +147,12 @@ fun rememberMeetingElapsedTime(startTimeMillis: Long?): String {
     return elapsedTime.value
 }
 
-@Composable
-private fun PermissionHandler(
-    onGranted: (Boolean) -> Unit
-) {
-    val context = LocalContext.current
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { perms ->
-        val granted = perms[Manifest.permission.RECORD_AUDIO] == true &&
-                (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                        perms[Manifest.permission.POST_NOTIFICATIONS] == true)
-        onGranted(granted)
-    }
-
-    LaunchedEffect(Unit) {
-        val requiredPermissions = mutableListOf(Manifest.permission.RECORD_AUDIO)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            requiredPermissions.add(Manifest.permission.BLUETOOTH_CONNECT)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requiredPermissions.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-
-        val allGranted = requiredPermissions.all {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-        }
-
-        if (allGranted) {
-            onGranted(true)
-        } else {
-            launcher.launch(requiredPermissions.toTypedArray())
-        }
-    }
-}
-
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun MeetingScreenContent(
     onFinish: (SilRokNavigation) -> Unit,
     onExitConfirmed: () -> Unit,
     viewModel: MeetingViewModel,
-    agendaViewModel: AgendaViewModel,
     meetingId: Long,
     timeText: String
 ) {
@@ -241,7 +216,6 @@ fun MeetingScreenContent(
             onFinish = onFinish,
             onExitConfirmed = onExitConfirmed,
             viewModel = viewModel,
-            agendaViewModel = agendaViewModel,
             modifier = Modifier
                 .constrainAs(control) {
                     bottom.linkTo(parent.bottom)

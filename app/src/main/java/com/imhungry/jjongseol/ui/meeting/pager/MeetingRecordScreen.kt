@@ -46,14 +46,13 @@ fun MeetingRecordScreen(
     meetingId: Long
 ) {
     val agendas by agendaViewModel.agendaItems.collectAsState()
-    val checkedStates by agendaViewModel.checkedStates.collectAsState()
     val feedbackList by meetingViewModel.sseSubscriber.feedbackList.collectAsState()
 
     LaunchedEffect(meetingId) {
         agendaViewModel.loadAgendas(meetingId)
     }
 
-    val peekIndex = checkedStates.indexOfFirst { !it }.let { if (it == -1) agendas.lastIndex else it }
+    val peekIndex = agendas.indexOfFirst { !it.isCompleted }.let { if (it == -1) agendas.lastIndex else it }
     val isLoading = agendas.isEmpty()
     val showTerminationNotification = remember { mutableStateOf(false) }
 
@@ -105,12 +104,12 @@ fun MeetingRecordScreen(
                     collapsedHeight = 60.dp,
                     peekContent = {
                         val content = agendas[peekIndex].content
-                        val checked = checkedStates[peekIndex]
+                        val checked = agendas[peekIndex].isCompleted
                         CheckItem(
                             text = content,
                             checked = checked,
                             isFocused = !checked,
-                            onToggle = { agendaViewModel.toggleAgendaChecked(peekIndex) }
+                            onToggle = { agendaViewModel.onToggleAgenda(peekIndex) }
                         )
                     },
                     content = {
@@ -118,9 +117,9 @@ fun MeetingRecordScreen(
                             agendas.forEachIndexed { i, item ->
                                 CheckItem(
                                     text = item.content,
-                                    checked = checkedStates[i],
-                                    isFocused = !checkedStates[i] && peekIndex == i,
-                                    onToggle = { agendaViewModel.toggleAgendaChecked(i) }
+                                    checked = item.isCompleted,
+                                    isFocused = !item.isCompleted && peekIndex == i,
+                                    onToggle = { agendaViewModel.onToggleAgenda(i) }
                                 )
                             }
                         }

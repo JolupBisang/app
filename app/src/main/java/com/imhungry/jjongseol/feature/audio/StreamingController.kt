@@ -20,10 +20,14 @@ class StreamingController @Inject constructor(
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    fun startStreamingService(): Boolean {
+    fun startStreamingService(meetingId: Long, jwtToken: String): Boolean {
         if (!hasRecordAudioPermission()) return false
 
-        val intent = Intent(context, AudioStreamingService::class.java)
+        val intent = Intent(context, AudioStreamingService::class.java).apply {
+            putExtra("meetingId", meetingId)
+            putExtra("jwtToken", jwtToken)
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             context.startForegroundService(intent)
         else
@@ -32,8 +36,9 @@ class StreamingController @Inject constructor(
         return true
     }
 
-    fun stopStreamingService() {
-        application.stopService(Intent(application, AudioStreamingService::class.java))
+    fun stopStreamingService(deleteLocalPackets: Boolean = false) {
+        AudioStreamingService.getStreamer()?.stop(deleteLocalPackets)
+        context.stopService(Intent(context, AudioStreamingService::class.java))
     }
 
     fun pauseEncoding() {
@@ -44,4 +49,3 @@ class StreamingController @Inject constructor(
         AudioStreamingService.resumeEncoding()
     }
 }
-

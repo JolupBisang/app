@@ -3,7 +3,8 @@ package com.imhungry.jjongseol.data.network.client
 import android.util.Log
 import com.google.gson.Gson
 import com.imhungry.jjongseol.BuildConfig
-import com.imhungry.jjongseol.data.model.error.ApiError
+import com.imhungry.jjongseol.data.model.response.SocketResponse
+import com.imhungry.jjongseol.data.model.response.SocketResponseType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -19,37 +20,63 @@ class WebSocketManager @Inject constructor() {
         .readTimeout(3, TimeUnit.SECONDS)
         .build()
 
+    private var isConnected = false
+
     fun connect(
         meetingId: Long,
         jwtToken: String,
         onMessage: (String) -> Unit,
         onFailure: (Throwable) -> Unit,
-        onErrorMessage: (String) -> Unit
+        onErrorMessage: (String) -> Unit,
+        onChunkIdReceived: ((Int) -> Unit)? = null,
     ) {
-        val url = "ws://${BuildConfig.IP_ADDRESS}:8080/ws/meeting/audio/$meetingId?token=$jwtToken"
+        if (isConnected) {
+            Log.w("WebSocket", "이미 연결되어 있음. 기존 연결 종료 후 재연결")
+            close()
+        }
 
-        val request = Request.Builder()
-            .url(url)
-            .build()
+        val url = "ws://${BuildConfig.IP_ADDRESS}:8080/ws/meeting/audio/$meetingId?token=$jwtToken"
+        val request = Request.Builder().url(url).build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                isConnected = true
+                Log.i("WebSocket", "WebSocket 연결 성공 (code=${response.code})")
+            }
+
             override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d("Audio", "onMessage: $text")
+                Log.d("WebSocket", "onMessage 수신됨: $text")
+
                 try {
-                    val apiError = Gson().fromJson(text, ApiError::class.java)
-                    apiError.message?.let {
-                        Log.w("Audio", "ApiError 감지: $it")
-                        onErrorMessage(it)
+                    val response = Gson().fromJson(text, SocketResponse::class.java)
+                    when (response.type) {
+                        SocketResponseType.LAST_PROCESSED_CHUNK_ID -> {
+                            val lastChunkId = (response.data as Double).toInt()
+                            Log.i("WebSocket", "마지막 chunkId 수신됨: $lastChunkId")
+                            onChunkIdReceived?.invoke(lastChunkId)
+                        }
+                        SocketResponseType.ERROR_MESSAGE -> {
+                            val errorMsg = response.data.toString()
+                            Log.w("WebSocket", "WebSocket 에러 메시지 수신: $errorMsg")
+                            onErrorMessage(errorMsg)
+                        }
+                        else -> Log.d("WebSocket", "알 수 없는 메시지 타입 수신: ${response.type}")
                     }
                 } catch (e: Exception) {
-                    Log.d("Audio", "일반 텍스트 메시지 수신: $text")
+                    Log.w("WebSocket", "SocketResponse 파싱 실패. 일반 텍스트로 처리", e)
+                    onMessage(text)
                 }
-                onMessage(text)
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.e("Audio", "WebSocket 연결 실패", t)
+                isConnected = false
+                Log.e("WebSocket", "연결 실패 (responseCode=${response?.code})", t)
                 onFailure(t)
+            }
+
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                isConnected = false
+                Log.i("WebSocket", "연결 종료됨: code=$code, reason=$reason")
             }
         })
     }
@@ -57,12 +84,15 @@ class WebSocketManager @Inject constructor() {
     fun sendBinary(data: ByteArray) {
         val success = webSocket?.send(ByteString.of(*data)) ?: false
         if (!success) {
-            // 전송 실패 시 처리
+            Log.e("WebSocket", "바이너리 전송 실패 - 연결 상태 확인 필요")
         }
     }
 
     fun close() {
-        webSocket?.close(1000, "Normal closure")
-        webSocket = null
+        if (isConnected) {
+            webSocket?.close(1000, "Normal closure")
+            webSocket = null
+            isConnected = false
+        }
     }
 }

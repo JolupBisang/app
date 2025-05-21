@@ -20,34 +20,20 @@ class MeetingStreamController @Inject constructor(
 ) {
     private val _micEnabled = MutableStateFlow(true)
     val micEnabled: StateFlow<Boolean> = _micEnabled.asStateFlow()
+
     var onWebSocketErrorMessage: ((String) -> Unit)? = null
 
     fun startStreamingSafely(meetingId: Long, jwtToken: String): Boolean {
-        Log.d("MeetingStreamCtrl", "startStreamingSafely() 호출됨. meetingId=$meetingId")
-
-        if (!streamingController.startStreamingService()) {
+        if (!streamingController.startStreamingService(meetingId, jwtToken)) {
             Log.e("MeetingStreamCtrl", "StreamingService 실행 실패: 권한 없음")
             return false
         }
-
-        Log.d("MeetingStreamCtrl", "StreamingService 실행 성공 → WebSocket 연결 시도")
-        webSocketManager.connect(
-            meetingId = meetingId,
-            jwtToken = jwtToken,
-            onMessage = { Log.d("WebSocket", "서버 메시지 수신: $it") },
-            onFailure = { throwable -> Log.e("WebSocket", "WebSocket 실패", throwable) },
-            onErrorMessage = { message ->
-                Log.e("WebSocket", "WebSocket 에러 메시지 수신: $message")
-                onWebSocketErrorMessage?.invoke(message)
-            }
-        )
-
         return true
     }
 
-    fun stopStreaming() {
+    fun stopStreaming(deleteLocalPackets: Boolean = false) {
         webSocketManager.close()
-        streamingController.stopStreamingService()
+        streamingController.stopStreamingService(deleteLocalPackets)
     }
 
     fun pauseEncoding() = streamingController.pauseEncoding()

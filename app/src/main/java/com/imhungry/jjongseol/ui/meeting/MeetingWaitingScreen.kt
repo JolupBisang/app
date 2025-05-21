@@ -1,26 +1,16 @@
 package com.imhungry.jjongseol.ui.meeting
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Divider
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,9 +25,6 @@ import com.imhungry.jjongseol.ui.component.layout.TopSheet
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 @Composable
 fun MeetingWaitingScreen(
@@ -49,8 +36,6 @@ fun MeetingWaitingScreen(
     val agendas by agendaViewModel.agendaItems.collectAsState()
     val errorMessage by meetingViewModel.errorMessage.collectAsState()
     val showDialog = remember { mutableStateOf(false) }
-    val checkedStates = remember(agendas) { mutableStateListOf<Boolean>().apply { addAll(agendas.map { it.isCompleted }) } }
-    val isSaving = remember { mutableStateOf(false) }
 
     LaunchedEffect(meetingId) {
         val success = meetingViewModel.loadMeetingDetail(meetingId)
@@ -59,8 +44,8 @@ fun MeetingWaitingScreen(
         }
     }
 
-    val firstUncheckedIndex = checkedStates.indexOfFirst { !it }
-    val peekIndex = if (firstUncheckedIndex == -1) checkedStates.lastIndex else firstUncheckedIndex
+    val firstUncheckedIndex = agendas.indexOfFirst { !it.isCompleted }
+    val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
     val isLoading = agendas.isEmpty()
 
     Column(
@@ -81,9 +66,9 @@ fun MeetingWaitingScreen(
                 peekContent = {
                     CheckItem(
                         text = agendas[peekIndex].content,
-                        checked = checkedStates[peekIndex],
-                        isFocused = !checkedStates[peekIndex],
-                        onToggle = { checkedStates[peekIndex] = !checkedStates[peekIndex] }
+                        checked = agendas[peekIndex].isCompleted,
+                        isFocused = !agendas[peekIndex].isCompleted,
+                        onToggle = { agendaViewModel.onToggleAgenda(peekIndex) }
                     )
                 },
                 content = {
@@ -91,9 +76,9 @@ fun MeetingWaitingScreen(
                         agendas.forEachIndexed { i, item ->
                             CheckItem(
                                 text = item.content,
-                                checked = checkedStates[i],
-                                isFocused = !checkedStates[i] && firstUncheckedIndex == i,
-                                onToggle = { checkedStates[i] = !checkedStates[i] }
+                                checked = item.isCompleted,
+                                isFocused = !item.isCompleted && firstUncheckedIndex == i,
+                                onToggle = { agendaViewModel.onToggleAgenda(i) }
                             )
                         }
                     }
@@ -120,24 +105,9 @@ fun MeetingWaitingScreen(
                         textAlign = TextAlign.Center,
                         color = Color.LightGray
                     )
-                    StartButton(
-                        onClick = {
-                            isSaving.value = true
-                            CoroutineScope(Dispatchers.IO).launch {
-                                agendas.forEachIndexed { index, agenda ->
-                                    agendaViewModel.saveAgendaCompletionStatusToServer(
-                                        agendaId = agenda.agendaId,
-                                        isCompleted = checkedStates[index]
-                                    )
-                                }
-
-                                launch(Dispatchers.Main) {
-                                    isSaving.value = false
-                                    onFinish(SilRokNavigation.Meeting)
-                                }
-                            }
-                        }
-                    )
+                    StartButton(onClick = {
+                        onFinish(SilRokNavigation.Meeting)
+                    })
                 }
             }
         }
@@ -156,7 +126,6 @@ fun MeetingWaitingScreen(
             onFinish = onFinish,
             onExitConfirmed = {},
             viewModel = meetingViewModel,
-            agendaViewModel = agendaViewModel,
             isWaiting = true
         )
     }

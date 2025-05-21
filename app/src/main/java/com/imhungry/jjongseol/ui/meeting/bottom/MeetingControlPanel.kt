@@ -33,7 +33,6 @@ fun MeetingControlPanel(
     onFinish: (SilRokNavigation) -> Unit,
     onExitConfirmed: () -> Unit,
     viewModel: MeetingViewModel,
-    agendaViewModel: AgendaViewModel,
     isWaiting: Boolean = false
 ) {
     val context = LocalContext.current
@@ -42,9 +41,7 @@ fun MeetingControlPanel(
 
     var showDialog by remember { mutableStateOf(false) }
     var showLeaveDialog by remember { mutableStateOf(false) }
-    var isSaving by remember { mutableStateOf(false) }
     val iconColor = Color(0xFFB0B0B0)
-    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
@@ -94,15 +91,12 @@ fun MeetingControlPanel(
             description = "회의를 종료하시겠습니까?",
             confirmText = "종료",
             onConfirm = {
-                isSaving = true
-                coroutineScope.launch {
-                    saveAllAgendaStatuses(context, agendaViewModel)
-                    isSaving = false
-                    onExitConfirmed()
-                }
+                context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+                    .edit().putBoolean("isMeetingOngoing", false)
+                    .apply()
+                onExitConfirmed()
             },
-            onDismiss = { showDialog = false },
-            isLoading = isSaving
+            onDismiss = { showDialog = false }
         )
     }
 
@@ -111,16 +105,13 @@ fun MeetingControlPanel(
             description = "회의에서 나가시겠습니까?",
             confirmText = "나가기",
             onConfirm = {
-                isSaving = true
-                coroutineScope.launch {
-                    viewModel.streamController.pauseEncoding()
-                    saveAllAgendaStatuses(context, agendaViewModel)
-                    isSaving = false
-                    onFinish(SilRokNavigation.Home)
-                }
+                context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
+                    .edit().putBoolean("isMeetingOngoing", false)
+                    .apply()
+                viewModel.streamController.pauseEncoding()
+                onFinish(SilRokNavigation.Home)
             },
-            onDismiss = { showLeaveDialog = false },
-            isLoading = isSaving
+            onDismiss = { showLeaveDialog = false }
         )
     }
 }
@@ -130,8 +121,7 @@ private fun showExitDialog(
     description: String,
     confirmText: String,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-    isLoading: Boolean
+    onDismiss: () -> Unit
 ) {
     CustomDialog(
         description = description,
@@ -140,16 +130,6 @@ private fun showExitDialog(
         onConfirmExit = onConfirm,
         onDismissRequest = onDismiss
     )
-}
-
-private suspend fun saveAllAgendaStatuses(
-    context: Context,
-    agendaViewModel: AgendaViewModel
-) {
-    context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-        .edit().putBoolean("isMeetingOngoing", false).apply()
-
-    agendaViewModel.saveAllAgendaStatusesToServer()
 }
 
 @Composable
