@@ -124,10 +124,17 @@ class RealTimeAudioStreamer(
 
     fun stop(deleteLocalPackets: Boolean = false) {
         isStreaming = false
-        audioRecord?.run {
-            stop()
-            release()
+        try {
+            audioRecord?.let { record ->
+                if (record.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                    record.stop()
+                }
+                record.release()
+            }
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "AudioRecord stop() 실패: ${e.message}", e)
         }
+
         encoder.release()
         webSocketManager?.close()
 

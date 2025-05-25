@@ -24,10 +24,12 @@ import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
 import com.imhungry.jjongseol.ui.component.layout.TopSheet
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
+import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
 fun MeetingWaitingScreen(
+    loginViewModel: LoginViewModel = hiltViewModel(),
     meetingViewModel: MeetingViewModel = hiltViewModel(),
     agendaViewModel: AgendaViewModel = hiltViewModel(),
     onFinish: (SilRokNavigation) -> Unit,
@@ -57,7 +59,8 @@ fun MeetingWaitingScreen(
             errorMessage = errorMessage,
             showDialog = showDialog,
             onFinish = onFinish,
-            clearError = { meetingViewModel.clearErrorMessage() }
+            clearError = { meetingViewModel.clearErrorMessage() },
+            loginViewModel = loginViewModel
         )
 
         if (!isLoading && peekIndex in agendas.indices) {

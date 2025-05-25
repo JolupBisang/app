@@ -55,7 +55,9 @@ class AudioStreamingService : Service() {
             jwtToken = jwtToken,
             onMessage = { Log.d("WebSocket", "서버 메시지 수신: $it") },
             onFailure = { Log.e("WebSocket", "WebSocket 연결 실패", it) },
-            onErrorMessage = { msg -> Log.e("WebSocket", "WebSocket 에러: $msg") },
+            onErrorMessage = { msg ->
+                onWebSocketErrorMessage?.invoke(msg)
+            },
             onChunkIdReceived = { lastChunkId ->
                 streamer.preloadLocalPacketsAndThenStart(lastChunkId, serviceScope)
             }
@@ -63,7 +65,7 @@ class AudioStreamingService : Service() {
     }
 
     override fun onDestroy() {
-        streamer.stop(deleteLocalPackets = true)
+        streamer.stop()
         serviceScope.cancel()
         instance = null
         super.onDestroy()
@@ -113,7 +115,8 @@ class AudioStreamingService : Service() {
 
         fun pauseEncoding() = instance?.streamer?.pauseEncoding()
         fun resumeEncoding() = instance?.streamer?.resumeEncoding()
-
         fun getStreamer(): RealTimeAudioStreamer? = instance?.streamer
+
+        var onWebSocketErrorMessage: ((String) -> Unit)? = null
     }
 }

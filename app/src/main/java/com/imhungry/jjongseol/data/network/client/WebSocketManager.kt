@@ -3,6 +3,7 @@ package com.imhungry.jjongseol.data.network.client
 import android.util.Log
 import com.google.gson.Gson
 import com.imhungry.jjongseol.BuildConfig
+import com.imhungry.jjongseol.data.model.error.ApiError
 import com.imhungry.jjongseol.data.model.response.SocketResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponseType
 import okhttp3.OkHttpClient
@@ -55,10 +56,11 @@ class WebSocketManager @Inject constructor() {
                             Log.i("WebSocket", "마지막 chunkId 수신됨: $lastChunkId")
                             onChunkIdReceived?.invoke(lastChunkId)
                         }
-                        SocketResponseType.ERROR_MESSAGE -> {
-                            val errorMsg = response.data.toString()
-                            Log.w("WebSocket", "WebSocket 에러 메시지 수신: $errorMsg")
-                            onErrorMessage(errorMsg)
+                        SocketResponseType.ERROR -> {
+                            val error = Gson().fromJson(Gson().toJson(response.data), ApiError::class.java)
+                            val message = error.message ?: "알 수 없는 오류가 발생했습니다"
+                            Log.w("WebSocket", "WebSocket 에러 메시지 수신: $message")
+                            onErrorMessage(message)
                         }
                         else -> Log.d("WebSocket", "알 수 없는 메시지 타입 수신: ${response.type}")
                     }

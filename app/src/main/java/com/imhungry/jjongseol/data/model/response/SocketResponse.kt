@@ -7,5 +7,5 @@ data class SocketResponse(
 
 enum class SocketResponseType {
     LAST_PROCESSED_CHUNK_ID,
-    ERROR_MESSAGE
+    ERROR
 }

@@ -3,6 +3,7 @@ package com.imhungry.jjongseol.ui.meeting
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -34,11 +35,13 @@ import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingSummaryScreen
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
+import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun MeetingScreen(
+    loginViewModel: LoginViewModel = hiltViewModel(),
     meetingViewModel: MeetingViewModel = hiltViewModel(),
     agendaViewModel: AgendaViewModel = hiltViewModel(),
     onFinish: (SilRokNavigation) -> Unit,
@@ -82,7 +85,13 @@ fun MeetingScreen(
         }
     }
 
-    if (errorMessage != null) showDialog.value = true
+    LaunchedEffect(errorMessage) {
+        Log.d("UI", "Error 메시지 변경됨: $errorMessage")
+        if (errorMessage != null) {
+            showDialog.value = true
+        }
+    }
+
     ErrorDialogHandler(
         errorMessage = errorMessage,
         showDialog = showDialog,
@@ -90,7 +99,8 @@ fun MeetingScreen(
         clearError = {
             meetingViewModel.clearErrorMessage()
             meetingViewModel.cleanupSession()
-        }
+        },
+        loginViewModel = loginViewModel
     )
 
     val allReady = permissionGranted && !isAgendaLoading

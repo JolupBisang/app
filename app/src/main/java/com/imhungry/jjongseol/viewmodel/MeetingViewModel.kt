@@ -11,6 +11,7 @@ import com.imhungry.jjongseol.data.model.meeting.MeetingDetailRes
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.network.api.MeetingApi
 import com.imhungry.jjongseol.data.network.client.handleHttpException
+import com.imhungry.jjongseol.feature.audio.AudioStreamingService
 import com.imhungry.jjongseol.feature.meeting.MeetingSseSubscriber
 import com.imhungry.jjongseol.feature.meeting.MeetingStreamController
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +32,7 @@ class MeetingViewModel @Inject constructor(
 
     init {
         streamController.onWebSocketErrorMessage = { msg ->
+            Log.e("MeetingViewModel", "WebSocket 에러 수신됨: $msg")  // 이 로그가 찍히는지 확인
             setError(ApiError(msg, null))
         }
     }
@@ -77,6 +79,10 @@ class MeetingViewModel @Inject constructor(
         scope: CoroutineScope
     ) {
         val token = getJwtToken()
+
+        AudioStreamingService.onWebSocketErrorMessage = { msg ->
+            streamController.onWebSocketErrorMessage?.invoke(msg)
+        }
 
         if (streamController.startStreamingSafely(meetingId, token)) {
             Log.d("MeetingScreen", "initializeSession 호출됨")
