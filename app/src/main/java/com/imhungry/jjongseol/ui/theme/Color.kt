@@ -71,3 +71,9 @@ val IvoryCream = Color(0xFFF3EEE8)
 val RustRed = Color(0xFFAD3E2D)
 val DarkWalnut = Color(0xFF362920)
 val TrueBlack = Color(0xFF1E1E1E)
+
+val SkyBlue = Color(0xFFDCEFF3)
+val TransparentGreen = Color(0xFF00FF15)
+val UserPink = Color(0xFFFFC5C5)
+val UserGray = Color(0xFFD9D9D9)
+
