@@ -1,6 +1,5 @@
 package com.imhungry.jjongseol.ui.meeting
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -35,15 +34,26 @@ fun MeetingWaitingScreen(
     onFinish: (SilRokNavigation) -> Unit,
     meetingId: Long = 1L
 ) {
+    val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val agendas by agendaViewModel.agendaItems.collectAsState()
-    val errorMessage by meetingViewModel.errorMessage.collectAsState()
-    val showDialog = remember { mutableStateOf(false) }
+    val agendaError by agendaViewModel.errorMessage.collectAsState()
+    val meetingError by meetingViewModel.errorMessage.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(meetingId) {
-        val success = meetingViewModel.loadMeetingDetail(meetingId)
-        if (success) {
+        meetingViewModel.loadMeetingDetail(meetingId)
+    }
+
+    LaunchedEffect(meetingDetail) {
+        if (meetingDetail != null) {
             agendaViewModel.loadAgendas(meetingId)
         }
+    }
+
+    LaunchedEffect(meetingError, agendaError) {
+        dialogMessage = meetingError ?: agendaError
+        showDialog = dialogMessage != null
     }
 
     val firstUncheckedIndex = agendas.indexOfFirst { !it.isCompleted }
@@ -56,7 +66,7 @@ fun MeetingWaitingScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         ErrorDialogHandler(
-            errorMessage = errorMessage,
+            errorMessage = dialogMessage,
             showDialog = showDialog,
             onFinish = onFinish,
             clearError = { meetingViewModel.clearErrorMessage() },
@@ -103,8 +113,7 @@ fun MeetingWaitingScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "회의가 시작되길\n기다리는 중",
-                        style = MaterialTheme.typography.titleLarge,
+                        text = "회의가 시작되길 기다리는 중",
                         textAlign = TextAlign.Center,
                         color = Color.LightGray
                     )

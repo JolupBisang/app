@@ -1,16 +1,15 @@
 package com.imhungry.jjongseol.viewmodel
 
-import android.app.Application
-import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.imhungry.jjongseol.data.model.error.ApiError
-import com.imhungry.jjongseol.data.model.meeting.MeetingDetailRes
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
+import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
+import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
 import com.imhungry.jjongseol.data.network.api.MeetingApi
-import com.imhungry.jjongseol.data.network.client.handleHttpException
+import com.imhungry.jjongseol.data.repository.LoginRepository
+import com.imhungry.jjongseol.data.repository.MeetingRepository
+import com.imhungry.jjongseol.data.repository.MeetingResult
 import com.imhungry.jjongseol.feature.audio.AudioStreamingService
 import com.imhungry.jjongseol.feature.meeting.MeetingSseSubscriber
 import com.imhungry.jjongseol.feature.meeting.MeetingStreamController
@@ -19,26 +18,32 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
 import javax.inject.Inject
 
 @HiltViewModel
 class MeetingViewModel @Inject constructor(
-    application: Application,
+    private val loginRepository: LoginRepository,
+    private val meetingRepository: MeetingRepository,
     private val meetingApi: MeetingApi,
     val streamController: MeetingStreamController,
     val sseSubscriber: MeetingSseSubscriber
-) : BaseAndroidViewModel(application) {
+) : ViewModel() {
 
     init {
         streamController.onWebSocketErrorMessage = { msg ->
             Log.e("MeetingViewModel", "WebSocket 에러 수신됨: $msg")  // 이 로그가 찍히는지 확인
-            setError(ApiError(msg, null))
+            //setError(ApiError(msg, null))
         }
     }
 
     private val _meetingDetail = MutableStateFlow<MeetingDetailRes?>(null)
     val meetingDetail: StateFlow<MeetingDetailRes?> = _meetingDetail
+
+    private val _meetingStatus = MutableStateFlow<MeetingStatus?>(null)
+    val meetingStatus: StateFlow<MeetingStatus?> = _meetingStatus
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
 
     fun createMeeting(
         meetingReq: MeetingReq,
@@ -59,18 +64,41 @@ class MeetingViewModel @Inject constructor(
         }
     }
 
-    suspend fun loadMeetingDetail(meetingId: Long): Boolean {
-        return try {
-            val result = meetingApi.getMeetingDetail(meetingId)
-            _meetingDetail.value = result.data
-            true
-        } catch (e: HttpException) {
-            setError(handleHttpException(e))
-            false
-        } catch (e: Exception) {
-            setError(ApiError(message = e.message, errorId = null))
-            false
+    fun loadMeetingDetail(meetingId: Long) {
+        viewModelScope.launch {
+            when (val result = meetingRepository.getMeetingDetail(meetingId)) {
+                is MeetingResult.Success -> {
+                    _meetingDetail.value = result.data
+                    _meetingStatus.value = MeetingStatus.from(result.data.meetingStatus)
+                }
+                is MeetingResult.Error -> {
+                    _errorMessage.value = result.errorResponse?.message ?: result.message
+                }
+                is MeetingResult.Exception -> {
+                    _errorMessage.value = result.throwable.message ?: "네트워크 오류"
+                }
+            }
         }
+    }
+
+    fun updateMeetingStatus(meetingId: Long, targetStatus: MeetingStatus) {
+        viewModelScope.launch {
+            when (val result = meetingRepository.updateMeetingStatus(meetingId, targetStatus)) {
+                is MeetingResult.Success -> {
+                    loadMeetingDetail(meetingId)
+                }
+                is MeetingResult.Error -> {
+                    _errorMessage.value = result.errorResponse?.message ?: result.message
+                }
+                is MeetingResult.Exception -> {
+                    _errorMessage.value = result.throwable.message ?: "네트워크 오류"
+                }
+            }
+        }
+    }
+
+    fun clearErrorMessage() {
+        _errorMessage.value = null
     }
 
     fun initializeSession(
@@ -78,7 +106,7 @@ class MeetingViewModel @Inject constructor(
         timeProvider: () -> String,
         scope: CoroutineScope
     ) {
-        val token = getJwtToken()
+        val token = loginRepository.getToken() ?: ""
 
         AudioStreamingService.onWebSocketErrorMessage = { msg ->
             streamController.onWebSocketErrorMessage?.invoke(msg)
@@ -89,24 +117,16 @@ class MeetingViewModel @Inject constructor(
             streamController.resumeEncoding()
         }
 
-        /*sseSubscriber.apply {
-            subscribeToSummary(meetingId, timeProvider)
+        sseSubscriber.apply {
+            subscribeToSummary(meetingId)
             subscribeToParticipationRate(meetingId)
-            subscribeToFeedback(meetingId, timeProvider)
+            subscribeToFeedback(meetingId)
         }
-
-        streamController.startSendingTestData(meetingId, scope)*/
     }
 
     fun cleanupSession() {
         streamController.stopStreaming()
-        streamController.stopSendingTestData()
         streamController.resetMicState()
-        //sseSubscriber.stopSse()
-    }
-
-    private fun getJwtToken(): String {
-        val prefs = getApplication<Application>().getSharedPreferences("auth", Context.MODE_PRIVATE)
-        return prefs.getString("jwt_token", "") ?: ""
+        sseSubscriber.stopSse()
     }
 }

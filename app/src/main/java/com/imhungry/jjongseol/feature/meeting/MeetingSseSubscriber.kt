@@ -20,13 +20,12 @@ class MeetingSseSubscriber @Inject constructor(
     private val _feedbackList = MutableStateFlow<List<FeedbackItem>>(emptyList())
     val feedbackList: StateFlow<List<FeedbackItem>> = _feedbackList.asStateFlow()
 
-    fun subscribeToSummary(meetingId: Long, timeProvider: () -> String) {
+    fun subscribeToSummary(meetingId: Long) {
         sseClient.subscribeToEvent(
             endpoint = "summary",
             meetingId = meetingId,
             eventType = "SUMMARY"
         ) {
-            _summaryList.value += SummaryItem(it.trim('"'), timeProvider())
         }
     }
 
@@ -36,23 +35,15 @@ class MeetingSseSubscriber @Inject constructor(
             meetingId = meetingId,
             eventType = "PARTICIPATION_RATE"
         ) {
-            _participationRate.value = it
         }
     }
 
-    fun subscribeToFeedback(meetingId: Long, timeProvider: () -> String) {
+    fun subscribeToFeedback(meetingId: Long) {
         sseClient.subscribeToEvent(
             endpoint = "feedback",
             meetingId = meetingId,
             eventType = "FEEDBACK"
         ) {
-            _feedbackList.value += FeedbackItem(it.trim('"'), timeProvider())
-        }
-    }
-
-    fun markAllFeedbackAsRead() {
-        _feedbackList.value = _feedbackList.value.map {
-            if (!it.isRead) it.copy(isRead = true) else it
         }
     }
 

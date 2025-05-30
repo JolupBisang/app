@@ -3,7 +3,6 @@ package com.imhungry.jjongseol.ui.meeting
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.Divider
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,10 +45,13 @@ fun MeetingScreen(
     onFinish: (SilRokNavigation) -> Unit,
     meetingId: Long
 ) {
+    val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val agendas by agendaViewModel.agendaItems.collectAsState()
     val isAgendaLoading = agendas.isEmpty()
-    val errorMessage by meetingViewModel.errorMessage.collectAsState()
-    val showDialog = remember { mutableStateOf(false) }
+    val agendaError by agendaViewModel.errorMessage.collectAsState()
+    val meetingError by meetingViewModel.errorMessage.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
     var permissionGranted by remember { mutableStateOf(false) }
@@ -76,7 +77,21 @@ fun MeetingScreen(
     }
 
     LaunchedEffect(meetingId) {
-        agendaViewModel.loadAgendas(meetingId)
+        meetingViewModel.loadMeetingDetail(meetingId)
+    }
+
+    LaunchedEffect(meetingDetail) {
+        if (meetingDetail != null) {
+            agendaViewModel.loadAgendas(meetingId)
+        }
+    }
+
+    LaunchedEffect(meetingError, agendaError) {
+        dialogMessage = meetingError ?: agendaError
+        showDialog = dialogMessage != null
+    }
+
+    LaunchedEffect(meetingId) {
         permissionGranted = requiredPermissions.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
@@ -85,15 +100,8 @@ fun MeetingScreen(
         }
     }
 
-    LaunchedEffect(errorMessage) {
-        Log.d("UI", "Error 메시지 변경됨: $errorMessage")
-        if (errorMessage != null) {
-            showDialog.value = true
-        }
-    }
-
     ErrorDialogHandler(
-        errorMessage = errorMessage,
+        errorMessage = dialogMessage,
         showDialog = showDialog,
         onFinish = onFinish,
         clearError = {
@@ -137,7 +145,7 @@ fun MeetingScreen(
             },
             viewModel = meetingViewModel,
             meetingId = meetingId,
-            timeText = timeText
+            timeText = timeText,
         )
     }
 }

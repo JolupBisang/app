@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.data.model.agenda
+package com.imhungry.jjongseol.data.model.agenda.response
 
 data class AgendaChangeStatusRes(
     val isCompleted: Boolean

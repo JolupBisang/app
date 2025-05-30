@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.data.model.meeting
+package com.imhungry.jjongseol.data.model.meeting.response
 
 data class MeetingDetailRes(
     val meetingId: Long,

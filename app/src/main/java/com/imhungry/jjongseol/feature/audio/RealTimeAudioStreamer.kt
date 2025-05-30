@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+import java.io.FileOutputStream
 
 class RealTimeAudioStreamer(
     private val context: Context,
@@ -29,7 +30,7 @@ class RealTimeAudioStreamer(
     }
 
     private val sampleRate = 48000
-    private val frameSize = 960
+    private val frameSize = 32768
     private val bufferSize = AudioRecord.getMinBufferSize(
         sampleRate,
         AudioFormat.CHANNEL_IN_MONO,
@@ -74,7 +75,7 @@ class RealTimeAudioStreamer(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    /*@RequiresApi(Build.VERSION_CODES.O)
     private fun startStreaming(scope: CoroutineScope) {
         if (!hasRecordPermission()) {
             Log.e(TAG, "RECORD_AUDIO 권한 없음")
@@ -110,8 +111,34 @@ class RealTimeAudioStreamer(
                 val read = audioRecord?.read(pcmBuffer, 0, pcmBuffer.size) ?: 0
                 if (read > 0 && !isEncodingPaused) {
                     val pcmChunk = pcmBuffer.copyOf(read)
-                    encoder.encode(pcmChunk)?.let { opus ->
-                        val packet = buildPacket(opus, userId, meetingId, chunkId)
+
+                    val encodeStart = System.currentTimeMillis()
+                    val opusBytes = FFmpegOpusUtil.encodePcmToOpus(
+                        pcmData = pcmChunk,
+                        sampleRate = sampleRate,
+                        channels = channels,
+                        cacheDir = cacheDir,
+                        chunkId = chunkId
+                    )
+                    val encodeEnd = System.currentTimeMillis()
+                    val encodeTime = encodeEnd - encodeStart
+
+                    if (opusBytes != null) {
+                        val compressionRatio = opusBytes.size.toFloat() / pcmChunk.size.toFloat() * 100
+                        Log.d("Audio", "압축 시간 : ${encodeTime}ms")
+                        Log.d("Audio", "PCM size: ${pcmChunk.size} bytes → Opus size: ${opusBytes.size} bytes")
+
+                        try {
+                            val opusDir = File(context.getExternalFilesDir(null), "opus/$meetingId/$userId")
+                            opusDir.mkdirs()
+                            val opusFile = File(opusDir, "chunk_${chunkId}.opus")
+                            FileOutputStream(opusFile).use { it.write(opusBytes) }
+                            Log.d("Audio", "Opus 파일 저장 완료: ${opusFile.absolutePath}")
+                        } catch (e: Exception) {
+                            Log.e("Audio", "Opus 파일 저장 실패", e)
+                        }
+
+                        val packet = buildPacket(opusBytes, userId, meetingId, chunkId)
                         webSocketManager?.sendBinary(packet)
                         Log.d(TAG, "실시간 패킷 전송: chunkId=$chunkId, size=${packet.size}")
                         savePacketToFile(packet, chunkId)
@@ -120,7 +147,70 @@ class RealTimeAudioStreamer(
                 }
             }
         }
+    }*/
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun startStreaming(scope: CoroutineScope) {
+        if (!hasRecordPermission()) {
+            Log.e(TAG, "RECORD_AUDIO 권한 없음")
+            return
+        }
+
+        try {
+            audioRecord = AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                sampleRate,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                bufferSize
+            ).apply { startRecording() }
+
+            Log.d(TAG, "AudioRecord 생성 및 녹음 시작")
+
+        } catch (e: SecurityException) {
+            Log.e(TAG, "RECORD_AUDIO 권한이 없어 AudioRecord 생성 실패", e)
+            return
+        } catch (e: Exception) {
+            Log.e(TAG, "AudioRecord 생성 실패", e)
+            return
+        }
+
+        encoder.init()
+        isStreaming = true
+        Log.d(TAG, "Opus 인코더 초기화 완료")
+
+        val rawDir = File(context.getExternalFilesDir(null), "pcm_raw/$meetingId/$userId")
+        rawDir.mkdirs()
+        val rawPcmFile = File(rawDir, "all_raw.pcm")
+        val rawPcmOutput = FileOutputStream(rawPcmFile, /*append=*/true)
+
+        scope.launch {
+            val pcmBuffer = ByteArray(frameSize * 2)
+            while (isActive && isStreaming) {
+                val read = audioRecord?.read(pcmBuffer, 0, pcmBuffer.size) ?: 0
+                if (read > 0 && !isEncodingPaused) {
+                    val pcmChunk = pcmBuffer.copyOf(read)
+
+                    rawPcmOutput.write(pcmChunk)
+
+                    try {
+                        val chunkDir = File(context.getExternalFilesDir(null), "pcm_chunks/$meetingId/$userId")
+                        chunkDir.mkdirs()
+                        val chunkFile = File(chunkDir, "chunk_${chunkId}.pcm")
+                        FileOutputStream(chunkFile).use { it.write(pcmChunk) }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "청크 PCM 파일 저장 실패", e)
+                    }
+
+                    // (아래는 기존 opus 변환/패킷 전송 등 기존 코드)
+                    // ...
+                    chunkId++
+                }
+            }
+            rawPcmOutput.close()
+        }
     }
+
 
     fun stop(deleteLocalPackets: Boolean = false) {
         isStreaming = false

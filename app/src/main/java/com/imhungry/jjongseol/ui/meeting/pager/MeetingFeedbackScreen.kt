@@ -23,7 +23,7 @@ fun MeetingFeedbackScreen(viewModel: MeetingViewModel = hiltViewModel()) {
 
     DisposableEffect(Unit) {
         onDispose {
-            viewModel.sseSubscriber.markAllFeedbackAsRead()
+            //viewModel.sseSubscriber.markAllFeedbackAsRead()
         }
     }
 
