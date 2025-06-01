@@ -15,15 +15,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Card
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.TabRowDefaults.Divider
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,11 +46,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
@@ -55,7 +56,7 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
+import com.imhungry.jjongseol.ui.theme.TransparentGreen
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.launch
 
@@ -66,6 +67,7 @@ fun HomeScreen(navController: NavController) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val searchText = remember { mutableStateOf("") }
+
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -84,66 +86,65 @@ fun HomeScreen(navController: NavController) {
                     //CreateNewMeetingScreen(navController)
                     MainHomeScreen(navController)
 
-                    Box(modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 20.dp, bottom = 20.dp, end = 10.dp, start = 10.dp)
-                        .background(Color.White)
-                        .height(70.dp)){
-                        Row(verticalAlignment = Alignment.CenterVertically,) {
-                            Image(
-                                painter = painterResource(id = R.drawable.home_sidebar_menu),
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 15.dp)
+                            .height(50.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Menu,
                                 contentDescription = "사이드 바 메뉴",
                                 modifier = Modifier
-                                    .weight(1f)
+                                    .size(24.dp)
                                     .clickable(
                                         indication = null,
                                         interactionSource = remember { MutableInteractionSource() }
                                     ) {
                                         scope.launch { drawerState.open() }
-                                    },
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(5f),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                OutlinedTextField(
-                                    value = searchText.value,
-                                    onValueChange = { searchText.value = it },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(30.dp))
-                                        .background(Color.LightGray),
-                                    singleLine = true,
-                                    textStyle = TextStyle(fontSize = 16.sp),
-                                    placeholder = {
-                                        Text(
-                                            "제목, 참석자",
-                                            style = TextStyle(color = Color.Gray)
-                                        )
-                                    },
-                                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                                        textColor = Color.Black,
-                                        cursorColor = Color.Black,
-                                        backgroundColor = Color.Transparent,
-                                        focusedBorderColor = Color.Transparent,
-                                        unfocusedBorderColor = Color.Transparent
-                                    ),
-                                    trailingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Filled.Search,
-                                            contentDescription = "검색하기",
-                                            modifier = Modifier.clickable { }
-                                        )
                                     }
-                                )
-                            }
-                            Image(
-                                painter = painterResource(id = R.drawable.announcement_notification),
-                                contentDescription = "공지사항 알림",
+                            )
+
+                            Spacer(modifier = Modifier.width(10.dp))
+                            OutlinedTextField(
+                                value = searchText.value,
+                                onValueChange = { searchText.value = it },
                                 modifier = Modifier
-                                    .weight(1f),
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.LightGray),
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 16.sp),
+                                placeholder = {
+                                    Text(
+                                        "제목, 참석자로 검색",
+                                        style = TextStyle(color = Color.DarkGray)
+                                    )
+                                },
+                                colors = TextFieldDefaults.outlinedTextFieldColors(
+                                    textColor = Color.Black,
+                                    cursorColor = Color.Black,
+                                    backgroundColor = Color.Transparent,
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent
+                                ),
+                                trailingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Filled.Search,
+                                        contentDescription = "검색하기",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Icon(
+                                imageVector = Icons.Filled.Notifications,
+                                contentDescription = "공지사항 알림",
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
@@ -167,13 +168,12 @@ fun MainHomeScreen(navController: NavController){
     var calendarToggle by remember { mutableStateOf(true) }
 
     ConstraintLayout (modifier = Modifier
-        .background(Color.White)
         .fillMaxSize()){
         val (scrollList, bottomArea) = createRefs()
 
         LazyColumn(
             modifier = Modifier
-                .padding(top = 30.dp, start = 30.dp, bottom = 100.dp, end = 30.dp)
+                .padding(top = 30.dp, start = 30.dp, bottom = 50.dp, end = 30.dp)
                 .fillMaxSize()
                 .constrainAs(scrollList) {
                     top.linkTo(parent.top)
@@ -184,7 +184,7 @@ fun MainHomeScreen(navController: NavController){
                 },
         ) {
             item {
-                Spacer(Modifier.height(60.dp))
+                Spacer(Modifier.height(40.dp))
                 Row(
                     modifier = Modifier
                     .fillMaxWidth()
@@ -192,31 +192,25 @@ fun MainHomeScreen(navController: NavController){
                     horizontalArrangement = Arrangement.End,
                     ){
                     Text(text = if(calendarToggle) "캘린더" else "리스트"
-                        ,color = md_theme_button_color_blue
+                        ,color = Color.Black
                         ,modifier = Modifier
                             .padding(end = 5.dp)
                             .clickable { calendarToggle = !calendarToggle })
                 }
                 Divider(
                     color = Color.Gray,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(vertical = 10.dp)
+                    thickness = 1.5.dp,
+                    modifier = Modifier.padding(vertical = 5.dp)
                 )
                 if(calendarToggle) {
-                    ScheduledMeetingScreen()
-                    Canvas(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                    ) {
-                        drawLine(
-                            color = Color.Gray,
-                            start = Offset(0f, 0f),
-                            end = Offset(size.width, 0f),
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
-                        )
-                    }
-                    MeetingRecordsScreen()
+                    ScheduledMeetingScreen(navController)
+
+                    Divider(
+                        color = Color.Gray,
+                        thickness = 1.5.dp,
+                        modifier = Modifier.padding(vertical = 5.dp)
+                    )
+                    MeetingRecordsScreen(navController)
 
                 }
                 else{
@@ -225,12 +219,12 @@ fun MainHomeScreen(navController: NavController){
             }
         }
 
-        //임시 위치..
         Box(
             contentAlignment = Alignment.BottomCenter,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 90.dp)
+                .padding(horizontal = 10.dp)
                 .constrainAs(bottomArea) {
                     bottom.linkTo(parent.bottom)
                 }
@@ -268,11 +262,11 @@ fun CreateNewMeetingButton(onClick: () -> Unit) {
                 .fillMaxWidth()
                 .padding(horizontal = 30.dp)
                 .height(60.dp),
-        shape = RoundedCornerShape(15.dp),
+            shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = Color.LightGray
+                backgroundColor = TransparentGreen
             ),
-            border = BorderStroke(1.dp, Color.LightGray),
+            border = BorderStroke(1.dp, TransparentGreen),
             elevation = ButtonDefaults.elevation(
                 defaultElevation = 4.dp,
                 pressedElevation = 8.dp,
@@ -282,8 +276,9 @@ fun CreateNewMeetingButton(onClick: () -> Unit) {
                 Text(
                     "새 회의",
                     style = TextStyle(
-                        color = md_theme_button_color_blue,
-                        fontSize = 20.sp
+                        color = Color.Black,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 )
             }

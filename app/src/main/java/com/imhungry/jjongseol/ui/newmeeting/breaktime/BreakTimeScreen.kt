@@ -56,7 +56,6 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
                 onValueChange = ::handleBreakTimeChange,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(8.dp)
                     .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
                 singleLine = true,
                 textStyle = TextStyle(fontSize = 16.sp),
@@ -73,7 +72,7 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
             )
 
             Spacer(Modifier.width(2.dp))
-            Text("분 마다", style = TextStyle(fontSize = 15.sp))
+            Text(" 분 마다", style = TextStyle(fontSize = 15.sp))
         }
 
         Row(modifier = Modifier.weight(1f),
@@ -85,7 +84,6 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
                 onValueChange = ::handleBreakTimeMinuteChange,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(8.dp)
                     .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
                 singleLine = true,
                 textStyle = TextStyle(fontSize = 16.sp),
@@ -102,7 +100,7 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
             )
 
             Spacer(Modifier.width(2.dp))
-            Text("분", style = TextStyle(fontSize = 15.sp))
+            Text(" 분", style = TextStyle(fontSize = 15.sp))
         }
     }
 }

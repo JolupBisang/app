@@ -18,7 +18,7 @@ fun DataPickerCalendar(navController: NavController, initialSelectedDate: LocalD
     var showNumberPicker by remember { mutableStateOf(false) }
 
     Surface(
-        modifier = Modifier.height(400.dp).width(500.dp),
+        modifier = Modifier.height(350.dp).width(500.dp),
         color = Color.White,
         shape = MaterialTheme.shapes.medium
     ) {
