@@ -84,7 +84,7 @@ fun MeetingDetailEditScreen(
 
     Log.d("날짜 확인","${startTime}")
 
-    MeetingDetailPreviewScreen(
+    MeetingDetailScreen(
         navController = navController,
         id = safeMeeting.meetingId,
         title = title,

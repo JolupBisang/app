@@ -121,7 +121,6 @@ class MeetingViewModel @Inject constructor(
                 is MeetingResult.Success -> {
                     _meetingDetail.value = result.data
                     _meetingStatus.value = MeetingStatus.from(result.data.meetingStatus)
-                    Log.d("Status", "Status: " + result.data.meetingStatus)
                 }
                 is MeetingResult.Error -> {
                     _errorMessage.value = result.errorResponse?.message ?: result.message

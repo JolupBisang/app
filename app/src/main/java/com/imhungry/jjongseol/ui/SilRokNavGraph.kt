@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -128,6 +129,38 @@ fun SilRokNavGraph(
             val meetingId = backStackEntry.arguments?.getString("id")?.toLong() ?: return@composable
             MeetingDetailEditScreen(meetingId = meetingId, navController = navController)
         }
+
+        composable("meetingRoute/waiting/{id}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+            MeetingWaitingScreen(
+                loginViewModel = loginViewModel,
+                meetingViewModel = meetingViewModel,
+                agendaViewModel = agendaViewModel,
+                onFinish = { navController.navigate(it.route) },
+                meetingId = id
+            )
+        }
+
+        composable("meetingRoute/inprogress/{id}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+            MeetingScreen(
+                loginViewModel = loginViewModel,
+                meetingViewModel = meetingViewModel,
+                agendaViewModel = agendaViewModel,
+                onFinish = { navController.navigate(it.route) },
+                meetingId = id
+            )
+        }
+
+        composable("meetingRoute/completed/{id}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+            CompletedMeetingScreen(
+                navController = navController,
+                onFinish = { navController.navigate(it.route) }
+            )
+        }
+
+
 
     }
 }
