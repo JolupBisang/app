@@ -74,7 +74,7 @@ fun MeetingDetailEditScreen(
             totalTime.value = safe.targetTime
             restInterval.value = safe.restInterval.toString()
             restDuration.value = safe.restDuration.toString()
-            status.value = safe.status ?: "상태 없음"
+            status.value = safe.meetingStatus ?: "상태 없음"
 
 
         }
@@ -84,7 +84,7 @@ fun MeetingDetailEditScreen(
 
     Log.d("날짜 확인","${startTime}")
 
-    MeetingDetailPreviewScreen(
+    MeetingDetailScreen(
         navController = navController,
         id = safeMeeting.meetingId,
         title = title,

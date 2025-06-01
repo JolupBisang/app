@@ -232,7 +232,7 @@ fun MainHomeScreen(navController: NavController){
             MeetingCardList(
                 meetings = meetings,
                 onJoinMeeting = { meeting ->
-                    //navController.navigate("meeting/${meeting.id}")
+                    navController.navigate("meetingRoute/inprogress/${meeting.id}")
                 }
             )
         }
