@@ -50,7 +50,7 @@ import com.imhungry.jjongseol.ui.newmeeting.agenda.AgendaListScreen
 import com.imhungry.jjongseol.ui.newmeeting.breaktime.BreakTimeRow
 import com.imhungry.jjongseol.ui.newmeeting.dateandtime.TimeDurationPicker
 import com.imhungry.jjongseol.ui.newmeeting.invite.SearchScreen
-import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
+import com.imhungry.jjongseol.ui.theme.Purple1
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import com.imhungry.jjongseol.viewmodel.UserViewModel
 import java.time.LocalDate
@@ -71,9 +71,9 @@ fun CreateNewMeetingScreen(navController: NavController){
     var dateText by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))) }
     var showCalendarDialog by remember { mutableStateOf(false) }
 
-    var startTime by remember { mutableStateOf("") }
-    var endTime by remember { mutableStateOf("") }
-    var durationInMinutes by remember { mutableStateOf(0) }
+    val startTime = remember { mutableStateOf("HH:MM") }
+    val endTime = remember { mutableStateOf("HH:MM") }
+    val duration = remember { mutableStateOf(0) }
 
     val place = remember { mutableStateOf("") }
 
@@ -109,7 +109,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                 ){
                     Text("회의 생성",
                         style = TextStyle(
-                            color = Color.Gray,
+                            color = Color.Black,
                             fontSize = 30.sp,
                         )
                     )
@@ -117,258 +117,14 @@ fun CreateNewMeetingScreen(navController: NavController){
             }
             item {
                 Row() {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Box(
-                            modifier = Modifier
-                                .height(30.dp)
-                                .padding(start = 8.dp, end = 8.dp),
-                            contentAlignment = Alignment.CenterStart
-                        )
-                        {
-                            Text(
-                                "제목",
-                                style = TextStyle(
-                                    color = Color.DarkGray,
-                                    fontSize = 15.sp,
-                                )
-                            )
-                        }
-
-                        OutlinedTextField(
-                            value = meetingTitle.value,
-                            onValueChange = { meetingTitle.value = it },
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
-                            singleLine = true,
-                            textStyle = TextStyle(fontSize = 16.sp),
-                            placeholder = {
-                                Text(
-                                    "{이름}님의 회의",
-                                    style = TextStyle(
-                                        color = Color.LightGray
-                                    )
-                                )
-                            },
-                            colors = TextFieldDefaults.outlinedTextFieldColors(
-                                textColor = Color.Black,
-                                cursorColor = Color.Black,
-                                backgroundColor = Color.White,
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent
-                            )
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Box(
-                            modifier = Modifier
-                                .height(30.dp)
-                                .padding(start = 8.dp, end = 8.dp),
-                            contentAlignment = Alignment.CenterStart
-                        )
-                        {
-                            Text(
-                                "리더",
-                                style = TextStyle(
-                                    color = Color.DarkGray,
-                                    fontSize = 15.sp,
-                                )
-                            )
-                        }
-
-                        OutlinedTextField(
-                            value = leaderName.value,
-                            onValueChange = { leaderName.value = it },
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
-                            singleLine = true,
-                            textStyle = TextStyle(fontSize = 16.sp),
-                            placeholder = {
-                                Text(
-                                    "{이름}",
-                                    style = TextStyle(
-                                        color = Color.LightGray
-                                    )
-                                )
-                            },
-                            colors = TextFieldDefaults.outlinedTextFieldColors(
-                                textColor = Color.Black,
-                                cursorColor = Color.Black,
-                                backgroundColor = Color.White,
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent
-                            )
-                        )
-                    }
-                }
-            }
-
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(30.dp)
-                        .padding(start = 8.dp, end = 8.dp),
-                    contentAlignment = Alignment.CenterStart
-                )
-                {
-                    Text("참석자",
-                        style = TextStyle(
-                            color = Color.DarkGray,
-                            fontSize = 15.sp,
-                        )
-                    )
-                }
-                SearchScreen(
-                    selectedEmails = selectedMembers,
-                    userApi = userViewModel.userApi
-                )
-            }
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(30.dp)
-                        .padding(start = 8.dp, end = 8.dp),
-                    contentAlignment = Alignment.CenterStart
-                )
-                {
-                    Text("일시",
-                        style = TextStyle(
-                            color = Color.DarkGray,
-                            fontSize = 15.sp,
-                        )
-                    )
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                        .height(55.dp)
-                        .background(Color.White, RoundedCornerShape(15.dp))
-                        .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
-                        .clickable(
-                            onClick = { showCalendarDialog = true },
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        ),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = dateText,
-                        style = TextStyle(fontSize = 16.sp, color = Color.Black),
-                        modifier = Modifier.padding(start = 20.dp, top = 10.dp, bottom = 10.dp)
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Filled.DateRange,
-                        contentDescription = "회의 날짜 선택",
-                        modifier = Modifier.padding(end = 10.dp)
-                    )
-                }
-            }
-
-
-
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(30.dp)
-                        .padding(start = 8.dp, end = 8.dp),
-                    contentAlignment = Alignment.CenterStart
-                )
-                {
-                    Text("시간",
-                        style = TextStyle(
-                            color = Color.DarkGray,
-                            fontSize = 15.sp,
-                        )
-                    )
-                }
-                TimeDurationPicker(
-                    onStartTimeChanged = { startTime = it },
-                    onEndTimeChanged = { endTime = it },
-                    onDurationChanged = { durationInMinutes = it }
-                )
-            }
-
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(30.dp)
-                        .padding(start = 8.dp, end = 8.dp),
-                    contentAlignment = Alignment.CenterStart
-                )
-                {
-                    Text("장소",
-                        style = TextStyle(
-                            color = Color.DarkGray,
-                            fontSize = 15.sp,
-                        )
-                    )
-                }
-
-                OutlinedTextField(
-                    value = place.value,
-                    onValueChange = { place.value = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                        .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
-                    singleLine = true,
-                    textStyle = TextStyle(fontSize = 16.sp),
-                    placeholder = {
-                        Text("장소",
-                            style = TextStyle(
-                                color = Color.LightGray
-                            )
-                        )
-                    },
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        textColor = Color.Black,
-                        cursorColor = Color.Black,
-                        backgroundColor = Color.White,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
-                    )
-                )
-            }
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(30.dp)
-                        .padding(start = 8.dp, end = 8.dp),
-                    contentAlignment = Alignment.CenterStart
-                )
-                {
-                    Text("아젠다",
-                        style = TextStyle(
-                            color = Color.DarkGray,
-                            fontSize = 15.sp,
-                        )
-                    )
-                }
-
-                AgendaListScreen(agendaList = agendaList)
-            }
-
-            item{
-                Column(modifier = Modifier) {
                     Box(
                         modifier = Modifier
-                            .height(30.dp)
-                            .padding(start = 8.dp, end = 8.dp),
-                        contentAlignment = Alignment.CenterStart
+                            .height(20.dp)
+                            .weight(1f),
                     )
                     {
                         Text(
-                            "쉬는 시간",
+                            "제목",
                             style = TextStyle(
                                 color = Color.DarkGray,
                                 fontSize = 15.sp,
@@ -376,7 +132,223 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
                     }
 
-                    BreakTimeRow(breakTime = breakTime, breakTimeMinute = breakTimeMinute)
+                    OutlinedTextField(
+                        value = meetingTitle.value,
+                        onValueChange = { meetingTitle.value = it },
+                        modifier = Modifier
+                            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
+                            .height(50.dp)
+                            .weight(5f),
+                        singleLine = true,
+                        textStyle = TextStyle(fontSize = 16.sp),
+                        placeholder = {
+                            Text(
+                                "{이름}님의 회의",
+                                style = TextStyle(
+                                    color = Color.LightGray
+                                )
+                            )
+                        },
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            textColor = Color.Black,
+                            cursorColor = Color.Black,
+                            backgroundColor = Color.White,
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent
+                        )
+                    )
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                ) {
+                    Text(
+                        text = "참석자",
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(1f),
+                        style = TextStyle(
+                            color = Color.DarkGray,
+                            fontSize = 15.sp,
+                        )
+                    )
+
+                    Column(modifier = Modifier.weight(5f)) {
+                        SearchScreen(
+                            selectedEmails = selectedMembers,
+                            userApi = userViewModel.userApi
+                        )
+                    }
+                }
+            }
+            item {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                )
+                {
+                    Text(
+                        "일시",
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(1f),
+                        style = TextStyle(
+                            color = Color.DarkGray,
+                            fontSize = 15.sp,
+                        )
+                    )
+
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .background(Color.White, RoundedCornerShape(10.dp))
+                            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
+                            .clickable(
+                                onClick = { showCalendarDialog = true },
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            )
+                            .weight(5f),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = dateText,
+                            style = TextStyle(fontSize = 16.sp, color = Color.Black),
+                            modifier = Modifier.padding(start = 20.dp, top = 10.dp, bottom = 10.dp)
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Icon(
+                            imageVector = Icons.Filled.DateRange,
+                            contentDescription = "회의 날짜 선택",
+                            modifier = Modifier.padding(end = 10.dp)
+                        )
+                    }
+                }
+            }
+
+
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                )
+                {
+                    Text(
+                        "시간",
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(1f),
+                        style = TextStyle(
+                            color = Color.DarkGray,
+                            fontSize = 15.sp,
+                        )
+                    )
+
+                    Row(modifier = Modifier.weight(5f)) {
+                        TimeDurationPicker(
+                            startTime = startTime,
+                            endTime = endTime,
+                            durationInMinutes = duration
+                        )
+                    }
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                )
+                {
+                    Text(
+                        "장소",
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(1f),
+                        style = TextStyle(
+                            color = Color.DarkGray,
+                            fontSize = 15.sp,
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = place.value,
+                        onValueChange = { place.value = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
+                            .weight(5f),
+                        singleLine = true,
+                        textStyle = TextStyle(fontSize = 16.sp),
+                        placeholder = {
+                            Text(
+                                "장소",
+                                style = TextStyle(
+                                    color = Color.LightGray
+                                )
+                            )
+                        },
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            textColor = Color.Black,
+                            cursorColor = Color.Black,
+                            backgroundColor = Color.White,
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent
+                        )
+                    )
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                )
+                {
+                    Text("아젠다",
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(1f),
+                        style = TextStyle(
+                            color = Color.DarkGray,
+                            fontSize = 15.sp,
+                        )
+                    )
+                    Row(modifier = Modifier.weight(5f)) {
+                        AgendaListScreen(agendaList = agendaList)
+                    }
+                }
+            }
+
+            item{
+                Column(modifier = Modifier) {
+                    Row(
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                    )
+                    {
+                        Text(
+                            "쉬는시간",
+                            modifier = Modifier
+                                .height(20.dp)
+                                .weight(1f),
+                            style = TextStyle(
+                                color = Color.DarkGray,
+                                fontSize = 14.sp,
+                            )
+                        )
+
+                        Row(modifier = Modifier.weight(5f)) {
+                            BreakTimeRow(breakTime = breakTime, breakTimeMinute = breakTimeMinute)
+                        }
+                    }
                 }
 
             }
@@ -384,10 +356,10 @@ fun CreateNewMeetingScreen(navController: NavController){
             item {
                 Button(modifier = Modifier.fillMaxWidth()
                     .padding(start = 8.dp, end = 8.dp, top = 15.dp, bottom = 8.dp)
-                    .height(60.dp)
-                    .border(BorderStroke(0.dp, Color.Transparent)),
+                    .height(55.dp)
+                    .border(1.dp, Purple1, RoundedCornerShape(13.dp)),
                     colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color.Transparent,
+                        backgroundColor = Purple1,
                         contentColor = Color.Black
                     ),
                     elevation = null,
@@ -395,19 +367,18 @@ fun CreateNewMeetingScreen(navController: NavController){
                         val agendas = agendaList.toList()
                         val participants = selectedMembers.value
 
-                        if (agendas.isEmpty() || participants.isEmpty()) {
-                            Log.e("MeetingCreate", "참석자나 아젠다가 비어있음")
+                        if (agendas.isEmpty()) {
+                            Log.e("MeetingCreate", "아젠다가 비어있음")
                             return@Button
                         }
 
                         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
-                        val scheduledStartTime = LocalDateTime.parse("${dateText}T$startTime", formatter)
+                        val scheduledStartTime =LocalDateTime.parse("${dateText}T${startTime.value}", formatter)
 
                         val meetingReq = MeetingReq(
                             title = meetingTitle.value,
-                            leader = leaderName.value,
                             location = place.value,
-                            targetTime = durationInMinutes,
+                            targetTime = duration.value,
                             restInterval = breakTime.value.toIntOrNull() ?: 0,
                             restDuration = breakTimeMinute.value.toIntOrNull() ?: 0,
                             scheduledStartTime = scheduledStartTime.toString(),
@@ -426,7 +397,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                             }
                         )
                     }) {
-                    Text("생성하기", style = TextStyle(color = md_theme_button_color_blue, fontSize = 25.sp))
+                    Text("새 회의 등록", style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 20.sp))
                 }
             }
 
