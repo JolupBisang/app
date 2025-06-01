@@ -120,7 +120,7 @@ class MeetingViewModel @Inject constructor(
             when (val result = meetingRepository.getMeetingDetail(meetingId)) {
                 is MeetingResult.Success -> {
                     _meetingDetail.value = result.data
-                    _meetingStatus.value = MeetingStatus.from(result.data.status)
+                    _meetingStatus.value = MeetingStatus.from(result.data.meetingStatus)
                 }
                 is MeetingResult.Error -> {
                     _errorMessage.value = result.errorResponse?.message ?: result.message

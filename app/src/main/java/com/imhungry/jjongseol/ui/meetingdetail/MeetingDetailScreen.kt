@@ -23,6 +23,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.ui.home.DataPickerCalendar
 import com.imhungry.jjongseol.ui.newmeeting.CustomBackButton
 import com.imhungry.jjongseol.ui.newmeeting.agenda.AgendaListScreen
@@ -37,7 +38,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun MeetingDetailPreviewScreen(
+fun MeetingDetailScreen(
     navController: NavController,
     id: Long,
     title: MutableState<String> = remember { mutableStateOf("제목 없음") },
@@ -357,7 +358,20 @@ fun MeetingDetailPreviewScreen(
                             backgroundColor = Purple1,
                             contentColor = Color.Black
                         ),
-                        onClick = {}
+                        onClick = {
+                            when (MeetingStatus.valueOf(status.value)) {
+                                MeetingStatus.WAITING -> {
+                                    navController.navigate("meetingRoute/waiting/$id")
+                                }
+                                MeetingStatus.IN_PROGRESS -> {
+                                    navController.navigate("meetingRoute/inprogress/$id")
+                                }
+                                MeetingStatus.COMPLETED -> {
+                                    navController.navigate("meetingRoute/completed/$id")
+                                }
+                                else -> {}
+                            }
+                        }
                     ){
                         Text(
                             "입장",
