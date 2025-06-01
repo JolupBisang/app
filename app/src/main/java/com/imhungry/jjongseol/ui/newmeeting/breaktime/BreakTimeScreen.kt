@@ -24,25 +24,27 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
     fun handleBreakTimeChange(newBreakTime: String) {
         if (newBreakTime.all { it.isDigit() }) {
             breakTime.value = newBreakTime
-            if (breakTime.value.isNotEmpty() && breakTimeMinute.value.isNotEmpty()) {
+            //쉬는시간과 간격에 제한을 둘건가
+            /*if (breakTime.value.isNotEmpty() && breakTimeMinute.value.isNotEmpty()) {
                 val breakTimeInt = breakTime.value.toIntOrNull() ?: 0
                 val breakTimeMinuteInt = breakTimeMinute.value.toIntOrNull() ?: 0
                 if (breakTimeInt <= breakTimeMinuteInt) {
                     breakTimeMinute.value = "0"
                 }
-            }
+            }*/
         }
     }
 
     fun handleBreakTimeMinuteChange(newBreakTimeMinute: String) {
         if (newBreakTimeMinute.all { it.isDigit() }) {
-            val breakTimeInt = breakTime.value.toIntOrNull() ?: 0
+            breakTimeMinute.value = newBreakTimeMinute
+            /*val breakTimeInt = breakTime.value.toIntOrNull() ?: 0
             val newBreakTimeMinuteInt = newBreakTimeMinute.toIntOrNull() ?: 0
             if (breakTime.value.isNotEmpty() && newBreakTimeMinuteInt >= breakTimeInt) {
                 breakTimeMinute.value = "0"
             } else {
                 breakTimeMinute.value = newBreakTimeMinute
-            }
+            }*/
         }
     }
 
@@ -54,7 +56,6 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
                 onValueChange = ::handleBreakTimeChange,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(8.dp)
                     .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
                 singleLine = true,
                 textStyle = TextStyle(fontSize = 16.sp),
@@ -71,7 +72,7 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
             )
 
             Spacer(Modifier.width(2.dp))
-            Text("분 마다", style = TextStyle(fontSize = 15.sp))
+            Text(" 분 마다", style = TextStyle(fontSize = 15.sp))
         }
 
         Row(modifier = Modifier.weight(1f),
@@ -83,7 +84,6 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
                 onValueChange = ::handleBreakTimeMinuteChange,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(8.dp)
                     .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
                 singleLine = true,
                 textStyle = TextStyle(fontSize = 16.sp),
@@ -100,7 +100,7 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
             )
 
             Spacer(Modifier.width(2.dp))
-            Text("분", style = TextStyle(fontSize = 15.sp))
+            Text(" 분", style = TextStyle(fontSize = 15.sp))
         }
     }
 }

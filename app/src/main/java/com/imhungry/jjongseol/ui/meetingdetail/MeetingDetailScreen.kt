@@ -1,36 +1,16 @@
-package com.imhungry.jjongseol.ui.newmeeting
+package com.imhungry.jjongseol.ui.meetingdetail
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Icon
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,48 +23,42 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import android.util.Log
-import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.ui.home.DataPickerCalendar
+import com.imhungry.jjongseol.ui.newmeeting.CustomBackButton
 import com.imhungry.jjongseol.ui.newmeeting.agenda.AgendaListScreen
 import com.imhungry.jjongseol.ui.newmeeting.breaktime.BreakTimeRow
 import com.imhungry.jjongseol.ui.newmeeting.dateandtime.TimeDurationPicker
 import com.imhungry.jjongseol.ui.newmeeting.invite.SearchScreen
 import com.imhungry.jjongseol.ui.theme.Purple1
-import com.imhungry.jjongseol.viewmodel.MeetingViewModel
+import com.imhungry.jjongseol.ui.theme.Purple2
+import com.imhungry.jjongseol.ui.theme.UserGray
 import com.imhungry.jjongseol.viewmodel.UserViewModel
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun CreateNewMeetingScreen(navController: NavController){
-    val meetingViewModel: MeetingViewModel = hiltViewModel()
-    val userViewModel: UserViewModel = hiltViewModel()
-
-    val meetingTitle = remember { mutableStateOf("") }
-    val leaderName = remember { mutableStateOf("") }
-
-    val selectedMembers = remember { mutableStateOf(listOf<String>()) }
-
-    var selectedDate: LocalDate? by remember { mutableStateOf(null) }
-    var dateText by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))) }
+fun MeetingDetailPreviewScreen(
+    navController: NavController,
+    id: Long,
+    title: MutableState<String> = remember { mutableStateOf("제목 없음") },
+    location: MutableState<String> = remember { mutableStateOf("장소 없음") },
+    participants: List<String> = emptyList(),
+    date: MutableState<String> = remember { mutableStateOf("YYYY-MM-DD") },
+    startTime: MutableState<String> = remember { mutableStateOf("HH:MM") },
+    endTime: MutableState<String> = remember { mutableStateOf("HH:MM") },
+    totalTime: MutableState<Int> = remember { mutableStateOf(0) },
+    restInterval: MutableState<String> = remember { mutableStateOf("0") },
+    restDuration: MutableState<String> = remember { mutableStateOf("0") },
+    agendas: List<String> = emptyList(),
+    status: MutableState<String> = remember { mutableStateOf("미정") }
+) {
     var showCalendarDialog by remember { mutableStateOf(false) }
 
-    val startTime = remember { mutableStateOf("HH:MM") }
-    val endTime = remember { mutableStateOf("HH:MM") }
-    val duration = remember { mutableStateOf(0) }
-
-    val place = remember { mutableStateOf("") }
-
-    val agendaList = remember { mutableStateListOf<String>() }
-
-    val breakTime = remember { mutableStateOf("") }
-    val breakTimeMinute = remember { mutableStateOf("") }
-
-    ConstraintLayout (modifier = Modifier
-        .background(Color.White)
-        .fillMaxSize()){
+    ConstraintLayout(
+        modifier = Modifier
+            .background(Color.White)
+            .fillMaxSize()
+    ) {
         val scrollList = createRef()
 
         LazyColumn(
@@ -99,15 +73,16 @@ fun CreateNewMeetingScreen(navController: NavController){
                     height = Dimension.fillToConstraints
                 },
         ) {
-            item{
+            item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(80.dp)
                         .padding(top = 10.dp, bottom = 20.dp),
                     contentAlignment = Alignment.Center
-                ){
-                    Text("회의 생성",
+                ) {
+                    Text(
+                        "회의 정보",
                         style = TextStyle(
                             color = Color.Black,
                             fontSize = 30.sp,
@@ -133,8 +108,8 @@ fun CreateNewMeetingScreen(navController: NavController){
                     }
 
                     OutlinedTextField(
-                        value = meetingTitle.value,
-                        onValueChange = { meetingTitle.value = it },
+                        value = title.value,
+                        onValueChange = { title.value = it },
                         modifier = Modifier
                             .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
                             .height(50.dp)
@@ -166,7 +141,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                         .padding(top = 8.dp)
                 ) {
                     Text(
-                        text = "참석자",
+                        "참석자",
                         modifier = Modifier
                             .height(20.dp)
                             .weight(1f),
@@ -178,8 +153,8 @@ fun CreateNewMeetingScreen(navController: NavController){
 
                     Column(modifier = Modifier.weight(5f)) {
                         SearchScreen(
-                            selectedEmails = selectedMembers,
-                            userApi = userViewModel.userApi
+                            selectedEmails = remember { mutableStateOf(participants) },
+                            userApi = hiltViewModel<UserViewModel>().userApi
                         )
                     }
                 }
@@ -218,7 +193,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = dateText,
+                            text = date.value,
                             style = TextStyle(fontSize = 16.sp, color = Color.Black),
                             modifier = Modifier.padding(start = 20.dp, top = 10.dp, bottom = 10.dp)
                         )
@@ -250,12 +225,11 @@ fun CreateNewMeetingScreen(navController: NavController){
                             fontSize = 15.sp,
                         )
                     )
-
                     Row(modifier = Modifier.weight(5f)) {
                         TimeDurationPicker(
                             startTime = startTime,
                             endTime = endTime,
-                            durationInMinutes = duration
+                            durationInMinutes = totalTime
                         )
                     }
                 }
@@ -279,8 +253,8 @@ fun CreateNewMeetingScreen(navController: NavController){
                     )
 
                     OutlinedTextField(
-                        value = place.value,
-                        onValueChange = { place.value = it },
+                        value = location.value,
+                        onValueChange = { location.value = it },
                         modifier = Modifier
                             .fillMaxWidth()
                             .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
@@ -305,14 +279,14 @@ fun CreateNewMeetingScreen(navController: NavController){
                     )
                 }
             }
-
             item {
                 Row(
                     modifier = Modifier
                         .padding(top = 8.dp)
                 )
                 {
-                    Text("아젠다",
+                    Text(
+                        "아젠다",
                         modifier = Modifier
                             .height(20.dp)
                             .weight(1f),
@@ -322,12 +296,12 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
                     )
                     Row(modifier = Modifier.weight(5f)) {
-                        AgendaListScreen(agendaList = agendaList)
+                        AgendaListScreen(agendaList = remember { mutableStateListOf(*agendas.toTypedArray()) })
                     }
                 }
             }
 
-            item{
+            item {
                 Column(modifier = Modifier) {
                     Row(
                         modifier = Modifier
@@ -335,7 +309,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                     )
                     {
                         Text(
-                            "쉬는시간",
+                            "쉬는 시간",
                             modifier = Modifier
                                 .height(20.dp)
                                 .weight(1f),
@@ -346,73 +320,89 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
 
                         Row(modifier = Modifier.weight(5f)) {
-                            BreakTimeRow(breakTime = breakTime, breakTimeMinute = breakTimeMinute)
+                            BreakTimeRow(breakTime = restInterval, breakTimeMinute = restDuration)
                         }
                     }
                 }
 
             }
 
-            item {
-                Button(modifier = Modifier.fillMaxWidth()
-                    .padding(start = 8.dp, end = 8.dp, top = 15.dp, bottom = 8.dp)
-                    .height(55.dp)
-                    .border(1.dp, Purple1, RoundedCornerShape(13.dp)),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Purple1,
-                        contentColor = Color.Black
-                    ),
-                    elevation = null,
-                    onClick = {
-                        val agendas = agendaList.toList()
-                        val participants = selectedMembers.value
-
-                        if (agendas.isEmpty()) {
-                            Log.e("MeetingCreate", "아젠다가 비어있음")
-                            return@Button
-                        }
-
-                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
-                        val scheduledStartTime =LocalDateTime.parse("${dateText}T${startTime.value}", formatter)
-
-                        val meetingReq = MeetingReq(
-                            title = meetingTitle.value,
-                            location = place.value,
-                            targetTime = duration.value,
-                            restInterval = breakTime.value.toIntOrNull() ?: 0,
-                            restDuration = breakTimeMinute.value.toIntOrNull() ?: 0,
-                            scheduledStartTime = scheduledStartTime.toString(),
-                            agendas = agendas,
-                            participants = participants
+            item{
+                Row(modifier = Modifier.padding(top = 15.dp, bottom = 10.dp)){
+                    Button(modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp)
+                        .border(1.dp, UserGray, RoundedCornerShape(15.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = UserGray,
+                            contentColor = Color.Black
+                        ),
+                        onClick = {}
+                    ){
+                        Text(
+                            "삭제",
+                            style = TextStyle(
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
                         )
-
-
-                        meetingViewModel.createMeeting(
-                            meetingReq = meetingReq,
-                            onSuccess = {
-                                navController.navigate("CompleteNewMeeting")
-                            },
-                            onError = { errorMessage ->
-                                Log.e("MeetingCreate", errorMessage)
-                            }
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Button(modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp)
+                        .border(1.dp, Purple1, RoundedCornerShape(15.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Purple1,
+                            contentColor = Color.Black
+                        ),
+                        onClick = {}
+                    ){
+                        Text(
+                            "입장",
+                            style = TextStyle(
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
                         )
-                    }) {
-                    Text("새 회의 등록", style = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 20.sp))
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Button(modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp)
+                        .border(1.dp, Purple2, RoundedCornerShape(15.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Purple2,
+                            contentColor = Color.Black
+                        ),
+                        onClick = {}
+                    ){
+                        Text(
+                            "수정",
+                            style = TextStyle(
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        )
+                    }
                 }
             }
+
 
         }
 
         if (showCalendarDialog) {
             Dialog(onDismissRequest = { showCalendarDialog = false }) {
-                val defaultSelected = selectedDate ?: LocalDate.now()
+                val defaultSelected = LocalDate.parse(date.value)
                 DataPickerCalendar(
                     navController = navController,
                     initialSelectedDate = defaultSelected,
-                    onDateSelected = { date, isConfirmed ->
+                    onDateSelected = { selected, isConfirmed ->
                         if (isConfirmed) {
-                            selectedDate = date
-                            dateText = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                            date.value = selected.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                         }
                         showCalendarDialog = false
                     }
@@ -425,43 +415,10 @@ fun CreateNewMeetingScreen(navController: NavController){
             modifier = Modifier
                 .padding(
                     start = 25.dp,
-                    top = 40.dp)
+                    top = 40.dp
+                )
         ) {
             CustomBackButton(onClick = { navController.popBackStack() })
         }
-
     }
 }
-
-
-@Composable
-fun CustomBackButton(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .height(50.dp)
-            .width(50.dp),
-        shape = RoundedCornerShape(10.dp),
-        colors = ButtonDefaults.buttonColors(
-            backgroundColor = Color.White
-        ),
-        border = BorderStroke(1.dp, Color.Gray),
-        elevation = ButtonDefaults.elevation(
-            defaultElevation = 4.dp,
-            pressedElevation = 8.dp,
-            disabledElevation = 0.dp
-        ),
-        content = {
-            Text("<",
-                style = TextStyle(
-                    color = Color.Black,
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.W400
-                )
-            )
-        }
-    )
-}
-
-
-

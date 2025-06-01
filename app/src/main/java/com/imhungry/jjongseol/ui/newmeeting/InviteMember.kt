@@ -44,7 +44,7 @@ fun SearchScreen(
                     scope.launch {
                         try {
                             val response = userApi.getUserByEmail(it)
-                            matchedEmail = response.email
+                            matchedEmail = response.data.email
                         } catch (e: HttpException) {
                             if (e.code() == 404) {
                                 matchedEmail = null
@@ -55,8 +55,8 @@ fun SearchScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
-                .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
+                .height(50.dp)
+                .border(1.dp, Color.Gray, RoundedCornerShape(10.dp)),
             singleLine = true,
             textStyle = TextStyle(fontSize = 16.sp),
             placeholder = {
@@ -76,8 +76,9 @@ fun SearchScreen(
         if (matchedEmail != null && !selectedEmails.value.contains(matchedEmail)) {
             Column(modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 15.dp)
-                .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))) {
+                .padding(horizontal = 10.dp, vertical = 5.dp)
+                .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
+                    ) {
                 Text(
                     text = matchedEmail!!,
                     modifier = Modifier
@@ -94,11 +95,11 @@ fun SearchScreen(
             }
         }
 
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             selectedEmails.value.forEach { email ->
                 Chip(email, onRemove = {
@@ -124,12 +125,13 @@ fun Chip(text: String, onRemove: () -> Unit) {
 @Composable
 fun CustomStyledText(text: String) {
     val annotatedString = buildAnnotatedString {
-        withStyle(style = SpanStyle(color = md_theme_button_color_blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)) {
-            append("X ")
-        }
         withStyle(style = SpanStyle(color = Color.Black, fontSize = 12.sp)) {
             append(text)
         }
+        withStyle(style = SpanStyle(color = md_theme_button_color_blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)) {
+            append(" X")
+        }
+
     }
 
     Text(

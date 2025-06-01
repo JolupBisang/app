@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
@@ -69,7 +71,6 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>){
             modifier = Modifier
                 .fillMaxWidth()
                 .height(180.dp)
-                .padding(8.dp)
                 .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
         ) {
             items(items = itemList, key = { it.id }) { item ->
@@ -93,7 +94,7 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>){
         Button(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp, top = 3.dp, bottom = 8.dp),
+                .padding(top = 3.dp, bottom = 8.dp),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(backgroundColor = Color.LightGray),
             onClick = {
@@ -102,7 +103,7 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>){
                 agendaList.add(newItem.text)
             }
         ) {
-            Text("+", style = TextStyle(color = md_theme_button_color_blue, fontSize = 25.sp))
+            Text("+", style = TextStyle(color = Color.Black, fontSize = 25.sp))
         }
     }
 }
@@ -184,14 +185,14 @@ fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () 
                         editText = ""
                     }
                 }
-                .padding(8.dp)
+                .padding(5.dp)
         )
         Icon(
             imageVector = Icons.Default.Delete,
             contentDescription = "Delete",
             modifier = Modifier
                 .clickable { onDelete() }
-                .padding(8.dp)
+                .padding(5.dp)
         )
     }
 }
@@ -206,16 +207,27 @@ fun TextField(
     placeholder: @Composable (() -> Unit)? = null
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val interactionSource = remember { MutableInteractionSource() }
+    var isFocused by remember { mutableStateOf(false) }
 
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier,
+        modifier = modifier.onFocusChanged { focusState ->
+            if (isFocused && !focusState.isFocused) {
+                onDone()
+                keyboardController?.hide()
+            }
+            isFocused = focusState.isFocused
+        },
         singleLine = true,
+        interactionSource = interactionSource,
         keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = {
             onDone()
             keyboardController?.hide()
+            focusManager.clearFocus()
         }),
         textStyle = textStyle,
         placeholder = placeholder

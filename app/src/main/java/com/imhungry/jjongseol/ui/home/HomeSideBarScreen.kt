@@ -3,6 +3,7 @@ package com.imhungry.jjongseol.ui.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.TabRowDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -12,9 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.imhungry.jjongseol.ui.theme.SkyBlue
 
 @Composable
 fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
@@ -26,19 +29,20 @@ fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
         modifier = Modifier
             .width(drawerWidth)
             .fillMaxHeight()
-            .background(Color.White),
+            .background(SkyBlue),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
-        Column(modifier = Modifier.padding(top = 40.dp, start = 20.dp)){
+        Column(modifier = Modifier.padding(top = 30.dp, start = 20.dp, end = 10.dp)){
             Row(modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(top = 30.dp, bottom = 5.dp, start = 5.dp, end = 5.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween){
                 Text(
-                    "김작가 >",
-                    style = TextStyle(fontSize = 30.sp),
+                    "김작가",
+                    style = TextStyle(fontSize = 20.sp),
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .clickable { }
                 )
@@ -50,38 +54,43 @@ fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
                         .clickable { }
                 )
             }
+            TabRowDefaults.Divider(
+                color = Color.Black,
+                thickness = 1.5.dp,
+                modifier = Modifier.padding(top = 20.dp, bottom = 5.dp, end = 20.dp)
+            )
             Spacer(Modifier.height(24.dp))
             Text(
                 "새 회의 만들기",
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { navController.navigate("createNewMeeting") }
-                    .padding(vertical = 10.dp, horizontal = 20.dp),
-                style = TextStyle(fontSize = 20.sp)
+                    .padding(vertical = 10.dp, horizontal = 10.dp),
+                style = TextStyle(fontSize = 18.sp)
             )
             Text(
                 "팀 관리",
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { }
-                    .padding(vertical = 10.dp, horizontal = 20.dp),
-                style = TextStyle(fontSize = 20.sp)
+                    .padding(vertical = 10.dp, horizontal = 10.dp),
+                style = TextStyle(fontSize = 18.sp)
             )
             Text(
                 "피드백 기록",
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { }
-                    .padding(vertical = 10.dp, horizontal = 20.dp),
-                style = TextStyle(fontSize = 20.sp)
+                    .padding(vertical = 10.dp, horizontal = 10.dp),
+                style = TextStyle(fontSize = 18.sp)
             )
             Text(
                 "회의록 폴더",
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { }
-                    .padding(vertical = 10.dp, horizontal = 20.dp),
-                style = TextStyle(fontSize = 20.sp)
+                    .padding(vertical = 10.dp, horizontal = 10.dp),
+                style = TextStyle(fontSize = 18.sp)
             )
             Spacer(Modifier.weight(1f))
             Text(
@@ -89,7 +98,7 @@ fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { }
-                    .padding(top=20.dp,bottom = 30.dp, start = 20.dp),
+                    .padding(top=20.dp,bottom = 30.dp, start = 10.dp),
                 style = TextStyle(fontSize = 20.sp)
             )
         }
