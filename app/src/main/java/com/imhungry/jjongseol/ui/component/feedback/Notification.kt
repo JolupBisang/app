@@ -39,10 +39,10 @@ fun Notification(
     ) {
         Box(
             modifier = modifier
-                .padding(horizontal = 28.dp)
+                .padding(horizontal = 20.dp)
                 .background(
-                    color = Color(0xFFE8E8E8),
-                    shape = MaterialTheme.shapes.large
+                    color = Color(0xFF969696),
+                    shape = MaterialTheme.shapes.medium
                 )
         ) {
             Row(
@@ -53,7 +53,7 @@ fun Notification(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Text(
@@ -73,7 +73,6 @@ fun Notification(
                     Text(
                         text = extractTimeOnly(time),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF8A8A8A),
                         modifier = Modifier.constrainAs(timeRef) {
                             top.linkTo(parent.top)
                             bottom.linkTo(parent.bottom)
@@ -86,7 +85,7 @@ fun Notification(
                         Box(
                             modifier = Modifier
                                 .size(6.dp)
-                                .background(Color.Red, shape = CircleShape)
+                                .background(Color(0xFFF80000), shape = CircleShape)
                                 .constrainAs(dotRef) {
                                     top.linkTo(parent.top)
                                     end.linkTo(parent.end)
