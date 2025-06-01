@@ -34,7 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.model.meeting.SummaryItem
+import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
 import com.imhungry.jjongseol.ui.component.summary.ConversationSummaryBar
 import com.imhungry.jjongseol.ui.component.summary.SummaryListItem
 
@@ -48,21 +48,21 @@ fun CompletedMeetingSummaryScreen() {
     val data = listOf(45f, 30f, 20f, 10f, 5f)
     val names = listOf("지안", "상정", "원영", "유진", "은경")
     val summaryList = listOf(
-        SummaryItem("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
-        SummaryItem("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
-        SummaryItem("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
-        SummaryItem("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
-        SummaryItem("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),
-        SummaryItem("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
-        SummaryItem("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
-        SummaryItem("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
-        SummaryItem("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
-        SummaryItem("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),
-        SummaryItem("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
-        SummaryItem("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
-        SummaryItem("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
-        SummaryItem("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
-        SummaryItem("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),)
+        SummaryDto("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
+        SummaryDto("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
+        SummaryDto("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
+        SummaryDto("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
+        SummaryDto("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),
+        SummaryDto("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
+        SummaryDto("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
+        SummaryDto("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
+        SummaryDto("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
+        SummaryDto("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),
+        SummaryDto("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
+        SummaryDto("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
+        SummaryDto("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
+        SummaryDto("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
+        SummaryDto("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),)
 
     LazyColumn(
         modifier = Modifier
@@ -161,7 +161,7 @@ fun CompletedMeetingSummaryScreen() {
                             .padding(horizontal = 36.dp)
                     ) {
                         summaryList.forEach { summary ->
-                            SummaryListItem(summary.text, "11:51:50")
+                            SummaryListItem(summary.summary, summary.timestamp)
                         }
                     }
                 },

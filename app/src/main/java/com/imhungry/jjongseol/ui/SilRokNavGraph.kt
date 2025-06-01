@@ -20,13 +20,17 @@ import com.imhungry.jjongseol.ui.newmeeting.CreateNewMeetingScreen
 import com.imhungry.jjongseol.ui.profilecard.CompletedProfile
 import com.imhungry.jjongseol.ui.profilecard.MakeProfile
 import com.imhungry.jjongseol.ui.splash.SplashScreen
+import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
 fun SilRokNavGraph(
     startDestination: SilRokNavigation,
     navController: NavHostController,
     loginViewModel: LoginViewModel,
+    agendaViewModel: AgendaViewModel,
+    meetingViewModel: MeetingViewModel
 ) {
     val navActions = remember(navController) { SilRokNavigationActions(navController) }
 
@@ -65,6 +69,8 @@ fun SilRokNavGraph(
 
         composable(SilRokNavigation.Meeting.route) {
             MeetingScreen(
+                agendaViewModel = agendaViewModel,
+                meetingViewModel = meetingViewModel,
                 onFinish = { destination ->
                     navActions.navigateTo(destination, SilRokNavigation.Meeting)
                 },
@@ -74,14 +80,19 @@ fun SilRokNavGraph(
 
         composable(SilRokNavigation.MeetingWaiting.route) {
             MeetingWaitingScreen(
+                loginViewModel = loginViewModel,
+                agendaViewModel = agendaViewModel,
+                meetingViewModel = meetingViewModel,
                 onFinish = { destination ->
                     navActions.navigateTo(destination, SilRokNavigation.MeetingWaiting)
-                }
+                },
+                meetingId = 1L
             )
         }
 
         composable(SilRokNavigation.MeetingEnd.route) {
             MeetingEndScreen(
+                meetingViewModel = meetingViewModel,
                 onFinish = { destination ->
                 navActions.navigateTo(destination, SilRokNavigation.MeetingEnd)
             })

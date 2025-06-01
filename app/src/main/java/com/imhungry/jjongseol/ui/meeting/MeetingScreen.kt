@@ -1,6 +1,8 @@
 package com.imhungry.jjongseol.ui.meeting
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -35,6 +37,7 @@ import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
+import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
@@ -50,8 +53,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun MeetingScreen(
     loginViewModel: LoginViewModel = hiltViewModel(),
-    meetingViewModel: MeetingViewModel = hiltViewModel(),
-    agendaViewModel: AgendaViewModel = hiltViewModel(),
+    meetingViewModel: MeetingViewModel,
+    agendaViewModel: AgendaViewModel,
     onFinish: (SilRokNavigation) -> Unit,
     meetingId: Long
 ) {
@@ -122,7 +125,6 @@ fun MeetingScreen(
         onFinish = onFinish,
         clearError = {
             meetingViewModel.clearErrorMessage()
-            meetingViewModel.cleanupSession()
         },
         loginViewModel = loginViewModel
     )
@@ -133,26 +135,17 @@ fun MeetingScreen(
     LaunchedEffect(allReady) {
         if (allReady && startTimeMillis == null) {
             startTimeMillis = System.currentTimeMillis()
+        }
+    }
 
-            meetingViewModel.initializeSession(
-                meetingId = meetingId,
-                timeProvider = {
-                    val elapsed = (System.currentTimeMillis() - (startTimeMillis ?: 0L)) / 1000
-                    String.format("%02d:%02d:%02d", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60)
-                },
-                scope = meetingViewModel.viewModelScope
-            )
+    LaunchedEffect(meetingStatus) {
+        if (meetingStatus == MeetingStatus.COMPLETED) {
+            context?.stopService(Intent(context, MeetingSseService::class.java))
+            onFinish(SilRokNavigation.CompletedMeeting)
         }
     }
 
     val timeText = rememberMeetingElapsedTime(startTimeMillis)
-
-    LaunchedEffect(meetingStatus) {
-        if (meetingStatus == MeetingStatus.COMPLETED) {
-            meetingViewModel.cleanupSession()
-            onFinish(SilRokNavigation.MeetingEnd)
-        }
-    }
 
     if (!allReady || showLoading) {
         Box(
@@ -165,6 +158,13 @@ fun MeetingScreen(
         }
     } else {
         SetNavigationBarColor(Color(0xFFE5E5E5))
+        LaunchedEffect(meetingId, allReady) {
+            context.startForegroundService(
+                Intent(context, MeetingSseService::class.java).apply {
+                    putExtra("meetingId", meetingId)
+                }
+            )
+        }
         MeetingScreenContent(
             meetingViewModel = meetingViewModel,
             agendaViewModel = agendaViewModel,
@@ -172,7 +172,8 @@ fun MeetingScreen(
             viewModel = meetingViewModel,
             meetingId = meetingId,
             timeText = timeText,
-            remainingTime = remainingTime
+            remainingTime = remainingTime,
+            context = context
         )
     }
 }
@@ -201,7 +202,8 @@ fun MeetingScreenContent(
     viewModel: MeetingViewModel,
     meetingId: Long,
     timeText: String,
-    remainingTime: String
+    remainingTime: String,
+    context: Context
 ) {
     val pagerState = rememberPagerState(initialPage = 1)
 
@@ -224,13 +226,16 @@ fun MeetingScreenContent(
                 .fillMaxWidth()
         ) { page ->
             when (page) {
-                0 -> MeetingSummaryScreen()
+                0 -> MeetingSummaryScreen(
+                    meetingViewModel = meetingViewModel,
+                    agendaViewModel = agendaViewModel
+                )
                 1 -> MeetingRecordScreen(
                     meetingViewModel = meetingViewModel,
                     agendaViewModel = agendaViewModel,
                     meetingId = meetingId
                 )
-                2 -> MeetingFeedbackScreen()
+                2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel)
             }
         }
 
@@ -263,7 +268,8 @@ fun MeetingScreenContent(
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
-            meetingId = meetingId
+            meetingId = meetingId,
+            context = context
         )
     }
 }

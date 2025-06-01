@@ -5,13 +5,13 @@ import androidx.compose.ui.graphics.Color
 fun generateParticipantColors(count: Int): List<Color> {
     val baseColors = listOf(
         Color(0xFFE74C3C), // 빨간색
+        Color(0xFFF39C12), // 주황색
         Color(0xFFF1C40F), // 노란색
         Color(0xFF27AE60), // 진한 녹색
-        Color(0xFFF39C12), // 주황색
+        Color(0xFF2980B9), // 진한 파랑
         Color(0xFF1ABC9C), // 민트색
         Color(0xFFD35400), // 다크 오렌지
         Color(0xFF2ECC71), // 연녹색
-        Color(0xFF2980B9), // 진한 파랑
         Color(0xFF16A085), // 청록색
         Color(0xFF9B59B6), // 보라색
         Color(0xFF3498DB), // 파란색
@@ -39,5 +39,5 @@ fun generateParticipantColors(count: Int): List<Color> {
         Color(0xFFCFD8DC)  // 소프트 쿨그레이
     )
 
-    return List(count) { index -> softColors[index % softColors.size] }
+    return List(count) { index -> baseColors[index % baseColors.size] }
 }

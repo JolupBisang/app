@@ -1,7 +1,5 @@
 package com.imhungry.jjongseol.feature.meeting
 
-import com.imhungry.jjongseol.data.model.feedback.FeedbackItem
-import com.imhungry.jjongseol.data.model.meeting.SummaryItem
 import com.imhungry.jjongseol.data.network.client.SseClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,7 +9,7 @@ import javax.inject.Inject
 class MeetingSseSubscriber @Inject constructor(
     private val sseClient: SseClient
 ) {
-    private val _summaryList = MutableStateFlow<List<SummaryItem>>(emptyList())
+    /*private val _summaryList = MutableStateFlow<List<SummaryItem>>(emptyList())
     val summaryList: StateFlow<List<SummaryItem>> = _summaryList.asStateFlow()
 
     private val _participationRate = MutableStateFlow<String?>(null)
@@ -49,5 +47,5 @@ class MeetingSseSubscriber @Inject constructor(
 
     fun stopSse() {
         sseClient.disconnect()
-    }
+    }*/
 }

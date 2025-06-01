@@ -18,9 +18,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.imhungry.jjongseol.ui.component.chart.ProportionalBarChart
+import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.generateParticipantColors
 
 @Composable
@@ -28,14 +30,15 @@ fun ConversationSummaryBar(participantData: List<Float>, participantNames: List<
     val colors = generateParticipantColors(participantData.size)
 
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
     ) {
         ProportionalBarChart(
             proportions = participantData,
             colors = colors,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -53,7 +56,7 @@ fun ConversationSummaryBar(participantData: List<Float>, participantNames: List<
                 modifier = Modifier
                     .wrapContentWidth(),
                 horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 leftColumn.forEachIndexed { i, name ->
                     LegendItem(name = name, color = colors.getOrElse(i) { Color.Gray })
@@ -63,7 +66,7 @@ fun ConversationSummaryBar(participantData: List<Float>, participantNames: List<
                 modifier = Modifier
                     .wrapContentWidth(),
                 horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 rightColumn.forEachIndexed { i, name ->
                     val colorIndex = splitIndex + i
@@ -90,6 +93,8 @@ fun LegendItem(name: String, color: Color) {
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = name,
+            fontFamily = Pretend,
+            fontWeight = FontWeight.Normal,
             textAlign = TextAlign.Start
         )
     }

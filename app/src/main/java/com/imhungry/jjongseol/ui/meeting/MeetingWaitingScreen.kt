@@ -46,9 +46,9 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
 fun MeetingWaitingScreen(
-    loginViewModel: LoginViewModel = hiltViewModel(),
-    meetingViewModel: MeetingViewModel = hiltViewModel(),
-    agendaViewModel: AgendaViewModel = hiltViewModel(),
+    loginViewModel: LoginViewModel,
+    meetingViewModel: MeetingViewModel,
+    agendaViewModel: AgendaViewModel,
     onFinish: (SilRokNavigation) -> Unit,
     meetingId: Long = 1L
 ) {

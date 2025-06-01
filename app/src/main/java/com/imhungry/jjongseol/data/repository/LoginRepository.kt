@@ -10,8 +10,12 @@ class LoginRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val sharedPrefs = context.getSharedPreferences("auth", Context.MODE_PRIVATE)
-    private val _isLoggedInFlow = MutableStateFlow(isLoggedIn())
-    val isLoggedInFlow: StateFlow<Boolean> = _isLoggedInFlow
+    private val _isLoggedInFlow = MutableStateFlow(false)
+    val isLoggedInFlow: StateFlow<Boolean> get() = _isLoggedInFlow
+
+    init {
+        _isLoggedInFlow.value = !sharedPrefs.getString("jwt_token", null).isNullOrEmpty()
+    }
 
     fun saveToken(token: String) {
         sharedPrefs.edit().putString("jwt_token", token).apply()

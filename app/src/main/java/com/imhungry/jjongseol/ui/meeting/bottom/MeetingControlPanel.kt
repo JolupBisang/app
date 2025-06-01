@@ -1,5 +1,7 @@
 package com.imhungry.jjongseol.ui.meeting.bottom
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
+import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.dialog.CustomDialog
 import com.imhungry.jjongseol.ui.theme.Pretend
@@ -45,9 +48,9 @@ fun MeetingControlPanel(
     onFinish: (SilRokNavigation) -> Unit,
     viewModel: MeetingViewModel,
     isWaiting: Boolean = false,
-    meetingId: Long? = null
+    meetingId: Long? = null,
+    context: Context? = null
 ) {
-    val context = LocalContext.current
     val micEnabled by viewModel.streamController.micEnabled.collectAsState()
     val isMicOn = if (isWaiting) false else micEnabled
 
@@ -130,6 +133,8 @@ fun MeetingControlPanel(
                 if (meetingId != null) {
                     viewModel.updateMeetingStatus(meetingId, MeetingStatus.COMPLETED)
                 }
+                context?.stopService(Intent(context, MeetingSseService::class.java))
+                onFinish(SilRokNavigation.MeetingEnd)
                 showDialog = false
             },
             onDismiss = { showDialog = false }

@@ -14,7 +14,6 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private val loginViewModel: LoginViewModel by viewModels()
-
     private val startDestinationState = mutableStateOf(SilRokNavigation.Splash)
 
     override fun onCreate(savedInstanceState: Bundle?) {

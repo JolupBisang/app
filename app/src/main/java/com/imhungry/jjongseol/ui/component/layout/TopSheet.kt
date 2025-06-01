@@ -52,7 +52,7 @@ fun TopSheet(
             }
 
             Image(
-                painter = painterResource(id = if (expanded) R.drawable.collapse else R.drawable.expend),
+                painter = painterResource(id = if (expanded) R.drawable.collapse else R.drawable.expand),
                 contentDescription = if (expanded) "접기" else "펼치기",
                 modifier = Modifier
                     .padding(top = 8.dp)

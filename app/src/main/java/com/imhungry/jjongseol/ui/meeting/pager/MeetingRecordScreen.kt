@@ -45,7 +45,6 @@ fun MeetingRecordScreen(
     agendaViewModel: AgendaViewModel,
     meetingId: Long
 ) {
-    val feedbackList by meetingViewModel.sseSubscriber.feedbackList.collectAsState()
     val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val agendas by agendaViewModel.agendaItems.collectAsState()
     var isTopSheetExpanded by remember { mutableStateOf(false) }
@@ -54,6 +53,7 @@ fun MeetingRecordScreen(
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
     val hasAgendas = agendas.isNotEmpty()
     val showTerminationNotification = remember { mutableStateOf(false) }
+    val feedbackList by meetingViewModel.feedbackList.collectAsState()
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -142,8 +142,8 @@ fun MeetingRecordScreen(
 
             if (latestFeedback != null && visible) {
                 SwipeToDismissNotification(
-                    message = latestFeedback.text,
-                    time = latestFeedback.time,
+                    message = latestFeedback.comment,
+                    time = latestFeedback.timestamp,
                     onDismiss = { visible = false }
                 )
             }
