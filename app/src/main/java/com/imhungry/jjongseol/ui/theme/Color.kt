@@ -73,7 +73,9 @@ val DarkWalnut = Color(0xFF362920)
 val TrueBlack = Color(0xFF1E1E1E)
 
 val SkyBlue = Color(0xFFDCEFF3)
-val TransparentGreen = Color(0xFF00FF15)
+val TransparentGreen = Color(0xFFd9ffdc)
 val UserPink = Color(0xFFFFC5C5)
 val UserGray = Color(0xFFD9D9D9)
+val Purple1 = Color(0xFFdbd9ff)
+val Purple2 = Color(0xFFeeecff)
 
