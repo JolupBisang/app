@@ -1,0 +1,424 @@
+package com.imhungry.jjongseol.ui.meetingdetail
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import com.imhungry.jjongseol.ui.home.DataPickerCalendar
+import com.imhungry.jjongseol.ui.newmeeting.CustomBackButton
+import com.imhungry.jjongseol.ui.newmeeting.agenda.AgendaListScreen
+import com.imhungry.jjongseol.ui.newmeeting.breaktime.BreakTimeRow
+import com.imhungry.jjongseol.ui.newmeeting.dateandtime.TimeDurationPicker
+import com.imhungry.jjongseol.ui.newmeeting.invite.SearchScreen
+import com.imhungry.jjongseol.ui.theme.Purple1
+import com.imhungry.jjongseol.ui.theme.Purple2
+import com.imhungry.jjongseol.ui.theme.UserGray
+import com.imhungry.jjongseol.viewmodel.UserViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+@Composable
+fun MeetingDetailPreviewScreen(
+    navController: NavController,
+    id: Long,
+    title: MutableState<String> = remember { mutableStateOf("제목 없음") },
+    location: MutableState<String> = remember { mutableStateOf("장소 없음") },
+    participants: List<String> = emptyList(),
+    date: MutableState<String> = remember { mutableStateOf("YYYY-MM-DD") },
+    startTime: MutableState<String> = remember { mutableStateOf("HH:MM") },
+    endTime: MutableState<String> = remember { mutableStateOf("HH:MM") },
+    totalTime: MutableState<Int> = remember { mutableStateOf(0) },
+    restInterval: MutableState<String> = remember { mutableStateOf("0") },
+    restDuration: MutableState<String> = remember { mutableStateOf("0") },
+    agendas: List<String> = emptyList(),
+    status: MutableState<String> = remember { mutableStateOf("미정") }
+) {
+    var showCalendarDialog by remember { mutableStateOf(false) }
+
+    ConstraintLayout(
+        modifier = Modifier
+            .background(Color.White)
+            .fillMaxSize()
+    ) {
+        val scrollList = createRef()
+
+        LazyColumn(
+            modifier = Modifier
+                .padding(30.dp)
+                .fillMaxSize()
+                .constrainAs(scrollList) {
+                    top.linkTo(parent.top)
+                    bottom.linkTo(parent.bottom)
+                    end.linkTo(parent.end)
+                    start.linkTo(parent.start)
+                    height = Dimension.fillToConstraints
+                },
+        ) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .padding(top = 10.dp, bottom = 20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "회의 정보",
+                        style = TextStyle(
+                            color = Color.Black,
+                            fontSize = 30.sp,
+                        )
+                    )
+                }
+            }
+            item {
+                Row() {
+                    Box(
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(1f),
+                    )
+                    {
+                        Text(
+                            "제목",
+                            style = TextStyle(
+                                color = Color.DarkGray,
+                                fontSize = 15.sp,
+                            )
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = title.value,
+                        onValueChange = { title.value = it },
+                        modifier = Modifier
+                            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
+                            .height(50.dp)
+                            .weight(5f),
+                        singleLine = true,
+                        textStyle = TextStyle(fontSize = 16.sp),
+                        placeholder = {
+                            Text(
+                                "{이름}님의 회의",
+                                style = TextStyle(
+                                    color = Color.LightGray
+                                )
+                            )
+                        },
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            textColor = Color.Black,
+                            cursorColor = Color.Black,
+                            backgroundColor = Color.White,
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent
+                        )
+                    )
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                ) {
+                    Text(
+                        "참석자",
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(1f),
+                        style = TextStyle(
+                            color = Color.DarkGray,
+                            fontSize = 15.sp,
+                        )
+                    )
+
+                    Column(modifier = Modifier.weight(5f)) {
+                        SearchScreen(
+                            selectedEmails = remember { mutableStateOf(participants) },
+                            userApi = hiltViewModel<UserViewModel>().userApi
+                        )
+                    }
+                }
+            }
+            item {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                )
+                {
+                    Text(
+                        "일시",
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(1f),
+                        style = TextStyle(
+                            color = Color.DarkGray,
+                            fontSize = 15.sp,
+                        )
+                    )
+
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .background(Color.White, RoundedCornerShape(10.dp))
+                            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
+                            .clickable(
+                                onClick = { showCalendarDialog = true },
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            )
+                            .weight(5f),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = date.value,
+                            style = TextStyle(fontSize = 16.sp, color = Color.Black),
+                            modifier = Modifier.padding(start = 20.dp, top = 10.dp, bottom = 10.dp)
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Icon(
+                            imageVector = Icons.Filled.DateRange,
+                            contentDescription = "회의 날짜 선택",
+                            modifier = Modifier.padding(end = 10.dp)
+                        )
+                    }
+                }
+            }
+
+
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                )
+                {
+                    Text(
+                        "시간",
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(1f),
+                        style = TextStyle(
+                            color = Color.DarkGray,
+                            fontSize = 15.sp,
+                        )
+                    )
+                    Row(modifier = Modifier.weight(5f)) {
+                        TimeDurationPicker(
+                            startTime = startTime,
+                            endTime = endTime,
+                            durationInMinutes = totalTime
+                        )
+                    }
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                )
+                {
+                    Text(
+                        "장소",
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(1f),
+                        style = TextStyle(
+                            color = Color.DarkGray,
+                            fontSize = 15.sp,
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = location.value,
+                        onValueChange = { location.value = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
+                            .weight(5f),
+                        singleLine = true,
+                        textStyle = TextStyle(fontSize = 16.sp),
+                        placeholder = {
+                            Text(
+                                "장소",
+                                style = TextStyle(
+                                    color = Color.LightGray
+                                )
+                            )
+                        },
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            textColor = Color.Black,
+                            cursorColor = Color.Black,
+                            backgroundColor = Color.White,
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent
+                        )
+                    )
+                }
+            }
+            item {
+                Row(
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                )
+                {
+                    Text(
+                        "아젠다",
+                        modifier = Modifier
+                            .height(20.dp)
+                            .weight(1f),
+                        style = TextStyle(
+                            color = Color.DarkGray,
+                            fontSize = 15.sp,
+                        )
+                    )
+                    Row(modifier = Modifier.weight(5f)) {
+                        AgendaListScreen(agendaList = remember { mutableStateListOf(*agendas.toTypedArray()) })
+                    }
+                }
+            }
+
+            item {
+                Column(modifier = Modifier) {
+                    Row(
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                    )
+                    {
+                        Text(
+                            "쉬는 시간",
+                            modifier = Modifier
+                                .height(20.dp)
+                                .weight(1f),
+                            style = TextStyle(
+                                color = Color.DarkGray,
+                                fontSize = 14.sp,
+                            )
+                        )
+
+                        Row(modifier = Modifier.weight(5f)) {
+                            BreakTimeRow(breakTime = restInterval, breakTimeMinute = restDuration)
+                        }
+                    }
+                }
+
+            }
+
+            item{
+                Row(modifier = Modifier.padding(top = 15.dp, bottom = 10.dp)){
+                    Button(modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp)
+                        .border(1.dp, UserGray, RoundedCornerShape(15.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = UserGray,
+                            contentColor = Color.Black
+                        ),
+                        onClick = {}
+                    ){
+                        Text(
+                            "삭제",
+                            style = TextStyle(
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        )
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Button(modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp)
+                        .border(1.dp, Purple1, RoundedCornerShape(15.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Purple1,
+                            contentColor = Color.Black
+                        ),
+                        onClick = {}
+                    ){
+                        Text(
+                            "입장",
+                            style = TextStyle(
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        )
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Button(modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp)
+                        .border(1.dp, Purple2, RoundedCornerShape(15.dp)),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Purple2,
+                            contentColor = Color.Black
+                        ),
+                        onClick = {}
+                    ){
+                        Text(
+                            "수정",
+                            style = TextStyle(
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                        )
+                    }
+                }
+            }
+
+
+        }
+
+        if (showCalendarDialog) {
+            Dialog(onDismissRequest = { showCalendarDialog = false }) {
+                val defaultSelected = LocalDate.parse(date.value)
+                DataPickerCalendar(
+                    navController = navController,
+                    initialSelectedDate = defaultSelected,
+                    onDateSelected = { selected, isConfirmed ->
+                        if (isConfirmed) {
+                            date.value = selected.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                        }
+                        showCalendarDialog = false
+                    }
+                )
+            }
+        }
+
+        Box(
+            contentAlignment = Alignment.TopStart,
+            modifier = Modifier
+                .padding(
+                    start = 25.dp,
+                    top = 40.dp
+                )
+        ) {
+            CustomBackButton(onClick = { navController.popBackStack() })
+        }
+    }
+}

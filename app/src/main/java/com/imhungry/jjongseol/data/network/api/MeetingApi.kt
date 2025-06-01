@@ -1,11 +1,14 @@
 package com.imhungry.jjongseol.data.network.api
 
 import com.imhungry.jjongseol.data.model.home.MeetingListWrapper
+import com.imhungry.jjongseol.data.model.home.SuccessResponse
+import com.imhungry.jjongseol.data.model.meeting.MeetingDetailRes
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface MeetingApi {
@@ -17,4 +20,7 @@ interface MeetingApi {
         @Query("year") year: Int,
         @Query("month") month: Int
     ): Response<MeetingListWrapper>
+
+    @GET("/api/meetings/{id}")
+    suspend fun getMeetingById(@Path("id") id: Long): Response<SuccessResponse<MeetingDetailRes>>
 }
