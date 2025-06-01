@@ -6,11 +6,19 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.Divider
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,12 +34,14 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingSummaryScreen
+import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
@@ -45,14 +55,16 @@ fun MeetingScreen(
     onFinish: (SilRokNavigation) -> Unit,
     meetingId: Long
 ) {
-    val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val agendas by agendaViewModel.agendaItems.collectAsState()
-    val isAgendaLoading = agendas.isEmpty()
     val agendaError by agendaViewModel.errorMessage.collectAsState()
+    val isMeetingLoading by meetingViewModel.isLoading.collectAsState()
+    val isAgendaLoading by agendaViewModel.isLoading.collectAsState()
+    val isStatusUpdating by meetingViewModel.isStatusUpdating.collectAsState()
+    val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val meetingError by meetingViewModel.errorMessage.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var dialogMessage by remember { mutableStateOf<String?>(null) }
-
+    val meetingStatus by meetingViewModel.meetingStatus.collectAsState()
     val context = LocalContext.current
     var permissionGranted by remember { mutableStateOf(false) }
     var permissionRequested by remember { mutableStateOf(false) }
@@ -86,6 +98,10 @@ fun MeetingScreen(
         }
     }
 
+    val remainingTime by remember(meetingDetail) {
+        mutableStateOf(formatTargetTime(meetingDetail?.targetTime))
+    }
+
     LaunchedEffect(meetingError, agendaError) {
         dialogMessage = meetingError ?: agendaError
         showDialog = dialogMessage != null
@@ -111,7 +127,9 @@ fun MeetingScreen(
         loginViewModel = loginViewModel
     )
 
-    val allReady = permissionGranted && !isAgendaLoading
+    val allReady = permissionGranted && !isMeetingLoading && !isAgendaLoading
+    val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating
+
     LaunchedEffect(allReady) {
         if (allReady && startTimeMillis == null) {
             startTimeMillis = System.currentTimeMillis()
@@ -129,23 +147,32 @@ fun MeetingScreen(
 
     val timeText = rememberMeetingElapsedTime(startTimeMillis)
 
-    if (!allReady) {
+    LaunchedEffect(meetingStatus) {
+        if (meetingStatus == MeetingStatus.COMPLETED) {
+            meetingViewModel.cleanupSession()
+            onFinish(SilRokNavigation.MeetingEnd)
+        }
+    }
+
+    if (!allReady || showLoading) {
         Box(
-            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = Color(0xFF86CC3B))
+            CircularProgressIndicator(color = Color(0xFF969696))
         }
     } else {
+        SetNavigationBarColor(Color(0xFFE5E5E5))
         MeetingScreenContent(
+            meetingViewModel = meetingViewModel,
+            agendaViewModel = agendaViewModel,
             onFinish = onFinish,
-            onExitConfirmed = {
-                meetingViewModel.cleanupSession()
-                onFinish(SilRokNavigation.MeetingEnd)
-            },
             viewModel = meetingViewModel,
             meetingId = meetingId,
             timeText = timeText,
+            remainingTime = remainingTime
         )
     }
 }
@@ -168,20 +195,22 @@ fun rememberMeetingElapsedTime(startTimeMillis: Long?): String {
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun MeetingScreenContent(
+    meetingViewModel: MeetingViewModel,
+    agendaViewModel: AgendaViewModel,
     onFinish: (SilRokNavigation) -> Unit,
-    onExitConfirmed: () -> Unit,
     viewModel: MeetingViewModel,
     meetingId: Long,
-    timeText: String
+    timeText: String,
+    remainingTime: String
 ) {
     val pagerState = rememberPagerState(initialPage = 1)
 
     ConstraintLayout(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.White)
     ) {
-        val (pager, indicator, divider, control) = createRefs()
+        val (pager, indicator, control) = createRefs()
 
         HorizontalPager(
             count = 3,
@@ -196,7 +225,11 @@ fun MeetingScreenContent(
         ) { page ->
             when (page) {
                 0 -> MeetingSummaryScreen()
-                1 -> MeetingRecordScreen(meetingId = meetingId)
+                1 -> MeetingRecordScreen(
+                    meetingViewModel = meetingViewModel,
+                    agendaViewModel = agendaViewModel,
+                    meetingId = meetingId
+                )
                 2 -> MeetingFeedbackScreen()
             }
         }
@@ -204,10 +237,11 @@ fun MeetingScreenContent(
         HorizontalPagerIndicator(
             pagerState = pagerState,
             modifier = Modifier
+                .background(Color.White)
                 .padding(top = 12.dp, bottom = 12.dp)
                 .constrainAs(indicator) {
                     top.linkTo(pager.bottom)
-                    bottom.linkTo(divider.top)
+                    bottom.linkTo(control.top)
                     centerHorizontallyTo(parent)
                 },
             activeColor = Color(0xFF1E93EF),
@@ -216,30 +250,20 @@ fun MeetingScreenContent(
             spacing = 4.dp
         )
 
-        Divider(
-            thickness = 1.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .constrainAs(divider) {
-                    top.linkTo(indicator.bottom)
-                    bottom.linkTo(control.top)
-                }
-        )
-
         MeetingControlPanel(
             timeText = timeText,
+            remainingTimeText = remainingTime,
             micIcon = R.drawable.micoff,
-            logoutIcon = R.drawable.logout,
-            powerIcon = R.drawable.power,
             onFinish = onFinish,
-            onExitConfirmed = onExitConfirmed,
             viewModel = viewModel,
             modifier = Modifier
+                .background(Color(0xFFE5E5E5))
                 .constrainAs(control) {
                     bottom.linkTo(parent.bottom)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
-                }
+                },
+            meetingId = meetingId
         )
     }
 }

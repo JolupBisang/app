@@ -27,14 +27,12 @@ fun SilRokNavGraph(
     startDestination: SilRokNavigation,
     navController: NavHostController,
     loginViewModel: LoginViewModel,
-    modifier: Modifier = Modifier
 ) {
     val navActions = remember(navController) { SilRokNavigationActions(navController) }
 
     NavHost(
         navController = navController,
         startDestination = startDestination.route,
-        modifier = modifier
     ) {
         composable(SilRokNavigation.Splash.route) {
             SplashScreen(

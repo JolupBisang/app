@@ -28,6 +28,8 @@ fun ErrorDialogHandler(
 ) {
     val isTokenExpired = errorMessage == "만료된 토큰입니다."
     val isNetworkError = errorMessage.isNetworkError()
+    val isNotHostError = errorMessage == "해당 작업은 회의 리더만 수행할 수 있습니다."
+    val isServerInternalError = errorMessage == "서버 내부 오류입니다. 관리자에게 문의해주세요."
 
     if (showDialog && errorMessage != null) {
         CustomDialog(
@@ -51,6 +53,11 @@ fun ErrorDialogHandler(
                     }
                     isNetworkError -> {
                         exitProcess(0)
+                    }
+                    isServerInternalError -> {
+                        exitProcess(0)
+                    }
+                    isNotHostError -> {
                     }
                     else -> {
                         onFinish(SilRokNavigation.Home)

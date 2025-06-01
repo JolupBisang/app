@@ -45,6 +45,12 @@ class MeetingViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _isStatusUpdating = MutableStateFlow(false)
+    val isStatusUpdating: StateFlow<Boolean> = _isStatusUpdating
+
     fun createMeeting(
         meetingReq: MeetingReq,
         onSuccess: () -> Unit,
@@ -66,6 +72,7 @@ class MeetingViewModel @Inject constructor(
 
     fun loadMeetingDetail(meetingId: Long) {
         viewModelScope.launch {
+            _isLoading.value = true
             when (val result = meetingRepository.getMeetingDetail(meetingId)) {
                 is MeetingResult.Success -> {
                     _meetingDetail.value = result.data
@@ -78,11 +85,13 @@ class MeetingViewModel @Inject constructor(
                     _errorMessage.value = result.throwable.message ?: "네트워크 오류"
                 }
             }
+            _isLoading.value = false
         }
     }
 
     fun updateMeetingStatus(meetingId: Long, targetStatus: MeetingStatus) {
         viewModelScope.launch {
+            _isStatusUpdating.value = true
             when (val result = meetingRepository.updateMeetingStatus(meetingId, targetStatus)) {
                 is MeetingResult.Success -> {
                     loadMeetingDetail(meetingId)
@@ -94,6 +103,7 @@ class MeetingViewModel @Inject constructor(
                     _errorMessage.value = result.throwable.message ?: "네트워크 오류"
                 }
             }
+            _isStatusUpdating.value = false
         }
     }
 
@@ -108,7 +118,7 @@ class MeetingViewModel @Inject constructor(
     ) {
         val token = loginRepository.getToken() ?: ""
 
-        AudioStreamingService.onWebSocketErrorMessage = { msg ->
+        /*AudioStreamingService.onWebSocketErrorMessage = { msg ->
             streamController.onWebSocketErrorMessage?.invoke(msg)
         }
 
@@ -121,12 +131,12 @@ class MeetingViewModel @Inject constructor(
             subscribeToSummary(meetingId)
             subscribeToParticipationRate(meetingId)
             subscribeToFeedback(meetingId)
-        }
+        }*/
     }
 
     fun cleanupSession() {
-        streamController.stopStreaming()
+        /*streamController.stopStreaming()
         streamController.resetMicState()
-        sseSubscriber.stopSse()
+        sseSubscriber.stopSse()*/
     }
 }
