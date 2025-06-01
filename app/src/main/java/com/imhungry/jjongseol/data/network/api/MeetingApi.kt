@@ -1,12 +1,10 @@
 package com.imhungry.jjongseol.data.network.api
 
 import com.imhungry.jjongseol.data.model.home.MeetingListWrapper
-import com.imhungry.jjongseol.data.model.home.SuccessResponse
-import com.imhungry.jjongseol.data.model.meeting.MeetingDetailRes
-import com.imhungry.jjongseol.data.model.meeting.MeetingReq
-import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
-import com.imhungry.jjongseol.data.model.meeting.request.MeetingStatusUpdateReq
 import com.imhungry.jjongseol.data.model.response.SuccessResponse
+import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
+import com.imhungry.jjongseol.data.model.meeting.MeetingReq
+import com.imhungry.jjongseol.data.model.meeting.request.MeetingStatusUpdateReq
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET

@@ -92,7 +92,7 @@ fun MeetingScreen(
     }
 
     LaunchedEffect(meetingId) {
-        meetingViewModel.loadMeetingDetail(meetingId)
+        meetingViewModel.loadMeetingDetail2(meetingId)
     }
 
     LaunchedEffect(meetingDetail) {

@@ -8,5 +8,12 @@ data class MeetingDetailRes(
     val targetTime: Int,
     val restInterval: Int,
     val restDuration: Int,
-    val meetingStatus: String
+    val agendas: List<String>,
+    val participants: List<ParticipantDto>,
+    val status: String
+)
+
+data class ParticipantDto(
+    val userId: Long,
+    val email: String
 )

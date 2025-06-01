@@ -65,7 +65,7 @@ fun MeetingWaitingScreen(
     var isTopSheetExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(meetingId) {
-        meetingViewModel.loadMeetingDetail(meetingId)
+        meetingViewModel.loadMeetingDetail2(meetingId)
     }
 
     LaunchedEffect(meetingDetail) {

@@ -1,23 +1,18 @@
 package com.imhungry.jjongseol.viewmodel
 
 import androidx.lifecycle.ViewModel
-import android.app.Application
 import android.util.Log
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
 import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
-import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
 import com.imhungry.jjongseol.data.model.error.ApiError
-import com.imhungry.jjongseol.data.model.feedback.FeedbackItem
 import com.imhungry.jjongseol.data.model.home.MeetingResponse
 import com.imhungry.jjongseol.data.model.home.toMeetingInfo
-import com.imhungry.jjongseol.data.model.meeting.MeetingDetailRes
-import com.imhungry.jjongseol.ui.home.meetingdata.MeetingInfo
-import com.imhungry.jjongseol.data.model.meeting.SummaryItem
+import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
 import com.imhungry.jjongseol.data.network.api.AgendaApi
+import com.imhungry.jjongseol.ui.home.meetingdata.MeetingInfo
 import com.imhungry.jjongseol.data.network.api.MeetingApi
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
 import com.imhungry.jjongseol.data.repository.MeetingRepository
@@ -37,6 +32,7 @@ import javax.inject.Inject
 class MeetingViewModel @Inject constructor(
     private val meetingRepository: MeetingRepository,
     private val meetingApi: MeetingApi,
+    private val agendaApi: AgendaApi,
     val streamController: MeetingStreamController,
     private val feedbackRepository: FeedbackRepository,
     private val summaryRepository: SummaryRepository
@@ -63,18 +59,11 @@ class MeetingViewModel @Inject constructor(
     private val _summaryList = MutableStateFlow<List<SummaryDto>>(emptyList())
     val summaryList: StateFlow<List<SummaryDto>> = _summaryList.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            feedbackRepository.feedbackFlow.collect { feedback ->
-                _feedbackList.value = _feedbackList.value + feedback
-            }
     private val _scheduledMeetings = MutableStateFlow<List<MeetingInfo>>(emptyList())
     val scheduledMeetings: StateFlow<List<MeetingInfo>> = _scheduledMeetings.asStateFlow()
 
     private val _pastMeetings = MutableStateFlow<List<MeetingInfo>>(emptyList())
     val pastMeetings: StateFlow<List<MeetingInfo>> = _pastMeetings.asStateFlow()
-
-    private val _summaryList = MutableStateFlow<List<SummaryItem>>(emptyList())
 
     private val _meetings = MutableStateFlow<List<MeetingResponse>>(emptyList())
     val meetings: StateFlow<List<MeetingResponse>> = _meetings.asStateFlow()
@@ -88,21 +77,22 @@ class MeetingViewModel @Inject constructor(
     private val _scheduledMonthOffset = MutableStateFlow(0)
     private val _pastMonthOffset = MutableStateFlow(0)
 
-    fun resetMonthOffsets() {
-        _scheduledMonthOffset.value = 0
-        _pastMonthOffset.value = 0
-    }
-
-    fun setError(apiError: ApiError) {
-        _errorMessage.value = when (apiError.message) {
-            "만료된 토큰입니다." -> "TOKEN_EXPIRED"
-            else -> apiError.message ?: "알 수 없는 오류 발생"
+    init {
+        viewModelScope.launch {
+            feedbackRepository.feedbackFlow.collect { feedback ->
+                _feedbackList.value = _feedbackList.value + feedback
+            }
         }
         viewModelScope.launch {
             summaryRepository.summaryFlow.collect { summary ->
                 _summaryList.value = _summaryList.value + summary
             }
         }
+    }
+
+    fun resetMonthOffsets() {
+        _scheduledMonthOffset.value = 0
+        _pastMonthOffset.value = 0
     }
 
     fun createMeeting(
@@ -124,13 +114,13 @@ class MeetingViewModel @Inject constructor(
         }
     }
 
-    fun loadMeetingDetail(meetingId: Long) {
+    fun loadMeetingDetail2(meetingId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
             when (val result = meetingRepository.getMeetingDetail(meetingId)) {
                 is MeetingResult.Success -> {
                     _meetingDetail.value = result.data
-                    _meetingStatus.value = MeetingStatus.from(result.data.meetingStatus)
+                    _meetingStatus.value = MeetingStatus.from(result.data.status)
                 }
                 is MeetingResult.Error -> {
                     _errorMessage.value = result.errorResponse?.message ?: result.message
@@ -304,5 +294,4 @@ class MeetingViewModel @Inject constructor(
             }
         }
     }
-
 }
