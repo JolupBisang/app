@@ -71,7 +71,6 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>){
             modifier = Modifier
                 .fillMaxWidth()
                 .height(180.dp)
-                .padding(8.dp)
                 .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
         ) {
             items(items = itemList, key = { it.id }) { item ->
@@ -95,7 +94,7 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>){
         Button(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp, top = 3.dp, bottom = 8.dp),
+                .padding(top = 3.dp, bottom = 8.dp),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(backgroundColor = Color.LightGray),
             onClick = {
@@ -104,7 +103,7 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>){
                 agendaList.add(newItem.text)
             }
         ) {
-            Text("+", style = TextStyle(color = md_theme_button_color_blue, fontSize = 25.sp))
+            Text("+", style = TextStyle(color = Color.Black, fontSize = 25.sp))
         }
     }
 }
@@ -186,14 +185,14 @@ fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () 
                         editText = ""
                     }
                 }
-                .padding(8.dp)
+                .padding(5.dp)
         )
         Icon(
             imageVector = Icons.Default.Delete,
             contentDescription = "Delete",
             modifier = Modifier
                 .clickable { onDelete() }
-                .padding(8.dp)
+                .padding(5.dp)
         )
     }
 }

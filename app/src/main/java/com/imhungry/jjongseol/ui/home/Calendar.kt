@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,6 +45,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.home.MeetingResponse
+import com.imhungry.jjongseol.ui.theme.UserPink
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import com.imhungry.jjongseol.viewmodel.ScheduleViewModel
 import java.time.LocalDate
@@ -69,7 +71,7 @@ fun CalendarScreen(navController: NavController, viewModel: ScheduleViewModel = 
         horizontalArrangement = Arrangement.End,
     ) {
         Text(
-            text = "오늘", color = md_theme_button_color_blue, modifier = Modifier
+            text = "오늘", color = Color.Black, modifier = Modifier
                 .padding(end = 5.dp)
                 .clickable {
                     currentYearMonth = YearMonth.now()
@@ -86,12 +88,14 @@ fun CalendarScreen(navController: NavController, viewModel: ScheduleViewModel = 
             onNext = { currentYearMonth = currentYearMonth.plusMonths(1) },
             onTextClick = { showNumberPicker = true }
         )
-        CalendarGrid(
-            yearMonth = currentYearMonth,
-            selectedDate = selectedDate,
-            onDateSelected = { selectedDate = it },
-            meetings = meetings
-        )
+        Box(modifier = Modifier.background(UserPink).padding(top = 15.dp, bottom = 15.dp, end = 2.dp)) {
+            CalendarGrid(
+                yearMonth = currentYearMonth,
+                selectedDate = selectedDate,
+                onDateSelected = { selectedDate = it },
+                meetings = meetings
+            )
+        }
     }
 
     if (showNumberPicker) {
@@ -112,11 +116,11 @@ fun CalendarScreen(navController: NavController, viewModel: ScheduleViewModel = 
     Divider(
         color = Color.Gray,
         thickness = 1.dp,
-        modifier = Modifier.padding(top = 30.dp,bottom = 10.dp)
+        modifier = Modifier.padding(top = 25.dp,bottom = 5.dp)
     )
 
     val handleScheduleClick = { schedule: MeetingResponse ->
-        //navController.navigate("completeProfile")
+        navController.navigate("meetingDetail/${schedule.id}")
     }
 
     val selectedDateStr = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
@@ -136,54 +140,63 @@ fun CalendarHeader(
     onNext: () -> Unit,
     onTextClick: () -> Unit
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 4.dp, top = 16.dp, bottom = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 5.dp),
+        contentAlignment = Alignment.Center
     ) {
-
         Text(
-            text = "${yearMonth.year}년 ${yearMonth.monthValue}월",
-            style = MaterialTheme.typography.bodyMedium,
+            text = "${yearMonth.year} ${yearMonth.monthValue}월",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            ),
             color = Color.Black,
-            modifier = Modifier
-                .padding(horizontal = 8.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    onTextClick()
-                }
+            modifier = Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                onTextClick()
+            }
         )
-        Spacer(Modifier.weight(1f))
-        Image(
-            painter = painterResource(R.drawable.prev),
-            contentDescription = "previous month",
+        Row(
             modifier = Modifier
-                .size(24.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    onPrev()
-                }
-        )
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(R.drawable.prev),
+                contentDescription = "previous month",
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        onPrev()
+                    }
+            )
 
-        Image(
-            painter = painterResource(R.drawable.next),
-            contentDescription = "next month",
-            modifier = Modifier
-                .size(24.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    onNext()
-                }
-        )
+            Image(
+                painter = painterResource(R.drawable.next),
+                contentDescription = "next month",
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        onNext()
+                    }
+            )
+        }
     }
 }
+
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -208,7 +221,7 @@ fun CalendarGrid(
         LocalDateTime.parse(it.scheduledStartTime).toLocalDate()
     }
 
-    Column {
+    Column (modifier = Modifier.background(Color.White)){
         Row(Modifier.fillMaxWidth()) {
             listOf("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT").forEach {
                 Text(
@@ -216,12 +229,12 @@ fun CalendarGrid(
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     color = Color.LightGray,
-                    fontSize = 14.sp
+                    fontSize = 12.sp
                 )
             }
         }
 
-        Spacer(modifier = Modifier.padding(top = 4.dp))
+        Spacer(modifier = Modifier.padding(top = 2.dp))
 
         dates.chunked(7).forEach { week ->
             Row(Modifier.fillMaxWidth()) {
@@ -244,11 +257,11 @@ fun CalendarGrid(
                     //색상은 임시지정
                     val textColor = when {
                         //isSelected -> Color.Black
-                        date.isAfter(today) && hasMeeting -> Color.Yellow //미래 회의
+                        !date.isBefore(today) && hasMeeting -> Color.Yellow //미래 회의
                         date.isBefore(today) && hasCompleted -> md_theme_button_color_blue //완료된 회의
                         date.isBefore(today) && hasWaiting -> Color.Green //대기 중 회의
                         isCurrentMonth && date.dayOfWeek.value % 7 == 0 -> Color.Red //일요일
-                        isCurrentMonth && date.dayOfWeek.value % 7 == 6 -> Color.Blue //토요일
+                        //isCurrentMonth && date.dayOfWeek.value % 7 == 6 -> Color.Blue //토요일
                         isCurrentMonth -> Color.Black //일반
                         else -> Color.White
                         //else -> Color.LightGray //다크 모드 하면 이걸로
@@ -257,7 +270,7 @@ fun CalendarGrid(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .aspectRatio(1f)
+                            .aspectRatio(1.15f)
                             .padding(2.dp)
                             .background(backgroundColor, shape = RoundedCornerShape(100))
                             .clickable(
@@ -270,7 +283,7 @@ fun CalendarGrid(
                     ) {
                         Text(
                             text = date.dayOfMonth.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
+                            fontSize = 15.sp,
                             color = textColor
                         )
                     }
@@ -279,7 +292,6 @@ fun CalendarGrid(
         }
     }
 }
-
 
 
 @Composable
@@ -350,26 +362,27 @@ fun DailyScheduleView(selectedDate: String, schedules: List<MeetingResponse>, on
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color(0xEDF3E7))
-                .padding(16.dp)
+                .padding(8.dp)
         ) {
-            Text("일정 기록", style = androidx.compose.material.MaterialTheme.typography.h6)
-            Spacer(Modifier.height(20.dp))
+            Text("일정 기록", fontSize = 18.sp, fontWeight = FontWeight.Bold )
+            Spacer(Modifier.height(10.dp))
             dailySchedules.forEach { schedule ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 4.dp)
+                    modifier = Modifier.padding(vertical = 2.5.dp, horizontal = 10.dp)
                             .clickable { onScheduleClick(schedule) },
                 ) {
                     Text(
-                        text = schedule.title,
-                        style = androidx.compose.material.MaterialTheme.typography.body1
+                        text = "∘ "+schedule.title,
+                        fontSize = 15.sp,
+
                     )
                     Spacer(Modifier.weight(1f))
+                    val startTime = LocalDateTime.parse(schedule.scheduledStartTime)
                     Text(
-                        text = LocalDateTime.parse(schedule.scheduledStartTime)
-                            .toLocalTime()
+                        text = startTime.toLocalTime()
                             .format(DateTimeFormatter.ofPattern("HH:mm")),
-                        style = androidx.compose.material.MaterialTheme.typography.body1
+                        fontSize = 15.sp
                     )
                 }
             }

@@ -11,8 +11,10 @@ import com.imhungry.jjongseol.data.model.error.ApiError
 import com.imhungry.jjongseol.data.model.feedback.FeedbackItem
 import com.imhungry.jjongseol.data.model.home.MeetingResponse
 import com.imhungry.jjongseol.data.model.home.toMeetingInfo
+import com.imhungry.jjongseol.data.model.meeting.MeetingDetailRes
 import com.imhungry.jjongseol.ui.home.meetingdata.MeetingInfo
 import com.imhungry.jjongseol.data.model.meeting.SummaryItem
+import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.imhungry.jjongseol.data.network.api.MeetingApi
 import com.imhungry.jjongseol.data.network.client.SseClient
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +33,7 @@ class MeetingViewModel @Inject constructor(
     private val streamingController: StreamingController,
     private val testDataSender: TestDataSender,
     private val meetingApi: MeetingApi,
+    private val agendaApi: AgendaApi,
 ) : AndroidViewModel(application) {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -53,6 +56,20 @@ class MeetingViewModel @Inject constructor(
 
     private val _meetings = MutableStateFlow<List<MeetingResponse>>(emptyList())
     val meetings: StateFlow<List<MeetingResponse>> = _meetings.asStateFlow()
+
+    private val _selectedMeeting = MutableStateFlow<MeetingDetailRes?>(null)
+    val selectedMeeting: StateFlow<MeetingDetailRes?> = _selectedMeeting.asStateFlow()
+
+    private val _agendas = MutableStateFlow<List<String>>(emptyList())
+    val agendas: StateFlow<List<String>> = _agendas.asStateFlow()
+
+    private val _scheduledMonthOffset = MutableStateFlow(0)
+    private val _pastMonthOffset = MutableStateFlow(0)
+
+    fun resetMonthOffsets() {
+        _scheduledMonthOffset.value = 0
+        _pastMonthOffset.value = 0
+    }
 
     fun setError(apiError: ApiError) {
         _errorMessage.value = when (apiError.message) {
@@ -174,6 +191,58 @@ class MeetingViewModel @Inject constructor(
         }
     }
 
+    fun loadMorePastMeetings() {
+        viewModelScope.launch {
+            try {
+                val now = LocalDate.now()
+                val targetDate = now.minusMonths((_pastMonthOffset.value + 1).toLong())
+                val response = meetingApi.getMeetings(targetDate.year, targetDate.monthValue)
+
+                if (response.isSuccessful) {
+                    val meetings = response.body()?.data?.meetings ?: emptyList()
+                    val meetingInfos = meetings.map { it.toMeetingInfo() }
+
+                    val (_, past) = splitAndSortMeetings(meetingInfos)
+                    _pastMeetings.value = _pastMeetings.value + past
+                    _pastMonthOffset.value += 1
+
+                    Log.d("loadMorePastMeetings", "${targetDate.month}월 데이터 ${past.size}개 추가됨")
+                } else {
+                    _errorMessage.value = "불러오기 실패: ${response.code()}"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "예외 발생: ${e.message}"
+            }
+        }
+    }
+
+
+    fun loadMoreScheduledMeetings() {
+        viewModelScope.launch {
+            try {
+                val now = LocalDate.now()
+                val targetDate = now.plusMonths((_scheduledMonthOffset.value + 1).toLong())
+                val response = meetingApi.getMeetings(targetDate.year, targetDate.monthValue)
+
+                if (response.isSuccessful) {
+                    val meetings = response.body()?.data?.meetings ?: emptyList()
+                    val meetingInfos = meetings.map { it.toMeetingInfo() }
+                    val (upcoming, _) = splitAndSortMeetings(meetingInfos)
+
+                    _scheduledMeetings.value = _scheduledMeetings.value + upcoming
+                    _scheduledMonthOffset.value += 1
+
+                    Log.d("loadMoreScheduled", "${targetDate.month}월 예정 회의 ${upcoming.size}개 추가")
+                } else {
+                    _errorMessage.value = "불러오기 실패: ${response.code()}"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "예외 발생: ${e.message}"
+            }
+        }
+    }
+
+
     private fun splitAndSortMeetings(meetings: List<MeetingInfo>): Pair<List<MeetingInfo>, List<MeetingInfo>> {
         val now = LocalDateTime.now()
 
@@ -193,6 +262,44 @@ class MeetingViewModel @Inject constructor(
         )
 
         return sortedUpcoming to sortedPast
+    }
+
+    fun loadMeetingDetail(meetingId: Long) {
+        viewModelScope.launch {
+            try {
+                val response = meetingApi.getMeetingById(meetingId)
+                if (response.isSuccessful) {
+                    val meeting = response.body()?.data
+                    if (meeting != null) {
+                        _selectedMeeting.value = meeting
+                        Log.d("MEETING_DETAIL", "Loaded: $meeting")
+                    } else {
+                        Log.e("MEETING_DETAIL", "No meeting data in response")
+                    }
+                } else {
+                    Log.e("MEETING_DETAIL", "API error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("MEETING_DETAIL", "Exception: ${e.message}", e)
+            }
+        }
+    }
+
+    fun loadAgendas(meetingId: Long) {
+        viewModelScope.launch {
+            try {
+                val response = agendaApi.getAgendas(meetingId)
+                if (response.isSuccessful) {
+                    val agendas = response.body()?.data?.agendaDetails?.map { it.content } ?: emptyList()
+                    _agendas.value = agendas
+                    Log.d("AGENDA_API", "아젠다 ${agendas.size}개 로드 완료")
+                } else {
+                    Log.e("AGENDA_API", "아젠다 불러오기 실패 - HTTP ${response.code()}: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                Log.e("AGENDA_API", "아젠다 로드 중 예외 발생: ${e.localizedMessage}", e)
+            }
+        }
     }
 
 }

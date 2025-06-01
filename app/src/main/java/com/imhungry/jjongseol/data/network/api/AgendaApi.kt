@@ -7,5 +7,5 @@ import retrofit2.http.Path
 
 interface AgendaApi {
     @GET("api/agendas/{meetingId}")
-    suspend fun getAgendas(@Path("meetingId") meetingId: Long): ApiResponse<AgendaListResponse>
+    suspend fun getAgendas(@Path("meetingId") meetingId: Long): retrofit2.Response<ApiResponse<AgendaListResponse>>
 }

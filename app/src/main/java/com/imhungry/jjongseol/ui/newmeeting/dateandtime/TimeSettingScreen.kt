@@ -19,111 +19,87 @@ import java.util.*
 
 @Composable
 fun TimeDurationPicker(
-    onStartTimeChanged: (String) -> Unit,
-    onEndTimeChanged: (String) -> Unit,
-    onDurationChanged: (Int) -> Unit
+    startTime: MutableState<String>,
+    endTime: MutableState<String>,
+    durationInMinutes: MutableState<Int>
 ) {
-    var startTime by remember { mutableStateOf("HH:MM") }
-    var endTime by remember { mutableStateOf("HH:MM") }
-    var durationInMinutes by remember { mutableStateOf("") }
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
 
-    LaunchedEffect(startTime) {
-        if (startTime.matches(Regex("\\d{2}:\\d{2}"))) {
-            onStartTimeChanged(startTime)
-            durationInMinutes.toIntOrNull()?.let { duration ->
-                calculateEndTime(startTime, duration) {
-                    endTime = it
-                    onEndTimeChanged(it)
-                }
+    LaunchedEffect(startTime.value, durationInMinutes.value) {
+        if (startTime.value.matches(Regex("\\d{2}:\\d{2}"))) {
+            calculateEndTime(startTime.value, durationInMinutes.value) {
+                endTime.value = it
             }
         }
     }
 
-    LaunchedEffect(endTime) {
-        if (endTime.matches(Regex("\\d{2}:\\d{2}"))) {
-            onEndTimeChanged(endTime)
-            if (startTime.matches(Regex("\\d{2}:\\d{2}"))) {
-                updateDurationFromTimes(startTime, endTime) {
-                    durationInMinutes = it.toString()
-                    onDurationChanged(it)
-                }
-            }
-        }
-    }
-
-    LaunchedEffect(durationInMinutes) {
-        if (durationInMinutes.isNotEmpty()) {
-            durationInMinutes.toIntOrNull()?.let { duration ->
-                onDurationChanged(duration)
-                if (startTime.matches(Regex("\\d{2}:\\d{2}"))) {
-                    calculateEndTime(startTime, duration) {
-                        endTime = it
-                        onEndTimeChanged(it)
-                    }
-                }
+    LaunchedEffect(endTime.value) {
+        if (startTime.value.matches(Regex("\\d{2}:\\d{2}")) &&
+            endTime.value.matches(Regex("\\d{2}:\\d{2}"))) {
+            updateDurationFromTimes(startTime.value, endTime.value) {
+                durationInMinutes.value = it
             }
         }
     }
 
     Column(
-        modifier = Modifier.fillMaxWidth().padding(8.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier=Modifier.weight(10f)) {
-                TimePickerButton("시작 시간", startTime) {
+            Box(modifier = Modifier.weight(10f)) {
+                TimePickerButton("시작 시간", startTime.value) {
                     showStartTimePicker = true
                 }
             }
             Spacer(Modifier.weight(1f))
             Text("~", style = MaterialTheme.typography.h6)
             Spacer(Modifier.weight(1f))
-            Box(modifier=Modifier.weight(10f)) {
-                TimePickerButton("종료 시간", endTime) {
+            Box(modifier = Modifier.weight(10f)) {
+                TimePickerButton("종료 시간", endTime.value) {
                     showEndTimePicker = true
                 }
             }
             Spacer(Modifier.weight(1f))
-            Row(verticalAlignment = Alignment.CenterVertically, modifier=Modifier.weight(10f)){
-                Box(modifier=Modifier.weight(4f)) {
-                    DurationInput(durationInMinutes, onDurationChange = { newValue ->
-                        durationInMinutes = newValue
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(10f)
+            ) {
+                Box(modifier = Modifier.weight(4f)) {
+                    DurationInput(durationInMinutes.value.toString(), onDurationChange = { newValue ->
+                        durationInMinutes.value = newValue.toIntOrNull() ?: 0
                     })
                 }
                 Spacer(Modifier.width(10.dp))
-                Text("분", style = TextStyle(fontSize = 15.sp), modifier=Modifier.weight(1f))
+                Text("분", style = TextStyle(fontSize = 15.sp), modifier = Modifier.weight(1f))
             }
         }
 
         if (showStartTimePicker) {
             CustomTimePickerDialog(
-                initialTime = startTime,
-                onConfirm = { selectedTime ->
-                    startTime = selectedTime
+                initialTime = startTime.value,
+                onConfirm = {
+                    startTime.value = it
                     showStartTimePicker = false
                 },
-                onDismiss = {
-                    showStartTimePicker = false
-                }
+                onDismiss = { showStartTimePicker = false }
             )
         }
 
         if (showEndTimePicker) {
             CustomTimePickerDialog(
-                initialTime = endTime,
-                onConfirm = { selectedTime ->
-                    endTime = selectedTime
+                initialTime = endTime.value,
+                onConfirm = {
+                    endTime.value = it
                     showEndTimePicker = false
                 },
-                onDismiss = {
-                    showEndTimePicker = false
-                }
+                onDismiss = { showEndTimePicker = false }
             )
         }
     }
 }
+
 
 fun calculateEndTime(start: String, duration: Int, onResult: (String) -> Unit) {
     val (hour, minute) = start.split(":").map { it.toInt() }
@@ -169,7 +145,7 @@ fun TimePickerButton(label: String, time: String, modifier: Modifier = Modifier,
         colors = ButtonDefaults.buttonColors(backgroundColor = Color.White),
         border = BorderStroke(1.dp, Color.Gray)
     ) {
-        Text(time, fontSize = 16.sp)
+        Text(time, fontSize = 14.sp)
     }
 }
 
@@ -204,7 +180,7 @@ fun DurationInput(value: String, modifier: Modifier = Modifier, onDurationChange
             unfocusedBorderColor = Color.Transparent
         ),
         textStyle = TextStyle(
-            fontSize = 15.sp,
+            fontSize = 12.sp,
             color = Color.Black,
             textAlign = TextAlign.Center
         )

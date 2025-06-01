@@ -17,6 +17,7 @@ import com.imhungry.jjongseol.ui.login.LoginScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingEndScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingWaitingScreen
+import com.imhungry.jjongseol.ui.meetingdetail.MeetingDetailEditScreen
 import com.imhungry.jjongseol.ui.newmeeting.CompletedNewMeeting
 import com.imhungry.jjongseol.ui.newmeeting.CreateNewMeetingScreen
 import com.imhungry.jjongseol.ui.profilecard.CompletedProfile
@@ -116,5 +117,11 @@ fun SilRokNavGraph(
         composable(SilRokNavigation.CompletedMeetingSummary.route) {
             CompletedMeetingSummaryScreen()
         }
+
+        composable("meetingDetail/{id}") { backStackEntry ->
+            val meetingId = backStackEntry.arguments?.getString("id")?.toLong() ?: return@composable
+            MeetingDetailEditScreen(meetingId = meetingId, navController = navController)
+        }
+
     }
 }

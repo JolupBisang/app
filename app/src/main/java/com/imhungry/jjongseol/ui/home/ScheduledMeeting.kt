@@ -11,23 +11,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.imhungry.jjongseol.ui.home.meetingdata.ScheduledMeeting
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
-fun ScheduledMeetingScreen(viewModel: MeetingViewModel = hiltViewModel()) {
+fun ScheduledMeetingScreen(navController: NavController, viewModel: MeetingViewModel = hiltViewModel()) {
     var showDetails by remember { mutableStateOf(false) }
     var pagingIndex by remember { mutableStateOf(10) }
-
     val scheduledMeetings by viewModel.scheduledMeetings.collectAsState()
 
     val currentList = scheduledMeetings.take(pagingIndex)
 
+    LaunchedEffect(Unit) {
+        viewModel.resetMonthOffsets()
+        viewModel.loadMeetings()
+    }
+
     Column(
         modifier = Modifier
-            .padding(16.dp)
+            .padding(6.dp)
             .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -40,7 +47,7 @@ fun ScheduledMeetingScreen(viewModel: MeetingViewModel = hiltViewModel()) {
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("예정된 회의", style = MaterialTheme.typography.titleLarge)
+            Text("예정된 회의", color = Color.Black, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Icon(
                 imageVector = Icons.Filled.ArrowDropDown,
                 contentDescription = "토글 버튼",
@@ -52,38 +59,42 @@ fun ScheduledMeetingScreen(viewModel: MeetingViewModel = hiltViewModel()) {
 
         if (showDetails) {
             currentList.forEach {
-                ScheduledMeetingButton(
-                    ScheduledMeeting(it.title, it.startDateTime.toLocalDate().toString())
-                )
+                ScheduledMeetingButton(record = ScheduledMeeting(it.title, it.startDateTime.toLocalDate().toString())) {
+                    navController.navigate("meetingDetail/${it.id}")
+                }
             }
 
-            if (pagingIndex < scheduledMeetings.size) {
+            //고민
+            //if (pagingIndex < scheduledMeetings.size) {
                 Text(
-                    text = "더보기",
+                    text = "다음 달 예정된 회의 더보기",
                     style = MaterialTheme.typography.bodyLarge.copy(color = Color.Gray),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
                         .clickable {
-                            pagingIndex = (pagingIndex + 10).coerceAtMost(scheduledMeetings.size)
+                            pagingIndex += 10
+                            if (pagingIndex >= scheduledMeetings.size) {
+                                viewModel.loadMoreScheduledMeetings()
+                            }
                         }
                 )
-            }
+            //}
         }
     }
 }
 
 @Composable
-fun ScheduledMeetingButton(record: ScheduledMeeting) {
+fun ScheduledMeetingButton(record: ScheduledMeeting, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .clickable { },
+            .clickable(onClick = onClick),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = record.title,
+            text = "∘ "+record.title,
             style = MaterialTheme.typography.bodyLarge
         )
         Text(
