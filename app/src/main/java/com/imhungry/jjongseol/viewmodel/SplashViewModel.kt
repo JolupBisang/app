@@ -12,6 +12,6 @@ class SplashViewModel @Inject constructor(
 ) : ViewModel() {
 
     fun getNavigationDestination(): SilRokNavigation =
-        if (loginRepository.isLoggedIn()) SilRokNavigation.MeetingWaiting else SilRokNavigation.Login
+        if (loginRepository.isLoggedIn()) SilRokNavigation.Home else SilRokNavigation.Login
 }
 
