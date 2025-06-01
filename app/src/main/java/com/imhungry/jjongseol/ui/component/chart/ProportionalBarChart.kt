@@ -14,7 +14,7 @@ fun ProportionalBarChart(
     proportions: List<Float>,
     colors: List<Color>,
     modifier: Modifier = Modifier,
-    height: Int = 40,
+    height: Int = 20,
     cornerRadius: Int = 8
 ) {
     val total = proportions.sum().takeIf { it > 0 } ?: 1f

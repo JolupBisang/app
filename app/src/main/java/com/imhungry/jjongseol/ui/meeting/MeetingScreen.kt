@@ -2,6 +2,7 @@ package com.imhungry.jjongseol.ui.meeting
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -11,16 +12,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Divider
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -32,192 +30,189 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
+import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.SilRokNavigation
-import com.imhungry.jjongseol.ui.component.dialog.CustomDialog
+import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingSummaryScreen
+import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
+import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun MeetingScreen(
-    meetingViewModel: MeetingViewModel = hiltViewModel(),
-    agendaViewModel: AgendaViewModel = hiltViewModel(),
+    loginViewModel: LoginViewModel = hiltViewModel(),
+    meetingViewModel: MeetingViewModel,
+    agendaViewModel: AgendaViewModel,
     onFinish: (SilRokNavigation) -> Unit,
     meetingId: Long
 ) {
-    val agendaItems by agendaViewModel.agendaItems.collectAsState()
-    val checkedStates by agendaViewModel.checkedStates.collectAsState()
-    val isAgendaLoading = agendaItems.isEmpty() || checkedStates.size != agendaItems.size
-    val errorMessage by meetingViewModel.errorMessage.collectAsState()
-    val showDialog = remember { mutableStateOf(false) }
-    val timeText by rememberMeetingStartTime()
-
-    LaunchedEffect(meetingId) {
-        agendaViewModel.onError = { apiError ->
-            meetingViewModel.setError(apiError)
-        }
-        agendaViewModel.loadAgendas(meetingId)
-    }
-
-    if (errorMessage != null) {
-        showDialog.value = true
-    }
-
-    val isTokenExpired = errorMessage == "TOKEN_EXPIRED"
-
-    if (showDialog.value && errorMessage != null) {
-        CustomDialog(
-            description = if (isTokenExpired)
-                "로그인 정보가 만료되었어요.\n다시 로그인해주세요."
-            else errorMessage,
-            confirmText = if (isTokenExpired) "로그인 하기" else "홈으로",
-            showDismissButton = false,
-            onDismissRequest = {},
-            onConfirmExit = {
-                showDialog.value = false
-                meetingViewModel.clearErrorMessage()
-                val destination = if (isTokenExpired) SilRokNavigation.Login else SilRokNavigation.Home
-                onFinish(destination)
-            }
-        )
-    }
-
-    PermissionHandler {
-        MeetingInitController(
-            allReady = !isAgendaLoading,
-            meetingViewModel = meetingViewModel,
-            meetingId = meetingId,
-            timeProvider = { timeText }
-        )
-
-        if (isAgendaLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = Color(0xFF86CC3B))
-            }
-        } else {
-            MeetingScreenContent(
-                onFinish = onFinish,
-                onExitConfirmed = {
-                    meetingViewModel.stopStreamingService()
-                    meetingViewModel.stopSendingTestData()
-                    meetingViewModel.stopSse()
-                },
-                viewModel = meetingViewModel,
-                meetingId = meetingId,
-                timeText = timeText,
-            )
-        }
-    }
-}
-
-@Composable
-private fun MeetingInitController(
-    allReady: Boolean,
-    meetingViewModel: MeetingViewModel,
-    meetingId: Long,
-    timeProvider: () -> String
-) {
-    LaunchedEffect(allReady) {
-        if (allReady) {
-            meetingViewModel.apply {
-                startStreamingService()
-                resumeEncoding()
-                subscribeToSummary(meetingId, timeProvider)
-                subscribeToParticipationRate(meetingId)
-                subscribeToFeedback(meetingId, timeProvider)
-                startSendingTestData(meetingId)
-            }
-        }
-    }
-}
-
-@Composable
-private fun rememberMeetingStartTime(): State<String> {
+    val agendas by agendaViewModel.agendaItems.collectAsState()
+    val agendaError by agendaViewModel.errorMessage.collectAsState()
+    val isMeetingLoading by meetingViewModel.isLoading.collectAsState()
+    val isAgendaLoading by agendaViewModel.isLoading.collectAsState()
+    val isStatusUpdating by meetingViewModel.isStatusUpdating.collectAsState()
+    val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
+    val meetingError by meetingViewModel.errorMessage.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf<String?>(null) }
+    val meetingStatus by meetingViewModel.meetingStatus.collectAsState()
     val context = LocalContext.current
-    val startTime = remember {
-        val prefs = context.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-        prefs.getLong("meetingStartedAt", System.currentTimeMillis())
-    }
+    var permissionGranted by remember { mutableStateOf(false) }
+    var permissionRequested by remember { mutableStateOf(false) }
+    var startTimeMillis by remember { mutableStateOf<Long?>(null) }
 
-    var elapsedSeconds by remember { mutableStateOf(0) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            elapsedSeconds = ((System.currentTimeMillis() - startTime) / 1000).toInt()
-            delay(1000)
+    val requiredPermissions = remember {
+        buildList {
+            add(Manifest.permission.RECORD_AUDIO)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
     }
-
-    return remember(elapsedSeconds) {
-        derivedStateOf {
-            val h = elapsedSeconds / 3600
-            val m = (elapsedSeconds % 3600) / 60
-            val s = elapsedSeconds % 60
-            String.format("%02d:%02d:%02d", h, m, s)
-        }
-    }
-}
-
-@Composable
-private fun PermissionHandler(onGranted: @Composable () -> Unit) {
-    val context = LocalContext.current
-    var granted by remember { mutableStateOf(false) }
 
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
+        ActivityResultContracts.RequestMultiplePermissions()
     ) { perms ->
-        granted = perms[Manifest.permission.RECORD_AUDIO] == true &&
-                (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                        perms[Manifest.permission.POST_NOTIFICATIONS] == true)
+        permissionGranted = requiredPermissions.all {
+            perms[it] == true
+        }
+        permissionRequested = true
     }
 
-    LaunchedEffect(Unit) {
-        val requiredPermissions = mutableListOf(Manifest.permission.RECORD_AUDIO)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requiredPermissions.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
+    LaunchedEffect(meetingId) {
+        meetingViewModel.loadMeetingDetail2(meetingId)
+    }
 
-        granted = requiredPermissions.all {
+    LaunchedEffect(meetingDetail) {
+        if (meetingDetail != null) {
+            agendaViewModel.loadAgendas(meetingId)
+        }
+    }
+
+    val remainingTime by remember(meetingDetail) {
+        mutableStateOf(formatTargetTime(meetingDetail?.targetTime))
+    }
+
+    LaunchedEffect(meetingError, agendaError) {
+        dialogMessage = meetingError ?: agendaError
+        showDialog = dialogMessage != null
+    }
+
+    LaunchedEffect(meetingId) {
+        permissionGranted = requiredPermissions.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
-
-        if (!granted) {
+        if (!permissionGranted && !permissionRequested) {
             launcher.launch(requiredPermissions.toTypedArray())
         }
     }
 
-    if (granted) onGranted()
+    ErrorDialogHandler(
+        errorMessage = dialogMessage,
+        showDialog = showDialog,
+        onFinish = onFinish,
+        clearError = {
+            meetingViewModel.clearErrorMessage()
+        },
+        loginViewModel = loginViewModel
+    )
+
+    val allReady = permissionGranted && !isMeetingLoading && !isAgendaLoading
+    val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating
+
+    LaunchedEffect(allReady) {
+        if (allReady && startTimeMillis == null) {
+            startTimeMillis = System.currentTimeMillis()
+        }
+    }
+
+    LaunchedEffect(meetingStatus) {
+        if (meetingStatus == MeetingStatus.COMPLETED) {
+            context?.stopService(Intent(context, MeetingSseService::class.java))
+            onFinish(SilRokNavigation.CompletedMeeting)
+        }
+    }
+
+    val timeText = rememberMeetingElapsedTime(startTimeMillis)
+
+    if (!allReady || showLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color(0xFF969696))
+        }
+    } else {
+        SetNavigationBarColor(Color(0xFFE5E5E5))
+        LaunchedEffect(meetingId, allReady) {
+            context.startForegroundService(
+                Intent(context, MeetingSseService::class.java).apply {
+                    putExtra("meetingId", meetingId)
+                }
+            )
+        }
+        MeetingScreenContent(
+            meetingViewModel = meetingViewModel,
+            agendaViewModel = agendaViewModel,
+            onFinish = onFinish,
+            viewModel = meetingViewModel,
+            meetingId = meetingId,
+            timeText = timeText,
+            remainingTime = remainingTime,
+            context = context
+        )
+    }
+}
+
+@Composable
+fun rememberMeetingElapsedTime(startTimeMillis: Long?): String {
+    val elapsedTime = produceState(initialValue = "00:00:00", startTimeMillis) {
+        while (startTimeMillis != null) {
+            val elapsed = (System.currentTimeMillis() - startTimeMillis) / 1000
+            val h = elapsed / 3600
+            val m = (elapsed % 3600) / 60
+            val s = elapsed % 60
+            value = String.format("%02d:%02d:%02d", h, m, s)
+            delay(1000)
+        }
+    }
+    return elapsedTime.value
 }
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun MeetingScreenContent(
+    meetingViewModel: MeetingViewModel,
+    agendaViewModel: AgendaViewModel,
     onFinish: (SilRokNavigation) -> Unit,
-    onExitConfirmed: () -> Unit,
     viewModel: MeetingViewModel,
     meetingId: Long,
-    timeText: String
+    timeText: String,
+    remainingTime: String,
+    context: Context
 ) {
     val pagerState = rememberPagerState(initialPage = 1)
 
     ConstraintLayout(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.White)
     ) {
-        val (pager, indicator, divider, control) = createRefs()
+        val (pager, indicator, control) = createRefs()
 
         HorizontalPager(
             count = 3,
@@ -231,19 +226,27 @@ fun MeetingScreenContent(
                 .fillMaxWidth()
         ) { page ->
             when (page) {
-                0 -> MeetingSummaryScreen()
-                1 -> MeetingRecordScreen(meetingId = meetingId)
-                2 -> MeetingFeedbackScreen()
+                0 -> MeetingSummaryScreen(
+                    meetingViewModel = meetingViewModel,
+                    agendaViewModel = agendaViewModel
+                )
+                1 -> MeetingRecordScreen(
+                    meetingViewModel = meetingViewModel,
+                    agendaViewModel = agendaViewModel,
+                    meetingId = meetingId
+                )
+                2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel)
             }
         }
 
         HorizontalPagerIndicator(
             pagerState = pagerState,
             modifier = Modifier
+                .background(Color.White)
                 .padding(top = 12.dp, bottom = 12.dp)
                 .constrainAs(indicator) {
                     top.linkTo(pager.bottom)
-                    bottom.linkTo(divider.top)
+                    bottom.linkTo(control.top)
                     centerHorizontallyTo(parent)
                 },
             activeColor = Color(0xFF1E93EF),
@@ -252,32 +255,21 @@ fun MeetingScreenContent(
             spacing = 4.dp
         )
 
-        Divider(
-            thickness = 1.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .constrainAs(divider) {
-                    top.linkTo(indicator.bottom)
-                    bottom.linkTo(control.top)
-                }
-        )
-
         MeetingControlPanel(
             timeText = timeText,
-            micEnabled = true,
-            onMicToggle = { if (it) viewModel.resumeEncoding() else viewModel.pauseEncoding() },
+            remainingTimeText = remainingTime,
             micIcon = R.drawable.micoff,
-            logoutIcon = R.drawable.logout,
-            powerIcon = R.drawable.power,
             onFinish = onFinish,
-            onExitConfirmed = onExitConfirmed,
             viewModel = viewModel,
             modifier = Modifier
+                .background(Color(0xFFE5E5E5))
                 .constrainAs(control) {
                     bottom.linkTo(parent.bottom)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
-                }
+                },
+            meetingId = meetingId,
+            context = context
         )
     }
 }

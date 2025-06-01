@@ -1,13 +1,10 @@
 package com.imhungry.jjongseol.data.network.config
 
 import com.imhungry.jjongseol.BuildConfig
-import com.imhungry.jjongseol.data.network.client.SseClient
 import com.imhungry.jjongseol.data.network.api.AgendaApi
-import com.imhungry.jjongseol.data.network.api.FeedbackApi
 import com.imhungry.jjongseol.data.network.api.MeetingApi
-import com.imhungry.jjongseol.data.network.api.ParticipationRateApi
-import com.imhungry.jjongseol.data.network.api.SummaryApi
 import com.imhungry.jjongseol.data.network.api.UserApi
+import com.imhungry.jjongseol.data.network.client.SseClient
 import com.imhungry.jjongseol.data.repository.LoginRepository
 import dagger.Module
 import dagger.Provides
@@ -63,24 +60,6 @@ object RetrofitModule {
     @Singleton
     fun provideAgendaApi(retrofit: Retrofit): AgendaApi {
         return retrofit.create(AgendaApi::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideSummaryApi(retrofit: Retrofit): SummaryApi {
-        return retrofit.create(SummaryApi::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideParticipationRateApi(retrofit: Retrofit): ParticipationRateApi {
-        return retrofit.create(ParticipationRateApi::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideFeedbackApi(retrofit: Retrofit): FeedbackApi {
-        return retrofit.create(FeedbackApi::class.java)
     }
 
     @Provides

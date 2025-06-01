@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun SummaryListItem(
@@ -26,7 +28,6 @@ fun SummaryListItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 12.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -48,7 +49,7 @@ fun SummaryListItem(
         }
 
         Text(
-            text = timeText,
+            text = extractTimeOnly(timeText),
             style = MaterialTheme.typography.bodySmall,
             color = Color.Gray,
             modifier = Modifier
@@ -56,4 +57,10 @@ fun SummaryListItem(
                 .padding(top = 4.dp)
         )
     }
+}
+
+
+fun extractTimeOnly(isoString: String): String {
+    val dt = LocalDateTime.parse(isoString)
+    return dt.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
 }

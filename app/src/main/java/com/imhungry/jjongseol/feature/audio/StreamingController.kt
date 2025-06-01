@@ -1,36 +1,51 @@
 package com.imhungry.jjongseol.feature.audio
 
+import android.Manifest
 import android.app.Application
-import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.content.ContextCompat
 import javax.inject.Inject
 
 class StreamingController @Inject constructor(
     private val application: Application
 ) {
+    private val context get() = application.applicationContext
 
-    fun startStreamingService() {
-        val prefs = application.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE)
-        if (!prefs.contains("meetingStartedAt")) {
-            prefs.edit().putBoolean("isMeetingOngoing", true)
-                .putLong("meetingStartedAt", System.currentTimeMillis()).apply()
+    fun hasRecordAudioPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    fun startStreamingService(meetingId: Long, jwtToken: String): Boolean {
+        if (!hasRecordAudioPermission()) return false
+
+        val intent = Intent(context, AudioStreamingService::class.java).apply {
+            putExtra("meetingId", meetingId)
+            putExtra("jwtToken", jwtToken)
         }
 
-        val intent = Intent(application, AudioStreamingService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            application.startForegroundService(intent)
+            context.startForegroundService(intent)
         else
-            application.startService(intent)
+            context.startService(intent)
+
+        return true
     }
 
-    fun stopStreamingService() {
-        application.getSharedPreferences("meeting_prefs", Context.MODE_PRIVATE).edit()
-            .putBoolean("isMeetingOngoing", false)
-            .remove("meetingStartedAt").apply()
-        application.stopService(Intent(application, AudioStreamingService::class.java))
+    fun stopStreamingService(deleteLocalPackets: Boolean = false) {
+        AudioStreamingService.getStreamer()?.stop(deleteLocalPackets)
+        context.stopService(Intent(context, AudioStreamingService::class.java))
     }
 
-    fun pauseEncoding() = AudioStreamingService.pauseEncoding()
-    fun resumeEncoding() = AudioStreamingService.resumeEncoding()
+    fun pauseEncoding() {
+        AudioStreamingService.pauseEncoding()
+    }
+
+    fun resumeEncoding() {
+        AudioStreamingService.resumeEncoding()
+    }
 }

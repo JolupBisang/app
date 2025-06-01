@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:name=".SilRokApplication"
@@ -22,6 +24,7 @@
         tools:targetApi="31">
         <activity
             android:name=".ui.MainActivity"
+            android:launchMode="singleTop"
             android:exported="true"
             android:theme="@style/Theme.JJongSeol">
             <intent-filter>
@@ -41,8 +44,9 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".feature.audio.AudioStreamingService"
-            android:foregroundServiceType="microphone"
-            android:exported="false"/>
+            android:name=".service.MeetingSseService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"/>
     </application>
 </manifest>

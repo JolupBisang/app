@@ -32,6 +32,7 @@ import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryS
 import com.imhungry.jjongseol.ui.component.seekbar.CustomSeekBar
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.viewmodel.CompletedMeetingViewModel
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.delay
 
 @Composable
@@ -53,6 +54,7 @@ fun CompletedMeetingScreen(
 fun CompletedMeetingContent(
     navController: NavController,
     onFinish: (SilRokNavigation) -> Unit,
+    meetingViewModel: MeetingViewModel = hiltViewModel(),
     viewModel: CompletedMeetingViewModel = hiltViewModel()
 ) {
     var currentPosition by remember { mutableStateOf(0f) }
@@ -85,7 +87,7 @@ fun CompletedMeetingContent(
             when (page) {
                 0 -> CompletedMeetingSummaryScreen()
                 1 -> CompletedMeetingRecordScreen()
-                2 -> MeetingFeedbackScreen()
+                2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel)
             }
         }
 

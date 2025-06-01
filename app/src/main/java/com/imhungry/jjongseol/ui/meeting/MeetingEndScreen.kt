@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,18 +25,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.ui.SilRokNavigation
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun MeetingEndScreen(
+    meetingViewModel: MeetingViewModel,
     onFinish: (SilRokNavigation) -> Unit
 ) {
+    val meetingStatus by meetingViewModel.meetingStatus.collectAsState()
     var isCompleted by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        delay(3000)
-        isCompleted = true
+    LaunchedEffect(meetingStatus) {
+        if (meetingStatus == MeetingStatus.COMPLETED) {
+            isCompleted = true
+        }
     }
 
     LaunchedEffect(isCompleted) {

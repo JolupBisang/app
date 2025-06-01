@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun Notification(
@@ -69,7 +71,7 @@ fun Notification(
                     val (timeRef, dotRef) = createRefs()
 
                     Text(
-                        text = time,
+                        text = extractTimeOnly(time),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF8A8A8A),
                         modifier = Modifier.constrainAs(timeRef) {
@@ -95,4 +97,9 @@ fun Notification(
             }
         }
     }
+}
+
+fun extractTimeOnly(isoString: String): String {
+    val dt = LocalDateTime.parse(isoString)
+    return dt.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
 }

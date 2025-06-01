@@ -9,185 +9,173 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Divider
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.model.agenda.AgendaDto
+import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
-import com.imhungry.jjongseol.ui.component.dialog.CustomDialog
+import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
 import com.imhungry.jjongseol.ui.component.layout.TopSheet
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
+import com.imhungry.jjongseol.ui.theme.Pretend
+import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
+import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
 fun MeetingWaitingScreen(
-    meetingViewModel: MeetingViewModel = hiltViewModel(),
-    agendaViewModel: AgendaViewModel = hiltViewModel(),
+    loginViewModel: LoginViewModel,
+    meetingViewModel: MeetingViewModel,
+    agendaViewModel: AgendaViewModel,
     onFinish: (SilRokNavigation) -> Unit,
     meetingId: Long = 1L
 ) {
+    val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val agendas by agendaViewModel.agendaItems.collectAsState()
-    val checkedStates by agendaViewModel.checkedStates.collectAsState()
-    val errorMessage by meetingViewModel.errorMessage.collectAsState()
-    val showDialog = remember { mutableStateOf(false) }
+    val agendaError by agendaViewModel.errorMessage.collectAsState()
+    val meetingError by meetingViewModel.errorMessage.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf<String?>(null) }
+    val meetingStatus by meetingViewModel.meetingStatus.collectAsState()
+    val isMeetingLoading by meetingViewModel.isLoading.collectAsState()
+    val isAgendaLoading by agendaViewModel.isLoading.collectAsState()
+    val isStatusUpdating by meetingViewModel.isStatusUpdating.collectAsState()
+    var isTopSheetExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(meetingId) {
-        agendaViewModel.onError = { apiError ->
-            meetingViewModel.setError(apiError)
-        }
-        agendaViewModel.loadAgendas(meetingId)
+        meetingViewModel.loadMeetingDetail2(meetingId)
     }
 
-    val firstUncheckedIndex = checkedStates.indexOfFirst { !it }
-    val peekIndex = if (firstUncheckedIndex == -1) checkedStates.lastIndex else firstUncheckedIndex
-    val isLoading = agendas.isEmpty() || checkedStates.isEmpty() || peekIndex !in agendas.indices
+    LaunchedEffect(meetingDetail) {
+        if (meetingDetail != null) {
+            agendaViewModel.loadAgendas(meetingId)
+        }
+    }
+
+    val remainingTime by remember(meetingDetail) {
+        mutableStateOf(formatTargetTime(meetingDetail?.targetTime))
+    }
+
+    LaunchedEffect(meetingError, agendaError) {
+        dialogMessage = meetingError ?: agendaError
+        showDialog = dialogMessage != null
+    }
+
+    LaunchedEffect(meetingStatus) {
+        if (meetingStatus == MeetingStatus.IN_PROGRESS) {
+            onFinish(SilRokNavigation.Meeting)
+        }
+    }
+
+    val firstUncheckedIndex = agendas.indexOfFirst { !it.isCompleted }
+    val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
+    val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating
+
+    SetNavigationBarColor(Color(0xFFE5E5E5))
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color(0xFFE5E5E5))
     ) {
-        ErrorDialogSection(errorMessage, showDialog, onFinish, meetingViewModel)
-
-        AgendaSection(
-            agendas = agendas,
-            checkedStates = checkedStates,
-            isLoading = isLoading,
-            peekIndex = peekIndex,
-            firstUncheckedIndex = firstUncheckedIndex,
-            onToggle = { agendaViewModel.toggleAgendaChecked(it) }
+        ErrorDialogHandler(
+            errorMessage = dialogMessage,
+            showDialog = showDialog,
+            onFinish = onFinish,
+            clearError = { meetingViewModel.clearErrorMessage() },
+            loginViewModel = loginViewModel
         )
+
+        if (!isAgendaLoading && peekIndex in agendas.indices) {
+            TopSheet(
+                expanded = isTopSheetExpanded,
+                onExpandedChange = { isTopSheetExpanded = it },
+                peekContent = {
+                    CheckItem(
+                        text = agendas[peekIndex].content,
+                        checked = agendas[peekIndex].isCompleted,
+                        isFocused = !agendas[peekIndex].isCompleted,
+                        onToggle = { agendaViewModel.onToggleAgenda(peekIndex) }
+                    )
+                },
+                content = {
+                    LazyColumn (
+                        modifier = Modifier.heightIn(max = 161.dp)
+                    ) {
+                        itemsIndexed(agendas) { i, item ->
+                            CheckItem(
+                                text = item.content,
+                                checked = item.isCompleted,
+                                isFocused = !item.isCompleted && firstUncheckedIndex == i,
+                                onToggle = { agendaViewModel.onToggleAgenda(i) }
+                            )
+                        }
+                    }
+                }
+            )
+        }
 
         Box(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
-            MeetingContentSection(isLoading = isLoading, onStart = { onFinish(SilRokNavigation.Meeting) })
+            if (showLoading) {
+                CircularProgressIndicator(color = Color(0xFF969696))
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.waiting_guidance),
+                        textAlign = TextAlign.Center,
+                        color = Color(0xFF999999),
+                        fontFamily = Pretend,
+                        fontWeight = FontWeight.Bold
+                    )
+                    StartButton(onClick = {
+                        meetingViewModel.updateMeetingStatus(
+                            meetingId = meetingId,
+                            targetStatus = MeetingStatus.IN_PROGRESS
+                        )
+                    })
+                }
+            }
         }
-
-        Divider(
-            color = Color.LightGray,
-            thickness = 1.dp,
-            modifier = Modifier.fillMaxWidth()
-        )
 
         MeetingControlPanel(
             timeText = "00:00:00",
-            micEnabled = false,
-            micIcon = R.drawable.inactive_mic,
-            logoutIcon = R.drawable.inactive_logout,
-            powerIcon = R.drawable.inactive_power,
+            remainingTimeText = remainingTime,
+            micIcon = R.drawable.mic,
             onFinish = onFinish,
-            onExitConfirmed = {},
-            viewModel = meetingViewModel
+            viewModel = meetingViewModel,
+            isWaiting = true
         )
-    }
-}
-
-@Composable
-private fun ErrorDialogSection(
-    errorMessage: String?,
-    showDialog: MutableState<Boolean>,
-    onFinish: (SilRokNavigation) -> Unit,
-    meetingViewModel: MeetingViewModel
-) {
-    if (errorMessage != null) showDialog.value = true
-    val isTokenExpired = errorMessage == "TOKEN_EXPIRED"
-
-    if (showDialog.value && errorMessage != null) {
-        CustomDialog(
-            description = if (isTokenExpired)
-                "로그인 정보가 만료되었어요.\n다시 로그인해주세요."
-            else errorMessage,
-            confirmText = if (isTokenExpired) "로그인 하기" else "홈으로",
-            showDismissButton = false,
-            onDismissRequest = {},
-            onConfirmExit = {
-                showDialog.value = false
-                meetingViewModel.clearErrorMessage()
-                val destination = if (isTokenExpired) SilRokNavigation.Login else SilRokNavigation.Home
-                onFinish(destination)
-            }
-        )
-    }
-}
-
-@Composable
-private fun AgendaSection(
-    agendas: List<AgendaDto>,
-    checkedStates: List<Boolean>,
-    isLoading: Boolean,
-    peekIndex: Int,
-    firstUncheckedIndex: Int,
-    onToggle: (Int) -> Unit
-) {
-    if (!isLoading && peekIndex in agendas.indices) {
-        TopSheet(
-            collapsedHeight = 60.dp,
-            peekContent = {
-                CheckItem(
-                    text = agendas[peekIndex].content,
-                    checked = checkedStates[peekIndex],
-                    isFocused = !checkedStates[peekIndex],
-                    onToggle = { onToggle(peekIndex) }
-                )
-            },
-            content = {
-                Column {
-                    agendas.forEachIndexed { i, item ->
-                        CheckItem(
-                            text = item.content,
-                            checked = checkedStates[i],
-                            isFocused = !checkedStates[i] && firstUncheckedIndex == i,
-                            onToggle = { onToggle(i) }
-                        )
-                    }
-                }
-            }
-        )
-    }
-}
-
-@Composable
-private fun MeetingContentSection(
-    isLoading: Boolean,
-    onStart: () -> Unit
-) {
-    if (isLoading) {
-        CircularProgressIndicator(color = Color(0xFF86CC3B))
-    } else {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "회의가 시작되길\n기다리는 중",
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center,
-                color = Color.LightGray
-            )
-            StartButton(onClick = onStart)
-        }
     }
 }
 
@@ -195,14 +183,16 @@ private fun MeetingContentSection(
 fun StartButton(onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val baseColor = Color(0xFF1E93EF)
+    val baseColor = Color.Black
 
     Text(
-        text = "시작하기",
-        style = MaterialTheme.typography.titleLarge,
+        text = stringResource(R.string.start),
+        style = MaterialTheme.typography.titleMedium,
+        fontFamily = Pretend,
         color = if (isPressed) baseColor.copy(alpha = 0.6f) else baseColor,
+        fontWeight = FontWeight.ExtraBold,
         modifier = Modifier
-            .padding(top = 36.dp)
+            .padding(top = 28.dp)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -211,3 +201,11 @@ fun StartButton(onClick: () -> Unit) {
     )
 }
 
+fun formatTargetTime(targetTimeMinutes: Int?): String {
+    if (targetTimeMinutes == null) return "00:00:00"
+    val totalSeconds = targetTimeMinutes * 60
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return String.format("%02d:%02d:%02d", hours, minutes, seconds)
+}

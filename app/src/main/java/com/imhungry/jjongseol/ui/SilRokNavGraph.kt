@@ -4,12 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.imhungry.jjongseol.ui.completedmeeting.CompletedMeetingScreen
 import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
 import com.imhungry.jjongseol.ui.home.HomeScreen
@@ -23,20 +21,23 @@ import com.imhungry.jjongseol.ui.newmeeting.CreateNewMeetingScreen
 import com.imhungry.jjongseol.ui.profilecard.CompletedProfile
 import com.imhungry.jjongseol.ui.profilecard.MakeProfile
 import com.imhungry.jjongseol.ui.splash.SplashScreen
+import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
 fun SilRokNavGraph(
-    startDestination: SilRokNavigation = SilRokNavigation.Splash,
-    navController: NavHostController = rememberNavController(),
-    modifier: Modifier = Modifier
+    startDestination: SilRokNavigation,
+    navController: NavHostController,
+    loginViewModel: LoginViewModel,
+    agendaViewModel: AgendaViewModel,
+    meetingViewModel: MeetingViewModel
 ) {
     val navActions = remember(navController) { SilRokNavigationActions(navController) }
 
     NavHost(
         navController = navController,
         startDestination = startDestination.route,
-        modifier = modifier
     ) {
         composable(SilRokNavigation.Splash.route) {
             SplashScreen(
@@ -52,8 +53,6 @@ fun SilRokNavGraph(
 
         composable(SilRokNavigation.Login.route) {
             val context = LocalContext.current
-            val loginViewModel: LoginViewModel = hiltViewModel()
-
             LoginScreen(
                 loginViewModel = loginViewModel,
                 onGoogleClick = { loginViewModel.launchGoogleLogin(context) },
@@ -71,6 +70,8 @@ fun SilRokNavGraph(
 
         composable(SilRokNavigation.Meeting.route) {
             MeetingScreen(
+                agendaViewModel = agendaViewModel,
+                meetingViewModel = meetingViewModel,
                 onFinish = { destination ->
                     navActions.navigateTo(destination, SilRokNavigation.Meeting)
                 },
@@ -80,14 +81,19 @@ fun SilRokNavGraph(
 
         composable(SilRokNavigation.MeetingWaiting.route) {
             MeetingWaitingScreen(
+                loginViewModel = loginViewModel,
+                agendaViewModel = agendaViewModel,
+                meetingViewModel = meetingViewModel,
                 onFinish = { destination ->
                     navActions.navigateTo(destination, SilRokNavigation.MeetingWaiting)
-                }
+                },
+                meetingId = 1L
             )
         }
 
         composable(SilRokNavigation.MeetingEnd.route) {
             MeetingEndScreen(
+                meetingViewModel = meetingViewModel,
                 onFinish = { destination ->
                 navActions.navigateTo(destination, SilRokNavigation.MeetingEnd)
             })
