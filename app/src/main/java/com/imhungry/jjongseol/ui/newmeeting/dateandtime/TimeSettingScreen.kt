@@ -21,7 +21,8 @@ import java.util.*
 fun TimeDurationPicker(
     startTime: MutableState<String>,
     endTime: MutableState<String>,
-    durationInMinutes: MutableState<Int>
+    durationInMinutes: MutableState<Int>,
+    enabled: Boolean
 ) {
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
@@ -49,7 +50,7 @@ fun TimeDurationPicker(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.weight(10f)) {
-                TimePickerButton("시작 시간", startTime.value) {
+                TimePickerButton("시작 시간", startTime.value, enabled = enabled) {
                     showStartTimePicker = true
                 }
             }
@@ -57,7 +58,7 @@ fun TimeDurationPicker(
             Text("~", style = MaterialTheme.typography.h6)
             Spacer(Modifier.weight(1f))
             Box(modifier = Modifier.weight(10f)) {
-                TimePickerButton("종료 시간", endTime.value) {
+                TimePickerButton("종료 시간", endTime.value, enabled = enabled) {
                     showEndTimePicker = true
                 }
             }
@@ -67,7 +68,7 @@ fun TimeDurationPicker(
                 modifier = Modifier.weight(10f)
             ) {
                 Box(modifier = Modifier.weight(4f)) {
-                    DurationInput(durationInMinutes.value.toString(), onDurationChange = { newValue ->
+                    DurationInput(durationInMinutes.value.toString(), enabled = enabled, onDurationChange = { newValue ->
                         durationInMinutes.value = newValue.toIntOrNull() ?: 0
                     })
                 }
@@ -134,23 +135,27 @@ fun updateDurationFromTimes(start: String, end: String, onResult: (Int) -> Unit)
 
 
 @Composable
-fun TimePickerButton(label: String, time: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun TimePickerButton(label: String, time: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {
     Button(
-        onClick = onClick,
+        onClick = { if (enabled) onClick() },
         modifier = modifier
             .height(60.dp)
             .fillMaxWidth()
             .widthIn(min = 100.dp),
-        shape = RoundedCornerShape(15.dp),
-        colors = ButtonDefaults.buttonColors(backgroundColor = Color.White),
+        shape = RoundedCornerShape(10.dp),
+        enabled = true,
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = Color.White,
+            contentColor = Color.Black
+        ),
         border = BorderStroke(1.dp, Color.Gray)
     ) {
-        Text(time, fontSize = 13.sp)
+        Text(time, fontSize = 13.sp, color = Color.Black)
     }
 }
 
 @Composable
-fun DurationInput(value: String, modifier: Modifier = Modifier, onDurationChange: (String) -> Unit) {
+fun DurationInput(value: String, enabled: Boolean = true, modifier: Modifier = Modifier, onDurationChange: (String) -> Unit) {
     OutlinedTextField(
         value = value,
         onValueChange = {
@@ -166,18 +171,20 @@ fun DurationInput(value: String, modifier: Modifier = Modifier, onDurationChange
                 }
             }
         },
+        enabled = enabled,
         label = { Text("") },
         singleLine = true,
         modifier = modifier
             .height(60.dp)
-            .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
+            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
             .fillMaxWidth(),
         colors = TextFieldDefaults.outlinedTextFieldColors(
             textColor = Color.Black,
             cursorColor = Color.Black,
             backgroundColor = Color.White,
             focusedBorderColor = Color.Transparent,
-            unfocusedBorderColor = Color.Transparent
+            unfocusedBorderColor = Color.Transparent,
+            disabledBorderColor = Color.Transparent,
         ),
         textStyle = TextStyle(
             fontSize = 12.sp,

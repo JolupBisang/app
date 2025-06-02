@@ -181,7 +181,8 @@ fun CreateNewMeetingScreen(navController: NavController){
                     Column(modifier = Modifier.weight(5f)) {
                         SearchScreen(
                             selectedEmails = selectedMembers,
-                            userApi = userViewModel.userApi
+                            userApi = userViewModel.userApi,
+                            enabled = true
                         )
                     }
                 }
@@ -259,7 +260,8 @@ fun CreateNewMeetingScreen(navController: NavController){
                         TimeDurationPicker(
                             startTime = startTime,
                             endTime = endTime,
-                            durationInMinutes = duration
+                            durationInMinutes = duration,
+                            enabled = true
                         )
                     }
                 }
@@ -288,7 +290,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                         onValueChange = { place.value = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
+                            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
                             .weight(5f),
                         singleLine = true,
                         textStyle = TextStyle(fontSize = 16.sp),
@@ -328,7 +330,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
                     )
                     Row(modifier = Modifier.weight(5f)) {
-                        AgendaListScreen(agendaList = agendaList)
+                        AgendaListScreen(agendaList = agendaList, enabled = true)
                     }
                 }
             }
@@ -353,7 +355,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
 
                         Row(modifier = Modifier.weight(5f)) {
-                            BreakTimeRow(breakTime = breakTime, breakTimeMinute = breakTimeMinute)
+                            BreakTimeRow(breakTime = breakTime, breakTimeMinute = breakTimeMinute, enabled = true)
                         }
                     }
                 }
@@ -362,7 +364,7 @@ fun CreateNewMeetingScreen(navController: NavController){
 
             item {
                 Button(modifier = Modifier.fillMaxWidth()
-                    .padding(start = 8.dp, end = 8.dp, top = 15.dp, bottom = 8.dp)
+                    .padding(top = 15.dp, bottom = 8.dp)
                     .height(55.dp)
                     .border(1.dp, UserGreen1, RoundedCornerShape(13.dp)),
                     colors = ButtonDefaults.buttonColors(
