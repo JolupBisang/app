@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">회의실록</string>
-    <string name="google_login_button">Google로 계속하기</string>
+    <string name="google_login_button">Continue with Google</string>
     <string name="waiting_guidance">회의가 시작되길 기다리는 중</string>
     <string name="start">시작하기</string>
+    <string name="login_guidance">로그인하고 바로 시작하세요</string>
 </resources>
