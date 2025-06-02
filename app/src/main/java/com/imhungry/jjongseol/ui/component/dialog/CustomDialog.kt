@@ -69,7 +69,7 @@ fun CustomDialog(
                                 onClick = onDismissRequest
                             )
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                 }
                 Text(
                     text = confirmText,

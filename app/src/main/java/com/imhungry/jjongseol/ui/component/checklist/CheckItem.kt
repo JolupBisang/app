@@ -81,10 +81,10 @@ fun CheckItem(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        val textStyle = MaterialTheme.typography.bodyLarge.copy(
+        val textStyle = MaterialTheme.typography.bodyMedium.copy(
             fontWeight = if (isFocused) FontWeight.ExtraBold else FontWeight.Medium,
             textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None,
-            fontSize = 16.sp
+            fontSize = 15.sp
         )
 
         Box(

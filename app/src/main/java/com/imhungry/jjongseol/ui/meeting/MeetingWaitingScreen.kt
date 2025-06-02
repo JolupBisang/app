@@ -163,6 +163,7 @@ fun MeetingWaitingScreen(
                             meetingId = meetingId,
                             targetStatus = MeetingStatus.IN_PROGRESS
                         )
+                        onFinish(SilRokNavigation.Meeting)
                     })
                 }
             }

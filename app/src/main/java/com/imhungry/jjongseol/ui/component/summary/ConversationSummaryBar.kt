@@ -32,45 +32,38 @@ fun ConversationSummaryBar(participantData: List<Float>, participantNames: List<
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp)
+            .padding(top = 12.dp)
     ) {
         ProportionalBarChart(
             proportions = participantData,
             colors = colors,
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        val columnCount = 3
+        val minColumnSize = participantNames.size / columnCount
+        val extra = participantNames.size % columnCount
 
-        val splitIndex = (participantNames.size + 1) / 2
-        val leftColumn = participantNames.take(splitIndex)
-        val rightColumn = participantNames.drop(splitIndex)
+        val indices = (0 until columnCount).map { col ->
+            val start = (0 until col).sumOf { minColumnSize + if (it < extra) 1 else 0 }
+            val end = start + minColumnSize + if (col < extra) 1 else 0
+            start until end
+        }
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth()
+                .padding(top = 20.dp, bottom = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Column(
-                modifier = Modifier
-                    .wrapContentWidth(),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                leftColumn.forEachIndexed { i, name ->
-                    LegendItem(name = name, color = colors.getOrElse(i) { Color.Gray })
-                }
-            }
-            Column(
-                modifier = Modifier
-                    .wrapContentWidth(),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                rightColumn.forEachIndexed { i, name ->
-                    val colorIndex = splitIndex + i
-                    LegendItem(name = name, color = colors.getOrElse(colorIndex) { Color.Gray })
+            indices.forEachIndexed { col, range ->
+                Column(
+                    modifier = Modifier.wrapContentWidth(),
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    range.forEach { i ->
+                        LegendItem(name = participantNames[i], color = colors.getOrElse(i) { Color.Gray })
+                    }
                 }
             }
         }
@@ -94,7 +87,7 @@ fun LegendItem(name: String, color: Color) {
         Text(
             text = name,
             fontFamily = Pretend,
-            fontWeight = FontWeight.Normal,
+            fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Start
         )
     }

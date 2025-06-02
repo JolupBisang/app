@@ -19,13 +19,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.imhungry.jjongseol.data.model.chat.ChatMessage
+import java.time.LocalTime
 
 @Composable
 fun ChatBubble(chatMessage: ChatMessage) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalAlignment = if (chatMessage.isMe) Alignment.End else Alignment.Start
     ) {
         if (chatMessage.isMe) {
@@ -41,8 +42,8 @@ private fun MyMessage(chatMessage: ChatMessage) {
     Column(horizontalAlignment = Alignment.End) {
         ChatBox(
             text = chatMessage.message,
-            backgroundColor = Color(0xFFDCF8C6),
-            shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 14.dp, bottomEnd = 4.dp)
+            backgroundColor = Color(0xFFB9B9B9),
+            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 12.dp, bottomEnd = 4.dp)
         )
 
         TimestampText(
@@ -61,24 +62,16 @@ private fun OthersMessage(chatMessage: ChatMessage) {
             modifier = Modifier
                 .size(36.dp)
                 .clip(CircleShape)
-                .border(0.5.dp, Color.LightGray, CircleShape)
+                .border(0.5.dp, Color(0xFFE4E4E4), CircleShape)
         )
 
         Spacer(modifier = Modifier.width(6.dp))
 
-        Column {
-            Text(
-                text = chatMessage.sender,
-                style = MaterialTheme.typography.labelMedium.copy(color = Color.Black),
-                modifier = Modifier.padding(top = 1.dp, bottom = 2.dp)
-            )
-
-            ChatBox(
-                text = chatMessage.message,
-                backgroundColor = Color(0xFFF5F5F5),
-                shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 4.dp, bottomEnd = 14.dp)
-            )
-        }
+        ChatBox(
+            text = chatMessage.message,
+            backgroundColor = Color(0xFFEEEEEF),
+            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 4.dp, bottomEnd = 12.dp)
+        )
     }
 
     TimestampText(
@@ -115,7 +108,6 @@ private fun TimestampText(
     Text(
         text = time,
         fontSize = fontSize,
-        color = Color.Gray,
         modifier = modifier
     )
 }

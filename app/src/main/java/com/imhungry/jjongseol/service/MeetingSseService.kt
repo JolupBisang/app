@@ -46,8 +46,6 @@ class MeetingSseService : Service() {
 
     private var reconnectHandler: android.os.Handler? = null
     private var reconnectRunnable: Runnable? = null
-    private var currentMeetingId: Long = -1L
-    private var isServiceStopped: Boolean = false
 
     companion object {
         const val CHANNEL_ID = "meeting_sse_channel"
@@ -67,7 +65,7 @@ class MeetingSseService : Service() {
         }
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(content)
-            .setSmallIcon(R.drawable.logo_chat)
+            .setSmallIcon(R.drawable.notification_logo)
             .setOngoing(true)
             .build()
     }
@@ -89,8 +87,6 @@ class MeetingSseService : Service() {
     }
 
     private fun connectSse(meetingId: Long) {
-        if (isServiceStopped || meetingId == -1L) return
-
         val client = OkHttpClient.Builder()
             .readTimeout(15, TimeUnit.MINUTES)
             .addInterceptor { chain ->
@@ -166,7 +162,6 @@ class MeetingSseService : Service() {
     }
 
     private fun reconnectSse(meetingId: Long) {
-        if (isServiceStopped || meetingId == -1L) return
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
 
@@ -176,18 +171,15 @@ class MeetingSseService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        currentMeetingId = intent?.getLongExtra("meetingId", -1L) ?: -1L
-        isServiceStopped = false
-        if (currentMeetingId == -1L) { stopSelf(); return START_NOT_STICKY }
+        val meetingId = intent?.getLongExtra("meetingId", -1L) ?: -1L
+        if (meetingId == -1L) { stopSelf(); return START_NOT_STICKY }
         startForeground(1, createNotification("회의 진행 중.."))
-        connectSse(currentMeetingId )
+        connectSse(meetingId)
         return START_STICKY
     }
 
     override fun onDestroy() {
         Log.d("MeetingSseService", "SSE 종료")
-        isServiceStopped = true
-        currentMeetingId = -1L
         stopReconnectTimer()
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
@@ -198,8 +190,6 @@ class MeetingSseService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         Log.d("MeetingSseService", "SSE 종료")
-        isServiceStopped = true
-        currentMeetingId = -1L
         stopReconnectTimer()
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()

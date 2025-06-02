@@ -8,10 +8,14 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,6 +38,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
+import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
@@ -140,7 +145,7 @@ fun MeetingScreen(
 
     LaunchedEffect(meetingStatus) {
         if (meetingStatus == MeetingStatus.COMPLETED) {
-            context?.stopService(Intent(context, MeetingSseService::class.java))
+            context.stopService(Intent(context, MeetingSseService::class.java))
             onFinish(SilRokNavigation.CompletedMeeting)
         }
     }
@@ -220,7 +225,7 @@ fun MeetingScreenContent(
             modifier = Modifier
                 .constrainAs(pager) {
                     top.linkTo(parent.top)
-                    bottom.linkTo(indicator.top)
+                    bottom.linkTo(control.top)
                     height = Dimension.fillToConstraints
                 }
                 .fillMaxWidth()
@@ -239,20 +244,14 @@ fun MeetingScreenContent(
             }
         }
 
-        HorizontalPagerIndicator(
+        CustomHorizontalPagerIndicator(
             pagerState = pagerState,
             modifier = Modifier
-                .background(Color.White)
-                .padding(top = 12.dp, bottom = 12.dp)
+                .padding(bottom = 12.dp)
                 .constrainAs(indicator) {
-                    top.linkTo(pager.bottom)
                     bottom.linkTo(control.top)
                     centerHorizontallyTo(parent)
-                },
-            activeColor = Color(0xFF1E93EF),
-            inactiveColor = Color.LightGray,
-            indicatorWidth = 6.dp,
-            spacing = 4.dp
+                }
         )
 
         MeetingControlPanel(
@@ -271,5 +270,45 @@ fun MeetingScreenContent(
             meetingId = meetingId,
             context = context
         )
+    }
+}
+
+@OptIn(ExperimentalPagerApi::class)
+@Composable
+fun CustomHorizontalPagerIndicator(
+    pagerState: PagerState,
+    modifier: Modifier = Modifier,
+    pageCount: Int = pagerState.pageCount,
+    activeColor: Color = Color(0xFF0004F8),
+    inactiveColor: Color = Color(0xFFF6F6F6),
+    backgroundColor: Color = Color(0xFFD9D9D9),
+    indicatorSize: Int = 8,
+    indicatorSpacing: Int = 7,
+    paddingHorizontal: Int = 10,
+    paddingVertical: Int = 7
+) {
+    Box(
+        modifier = modifier
+            .background(
+                color = backgroundColor,
+                shape = CircleShape
+            )
+            .padding(horizontal = paddingHorizontal.dp, vertical = paddingVertical.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(indicatorSpacing.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            repeat(pageCount) { index ->
+                Box(
+                    modifier = Modifier
+                        .size(indicatorSize.dp)
+                        .background(
+                            color = if (pagerState.currentPage == index) activeColor else inactiveColor,
+                            shape = CircleShape
+                        )
+                )
+            }
+        }
     }
 }

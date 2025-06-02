@@ -35,9 +35,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 
 @Composable
@@ -57,22 +59,30 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF1EBE0)),
+            .background(Color.White),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.weight(1.6f))
 
         Image(
-            painter = painterResource(id = R.drawable.logo),
+            painter = painterResource(id = R.drawable.logo_chat),
             contentDescription = "logo",
-            modifier = Modifier.size(200.dp)
+            modifier = Modifier.size(113.dp)
         )
 
-        Spacer(modifier = Modifier.weight(1.2f))
+        Spacer(modifier = Modifier.weight(0.7f))
+
+        Text(
+            text = stringResource(R.string.login_guidance),
+            textAlign = TextAlign.Center,
+            fontFamily = Pretend,
+            fontWeight = FontWeight.ExtraBold,
+        )
 
         GoogleLoginButton(
             modifier = Modifier
-                .width(280.dp)
+                .padding(top = 12.dp)
+                .width(232.dp)
                 .height(48.dp),
             onClick = onGoogleClick
         )
@@ -114,10 +124,11 @@ fun GoogleLoginButton(
         Box(modifier = Modifier.fillMaxSize()) {
             Text(
                 text = stringResource(R.string.google_login_button),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.align(Alignment.Center)
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 16.dp)
             )
 
             Row(
@@ -129,7 +140,7 @@ fun GoogleLoginButton(
                 Image(
                     painter = painterResource(id = R.drawable.google_logo),
                     contentDescription = "Google Icon",
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
