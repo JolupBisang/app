@@ -47,6 +47,7 @@ import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.home.MeetingResponse
 import com.imhungry.jjongseol.ui.theme.UserGreen1
 import com.imhungry.jjongseol.ui.theme.UserGreen2
+import com.imhungry.jjongseol.ui.theme.UserGreen3
 import com.imhungry.jjongseol.ui.theme.UserPink
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import com.imhungry.jjongseol.viewmodel.ScheduleViewModel
@@ -232,7 +233,7 @@ fun CalendarGrid(
                     text = it,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
-                    color = Color.LightGray,
+                    color = Color.DarkGray,
                     fontSize = 12.sp
                 )
             }
@@ -248,11 +249,10 @@ fun CalendarGrid(
                     val hasMeeting = scheduleMap.containsKey(date)
                     val meetingsOnDate = scheduleMap[date].orEmpty()
 
-                    val hasCompleted = meetingsOnDate.any { it.status == "COMPLETED" }
+                    /*val hasCompleted = meetingsOnDate.any { it.status == "COMPLETED" }
                     val hasWaiting = meetingsOnDate.any { it.status == "WAITING" }
                     val hasInProgress = meetingsOnDate.any { it.status == "IN_PROGRESS" }
-                    val hasCancelled = meetingsOnDate.any { it.status == "CANCELLED" }
-                    //진행중이거나 취소된 회의는 어떻게 표시할건지
+                    val hasCancelled = meetingsOnDate.any { it.status == "CANCELLED" }*/
 
                     val backgroundColor = if (isSelected) {
                         UserGreen2
@@ -260,16 +260,9 @@ fun CalendarGrid(
                         Color.Transparent
                     }
 
-                    //색상은 임시지정
                     val textColor = when {
                         isSelected -> UserGreen1
-                        hasInProgress -> Color.Magenta //진행 중인 회의
-                        hasCancelled -> Color.DarkGray //취소된 회의
-                        !date.isBefore(today) && hasMeeting -> Color.Yellow //미래 회의
-                        date.isBefore(today) && hasCompleted -> md_theme_button_color_blue //완료된 회의
-                        date.isBefore(today) && hasWaiting -> Color.Green //대기 중 회의
-                        isCurrentMonth && date.dayOfWeek.value % 7 == 0 -> Color.Red //일요일
-                        //isCurrentMonth && date.dayOfWeek.value % 7 == 6 -> Color.Blue //토요일
+                        hasMeeting -> UserGreen3
                         isCurrentMonth -> Color.Black //일반
                         else -> Color.White
                         //else -> Color.LightGray //다크 모드 하면 이걸로
@@ -278,7 +271,7 @@ fun CalendarGrid(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .aspectRatio(1.15f)
+                            .aspectRatio(1f)
                             .padding(2.dp)
                             .background(backgroundColor, shape = RoundedCornerShape(100))
                             .clickable(
@@ -292,7 +285,8 @@ fun CalendarGrid(
                         Text(
                             text = date.dayOfMonth.toString(),
                             fontSize = 15.sp,
-                            color = textColor
+                            color = textColor,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
