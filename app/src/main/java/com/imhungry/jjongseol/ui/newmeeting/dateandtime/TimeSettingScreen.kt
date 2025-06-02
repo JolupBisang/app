@@ -145,7 +145,7 @@ fun TimePickerButton(label: String, time: String, modifier: Modifier = Modifier,
         colors = ButtonDefaults.buttonColors(backgroundColor = Color.White),
         border = BorderStroke(1.dp, Color.Gray)
     ) {
-        Text(time, fontSize = 14.sp)
+        Text(time, fontSize = 13.sp)
     }
 }
 
