@@ -42,13 +42,7 @@ fun SilRokNavGraph(
     ) {
         composable(SilRokNavigation.Splash.route) {
             SplashScreen(
-                onFinish = { destination ->
-                    navController.navigate(destination.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            inclusive = true
-                        }
-                    }
-                }
+                navController = navController
             )
         }
 
@@ -69,7 +63,7 @@ fun SilRokNavGraph(
             CreateNewMeetingScreen(navController)
         }
 
-        composable(SilRokNavigation.Meeting.route) {
+        /*composable(SilRokNavigation.Meeting.route) {
             MeetingScreen(
                 agendaViewModel = agendaViewModel,
                 meetingViewModel = meetingViewModel,
@@ -78,9 +72,9 @@ fun SilRokNavGraph(
                 },
                 meetingId = 1L
             )
-        }
+        }*/
 
-        composable(SilRokNavigation.MeetingWaiting.route) {
+        /*composable(SilRokNavigation.MeetingWaiting.route) {
             MeetingWaitingScreen(
                 loginViewModel = loginViewModel,
                 agendaViewModel = agendaViewModel,
@@ -90,15 +84,15 @@ fun SilRokNavGraph(
                 },
                 meetingId = 1L
             )
-        }
+        }*/
 
-        composable(SilRokNavigation.MeetingEnd.route) {
+       /*composable(SilRokNavigation.MeetingEnd.route) {
             MeetingEndScreen(
                 meetingViewModel = meetingViewModel,
                 onFinish = { destination ->
                 navActions.navigateTo(destination, SilRokNavigation.MeetingEnd)
             })
-        }
+        }*/
 
         composable(SilRokNavigation.MakeProfile.route) {
             MakeProfile(navController)
@@ -112,14 +106,14 @@ fun SilRokNavGraph(
             CompletedNewMeeting(navController)
         }
 
-        composable(SilRokNavigation.CompletedMeeting.route) {
+        /*composable(SilRokNavigation.CompletedMeeting.route) {
             CompletedMeetingScreen(
                 navController,
                 onFinish = { destination ->
                     navActions.navigateTo(destination, SilRokNavigation.CompletedMeeting)
                 }
             )
-        }
+        }*/
 
         composable(SilRokNavigation.CompletedMeetingSummary.route) {
             CompletedMeetingSummaryScreen()
@@ -134,9 +128,12 @@ fun SilRokNavGraph(
             val id = backStackEntry.arguments?.getString("id")?.toLongOrNull() ?: return@composable
             MeetingWaitingScreen(
                 loginViewModel = loginViewModel,
+                onFinish = { destination ->
+                    navActions.navigateTo(destination, SilRokNavigation.MeetingWaiting)
+                },
                 meetingViewModel = meetingViewModel,
                 agendaViewModel = agendaViewModel,
-                onFinish = { navController.navigate(it.route) },
+                navController = navController,
                 meetingId = id
             )
         }
@@ -147,7 +144,19 @@ fun SilRokNavGraph(
                 loginViewModel = loginViewModel,
                 meetingViewModel = meetingViewModel,
                 agendaViewModel = agendaViewModel,
-                onFinish = { navController.navigate(it.route) },
+                onFinish = { destination ->
+                    navActions.navigateTo(destination, SilRokNavigation.Meeting)
+                },
+                navController = navController,
+                meetingId = id
+            )
+        }
+
+        composable("meetingRoute/end/{id}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+            MeetingEndScreen(
+                meetingViewModel = meetingViewModel,
+                navController = navController,
                 meetingId = id
             )
         }
@@ -156,11 +165,8 @@ fun SilRokNavGraph(
             val id = backStackEntry.arguments?.getString("id")?.toLongOrNull() ?: return@composable
             CompletedMeetingScreen(
                 navController = navController,
-                onFinish = { navController.navigate(it.route) }
+                meetingId = id
             )
         }
-
-
-
     }
 }

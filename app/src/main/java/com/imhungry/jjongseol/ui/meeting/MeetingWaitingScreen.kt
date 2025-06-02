@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.ui.SilRokNavigation
@@ -50,6 +51,7 @@ fun MeetingWaitingScreen(
     meetingViewModel: MeetingViewModel,
     agendaViewModel: AgendaViewModel,
     onFinish: (SilRokNavigation) -> Unit,
+    navController: NavController,
     meetingId: Long = 1L
 ) {
     val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
@@ -85,7 +87,7 @@ fun MeetingWaitingScreen(
 
     LaunchedEffect(meetingStatus) {
         if (meetingStatus == MeetingStatus.IN_PROGRESS) {
-            onFinish(SilRokNavigation.Meeting)
+            navController.navigate("meetingRoute/inprogress/$meetingId")
         }
     }
 
@@ -174,8 +176,10 @@ fun MeetingWaitingScreen(
             remainingTimeText = remainingTime,
             micIcon = R.drawable.mic,
             onFinish = onFinish,
+            navController = navController,
             viewModel = meetingViewModel,
-            isWaiting = true
+            isWaiting = true,
+            meetingId = meetingId
         )
     }
 }

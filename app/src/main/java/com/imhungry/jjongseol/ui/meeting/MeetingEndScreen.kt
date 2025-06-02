@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.ui.SilRokNavigation
@@ -33,7 +34,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun MeetingEndScreen(
     meetingViewModel: MeetingViewModel,
-    onFinish: (SilRokNavigation) -> Unit
+    navController: NavController,
+    meetingId: Long
 ) {
     val meetingStatus by meetingViewModel.meetingStatus.collectAsState()
     var isCompleted by remember { mutableStateOf(false) }
@@ -47,7 +49,7 @@ fun MeetingEndScreen(
     LaunchedEffect(isCompleted) {
         if (isCompleted) {
             delay(1000)
-            onFinish(SilRokNavigation.CompletedMeeting)
+            navController.navigate("meetingRoute/completed/$meetingId")
         }
     }
 

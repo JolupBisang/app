@@ -47,6 +47,11 @@ class MeetingSseService : Service() {
     private var reconnectHandler: android.os.Handler? = null
     private var reconnectRunnable: Runnable? = null
 
+    private var currentMeetingId: Long = -1L
+    private var isServiceStopped: Boolean = false
+
+    private var isConnecting = false
+
     companion object {
         const val CHANNEL_ID = "meeting_sse_channel"
         const val CHANNEL_NAME = "회의 SSE 알림"
@@ -87,6 +92,18 @@ class MeetingSseService : Service() {
     }
 
     private fun connectSse(meetingId: Long) {
+        if (isConnecting) {
+            Log.d("MeetingSseService", "Already connecting, skip!")
+            return
+        }
+        isConnecting = true
+
+        summaryEventSource?.cancel()
+        feedbackEventSource?.cancel()
+        summaryEventSource = null
+        feedbackEventSource = null
+        if (isServiceStopped || meetingId == -1L) return
+
         val client = OkHttpClient.Builder()
             .readTimeout(15, TimeUnit.MINUTES)
             .addInterceptor { chain ->
@@ -143,6 +160,7 @@ class MeetingSseService : Service() {
 
             override fun onClosed(source: EventSource) {
                 Log.d("MeetingSseService", "SSE 연결 종료, 재연결 시도")
+                isConnecting = false
                 reconnectSse(meetingId)
             }
             override fun onFailure(source: EventSource, t: Throwable?, response: Response?) {
@@ -150,6 +168,7 @@ class MeetingSseService : Service() {
                     "MeetingSseService",
                     "SSE 연결 실패: ${t?.message}, response=${response?.code} / ${response?.message}", t
                 )
+                isConnecting = false
                 reconnectSse(meetingId)
             }
         }
@@ -162,8 +181,14 @@ class MeetingSseService : Service() {
     }
 
     private fun reconnectSse(meetingId: Long) {
+        if (isConnecting) {
+            Log.d("MeetingSseService", "Reconnect requested while already connecting")
+            return
+        }
+
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
+        if (isServiceStopped || meetingId == -1L) return
 
         android.os.Handler(mainLooper).postDelayed({
             connectSse(meetingId)
@@ -171,15 +196,18 @@ class MeetingSseService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val meetingId = intent?.getLongExtra("meetingId", -1L) ?: -1L
-        if (meetingId == -1L) { stopSelf(); return START_NOT_STICKY }
+        currentMeetingId = intent?.getLongExtra("meetingId", -1L) ?: -1L
+        isServiceStopped = false
+        if (currentMeetingId == -1L) { stopSelf(); return START_NOT_STICKY }
         startForeground(1, createNotification("회의 진행 중.."))
-        connectSse(meetingId)
+        connectSse(currentMeetingId)
         return START_STICKY
     }
 
     override fun onDestroy() {
         Log.d("MeetingSseService", "SSE 종료")
+        isServiceStopped = true
+        currentMeetingId = -1L
         stopReconnectTimer()
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
@@ -190,6 +218,8 @@ class MeetingSseService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         Log.d("MeetingSseService", "SSE 종료")
+        isServiceStopped = true
+        currentMeetingId = -1L
         stopReconnectTimer()
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
