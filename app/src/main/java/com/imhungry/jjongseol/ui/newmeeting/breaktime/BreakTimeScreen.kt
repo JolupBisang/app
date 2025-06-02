@@ -19,9 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<String>) {
-
+fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<String>, enabled: Boolean)
+ {
     fun handleBreakTimeChange(newBreakTime: String) {
+        if (!enabled) return
         if (newBreakTime.all { it.isDigit() }) {
             breakTime.value = newBreakTime
             //쉬는시간과 간격에 제한을 둘건가
@@ -36,6 +37,7 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
     }
 
     fun handleBreakTimeMinuteChange(newBreakTimeMinute: String) {
+        if (!enabled) return
         if (newBreakTimeMinute.all { it.isDigit() }) {
             breakTimeMinute.value = newBreakTimeMinute
             /*val breakTimeInt = breakTime.value.toIntOrNull() ?: 0
@@ -54,20 +56,23 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
             OutlinedTextField(
                 value = breakTime.value,
                 onValueChange = ::handleBreakTimeChange,
+                enabled = enabled,
                 modifier = Modifier
                     .weight(1f)
-                    .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
+                    .border(1.dp, Color.Gray, RoundedCornerShape(10.dp)),
                 singleLine = true,
                 textStyle = TextStyle(fontSize = 16.sp),
                 placeholder = {
-                    Text("", style = TextStyle(color = Color.LightGray))
+                    Text("", style = TextStyle(color = Color.Black))
                 },
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     textColor = Color.Black,
                     cursorColor = Color.Black,
                     backgroundColor = Color.White,
                     focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent
+                    unfocusedBorderColor = Color.Transparent,
+                    disabledBorderColor = Color.Transparent,
+                    disabledTextColor = Color.Black
                 )
             )
 
@@ -82,20 +87,23 @@ fun BreakTimeRow(breakTime: MutableState<String>, breakTimeMinute: MutableState<
             OutlinedTextField(
                 value = breakTimeMinute.value,
                 onValueChange = ::handleBreakTimeMinuteChange,
+                enabled = enabled,
                 modifier = Modifier
                     .weight(1f)
-                    .border(1.dp, Color.Gray, RoundedCornerShape(15.dp)),
+                    .border(1.dp, Color.Gray, RoundedCornerShape(10.dp)),
                 singleLine = true,
                 textStyle = TextStyle(fontSize = 16.sp),
                 placeholder = {
-                    Text("", style = TextStyle(color = Color.LightGray))
+                    Text("", style = TextStyle(color = Color.Black))
                 },
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     textColor = Color.Black,
                     cursorColor = Color.Black,
                     backgroundColor = Color.White,
                     focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent
+                    unfocusedBorderColor = Color.Transparent,
+                    disabledBorderColor = Color.Transparent,
+                    disabledTextColor = Color.Black
                 )
             )
 

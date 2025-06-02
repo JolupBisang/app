@@ -10,7 +10,8 @@ data class MeetingDetailRes(
     val restDuration: Int,
     val agendas: List<String>,
     val participants: List<ParticipantDto>,
-    val meetingStatus: String
+    val meetingStatus: String,
+    val isHost: Boolean
 )
 
 data class ParticipantDto(

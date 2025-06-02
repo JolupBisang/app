@@ -17,7 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.imhungry.jjongseol.ui.theme.BasicBackGround
 import com.imhungry.jjongseol.ui.theme.SkyBlue
+import com.imhungry.jjongseol.ui.theme.UserGreen1
 
 @Composable
 fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
@@ -29,7 +31,7 @@ fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
         modifier = Modifier
             .width(drawerWidth)
             .fillMaxHeight()
-            .background(SkyBlue),
+            .background(BasicBackGround),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
@@ -51,13 +53,14 @@ fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
                     contentDescription = "설정",
                     modifier = Modifier
                         .size(24.dp)
-                        .clickable { }
+                        .clickable { },
+                    tint = UserGreen1
                 )
             }
             TabRowDefaults.Divider(
-                color = Color.Black,
-                thickness = 1.5.dp,
-                modifier = Modifier.padding(top = 20.dp, bottom = 5.dp, end = 20.dp)
+                color = Color.Gray,
+                thickness = 0.5.dp,
+                modifier = Modifier.padding(top = 10.dp, bottom = 5.dp, end = 10.dp)
             )
             Spacer(Modifier.height(24.dp))
             Text(

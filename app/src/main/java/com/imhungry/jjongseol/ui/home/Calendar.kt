@@ -45,6 +45,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.home.MeetingResponse
+import com.imhungry.jjongseol.ui.theme.UserGreen1
+import com.imhungry.jjongseol.ui.theme.UserGreen2
+import com.imhungry.jjongseol.ui.theme.UserGreen3
 import com.imhungry.jjongseol.ui.theme.UserPink
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import com.imhungry.jjongseol.viewmodel.ScheduleViewModel
@@ -71,7 +74,7 @@ fun CalendarScreen(navController: NavController, viewModel: ScheduleViewModel = 
         horizontalArrangement = Arrangement.End,
     ) {
         Text(
-            text = "오늘", color = Color.Black, modifier = Modifier
+            text = "오늘", color = Color.DarkGray, modifier = Modifier
                 .padding(end = 5.dp)
                 .clickable {
                     currentYearMonth = YearMonth.now()
@@ -88,7 +91,8 @@ fun CalendarScreen(navController: NavController, viewModel: ScheduleViewModel = 
             onNext = { currentYearMonth = currentYearMonth.plusMonths(1) },
             onTextClick = { showNumberPicker = true }
         )
-        Box(modifier = Modifier.background(UserPink).padding(top = 15.dp, bottom = 15.dp, end = 2.dp)) {
+        Box(//modifier = Modifier.background(UserPink).padding(top = 15.dp, bottom = 15.dp, end = 2.dp)
+        ) {
             CalendarGrid(
                 yearMonth = currentYearMonth,
                 selectedDate = selectedDate,
@@ -130,6 +134,7 @@ fun CalendarScreen(navController: NavController, viewModel: ScheduleViewModel = 
         schedules = meetings,
         onScheduleClick = handleScheduleClick
     )
+    Spacer(Modifier.height(200.dp))
 
 }
 
@@ -228,7 +233,7 @@ fun CalendarGrid(
                     text = it,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
-                    color = Color.LightGray,
+                    color = Color.DarkGray,
                     fontSize = 12.sp
                 )
             }
@@ -244,24 +249,20 @@ fun CalendarGrid(
                     val hasMeeting = scheduleMap.containsKey(date)
                     val meetingsOnDate = scheduleMap[date].orEmpty()
 
-                    val hasCompleted = meetingsOnDate.any { it.status == "COMPLETED" }
+                    /*val hasCompleted = meetingsOnDate.any { it.status == "COMPLETED" }
                     val hasWaiting = meetingsOnDate.any { it.status == "WAITING" }
-                    //진행중이거나 취소된 회의는 어떻게 표시할건지
+                    val hasInProgress = meetingsOnDate.any { it.status == "IN_PROGRESS" }
+                    val hasCancelled = meetingsOnDate.any { it.status == "CANCELLED" }*/
 
                     val backgroundColor = if (isSelected) {
-                        Color(0xFFDAF2FF)
+                        UserGreen2
                     } else {
                         Color.Transparent
                     }
 
-                    //색상은 임시지정
                     val textColor = when {
-                        //isSelected -> Color.Black
-                        !date.isBefore(today) && hasMeeting -> Color.Yellow //미래 회의
-                        date.isBefore(today) && hasCompleted -> md_theme_button_color_blue //완료된 회의
-                        date.isBefore(today) && hasWaiting -> Color.Green //대기 중 회의
-                        isCurrentMonth && date.dayOfWeek.value % 7 == 0 -> Color.Red //일요일
-                        //isCurrentMonth && date.dayOfWeek.value % 7 == 6 -> Color.Blue //토요일
+                        isSelected -> UserGreen1
+                        hasMeeting -> UserGreen3
                         isCurrentMonth -> Color.Black //일반
                         else -> Color.White
                         //else -> Color.LightGray //다크 모드 하면 이걸로
@@ -270,7 +271,7 @@ fun CalendarGrid(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .aspectRatio(1.15f)
+                            .aspectRatio(1f)
                             .padding(2.dp)
                             .background(backgroundColor, shape = RoundedCornerShape(100))
                             .clickable(
@@ -284,7 +285,8 @@ fun CalendarGrid(
                         Text(
                             text = date.dayOfMonth.toString(),
                             fontSize = 15.sp,
-                            color = textColor
+                            color = textColor,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -361,7 +363,7 @@ fun DailyScheduleView(selectedDate: String, schedules: List<MeetingResponse>, on
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xEDF3E7))
+                //.background(Color(0xFFEDF3E7))
                 .padding(8.dp)
         ) {
             Text("일정 기록", fontSize = 18.sp, fontWeight = FontWeight.Bold )

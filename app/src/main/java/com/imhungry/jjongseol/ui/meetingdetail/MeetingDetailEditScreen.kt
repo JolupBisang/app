@@ -46,6 +46,7 @@ fun MeetingDetailEditScreen(
     val restInterval = remember { mutableStateOf("0") }
     val restDuration = remember { mutableStateOf("0") }
     val status = remember { mutableStateOf("") }
+    val isEditable = remember { mutableStateOf(false) }
 
     LaunchedEffect(meeting) {
         meeting?.let { safe ->
@@ -97,6 +98,9 @@ fun MeetingDetailEditScreen(
         restInterval = restInterval,
         restDuration = restDuration,
         agendas = agendaList,
-        status = status
+        status = status,
+        isHost = safeMeeting.isHost,
+        isEditable = isEditable.value,
+        onEditClicked = { isEditable.value = true }
     )
 }
