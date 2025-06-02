@@ -35,6 +35,7 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
@@ -61,6 +62,7 @@ fun MeetingScreen(
     meetingViewModel: MeetingViewModel,
     agendaViewModel: AgendaViewModel,
     onFinish: (SilRokNavigation) -> Unit,
+    navController: NavController,
     meetingId: Long
 ) {
     val agendas by agendaViewModel.agendaItems.collectAsState()
@@ -77,6 +79,7 @@ fun MeetingScreen(
     var permissionGranted by remember { mutableStateOf(false) }
     var permissionRequested by remember { mutableStateOf(false) }
     var startTimeMillis by remember { mutableStateOf<Long?>(null) }
+    var sseStarted by remember { mutableStateOf(false) }
 
     val requiredPermissions = remember {
         buildList {
@@ -146,6 +149,7 @@ fun MeetingScreen(
     LaunchedEffect(meetingStatus) {
         if (meetingStatus == MeetingStatus.COMPLETED) {
             context.stopService(Intent(context, MeetingSseService::class.java))
+            sseStarted = false
             onFinish(SilRokNavigation.CompletedMeeting)
         }
     }
@@ -163,17 +167,24 @@ fun MeetingScreen(
         }
     } else {
         SetNavigationBarColor(Color(0xFFE5E5E5))
-        LaunchedEffect(meetingId, allReady) {
-            context.startForegroundService(
-                Intent(context, MeetingSseService::class.java).apply {
-                    putExtra("meetingId", meetingId)
-                }
-            )
+        LaunchedEffect(allReady) {
+            if (!sseStarted) {
+                context.startForegroundService(
+                    Intent(context, MeetingSseService::class.java).apply {
+                        putExtra("meetingId", meetingId)
+                    }
+                )
+                sseStarted = true
+            }
         }
         MeetingScreenContent(
             meetingViewModel = meetingViewModel,
             agendaViewModel = agendaViewModel,
-            onFinish = onFinish,
+            onFinish = {
+                sseStarted = false
+                onFinish(it)
+            },
+            navController = navController,
             viewModel = meetingViewModel,
             meetingId = meetingId,
             timeText = timeText,
@@ -204,6 +215,7 @@ fun MeetingScreenContent(
     meetingViewModel: MeetingViewModel,
     agendaViewModel: AgendaViewModel,
     onFinish: (SilRokNavigation) -> Unit,
+    navController: NavController,
     viewModel: MeetingViewModel,
     meetingId: Long,
     timeText: String,
@@ -259,6 +271,7 @@ fun MeetingScreenContent(
             remainingTimeText = remainingTime,
             micIcon = R.drawable.micoff,
             onFinish = onFinish,
+            navController = navController,
             viewModel = viewModel,
             modifier = Modifier
                 .background(Color(0xFFE5E5E5))

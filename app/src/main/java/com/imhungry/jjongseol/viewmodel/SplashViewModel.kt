@@ -8,10 +8,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
-    private val loginRepository: LoginRepository
+    loginRepository: LoginRepository
 ) : ViewModel() {
-
-    fun getNavigationDestination(): SilRokNavigation =
-        if (loginRepository.isLoggedIn()) SilRokNavigation.Home else SilRokNavigation.Login
+    val isLoggedIn = loginRepository.isLoggedInFlow
 }
 

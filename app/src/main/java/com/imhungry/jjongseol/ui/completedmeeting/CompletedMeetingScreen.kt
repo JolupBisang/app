@@ -39,13 +39,12 @@ import kotlinx.coroutines.delay
 fun CompletedMeetingScreen(
     navController: NavController,
     viewModel: CompletedMeetingViewModel = hiltViewModel(),
-    onFinish: (SilRokNavigation) -> Unit,
+    meetingId: Long
 ) {
     val context = LocalContext.current
 
     CompletedMeetingContent(
         navController,
-        onFinish = onFinish,
     )
 }
 
@@ -53,7 +52,6 @@ fun CompletedMeetingScreen(
 @Composable
 fun CompletedMeetingContent(
     navController: NavController,
-    onFinish: (SilRokNavigation) -> Unit,
     meetingViewModel: MeetingViewModel = hiltViewModel(),
     viewModel: CompletedMeetingViewModel = hiltViewModel()
 ) {

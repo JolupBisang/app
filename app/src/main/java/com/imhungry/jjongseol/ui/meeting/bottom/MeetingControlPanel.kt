@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.service.MeetingSseService
@@ -45,6 +46,7 @@ fun MeetingControlPanel(
     timeText: String = "00:00:00",
     remainingTimeText: String = "00:00:00",
     micIcon: Int = R.drawable.mic,
+    navController: NavController,
     onFinish: (SilRokNavigation) -> Unit,
     viewModel: MeetingViewModel,
     isWaiting: Boolean = false,
@@ -134,7 +136,7 @@ fun MeetingControlPanel(
                     viewModel.updateMeetingStatus(meetingId, MeetingStatus.COMPLETED)
                 }
                 context?.stopService(Intent(context, MeetingSseService::class.java))
-                onFinish(SilRokNavigation.MeetingEnd)
+                navController.navigate("meetingRoute/end/$meetingId")
                 showDialog = false
             },
             onDismiss = { showDialog = false }

@@ -1,8 +1,8 @@
 package com.imhungry.jjongseol.ui.splash
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,10 +10,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -24,23 +25,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.login.GoogleLoginButton
 import com.imhungry.jjongseol.ui.theme.Pretend
+import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.viewmodel.SplashViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    onFinish: (SilRokNavigation) -> Unit
+    splashViewModel: SplashViewModel = hiltViewModel(),
+    navController: NavHostController
 ) {
-    val viewModel: SplashViewModel = hiltViewModel()
-
-    LaunchedEffect(Unit) {
+    val isLoggedIn by splashViewModel.isLoggedIn.collectAsState()
+    Log.d("isLoggedIn", isLoggedIn.toString())
+    LaunchedEffect(isLoggedIn) {
         delay(1500)
-        val destination = viewModel.getNavigationDestination()
-        onFinish(destination)
+        navController.navigate(
+            if (isLoggedIn) SilRokNavigation.Home.route else SilRokNavigation.Login.route
+        ) {
+            popUpTo(0)
+        }
     }
 
     Column(

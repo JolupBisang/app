@@ -19,8 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
+import com.imhungry.jjongseol.ui.theme.Pretend
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -58,6 +60,8 @@ fun Notification(
                 ) {
                     Text(
                         text = message,
+                        fontFamily = Pretend,
+                        fontWeight = FontWeight.Medium,
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Black
                     )
@@ -72,6 +76,8 @@ fun Notification(
 
                     Text(
                         text = extractTimeOnly(time),
+                        fontFamily = Pretend,
+                        fontWeight = FontWeight.Medium,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.constrainAs(timeRef) {
                             top.linkTo(parent.top)

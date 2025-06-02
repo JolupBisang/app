@@ -4,8 +4,6 @@ import com.imhungry.jjongseol.BuildConfig
 import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.imhungry.jjongseol.data.network.api.MeetingApi
 import com.imhungry.jjongseol.data.network.api.UserApi
-import com.imhungry.jjongseol.data.network.client.SseClient
-import com.imhungry.jjongseol.data.repository.LoginRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,7 +11,6 @@ import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
@@ -27,23 +24,7 @@ object RetrofitModule {
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(0, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
             .build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideSseClient(loginRepository: LoginRepository): SseClient {
-        val okHttpClient = OkHttpClient.Builder()
-            .readTimeout(0, TimeUnit.MILLISECONDS)
-            .build()
-
-        return SseClient(
-            client = okHttpClient,
-            cookieProvider = { loginRepository.getToken() }
-        )
     }
 
     @Provides
