@@ -96,7 +96,7 @@ fun HomeScreen(navController: NavController) {
                             .height(50.dp)
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
@@ -147,7 +147,8 @@ fun HomeScreen(navController: NavController) {
                             Icon(
                                 imageVector = Icons.Filled.Notifications,
                                 contentDescription = "공지사항 알림",
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
+                                tint = UserGreen1
                             )
                         }
                     }
@@ -176,7 +177,7 @@ fun MainHomeScreen(navController: NavController){
 
         LazyColumn(
             modifier = Modifier
-                .padding(top = 30.dp, start = 30.dp, bottom = 50.dp, end = 30.dp)
+                .padding(top = 30.dp, start = 20.dp, bottom = 50.dp, end = 20.dp)
                 .fillMaxSize()
                 .constrainAs(scrollList) {
                     top.linkTo(parent.top)
@@ -197,12 +198,12 @@ fun MainHomeScreen(navController: NavController){
                     Text(text = if(calendarToggle) "캘린더" else "리스트"
                         ,color = UserGreen1
                         ,modifier = Modifier
-                            .padding(end = 5.dp)
+                            .padding(end = 2.dp)
                             .clickable { calendarToggle = !calendarToggle })
                 }
                 Divider(
                     color = Color.Gray,
-                    thickness = 1.5.dp,
+                    thickness = 1.dp,
                     modifier = Modifier.padding(vertical = 5.dp)
                 )
                 if(calendarToggle) {
@@ -210,7 +211,7 @@ fun MainHomeScreen(navController: NavController){
 
                     Divider(
                         color = Color.Gray,
-                        thickness = 1.5.dp,
+                        thickness = 1.dp,
                         modifier = Modifier.padding(vertical = 5.dp)
                     )
                     MeetingRecordsScreen(navController)
