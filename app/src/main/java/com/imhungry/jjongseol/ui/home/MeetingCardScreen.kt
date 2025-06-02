@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.data.model.home.MeetingResponse
 import com.imhungry.jjongseol.ui.theme.SkyBlue
+import com.imhungry.jjongseol.ui.theme.UserGreen1
+import com.imhungry.jjongseol.ui.theme.UserGreen2
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -59,20 +61,20 @@ fun MeetingCard(
             .fillMaxWidth()
             .padding(20.dp)
             .height(150.dp),
-        elevation = 2.dp,
+        elevation = 5.dp,
         shape = RoundedCornerShape(10.dp),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SkyBlue)
+                .background(UserGreen2)
                 .padding(20.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = "📍 현재 진행 중인 회의가 있습니다", color = Color.DarkGray, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(text = "📍 현재 진행 중인 회의가 있습니다", color = Color.Black, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = meeting.title, color = Color.Gray, fontSize = 13.sp)
-            Text(text = "$timeText ~", color = Color.Gray, fontSize = 13.sp)
+            Text(text = meeting.title, color = Color.DarkGray, fontSize = 13.sp)
+            Text(text = "$timeText ~", color = Color.DarkGray, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(
@@ -85,7 +87,7 @@ fun MeetingCard(
                         modifier = Modifier
                             .clickable { onDismiss() }
                             .padding(vertical = 8.dp, horizontal = 25.dp),
-                        color = Color.Black
+                        color = Color.DarkGray
                     )
                     Spacer(Modifier.weight(1f))
                     Text(
@@ -93,7 +95,7 @@ fun MeetingCard(
                         modifier = Modifier
                             .clickable { onJoin() }
                             .padding(vertical = 8.dp, horizontal = 25.dp),
-                        color = Color.Black,
+                        color = UserGreen1,
                         fontWeight = FontWeight.Bold
                     )
                 }

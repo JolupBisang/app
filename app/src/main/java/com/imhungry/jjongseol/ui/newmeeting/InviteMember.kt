@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import com.imhungry.jjongseol.data.network.api.UserApi
+import com.imhungry.jjongseol.ui.theme.BasicBackGround
+import com.imhungry.jjongseol.ui.theme.UserGray
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
@@ -114,8 +116,8 @@ fun SearchScreen(
 fun Chip(text: String, onRemove: () -> Unit) {
     Surface(
         modifier = Modifier.padding(4.dp).clickable { onRemove() },
-        color = Color.LightGray,
-        shape = RoundedCornerShape(50)
+        color = BasicBackGround,
+        shape = RoundedCornerShape(20)
     ) {
         CustomStyledText(text)
     }
@@ -128,7 +130,7 @@ fun CustomStyledText(text: String) {
         withStyle(style = SpanStyle(color = Color.Black, fontSize = 12.sp)) {
             append(text)
         }
-        withStyle(style = SpanStyle(color = md_theme_button_color_blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)) {
+        withStyle(style = SpanStyle(color = Color.DarkGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)) {
             append(" X")
         }
 

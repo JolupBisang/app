@@ -48,6 +48,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.imhungry.jjongseol.ui.theme.UserGreen2
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import java.util.UUID
 
@@ -96,7 +97,7 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>){
                 .fillMaxWidth()
                 .padding(top = 3.dp, bottom = 8.dp),
             shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color.LightGray),
+            colors = ButtonDefaults.buttonColors(backgroundColor = UserGreen2),
             onClick = {
                 val newItem = AgendaItem(text = "새 아젠다", isPlaceholder = true)
                 itemList.add(newItem)
@@ -133,7 +134,7 @@ fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () 
     ) {
         Box(modifier = Modifier
             .padding(start = 15.dp)
-            .size(10.dp)
+            .size(5.dp)
             .background(color = Color.LightGray, shape = CircleShape)
         )
         Spacer(modifier = Modifier.width(10.dp))

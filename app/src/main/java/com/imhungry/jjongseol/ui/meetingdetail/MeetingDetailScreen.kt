@@ -33,6 +33,8 @@ import com.imhungry.jjongseol.ui.newmeeting.invite.SearchScreen
 import com.imhungry.jjongseol.ui.theme.Purple1
 import com.imhungry.jjongseol.ui.theme.Purple2
 import com.imhungry.jjongseol.ui.theme.UserGray
+import com.imhungry.jjongseol.ui.theme.UserGreen1
+import com.imhungry.jjongseol.ui.theme.UserGreen2
 import com.imhungry.jjongseol.viewmodel.UserViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -92,7 +94,7 @@ fun MeetingDetailScreen(
                 }
             }
             item {
-                Row() {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .height(20.dp)
@@ -102,7 +104,7 @@ fun MeetingDetailScreen(
                         Text(
                             "제목",
                             style = TextStyle(
-                                color = Color.DarkGray,
+                                color = Color.Black,
                                 fontSize = 15.sp,
                             )
                         )
@@ -144,10 +146,11 @@ fun MeetingDetailScreen(
                     Text(
                         "참석자",
                         modifier = Modifier
+                            .padding(top = 15.dp)
                             .height(20.dp)
                             .weight(1f),
                         style = TextStyle(
-                            color = Color.DarkGray,
+                            color = Color.Black,
                             fontSize = 15.sp,
                         )
                     )
@@ -162,6 +165,7 @@ fun MeetingDetailScreen(
             }
             item {
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .padding(top = 8.dp)
                 )
@@ -172,7 +176,7 @@ fun MeetingDetailScreen(
                             .height(20.dp)
                             .weight(1f),
                         style = TextStyle(
-                            color = Color.DarkGray,
+                            color = Color.Black,
                             fontSize = 15.sp,
                         )
                     )
@@ -212,6 +216,7 @@ fun MeetingDetailScreen(
 
             item {
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .padding(top = 8.dp)
                 )
@@ -222,7 +227,7 @@ fun MeetingDetailScreen(
                             .height(20.dp)
                             .weight(1f),
                         style = TextStyle(
-                            color = Color.DarkGray,
+                            color = Color.Black,
                             fontSize = 15.sp,
                         )
                     )
@@ -238,6 +243,7 @@ fun MeetingDetailScreen(
 
             item {
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .padding(top = 8.dp)
                 )
@@ -248,7 +254,7 @@ fun MeetingDetailScreen(
                             .height(20.dp)
                             .weight(1f),
                         style = TextStyle(
-                            color = Color.DarkGray,
+                            color = Color.Black,
                             fontSize = 15.sp,
                         )
                     )
@@ -289,10 +295,11 @@ fun MeetingDetailScreen(
                     Text(
                         "아젠다",
                         modifier = Modifier
+                            .padding(top = 15.dp)
                             .height(20.dp)
                             .weight(1f),
                         style = TextStyle(
-                            color = Color.DarkGray,
+                            color = Color.Black,
                             fontSize = 15.sp,
                         )
                     )
@@ -305,6 +312,7 @@ fun MeetingDetailScreen(
             item {
                 Column(modifier = Modifier) {
                     Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(top = 8.dp)
                     )
@@ -315,7 +323,7 @@ fun MeetingDetailScreen(
                                 .height(20.dp)
                                 .weight(1f),
                             style = TextStyle(
-                                color = Color.DarkGray,
+                                color = Color.Black,
                                 fontSize = 14.sp,
                             )
                         )
@@ -353,10 +361,10 @@ fun MeetingDetailScreen(
                     Button(modifier = Modifier
                         .weight(1f)
                         .height(50.dp)
-                        .border(1.dp, Purple1, RoundedCornerShape(15.dp)),
+                        .border(1.dp, UserGreen1, RoundedCornerShape(15.dp)),
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Purple1,
-                            contentColor = Color.Black
+                            backgroundColor = UserGreen1,
+                            contentColor = Color.White
                         ),
                         onClick = {
                             when (MeetingStatus.valueOf(status.value)) {
@@ -376,7 +384,7 @@ fun MeetingDetailScreen(
                         Text(
                             "입장",
                             style = TextStyle(
-                                color = Color.Black,
+                                color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp
                             )
@@ -386,9 +394,9 @@ fun MeetingDetailScreen(
                     Button(modifier = Modifier
                         .weight(1f)
                         .height(50.dp)
-                        .border(1.dp, Purple2, RoundedCornerShape(15.dp)),
+                        .border(1.dp, UserGreen2, RoundedCornerShape(15.dp)),
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Purple2,
+                            backgroundColor = UserGreen2,
                             contentColor = Color.Black
                         ),
                         onClick = {}
