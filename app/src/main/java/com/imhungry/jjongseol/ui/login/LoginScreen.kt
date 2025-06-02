@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.ui.theme.BasicBackGround
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 
@@ -59,13 +60,13 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(BasicBackGround),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.weight(1.6f))
 
         Image(
-            painter = painterResource(id = R.drawable.logo_chat),
+            painter = painterResource(id = R.drawable.logo2),
             contentDescription = "logo",
             modifier = Modifier.size(113.dp)
         )
