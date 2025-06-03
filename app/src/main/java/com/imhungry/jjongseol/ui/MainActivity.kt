@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleIntent(intent: Intent?) {
         intent?.data?.getQueryParameter("token")?.let { token ->
-            loginViewModel.saveToken(token)
+            loginViewModel.onLoginSuccess(token)
         }
     }
 }

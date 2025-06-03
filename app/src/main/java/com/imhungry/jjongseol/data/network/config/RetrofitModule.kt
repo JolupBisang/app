@@ -2,6 +2,7 @@ package com.imhungry.jjongseol.data.network.config
 
 import com.imhungry.jjongseol.BuildConfig
 import com.imhungry.jjongseol.data.network.api.AgendaApi
+import com.imhungry.jjongseol.data.network.api.AudioApi
 import com.imhungry.jjongseol.data.network.api.MeetingApi
 import com.imhungry.jjongseol.data.network.api.UserApi
 import dagger.Module
@@ -53,5 +54,11 @@ object RetrofitModule {
     @Singleton
     fun provideUserApi(retrofit: Retrofit): UserApi {
         return retrofit.create(UserApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAudioApi(retrofit: Retrofit): AudioApi {
+        return retrofit.create(AudioApi::class.java)
     }
 }

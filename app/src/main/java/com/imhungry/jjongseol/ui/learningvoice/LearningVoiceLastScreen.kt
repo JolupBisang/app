@@ -1,6 +1,7 @@
 package com.imhungry.jjongseol.ui.learningvoice
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -19,12 +21,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.network.config.AppPrefs
+import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.ui.theme.UserGreen1
+import com.imhungry.jjongseol.ui.theme.blackColor
 
 @Composable
 fun LearningVoiceLastScreen(navController: NavController) {
+    SetNavigationBarColor(blackColor)
+
+    val context = LocalContext.current
     Box(
         modifier = Modifier.fillMaxSize()
+            .background(blackColor)
+            .navigationBarsPadding()
     ) {
         Image(
             painter = painterResource(id = R.drawable.learningvoicelastscreen),
@@ -41,7 +51,10 @@ fun LearningVoiceLastScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Button(
-                onClick = { navController.navigate("home") },
+                onClick = { AppPrefs(context).setVoiceTutorialCompleted()
+                    navController.navigate("home") {
+                        popUpTo(0)
+                    } },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp)

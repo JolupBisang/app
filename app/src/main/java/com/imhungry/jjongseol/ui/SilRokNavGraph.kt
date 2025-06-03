@@ -54,7 +54,7 @@ fun SilRokNavGraph(
             LoginScreen(
                 loginViewModel = loginViewModel,
                 onGoogleClick = { loginViewModel.launchGoogleLogin(context) },
-                onLoginSuccess = { navActions.navigateTo(SilRokNavigation.Home, SilRokNavigation.Splash) }
+                navController = navController
             )
         }
 

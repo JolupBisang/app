@@ -56,8 +56,11 @@ class AudioWebSocketClient(
     //fun pauseEncoding() { isEncodingPaused = true }
     //fun resumeEncoding() { isEncodingPaused = false }
 
+    // /data/data/com.imhungry.jjongseol/cache/audio_packets/
     private val packetDir by lazy { File(context.cacheDir, "audio_packets/$meetingId") }
+    // /storage/emulated/0/Android/data/com.imhungry.jjongseol/files/pcm_chunks/
     private val chunkDir by lazy { File(context.getExternalFilesDir(null), "pcm_chunks/$meetingId") }
+    // /storage/emulated/0/Android/data/com.imhungry.jjongseol/files/pcm_raw/
     private val rawDir by lazy { File(context.getExternalFilesDir(null), "pcm_raw/$meetingId") }
 
     fun connect() {
