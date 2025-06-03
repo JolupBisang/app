@@ -12,6 +12,9 @@ import androidx.navigation.compose.composable
 import com.imhungry.jjongseol.ui.completedmeeting.CompletedMeetingScreen
 import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
 import com.imhungry.jjongseol.ui.home.HomeScreen
+import com.imhungry.jjongseol.ui.learningvoice.LearningVoiceFirstScreen
+import com.imhungry.jjongseol.ui.learningvoice.LearningVoiceLastScreen
+import com.imhungry.jjongseol.ui.learningvoice.RecordingVoiceScreen
 import com.imhungry.jjongseol.ui.login.LoginScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingEndScreen
 import com.imhungry.jjongseol.ui.meeting.MeetingScreen
@@ -168,5 +171,19 @@ fun SilRokNavGraph(
                 meetingId = id
             )
         }
+
+        composable(SilRokNavigation.LearningVoiceFirst.route) {
+            LearningVoiceFirstScreen(navController)
+        }
+
+        composable(SilRokNavigation.RecordingVoice.route) {
+            RecordingVoiceScreen(navController)
+        }
+
+        composable(SilRokNavigation.LearningVoiceLast.route) {
+            LearningVoiceLastScreen(navController)
+        }
+
+
     }
 }
