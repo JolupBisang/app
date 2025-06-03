@@ -15,6 +15,7 @@ import com.imhungry.jjongseol.BuildConfig
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
 import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
+import com.imhungry.jjongseol.data.network.client.AudioWebSocketClient
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
 import com.imhungry.jjongseol.data.repository.LoginRepository
 import com.imhungry.jjongseol.data.repository.SummaryRepository
@@ -56,6 +57,9 @@ class MeetingSseService : Service() {
         const val CHANNEL_ID = "meeting_sse_channel"
         const val CHANNEL_NAME = "회의 SSE 알림"
     }
+
+    private var audioWsClient: AudioWebSocketClient? = null
+    private val serviceScope = CoroutineScope(Dispatchers.IO)
 
     private fun createNotification(content: String): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -201,7 +205,27 @@ class MeetingSseService : Service() {
         if (currentMeetingId == -1L) { stopSelf(); return START_NOT_STICKY }
         startForeground(1, createNotification("회의 진행 중.."))
         connectSse(currentMeetingId)
+
+        val token = loginRepository.getToken() ?: ""
+        //val userId = loginRepository.getUserId() ?: -1L
+        val userId = 1L
+        connectAudioWebSocket(currentMeetingId, userId, token)
         return START_STICKY
+    }
+
+    private fun connectAudioWebSocket(meetingId: Long, userId: Long, token: String) {
+        val url = "ws://${BuildConfig.IP_ADDRESS}/ws/meeting/audio/$meetingId?token=$token"
+
+        audioWsClient?.disconnect()
+        audioWsClient = AudioWebSocketClient(
+            context = this,
+            url = url,
+            userId = userId,
+            meetingId = meetingId,
+            scope = serviceScope,
+            onError = { errMsg -> Log.e("MeetingSseService", "오디오 오류: $errMsg") }
+        )
+        audioWsClient?.connect()
     }
 
     override fun onDestroy() {
@@ -213,6 +237,7 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        audioWsClient?.disconnect()
         super.onDestroy()
     }
 
@@ -225,6 +250,7 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        audioWsClient?.disconnect()
         super.onTaskRemoved(rootIntent)
     }
 
