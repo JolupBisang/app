@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -150,7 +151,7 @@ fun MeetingScreen(
         if (meetingStatus == MeetingStatus.COMPLETED) {
             context.stopService(Intent(context, MeetingSseService::class.java))
             sseStarted = false
-            onFinish(SilRokNavigation.CompletedMeeting)
+            navController.navigate("meetingRoute/completed/$meetingId")
         }
     }
 

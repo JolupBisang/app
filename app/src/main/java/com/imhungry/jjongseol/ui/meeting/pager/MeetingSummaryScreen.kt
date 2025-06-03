@@ -7,12 +7,15 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -62,37 +65,8 @@ fun MeetingSummaryScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .padding(WindowInsets.statusBars.asPaddingValues())
     ) {
-        if (hasAgendas && peekIndex in agendas.indices) {
-            TopSheet(
-                modifier = Modifier.background(Color(0xFFE5E5E5)),
-                expanded = isTopSheetExpanded,
-                onExpandedChange = { isTopSheetExpanded = it },
-                peekContent = {
-                    CheckItem(
-                        text = agendas[peekIndex].content,
-                        checked = agendas[peekIndex].isCompleted,
-                        isFocused = !agendas[peekIndex].isCompleted,
-                        onToggle = { agendaViewModel.onToggleAgenda(peekIndex) }
-                    )
-                },
-                content = {
-                    LazyColumn (
-                        modifier = Modifier.heightIn(max = 161.dp)
-                    ) {
-                        itemsIndexed(agendas) { i, item ->
-                            CheckItem(
-                                text = item.content,
-                                checked = item.isCompleted,
-                                isFocused = !item.isCompleted && firstUncheckedIndex == i,
-                                onToggle = { agendaViewModel.onToggleAgenda(i) }
-                            )
-                        }
-                    }
-                }
-            )
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()

@@ -30,7 +30,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
@@ -41,6 +40,9 @@ import com.imhungry.jjongseol.ui.component.layout.TopSheet
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
+import com.imhungry.jjongseol.ui.theme.primarySurface
+import com.imhungry.jjongseol.ui.theme.tertiary
+import com.imhungry.jjongseol.ui.theme.whiteColor
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
@@ -52,7 +54,7 @@ fun MeetingWaitingScreen(
     agendaViewModel: AgendaViewModel,
     onFinish: (SilRokNavigation) -> Unit,
     navController: NavController,
-    meetingId: Long = 1L
+    meetingId: Long
 ) {
     val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val agendas by agendaViewModel.agendaItems.collectAsState()
@@ -95,12 +97,12 @@ fun MeetingWaitingScreen(
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
     val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating
 
-    SetNavigationBarColor(Color(0xFFE5E5E5))
+    SetNavigationBarColor(whiteColor)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE5E5E5))
+            .background(whiteColor)
     ) {
         ErrorDialogHandler(
             errorMessage = dialogMessage,
@@ -142,8 +144,7 @@ fun MeetingWaitingScreen(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
-                .background(Color.White),
+                .fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
             if (showLoading) {
@@ -156,7 +157,7 @@ fun MeetingWaitingScreen(
                     Text(
                         text = stringResource(R.string.waiting_guidance),
                         textAlign = TextAlign.Center,
-                        color = Color(0xFF999999),
+                        color = tertiary,
                         fontFamily = Pretend,
                         fontWeight = FontWeight.Bold
                     )
@@ -165,7 +166,7 @@ fun MeetingWaitingScreen(
                             meetingId = meetingId,
                             targetStatus = MeetingStatus.IN_PROGRESS
                         )
-                        onFinish(SilRokNavigation.Meeting)
+                        navController.navigate("meetingRoute/inprogress/$meetingId")
                     })
                 }
             }
@@ -188,7 +189,7 @@ fun MeetingWaitingScreen(
 fun StartButton(onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val baseColor = Color.Black
+    val baseColor = primarySurface
 
     Text(
         text = stringResource(R.string.start),

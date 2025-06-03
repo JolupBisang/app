@@ -29,6 +29,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.ui.theme.Pretend
+import com.imhungry.jjongseol.ui.theme.blackColor
+import com.imhungry.jjongseol.ui.theme.primaryTextColor
+import com.imhungry.jjongseol.ui.theme.whiteColor
 
 @Composable
 fun CheckItem(
@@ -62,19 +65,19 @@ fun CheckItem(
                     .size(21.dp)
                     .border(
                         width = 1.dp,
-                        color = Color.Black,
+                        color = blackColor,
                         shape = RoundedCornerShape(4.dp)
                     )
                     .background(
-                        color = Color.White,
+                        color = whiteColor,
                         shape = RoundedCornerShape(4.dp)
                     ),
                 colors = CheckboxDefaults.colors(
-                    checkedColor = Color.White,
-                    uncheckedColor = Color.White,
-                    checkmarkColor = Color.Black,
-                    disabledCheckedColor = Color.White,
-                    disabledUncheckedColor = Color.White
+                    checkedColor = whiteColor,
+                    uncheckedColor = whiteColor,
+                    checkmarkColor = blackColor,
+                    disabledCheckedColor = whiteColor,
+                    disabledUncheckedColor = whiteColor
                 )
             )
         }
@@ -96,7 +99,7 @@ fun CheckItem(
             Text(
                 text = text,
                 style = textStyle,
-                color = Color.Black,
+                color = primaryTextColor,
                 fontFamily = Pretend,
                 modifier = Modifier.padding(bottom = 2.dp)
             )
