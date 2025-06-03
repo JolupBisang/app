@@ -7,7 +7,6 @@ import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
 import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
-import com.imhungry.jjongseol.data.model.error.ApiError
 import com.imhungry.jjongseol.data.model.home.MeetingResponse
 import com.imhungry.jjongseol.data.model.home.toMeetingInfo
 import com.imhungry.jjongseol.data.model.meeting.request.MeetingUpdateReq

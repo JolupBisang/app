@@ -1,6 +1,7 @@
 package com.imhungry.jjongseol.ui.learningvoice
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,12 +20,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.ui.theme.UserGreen1
+import com.imhungry.jjongseol.ui.theme.blackColor
+import com.imhungry.jjongseol.ui.theme.whiteColor
 
 @Composable
 fun LearningVoiceFirstScreen(navController: NavController) {
+    SetNavigationBarColor(blackColor)
+
     Box(
         modifier = Modifier.fillMaxSize()
+            .background(blackColor)
+            .navigationBarsPadding()
     ) {
         Image(
             painter = painterResource(id = R.drawable.learningvoicefirstscreen),

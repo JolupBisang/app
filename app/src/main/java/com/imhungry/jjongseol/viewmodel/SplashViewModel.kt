@@ -8,8 +8,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SplashViewModel @Inject constructor(
-    loginRepository: LoginRepository
+    private val loginRepository: LoginRepository
 ) : ViewModel() {
-    val isLoggedIn = loginRepository.isLoggedInFlow
+    val isTokenExists: Boolean
+        get() = loginRepository.isLoggedIn()
 }
 

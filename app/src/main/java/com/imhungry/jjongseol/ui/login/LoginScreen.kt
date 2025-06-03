@@ -1,5 +1,10 @@
 package com.imhungry.jjongseol.ui.login
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalIndication
@@ -32,28 +37,75 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.network.config.AppPrefs
+import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.theme.BasicBackGround
 import com.imhungry.jjongseol.ui.theme.Pretend
+import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
     onGoogleClick: () -> Unit,
-    onLoginSuccess: () -> Unit,
-    loginViewModel: LoginViewModel
+    loginViewModel: LoginViewModel,
+    navController: NavController
 ) {
-    val isLoggedIn by loginViewModel.isLoggedIn.collectAsState()
+    val context = LocalContext.current
 
-    LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) {
-            onLoginSuccess()
+    var permissionGranted by remember { mutableStateOf(false) }
+    var permissionRequested by remember { mutableStateOf(false) }
+
+    val requiredPermissions = remember {
+        buildList {
+            add(Manifest.permission.RECORD_AUDIO)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        permissionGranted = requiredPermissions.all {
+            perms[it] == true
+        }
+        permissionRequested = true
+    }
+
+    LaunchedEffect(Unit) {
+        permissionGranted = requiredPermissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+        if (!permissionGranted && !permissionRequested) {
+            launcher.launch(requiredPermissions.toTypedArray())
+        }
+    }
+
+    val appPrefs = AppPrefs(context)
+    val isVoiceTutorialCompleted = appPrefs.isVoiceTutorialCompleted()
+
+    val loginSuccess by loginViewModel.loginSuccess.collectAsState()
+
+    LaunchedEffect(loginSuccess) {
+        if (loginSuccess) {
+            navController.navigate(
+                if (isVoiceTutorialCompleted) SilRokNavigation.Home.route
+                else SilRokNavigation.LearningVoiceFirst.route
+            ) {
+                popUpTo(0)
+            }
         }
     }
 
@@ -83,7 +135,7 @@ fun LoginScreen(
         GoogleLoginButton(
             modifier = Modifier
                 .padding(top = 12.dp)
-                .width(232.dp)
+                .width(242.dp)
                 .height(48.dp),
             onClick = onGoogleClick
         )
@@ -102,6 +154,7 @@ fun GoogleLoginButton(
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.97f else 1f
     )
+    SetNavigationBarColor(BasicBackGround)
 
     Box(
         modifier = modifier
@@ -128,8 +181,8 @@ fun GoogleLoginButton(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 16.dp)
+                    .align(Alignment.Center)
+                    .padding(start = 16.dp)
             )
 
             Row(
