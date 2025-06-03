@@ -45,7 +45,7 @@ fun SplashScreen(
     LaunchedEffect(isLoggedIn) {
         delay(1500)
         navController.navigate(
-            if (isLoggedIn) SilRokNavigation.Home.route else SilRokNavigation.Login.route
+            if (isLoggedIn) SilRokNavigation.LearningVoiceFirst.route else SilRokNavigation.Login.route
         ) {
             popUpTo(0)
         }
