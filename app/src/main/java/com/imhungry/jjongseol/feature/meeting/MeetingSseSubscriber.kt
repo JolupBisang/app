@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 class MeetingSseSubscriber @Inject constructor(
-    private val sseClient: SseClient
 ) {
     /*private val _summaryList = MutableStateFlow<List<SummaryItem>>(emptyList())
     val summaryList: StateFlow<List<SummaryItem>> = _summaryList.asStateFlow()

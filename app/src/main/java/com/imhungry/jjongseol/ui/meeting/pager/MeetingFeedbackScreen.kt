@@ -3,12 +3,16 @@ package com.imhungry.jjongseol.ui.meeting.pager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
@@ -50,19 +54,21 @@ fun MeetingFeedbackScreen(meetingViewModel: MeetingViewModel) {
             fontSize = 15.sp,
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, top =  16.dp, bottom = 12.dp)
         )
-        Column(
+        LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            feedbackList.forEach { feedback ->
+            itemsIndexed(feedbackList) { index, feedback ->
                 Notification(
                     visible = true,
                     message = feedback.comment,
                     time = feedback.timestamp,
                     isRead = feedback.isRead
                 )
+                if (index == feedbackList.lastIndex) {
+                    Spacer(modifier = Modifier.height(48.dp))
+                }
             }
         }
     }

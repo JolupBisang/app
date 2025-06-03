@@ -15,6 +15,7 @@ import com.imhungry.jjongseol.BuildConfig
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
 import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
+import com.imhungry.jjongseol.data.network.client.AudioWebSocketClient
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
 import com.imhungry.jjongseol.data.repository.LoginRepository
 import com.imhungry.jjongseol.data.repository.SummaryRepository
@@ -47,10 +48,18 @@ class MeetingSseService : Service() {
     private var reconnectHandler: android.os.Handler? = null
     private var reconnectRunnable: Runnable? = null
 
+    private var currentMeetingId: Long = -1L
+    private var isServiceStopped: Boolean = false
+
+    private var isConnecting = false
+
     companion object {
         const val CHANNEL_ID = "meeting_sse_channel"
         const val CHANNEL_NAME = "회의 SSE 알림"
     }
+
+    private var audioWsClient: AudioWebSocketClient? = null
+    private val serviceScope = CoroutineScope(Dispatchers.IO)
 
     private fun createNotification(content: String): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -87,6 +96,18 @@ class MeetingSseService : Service() {
     }
 
     private fun connectSse(meetingId: Long) {
+        if (isConnecting) {
+            Log.d("MeetingSseService", "Already connecting, skip!")
+            return
+        }
+        isConnecting = true
+
+        summaryEventSource?.cancel()
+        feedbackEventSource?.cancel()
+        summaryEventSource = null
+        feedbackEventSource = null
+        if (isServiceStopped || meetingId == -1L) return
+
         val client = OkHttpClient.Builder()
             .readTimeout(15, TimeUnit.MINUTES)
             .addInterceptor { chain ->
@@ -143,6 +164,7 @@ class MeetingSseService : Service() {
 
             override fun onClosed(source: EventSource) {
                 Log.d("MeetingSseService", "SSE 연결 종료, 재연결 시도")
+                isConnecting = false
                 reconnectSse(meetingId)
             }
             override fun onFailure(source: EventSource, t: Throwable?, response: Response?) {
@@ -150,6 +172,7 @@ class MeetingSseService : Service() {
                     "MeetingSseService",
                     "SSE 연결 실패: ${t?.message}, response=${response?.code} / ${response?.message}", t
                 )
+                isConnecting = false
                 reconnectSse(meetingId)
             }
         }
@@ -162,8 +185,14 @@ class MeetingSseService : Service() {
     }
 
     private fun reconnectSse(meetingId: Long) {
+        if (isConnecting) {
+            Log.d("MeetingSseService", "Reconnect requested while already connecting")
+            return
+        }
+
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
+        if (isServiceStopped || meetingId == -1L) return
 
         android.os.Handler(mainLooper).postDelayed({
             connectSse(meetingId)
@@ -171,30 +200,57 @@ class MeetingSseService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val meetingId = intent?.getLongExtra("meetingId", -1L) ?: -1L
-        if (meetingId == -1L) { stopSelf(); return START_NOT_STICKY }
+        currentMeetingId = intent?.getLongExtra("meetingId", -1L) ?: -1L
+        isServiceStopped = false
+        if (currentMeetingId == -1L) { stopSelf(); return START_NOT_STICKY }
         startForeground(1, createNotification("회의 진행 중.."))
-        connectSse(meetingId)
+        connectSse(currentMeetingId)
+
+        val token = loginRepository.getToken() ?: ""
+        //val userId = loginRepository.getUserId() ?: -1L
+        val userId = 1L
+        connectAudioWebSocket(currentMeetingId, userId, token)
         return START_STICKY
+    }
+
+    private fun connectAudioWebSocket(meetingId: Long, userId: Long, token: String) {
+        val url = "ws://${BuildConfig.IP_ADDRESS}/ws/meeting/audio/$meetingId?token=$token"
+
+        audioWsClient?.disconnect()
+        audioWsClient = AudioWebSocketClient(
+            context = this,
+            url = url,
+            userId = userId,
+            meetingId = meetingId,
+            scope = serviceScope,
+            onError = { errMsg -> Log.e("MeetingSseService", "오디오 오류: $errMsg") }
+        )
+        audioWsClient?.connect()
     }
 
     override fun onDestroy() {
         Log.d("MeetingSseService", "SSE 종료")
+        isServiceStopped = true
+        currentMeetingId = -1L
         stopReconnectTimer()
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        audioWsClient?.disconnect()
         super.onDestroy()
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         Log.d("MeetingSseService", "SSE 종료")
+        isServiceStopped = true
+        currentMeetingId = -1L
         stopReconnectTimer()
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        audioWsClient?.disconnect()
         super.onTaskRemoved(rootIntent)
     }
 

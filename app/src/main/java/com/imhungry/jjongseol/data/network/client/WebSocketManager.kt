@@ -3,7 +3,7 @@ package com.imhungry.jjongseol.data.network.client
 import android.util.Log
 import com.google.gson.Gson
 import com.imhungry.jjongseol.BuildConfig
-import com.imhungry.jjongseol.data.model.error.ApiError
+import com.imhungry.jjongseol.data.model.response.ErrorResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponseType
 import okhttp3.OkHttpClient
@@ -57,7 +57,7 @@ class WebSocketManager @Inject constructor() {
                             onChunkIdReceived?.invoke(lastChunkId)
                         }
                         SocketResponseType.ERROR -> {
-                            val error = Gson().fromJson(Gson().toJson(response.data), ApiError::class.java)
+                            val error = Gson().fromJson(Gson().toJson(response.data), ErrorResponse::class.java)
                             val message = error.message ?: "알 수 없는 오류가 발생했습니다"
                             Log.w("WebSocket", "WebSocket 에러 메시지 수신: $message")
                             onErrorMessage(message)

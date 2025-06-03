@@ -140,7 +140,7 @@ class MeetingViewModel @Inject constructor(
             _isStatusUpdating.value = true
             when (val result = meetingRepository.updateMeetingStatus(meetingId, targetStatus)) {
                 is MeetingResult.Success -> {
-                    loadMeetingDetail(meetingId)
+                    loadMeetingDetail2(meetingId)
                 }
                 is MeetingResult.Error -> {
                     _errorMessage.value = result.errorResponse?.message ?: result.message
@@ -267,6 +267,7 @@ class MeetingViewModel @Inject constructor(
                     val meeting = response.body()?.data
                     if (meeting != null) {
                         _selectedMeeting.value = meeting
+                        _meetingStatus.value = MeetingStatus.from(meeting.meetingStatus)
                         Log.d("MEETING_DETAIL", "Loaded: $meeting")
                     } else {
                         Log.e("MEETING_DETAIL", "No meeting data in response")
