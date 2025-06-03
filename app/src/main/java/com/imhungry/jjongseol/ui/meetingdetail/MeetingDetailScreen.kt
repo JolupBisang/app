@@ -56,7 +56,8 @@ fun MeetingDetailScreen(
     status: MutableState<String> = remember { mutableStateOf("미정") },
     isHost: Boolean,
     isEditable: Boolean,
-    onEditClicked: () -> Unit
+    onEditClicked: () -> Unit,
+    onConfirmEditClicked: () -> Unit
 ) {
     var showCalendarDialog by remember { mutableStateOf(false) }
 
@@ -385,9 +386,7 @@ fun MeetingDetailScreen(
                                 backgroundColor = UserGreen1,
                                 contentColor = Color.White
                             ),
-                            onClick = {
-                                onEditClicked()
-                            }
+                            onClick = { onConfirmEditClicked() }
                         ) {
                             Text("확인", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
                         }

@@ -10,6 +10,7 @@ import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
 import com.imhungry.jjongseol.data.model.error.ApiError
 import com.imhungry.jjongseol.data.model.home.MeetingResponse
 import com.imhungry.jjongseol.data.model.home.toMeetingInfo
+import com.imhungry.jjongseol.data.model.meeting.request.MeetingUpdateReq
 import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
 import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.imhungry.jjongseol.ui.home.meetingdata.MeetingInfo
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
@@ -292,6 +294,63 @@ class MeetingViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e("AGENDA_API", "아젠다 로드 중 예외 발생: ${e.localizedMessage}", e)
+            }
+        }
+    }
+
+    fun confirmEdit(
+        id: Long,
+        title: String,
+        location: String,
+        date: String,
+        startTime: String,
+        targetTime: Int,
+        restInterval: Int,
+        restDuration: Int,
+        agendas: List<String>,
+        onSuccess: () -> Unit,
+        onError: (Throwable) -> Unit
+    ) {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+        val fullStartTime = try {
+            LocalDateTime.parse("${date}T${startTime}", DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))
+                .format(formatter)
+        } catch (e: Exception) {
+            onError(e)
+            return
+        }
+
+        val req = MeetingUpdateReq(
+            title = title,
+            location = location,
+            scheduledStartTime = fullStartTime,
+            targetTime = targetTime,
+            restInterval = restInterval,
+            restDuration = restDuration,
+            agendas = agendas
+        )
+
+        Log.d("MeetingUpdateReq", "보내는 데이터: $req")
+
+        updateMeetingInfo(id, req, onSuccess, onError)
+    }
+
+    fun updateMeetingInfo(
+        id: Long,
+        req: MeetingUpdateReq,
+        onSuccess: () -> Unit,
+        onError: (Throwable) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val res = meetingApi.updateMeeting(id, req)
+                if (res.isSuccessful) {
+                    onSuccess()
+                } else {
+                    onError(Exception("수정 실패: ${res.code()}"))
+                }
+            } catch (e: Exception) {
+                onError(e)
             }
         }
     }

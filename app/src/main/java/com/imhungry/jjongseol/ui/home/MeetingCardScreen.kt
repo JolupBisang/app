@@ -54,7 +54,8 @@ fun MeetingCard(
     onJoin: () -> Unit
 ) {
     val dateTime = LocalDateTime.parse(meeting.scheduledStartTime)
-    val timeText = "${dateTime.toLocalDate()} ${dateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))}"
+    val endTime = dateTime.plusMinutes(meeting.targetTime.toLong())
+    val timeText = "${dateTime.toLocalDate()} ${dateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))} ~ ${endTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))}"
 
     Card(
         modifier = Modifier
@@ -74,7 +75,7 @@ fun MeetingCard(
             Text(text = "📍 현재 진행 중인 회의가 있습니다", color = Color.Black, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = meeting.title, color = Color.DarkGray, fontSize = 13.sp)
-            Text(text = "$timeText ~", color = Color.DarkGray, fontSize = 13.sp)
+            Text(text = timeText, color = Color.DarkGray, fontSize = 13.sp)
             Spacer(modifier = Modifier.height(8.dp))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(
@@ -87,7 +88,8 @@ fun MeetingCard(
                         modifier = Modifier
                             .clickable { onDismiss() }
                             .padding(vertical = 8.dp, horizontal = 25.dp),
-                        color = Color.DarkGray
+                        color = Color.DarkGray,
+                        fontSize = 15.sp
                     )
                     Spacer(Modifier.weight(1f))
                     Text(
@@ -96,7 +98,8 @@ fun MeetingCard(
                             .clickable { onJoin() }
                             .padding(vertical = 8.dp, horizontal = 25.dp),
                         color = UserGreen1,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
                     )
                 }
             }
