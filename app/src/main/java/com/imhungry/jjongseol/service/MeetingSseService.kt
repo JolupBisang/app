@@ -207,20 +207,17 @@ class MeetingSseService : Service() {
         connectSse(currentMeetingId)
 
         val token = loginRepository.getToken() ?: ""
-        //val userId = loginRepository.getUserId() ?: -1L
-        val userId = 1L
-        connectAudioWebSocket(currentMeetingId, userId, token)
+        connectAudioWebSocket(currentMeetingId, token)
         return START_STICKY
     }
 
-    private fun connectAudioWebSocket(meetingId: Long, userId: Long, token: String) {
+    private fun connectAudioWebSocket(meetingId: Long, token: String) {
         val url = "ws://${BuildConfig.IP_ADDRESS}/ws/meeting/audio/$meetingId?token=$token"
 
         audioWsClient?.disconnect()
         audioWsClient = AudioWebSocketClient(
             context = this,
             url = url,
-            userId = userId,
             meetingId = meetingId,
             scope = serviceScope,
             onError = { errMsg -> Log.e("MeetingSseService", "오디오 오류: $errMsg") }

@@ -26,13 +26,11 @@ import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 class AudioWebSocketClient(
     private val context: Context,
     private val url: String,
-    private val userId: Long,
     private val meetingId: Long,
     private val scope: CoroutineScope,
     private val onError: (String) -> Unit = {},
@@ -47,8 +45,8 @@ class AudioWebSocketClient(
     private var isEncodingPaused = false
     private var isConnected = false
 
-    private val sampleRate = 48000
-    private val frameSize = 32768
+    private val sampleRate = 16000
+    private val frameSize = 10912
     private val bufferSize = AudioRecord.getMinBufferSize(
         sampleRate,
         AudioFormat.CHANNEL_IN_MONO,
@@ -58,9 +56,9 @@ class AudioWebSocketClient(
     //fun pauseEncoding() { isEncodingPaused = true }
     //fun resumeEncoding() { isEncodingPaused = false }
 
-    private val packetDir by lazy { File(context.cacheDir, "audio_packets/$meetingId/$userId") }
-    private val chunkDir by lazy { File(context.getExternalFilesDir(null), "pcm_chunks/$meetingId/$userId") }
-    private val rawDir by lazy { File(context.getExternalFilesDir(null), "pcm_raw/$meetingId/$userId") }
+    private val packetDir by lazy { File(context.cacheDir, "audio_packets/$meetingId") }
+    private val chunkDir by lazy { File(context.getExternalFilesDir(null), "pcm_chunks/$meetingId") }
+    private val rawDir by lazy { File(context.getExternalFilesDir(null), "pcm_raw/$meetingId") }
 
     fun connect() {
         if (isConnected) disconnect()
@@ -124,7 +122,7 @@ class AudioWebSocketClient(
                 if (!file.exists()) break
                 val data = file.readBytes()
                 sendBinary(data)
-                Log.d("AudioWS", "로컬 패킷 재전송: packet_$id.bin")
+                Log.d("Audio", "로컬 패킷 재전송: packet_$id.bin")
             }
             onComplete()
         }
@@ -178,7 +176,7 @@ class AudioWebSocketClient(
 
         isStreaming = true
 
-        val rawDir = File(context.getExternalFilesDir(null), "pcm_raw/$meetingId/$userId")
+        val rawDir = File(context.getExternalFilesDir(null), "pcm_raw/$meetingId")
         rawDir.mkdirs()
         val rawPcmFile = File(rawDir, "all_raw.pcm")
         val rawPcmOutput = FileOutputStream(rawPcmFile, true)
@@ -201,6 +199,7 @@ class AudioWebSocketClient(
                     File(packetDir, "packet_${chunkId}.bin").outputStream().use { it.write(packet) }
                     // 5. 서버로 송신
                     sendBinary(packet)
+                    Log.d("Audio", "오디오 데이터 전송: chunkId=$chunkId, size=${packet.size}")
                     chunkId++
                 }
             }
@@ -227,7 +226,7 @@ class AudioWebSocketClient(
 
     fun sendBinary(data: ByteArray) {
         val ok = webSocket?.send(ByteString.of(*data)) ?: false
-        if (!ok) Log.e("AudioWS", "WebSocket 바이너리 전송 실패")
+        if (!ok) Log.e("Audio", "WebSocket 바이너리 전송 실패")
     }
 
     fun stop(deleteLocalPackets: Boolean = false) {
