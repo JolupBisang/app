@@ -48,13 +48,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.imhungry.jjongseol.ui.theme.UserGreen2
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import java.util.UUID
 
 data class AgendaItem(val id: String = UUID.randomUUID().toString(), var text: String, var isPlaceholder: Boolean = true)
 
 @Composable
-fun AgendaListScreen(agendaList: SnapshotStateList<String>){
+fun AgendaListScreen(agendaList: SnapshotStateList<String>, enabled: Boolean){
     val itemList = remember {
         mutableStateListOf<AgendaItem>().apply {
             agendaList.forEach { text -> add(AgendaItem(text = text, isPlaceholder = false)) }
@@ -70,8 +71,11 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>){
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
-                .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
+                .then(
+                    if (enabled) Modifier.height(180.dp)
+                    else Modifier.height(100.dp)
+                )
+                .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
         ) {
             items(items = itemList, key = { it.id }) { item ->
                 ListItemWithCircle(
@@ -86,31 +90,36 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>){
                         itemList.remove(item)
                         agendaList.clear()
                         agendaList.addAll(itemList.map { it.text })
-                    }
+                    },
+                    enabled = enabled
                 )
             }
         }
 
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 3.dp, bottom = 8.dp),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color.LightGray),
-            onClick = {
-                val newItem = AgendaItem(text = "새 아젠다", isPlaceholder = true)
-                itemList.add(newItem)
-                agendaList.add(newItem.text)
+        if(enabled) {
+            Button(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 3.dp, bottom = 8.dp),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(backgroundColor = UserGreen2),
+                onClick = {
+                    if (!enabled) return@Button
+                    val newItem = AgendaItem(text = "새 아젠다", isPlaceholder = true)
+                    itemList.add(newItem)
+                    agendaList.add(newItem.text)
+                },
+                enabled = enabled
+            ) {
+                Text("+", style = TextStyle(color = Color.Black, fontSize = 25.sp))
             }
-        ) {
-            Text("+", style = TextStyle(color = Color.Black, fontSize = 25.sp))
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () -> Unit) {
+fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () -> Unit, enabled: Boolean) {
     var editText by remember { mutableStateOf(item.text) }
     var editing by remember { mutableStateOf(false) }
 
@@ -121,6 +130,7 @@ fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () 
             .padding(horizontal = 8.dp, vertical = 4.dp)
             //고민(ExperimentalFoundationApi::class) <-- 오쪼지
             .combinedClickable(
+                enabled = enabled,
                 onClick = { },
                 onLongClick = {
                     editing = true
@@ -133,7 +143,7 @@ fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () 
     ) {
         Box(modifier = Modifier
             .padding(start = 15.dp)
-            .size(10.dp)
+            .size(5.dp)
             .background(color = Color.LightGray, shape = CircleShape)
         )
         Spacer(modifier = Modifier.width(10.dp))
@@ -162,7 +172,8 @@ fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () 
                             modifier = Modifier.align(Alignment.CenterVertically)
                         )
                     }
-                }
+                },
+                enabled = enabled
             )
         } else {
             Text(
@@ -174,26 +185,27 @@ fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () 
                 maxLines = 1
             )
         }
-
-        Icon(
-            imageVector = Icons.Default.Edit,
-            contentDescription = "Edit",
-            modifier = Modifier
-                .clickable {
-                    editing = true
-                    if (item.isPlaceholder) {
-                        editText = ""
+        if (enabled) {
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = "Edit",
+                modifier = Modifier
+                    .clickable {
+                        editing = true
+                        if (item.isPlaceholder) {
+                            editText = ""
+                        }
                     }
-                }
-                .padding(5.dp)
-        )
-        Icon(
-            imageVector = Icons.Default.Delete,
-            contentDescription = "Delete",
-            modifier = Modifier
-                .clickable { onDelete() }
-                .padding(5.dp)
-        )
+                    .padding(5.dp)
+            )
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Delete",
+                modifier = Modifier
+                    .clickable { onDelete() }
+                    .padding(5.dp)
+            )
+        }
     }
 }
 
@@ -204,7 +216,8 @@ fun TextField(
     modifier: Modifier = Modifier,
     onDone: () -> Unit,
     textStyle: TextStyle,
-    placeholder: @Composable (() -> Unit)? = null
+    placeholder: @Composable (() -> Unit)? = null,
+    enabled: Boolean = true
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
@@ -230,6 +243,8 @@ fun TextField(
             focusManager.clearFocus()
         }),
         textStyle = textStyle,
-        placeholder = placeholder
+        placeholder = placeholder,
+        enabled = enabled,
+        readOnly = !enabled
     )
 }

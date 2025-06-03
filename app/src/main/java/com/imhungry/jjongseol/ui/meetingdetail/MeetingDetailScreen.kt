@@ -33,6 +33,8 @@ import com.imhungry.jjongseol.ui.newmeeting.invite.SearchScreen
 import com.imhungry.jjongseol.ui.theme.Purple1
 import com.imhungry.jjongseol.ui.theme.Purple2
 import com.imhungry.jjongseol.ui.theme.UserGray
+import com.imhungry.jjongseol.ui.theme.UserGreen1
+import com.imhungry.jjongseol.ui.theme.UserGreen2
 import com.imhungry.jjongseol.viewmodel.UserViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -51,7 +53,10 @@ fun MeetingDetailScreen(
     restInterval: MutableState<String> = remember { mutableStateOf("0") },
     restDuration: MutableState<String> = remember { mutableStateOf("0") },
     agendas: List<String> = emptyList(),
-    status: MutableState<String> = remember { mutableStateOf("미정") }
+    status: MutableState<String> = remember { mutableStateOf("미정") },
+    isHost: Boolean,
+    isEditable: Boolean,
+    onEditClicked: () -> Unit
 ) {
     var showCalendarDialog by remember { mutableStateOf(false) }
 
@@ -92,7 +97,7 @@ fun MeetingDetailScreen(
                 }
             }
             item {
-                Row() {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .height(20.dp)
@@ -102,7 +107,7 @@ fun MeetingDetailScreen(
                         Text(
                             "제목",
                             style = TextStyle(
-                                color = Color.DarkGray,
+                                color = Color.Black,
                                 fontSize = 15.sp,
                             )
                         )
@@ -110,8 +115,10 @@ fun MeetingDetailScreen(
 
                     OutlinedTextField(
                         value = title.value,
-                        onValueChange = { title.value = it },
+                        onValueChange = { if (isEditable) title.value = it },
+                        readOnly = !isEditable,
                         modifier = Modifier
+                            .background(Color.White, RoundedCornerShape(10.dp))
                             .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
                             .height(50.dp)
                             .weight(5f),
@@ -130,7 +137,8 @@ fun MeetingDetailScreen(
                             cursorColor = Color.Black,
                             backgroundColor = Color.White,
                             focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent
+                            unfocusedBorderColor = Color.Transparent,
+                            disabledBorderColor = Color.Transparent
                         )
                     )
                 }
@@ -144,10 +152,11 @@ fun MeetingDetailScreen(
                     Text(
                         "참석자",
                         modifier = Modifier
+                            .padding(top = 15.dp)
                             .height(20.dp)
                             .weight(1f),
                         style = TextStyle(
-                            color = Color.DarkGray,
+                            color = Color.Black,
                             fontSize = 15.sp,
                         )
                     )
@@ -155,13 +164,16 @@ fun MeetingDetailScreen(
                     Column(modifier = Modifier.weight(5f)) {
                         SearchScreen(
                             selectedEmails = remember { mutableStateOf(participants) },
-                            userApi = hiltViewModel<UserViewModel>().userApi
+                            userApi = hiltViewModel<UserViewModel>().userApi,
+                            enabled = isEditable
                         )
+
                     }
                 }
             }
             item {
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .padding(top = 8.dp)
                 )
@@ -172,14 +184,13 @@ fun MeetingDetailScreen(
                             .height(20.dp)
                             .weight(1f),
                         style = TextStyle(
-                            color = Color.DarkGray,
+                            color = Color.Black,
                             fontSize = 15.sp,
                         )
                     )
 
-
-                    Row(
-                        modifier = Modifier
+                    val calendarModifier = if (isEditable) {
+                        Modifier
                             .fillMaxWidth()
                             .height(50.dp)
                             .background(Color.White, RoundedCornerShape(10.dp))
@@ -189,7 +200,16 @@ fun MeetingDetailScreen(
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() }
                             )
-                            .weight(5f),
+                    } else {
+                        Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .background(Color.White, RoundedCornerShape(10.dp))
+                            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
+                    }
+
+                    Row(
+                        modifier = calendarModifier.weight(5f),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -212,6 +232,7 @@ fun MeetingDetailScreen(
 
             item {
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .padding(top = 8.dp)
                 )
@@ -222,7 +243,7 @@ fun MeetingDetailScreen(
                             .height(20.dp)
                             .weight(1f),
                         style = TextStyle(
-                            color = Color.DarkGray,
+                            color = Color.Black,
                             fontSize = 15.sp,
                         )
                     )
@@ -230,7 +251,8 @@ fun MeetingDetailScreen(
                         TimeDurationPicker(
                             startTime = startTime,
                             endTime = endTime,
-                            durationInMinutes = totalTime
+                            durationInMinutes = totalTime,
+                            enabled = isEditable
                         )
                     }
                 }
@@ -238,6 +260,7 @@ fun MeetingDetailScreen(
 
             item {
                 Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .padding(top = 8.dp)
                 )
@@ -248,17 +271,18 @@ fun MeetingDetailScreen(
                             .height(20.dp)
                             .weight(1f),
                         style = TextStyle(
-                            color = Color.DarkGray,
+                            color = Color.Black,
                             fontSize = 15.sp,
                         )
                     )
 
                     OutlinedTextField(
                         value = location.value,
-                        onValueChange = { location.value = it },
+                        onValueChange = { if (isEditable) location.value = it },
+                        readOnly = !isEditable,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, Color.Gray, RoundedCornerShape(15.dp))
+                            .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
                             .weight(5f),
                         singleLine = true,
                         textStyle = TextStyle(fontSize = 16.sp),
@@ -275,7 +299,8 @@ fun MeetingDetailScreen(
                             cursorColor = Color.Black,
                             backgroundColor = Color.White,
                             focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent
+                            unfocusedBorderColor = Color.Transparent,
+                            disabledBorderColor = Color.Transparent
                         )
                     )
                 }
@@ -289,15 +314,16 @@ fun MeetingDetailScreen(
                     Text(
                         "아젠다",
                         modifier = Modifier
+                            .padding(top = 15.dp)
                             .height(20.dp)
                             .weight(1f),
                         style = TextStyle(
-                            color = Color.DarkGray,
+                            color = Color.Black,
                             fontSize = 15.sp,
                         )
                     )
                     Row(modifier = Modifier.weight(5f)) {
-                        AgendaListScreen(agendaList = remember { mutableStateListOf(*agendas.toTypedArray()) })
+                        AgendaListScreen(agendaList = remember { mutableStateListOf(*agendas.toTypedArray()) }, enabled = isEditable)
                     }
                 }
             }
@@ -305,6 +331,7 @@ fun MeetingDetailScreen(
             item {
                 Column(modifier = Modifier) {
                     Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(top = 8.dp)
                     )
@@ -315,13 +342,13 @@ fun MeetingDetailScreen(
                                 .height(20.dp)
                                 .weight(1f),
                             style = TextStyle(
-                                color = Color.DarkGray,
+                                color = Color.Black,
                                 fontSize = 14.sp,
                             )
                         )
 
                         Row(modifier = Modifier.weight(5f)) {
-                            BreakTimeRow(breakTime = restInterval, breakTimeMinute = restDuration)
+                            BreakTimeRow(breakTime = restInterval, breakTimeMinute = restDuration, enabled = isEditable)
                         }
                     }
                 }
@@ -329,78 +356,94 @@ fun MeetingDetailScreen(
             }
 
             item{
-                Row(modifier = Modifier.padding(top = 15.dp, bottom = 10.dp)){
-                    Button(modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp)
-                        .border(1.dp, UserGray, RoundedCornerShape(15.dp)),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = UserGray,
-                            contentColor = Color.Black
-                        ),
-                        onClick = {}
-                    ){
-                        Text(
-                            "삭제",
-                            style = TextStyle(
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            )
-                        )
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Button(modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp)
-                        .border(1.dp, Purple1, RoundedCornerShape(15.dp)),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Purple1,
-                            contentColor = Color.Black
-                        ),
-                        onClick = {
-                            when (MeetingStatus.valueOf(status.value)) {
-                                MeetingStatus.WAITING -> {
-                                    navController.navigate("meetingRoute/waiting/$id")
-                                }
-                                MeetingStatus.IN_PROGRESS -> {
-                                    navController.navigate("meetingRoute/inprogress/$id")
-                                }
-                                MeetingStatus.COMPLETED -> {
-                                    navController.navigate("meetingRoute/completed/$id")
-                                }
-                                else -> {}
+                Row(modifier = Modifier
+                        .padding(top = 15.dp, bottom = 10.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (isEditable) {
+                        Button(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp)
+                                .border(1.dp, UserGray, RoundedCornerShape(15.dp)),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = UserGray,
+                                contentColor = Color.Black
+                            ),
+                            onClick = { onEditClicked() }
+                        ) {
+                            Text("취소", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
+                        }
+
+                        Button(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp)
+                                .border(1.dp, UserGreen1, RoundedCornerShape(15.dp)),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = UserGreen1,
+                                contentColor = Color.White
+                            ),
+                            onClick = {
+                                onEditClicked()
+                            }
+                        ) {
+                            Text("확인", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
+                        }
+                    } else {
+                        if (isHost) {
+                            Button(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp)
+                                    .border(1.dp, UserGray, RoundedCornerShape(15.dp)),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = UserGray,
+                                    contentColor = Color.Black
+                                ),
+                                onClick = { navController.popBackStack() }
+                            ) {
+                                Text("취소", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
                             }
                         }
-                    ){
-                        Text(
-                            "입장",
-                            style = TextStyle(
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            )
-                        )
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Button(modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp)
-                        .border(1.dp, Purple2, RoundedCornerShape(15.dp)),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Purple2,
-                            contentColor = Color.Black
-                        ),
-                        onClick = {}
-                    ){
-                        Text(
-                            "수정",
-                            style = TextStyle(
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp
-                            )
-                        )
+
+                        Button(
+                            modifier = Modifier
+                                .weight(if (isHost) 1f else 1.5f)
+                                .height(50.dp)
+                                .border(1.dp, UserGreen1, RoundedCornerShape(15.dp)),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = UserGreen1,
+                                contentColor = Color.White
+                            ),
+                            onClick = {
+                                when (MeetingStatus.valueOf(status.value)) {
+                                    MeetingStatus.WAITING -> navController.navigate("meetingRoute/waiting/$id")
+                                    MeetingStatus.IN_PROGRESS -> navController.navigate("meetingRoute/inprogress/$id")
+                                    MeetingStatus.COMPLETED -> navController.navigate("meetingRoute/completed/$id")
+                                    else -> {}
+                                }
+                            }
+                        ) {
+                            Text("입장", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
+                        }
+
+                        if (isHost) {
+                            Button(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp)
+                                    .border(1.dp, UserGreen2, RoundedCornerShape(15.dp)),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = UserGreen2,
+                                    contentColor = Color.Black
+                                ),
+                                onClick = onEditClicked
+                            ) {
+                                Text("수정", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
+                            }
+                        }
                     }
                 }
             }

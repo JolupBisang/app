@@ -29,6 +29,7 @@ import androidx.navigation.NavHostController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.login.GoogleLoginButton
+import com.imhungry.jjongseol.ui.theme.BasicBackGround
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.viewmodel.SplashViewModel
@@ -53,13 +54,13 @@ fun SplashScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(BasicBackGround),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.weight(1.6f))
 
         Image(
-            painter = painterResource(id = R.drawable.logo_chat),
+            painter = painterResource(id = R.drawable.logo2),
             contentDescription = "logo",
             modifier = Modifier.size(113.dp)
         )

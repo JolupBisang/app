@@ -56,7 +56,10 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.ui.theme.BasicBackGround
 import com.imhungry.jjongseol.ui.theme.TransparentGreen
+import com.imhungry.jjongseol.ui.theme.UserGray
+import com.imhungry.jjongseol.ui.theme.UserGreen1
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.launch
 
@@ -93,7 +96,7 @@ fun HomeScreen(navController: NavController) {
                             .height(50.dp)
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
@@ -116,7 +119,7 @@ fun HomeScreen(navController: NavController) {
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(Color.LightGray),
+                                    .background(BasicBackGround),
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 16.sp),
                                 placeholder = {
@@ -144,7 +147,8 @@ fun HomeScreen(navController: NavController) {
                             Icon(
                                 imageVector = Icons.Filled.Notifications,
                                 contentDescription = "공지사항 알림",
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
+                                tint = UserGreen1
                             )
                         }
                     }
@@ -173,7 +177,7 @@ fun MainHomeScreen(navController: NavController){
 
         LazyColumn(
             modifier = Modifier
-                .padding(top = 30.dp, start = 30.dp, bottom = 50.dp, end = 30.dp)
+                .padding(top = 30.dp, start = 20.dp, bottom = 50.dp, end = 20.dp)
                 .fillMaxSize()
                 .constrainAs(scrollList) {
                     top.linkTo(parent.top)
@@ -192,14 +196,14 @@ fun MainHomeScreen(navController: NavController){
                     horizontalArrangement = Arrangement.End,
                     ){
                     Text(text = if(calendarToggle) "캘린더" else "리스트"
-                        ,color = Color.Black
+                        ,color = UserGreen1
                         ,modifier = Modifier
-                            .padding(end = 5.dp)
+                            .padding(end = 2.dp)
                             .clickable { calendarToggle = !calendarToggle })
                 }
                 Divider(
                     color = Color.Gray,
-                    thickness = 1.5.dp,
+                    thickness = 1.dp,
                     modifier = Modifier.padding(vertical = 5.dp)
                 )
                 if(calendarToggle) {
@@ -207,7 +211,7 @@ fun MainHomeScreen(navController: NavController){
 
                     Divider(
                         color = Color.Gray,
-                        thickness = 1.5.dp,
+                        thickness = 1.dp,
                         modifier = Modifier.padding(vertical = 5.dp)
                     )
                     MeetingRecordsScreen(navController)
@@ -264,9 +268,9 @@ fun CreateNewMeetingButton(onClick: () -> Unit) {
                 .height(60.dp),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = TransparentGreen
+                backgroundColor = UserGreen1
             ),
-            border = BorderStroke(1.dp, TransparentGreen),
+            border = BorderStroke(1.dp, UserGreen1),
             elevation = ButtonDefaults.elevation(
                 defaultElevation = 4.dp,
                 pressedElevation = 8.dp,
@@ -276,7 +280,7 @@ fun CreateNewMeetingButton(onClick: () -> Unit) {
                 Text(
                     "새 회의",
                     style = TextStyle(
-                        color = Color.Black,
+                        color = Color.White,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )

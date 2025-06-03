@@ -35,7 +35,7 @@ fun MeetingRecordsScreen(navController: NavController,  viewModel: MeetingViewMo
     Column(
         modifier = Modifier
             .padding(6.dp)
-            .padding(bottom = 100.dp)
+            .padding(bottom = 150.dp)
             .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },

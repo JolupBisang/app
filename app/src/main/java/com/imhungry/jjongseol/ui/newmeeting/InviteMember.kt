@@ -22,13 +22,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import com.imhungry.jjongseol.data.network.api.UserApi
+import com.imhungry.jjongseol.ui.theme.BasicBackGround
+import com.imhungry.jjongseol.ui.theme.UserGray
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
 @Composable
 fun SearchScreen(
     selectedEmails: MutableState<List<String>>,
-    userApi: UserApi
+    userApi: UserApi,
+    enabled: Boolean
 ) {
     var query by remember { mutableStateOf("") }
     var matchedEmail by remember { mutableStateOf<String?>(null) }
@@ -40,7 +43,7 @@ fun SearchScreen(
             onValueChange = {
                 query = it
                 matchedEmail = null
-                if (it.isNotBlank()) {
+                if (enabled && it.isNotBlank()) {
                     scope.launch {
                         try {
                             val response = userApi.getUserByEmail(it)
@@ -69,25 +72,30 @@ fun SearchScreen(
                 cursorColor = Color.Black,
                 backgroundColor = Color.White,
                 focusedBorderColor = Color.Transparent,
-                unfocusedBorderColor = Color.Transparent
-            )
+                unfocusedBorderColor = Color.Transparent,
+                disabledBorderColor = Color.Transparent
+            ),
+            enabled = enabled
         )
 
         if (matchedEmail != null && !selectedEmails.value.contains(matchedEmail)) {
-            Column(modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 5.dp)
-                .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
-                    ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 5.dp)
+                    .border(0.5.dp, Color.Gray, RoundedCornerShape(10.dp))
+                    .then(
+                        if (enabled) Modifier.clickable {
+                            selectedEmails.value = selectedEmails.value + matchedEmail!!
+                            query = ""
+                            matchedEmail = null
+                        } else Modifier
+                    )
+            ) {
                 Text(
                     text = matchedEmail!!,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            selectedEmails.value = selectedEmails.value + matchedEmail!!
-                            query = ""
-                            matchedEmail = null
-                        }
                         .padding(8.dp),
                     color = Color.DarkGray,
                     fontSize = 13.sp
@@ -102,7 +110,7 @@ fun SearchScreen(
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             selectedEmails.value.forEach { email ->
-                Chip(email, onRemove = {
+                Chip(email, enabled = enabled, onRemove = {
                     selectedEmails.value = selectedEmails.value - email
                 })
             }
@@ -111,24 +119,32 @@ fun SearchScreen(
 }
 
 @Composable
-fun Chip(text: String, onRemove: () -> Unit) {
+fun Chip(text: String, enabled: Boolean, onRemove: () -> Unit) {
     Surface(
-        modifier = Modifier.padding(4.dp).clickable { onRemove() },
-        color = Color.LightGray,
-        shape = RoundedCornerShape(50)
+        modifier = Modifier
+            .padding(4.dp)
+            .then(if (enabled) Modifier.clickable { onRemove() } else Modifier),
+        color = BasicBackGround,
+        shape = RoundedCornerShape(20)
     ) {
-        CustomStyledText(text)
+        CustomStyledText(text, enabled)
     }
 }
 
 
 @Composable
-fun CustomStyledText(text: String) {
+fun CustomStyledText(text: String, enabled: Boolean) {
     val annotatedString = buildAnnotatedString {
         withStyle(style = SpanStyle(color = Color.Black, fontSize = 12.sp)) {
             append(text)
         }
-        withStyle(style = SpanStyle(color = md_theme_button_color_blue, fontSize = 12.sp, fontWeight = FontWeight.Bold)) {
+        withStyle(
+            style = SpanStyle(
+                color = Color.DarkGray,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        ) {
             append(" X")
         }
 
