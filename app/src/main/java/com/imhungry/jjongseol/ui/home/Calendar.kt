@@ -381,9 +381,10 @@ fun DailyScheduleView(selectedDate: String, schedules: List<MeetingResponse>, on
                     )
                     Spacer(Modifier.weight(1f))
                     val startTime = LocalDateTime.parse(schedule.scheduledStartTime)
+                    val endTime = startTime.plusMinutes(schedule.targetTime.toLong())
+
                     Text(
-                        text = startTime.toLocalTime()
-                            .format(DateTimeFormatter.ofPattern("HH:mm")),
+                        text = "${startTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))} ~ ${endTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))}",
                         fontSize = 15.sp
                     )
                 }
