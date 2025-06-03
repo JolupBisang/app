@@ -5,6 +5,7 @@ import com.imhungry.jjongseol.data.model.response.SuccessResponse
 import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.model.meeting.request.MeetingStatusUpdateReq
+import com.imhungry.jjongseol.data.model.meeting.request.MeetingUpdateReq
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -36,4 +37,11 @@ interface MeetingApi {
         @Path("meetingId") meetingId: Long,
         @Body statusUpdateReq: MeetingStatusUpdateReq
     ): Response<SuccessResponse<Unit>>
+
+    @PUT("api/meetings/{meetingId}")
+    suspend fun updateMeeting(
+        @Path("meetingId") meetingId: Long,
+        @Body meetingUpdateReq: MeetingUpdateReq
+    ): Response<SuccessResponse<Unit>>
+
 }
