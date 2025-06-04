@@ -241,6 +241,7 @@ class MeetingSseService : Service() {
         feedbackEventSource = null
         audioWsClient?.stop(true)
         audioWsClient = null
+        stopForeground(true)
         super.onDestroy()
     }
 
@@ -255,6 +256,7 @@ class MeetingSseService : Service() {
         feedbackEventSource = null
         audioWsClient?.stop(true)
         audioWsClient = null
+        stopForeground(true)
         super.onTaskRemoved(rootIntent)
     }
 
@@ -268,6 +270,7 @@ class MeetingSseService : Service() {
         feedbackEventSource = null
         audioWsClient?.stop(true)
         audioWsClient = null
+        stopForeground(true)
         stopSelf()
     }
 

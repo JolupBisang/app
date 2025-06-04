@@ -46,12 +46,12 @@ class AudioWebSocketClient(
     private var isConnected = false
 
     private val sampleRate = 16000
-    private val frameSize = 10912
+    private val frameSize = 16000
     private val bufferSize = AudioRecord.getMinBufferSize(
         sampleRate,
         AudioFormat.CHANNEL_IN_MONO,
         AudioFormat.ENCODING_PCM_16BIT
-    ).coerceAtLeast(frameSize * 2)
+    ).coerceAtLeast(frameSize)
 
     //fun pauseEncoding() { isEncodingPaused = true }
     //fun resumeEncoding() { isEncodingPaused = false }

@@ -27,10 +27,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -145,7 +143,10 @@ fun MeetingControlPanel(
                 resId = R.drawable.out,
                 description = "나가기",
                 enabled = !isWaiting,
-                onClick = { showLeaveDialog = true },
+                onClick = {
+                    context?.stopService(Intent(context, MeetingSseService::class.java))
+                    showLeaveDialog = true
+                          },
                 24.dp,
                 tint = if (isWaiting) disabled else primaryTextColor
             )
