@@ -52,6 +52,7 @@ import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingSummaryScreen
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
+import com.imhungry.jjongseol.ui.theme.whiteColor
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
@@ -151,7 +152,9 @@ fun MeetingScreen(
         if (meetingStatus == MeetingStatus.COMPLETED) {
             context.stopService(Intent(context, MeetingSseService::class.java))
             sseStarted = false
-            navController.navigate("meetingRoute/completed/$meetingId")
+            navController.navigate("meetingRoute/completed/$meetingId")  {
+                popUpTo(0)
+            }
         }
     }
 
@@ -161,7 +164,7 @@ fun MeetingScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White),
+                .background(whiteColor),
             contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator(color = Color(0xFF969696))

@@ -220,7 +220,12 @@ class MeetingSseService : Service() {
             url = url,
             meetingId = meetingId,
             scope = serviceScope,
-            onError = { errMsg -> Log.e("MeetingSseService", "오디오 오류: $errMsg") }
+            onError = { errMsg -> Log.e("MeetingSseService", "오디오 오류: $errMsg") },
+            onMessage = { msg ->
+                if (msg == "MEETING_COMPLETED") {
+                    stopAllConnections()
+                }
+            }
         )
         audioWsClient?.connect()
     }
@@ -234,7 +239,8 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
-        audioWsClient?.disconnect()
+        audioWsClient?.stop(true)
+        audioWsClient = null
         super.onDestroy()
     }
 
@@ -247,8 +253,22 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
-        audioWsClient?.disconnect()
+        audioWsClient?.stop(true)
+        audioWsClient = null
         super.onTaskRemoved(rootIntent)
+    }
+
+    private fun stopAllConnections() {
+        Log.i("MeetingSseService", "회의 종료됨: SSE/AudioWebSocket 모두 종료")
+        isServiceStopped = true
+        stopReconnectTimer()
+        summaryEventSource?.cancel()
+        feedbackEventSource?.cancel()
+        summaryEventSource = null
+        feedbackEventSource = null
+        audioWsClient?.stop(true)
+        audioWsClient = null
+        stopSelf()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
