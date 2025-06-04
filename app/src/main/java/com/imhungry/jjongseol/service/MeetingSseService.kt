@@ -3,7 +3,6 @@ package com.imhungry.jjongseol.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -16,6 +15,7 @@ import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
 import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
 import com.imhungry.jjongseol.data.network.client.AudioWebSocketClient
+import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
 import com.imhungry.jjongseol.data.repository.LoginRepository
 import com.imhungry.jjongseol.data.repository.SummaryRepository
@@ -56,10 +56,13 @@ class MeetingSseService : Service() {
     companion object {
         const val CHANNEL_ID = "meeting_sse_channel"
         const val CHANNEL_NAME = "회의 SSE 알림"
+        const val ACTION_SET_MIC = "ACTION_SET_MIC"
+        const val EXTRA_MIC_ENABLED = "EXTRA_MIC_ENABLED"
     }
 
     private var audioWsClient: AudioWebSocketClient? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO)
+    private var currentMicEnabled: Boolean = true
 
     private fun createNotification(content: String): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -200,15 +203,31 @@ class MeetingSseService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_SET_MIC) {
+            intent?.let {
+                val micEnabled = it.getBooleanExtra(EXTRA_MIC_ENABLED, true)
+                setMicEnabled(micEnabled)
+                currentMicEnabled = micEnabled
+            }
+            return START_STICKY
+        }
         currentMeetingId = intent?.getLongExtra("meetingId", -1L) ?: -1L
         isServiceStopped = false
         if (currentMeetingId == -1L) { stopSelf(); return START_NOT_STICKY }
         startForeground(1, createNotification("회의 진행 중.."))
         connectSse(currentMeetingId)
-
         val token = loginRepository.getToken() ?: ""
         connectAudioWebSocket(currentMeetingId, token)
+        setMicEnabled(currentMicEnabled)
         return START_STICKY
+    }
+
+    fun setMicEnabled(enabled: Boolean) {
+        if (enabled) {
+            audioWsClient?.resumeEncoding()
+        } else {
+            audioWsClient?.pauseEncoding()
+        }
     }
 
     private fun connectAudioWebSocket(meetingId: Long, token: String) {
@@ -225,6 +244,9 @@ class MeetingSseService : Service() {
                 if (msg == "MEETING_COMPLETED") {
                     stopAllConnections()
                 }
+            },
+            onNewDiarizedSegment = { chatMessage ->
+                serviceScope.launch { DiarizedSegmentRepository.emit(chatMessage) }
             }
         )
         audioWsClient?.connect()
@@ -239,8 +261,9 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
-        audioWsClient?.stop(true)
+        audioWsClient?.stop()
         audioWsClient = null
+        stopForeground(true)
         super.onDestroy()
     }
 
@@ -253,8 +276,9 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
-        audioWsClient?.stop(true)
+        audioWsClient?.stop()
         audioWsClient = null
+        stopForeground(true)
         super.onTaskRemoved(rootIntent)
     }
 
@@ -268,6 +292,7 @@ class MeetingSseService : Service() {
         feedbackEventSource = null
         audioWsClient?.stop(true)
         audioWsClient = null
+        stopForeground(true)
         stopSelf()
     }
 

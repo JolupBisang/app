@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.ui.component.chart
+package com.imhungry.jjongseol.ui.meeting.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,7 +14,7 @@ fun ProportionalBarChart(
     proportions: List<Float>,
     colors: List<Color>,
     modifier: Modifier = Modifier,
-    height: Int = 20,
+    height: Int = 17,
     cornerRadius: Int = 4
 ) {
     val total = proportions.sum().takeIf { it > 0 } ?: 1f

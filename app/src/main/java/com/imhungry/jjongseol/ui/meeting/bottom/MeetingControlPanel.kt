@@ -45,6 +45,7 @@ import com.imhungry.jjongseol.ui.component.dialog.CustomDialog
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.disabled
 import com.imhungry.jjongseol.ui.theme.primaryTextColor
+import com.imhungry.jjongseol.ui.theme.tertiary
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
@@ -58,23 +59,21 @@ fun MeetingControlPanel(
     viewModel: MeetingViewModel,
     isWaiting: Boolean = false,
     meetingId: Long? = null,
-    context: Context? = null,
+    context: Context,
 ) {
-    val micEnabled by viewModel.streamController.micEnabled.collectAsState()
-    val isMicOn = if (isWaiting) false else micEnabled
-
+    val micEnabled by viewModel.micEnabled.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
     var showLeaveDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(8.dp)
+            .height(10.dp)
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color(0x33C2C2C2)
+                        Color(0x33A1A1A1)
                     )
                 )
             )
@@ -87,8 +86,7 @@ fun MeetingControlPanel(
             .padding(top = 12.dp, bottom = 16.dp, start = 20.dp, end = 20.dp)
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text(
                 text = timeText,
@@ -99,12 +97,14 @@ fun MeetingControlPanel(
                 modifier = Modifier.align(Alignment.Center)
             )
             Text(
-                text = "- " + remainingTimeText,
-                fontSize = 16.sp,
+                text = "- $remainingTimeText",
+                fontSize = 15.sp,
                 fontFamily = Pretend,
-                fontWeight = FontWeight.Medium,
-                color = if (isWaiting) disabled else primaryTextColor,
-                modifier = Modifier.align(Alignment.CenterEnd)
+                fontWeight = FontWeight.Normal,
+                color = if (isWaiting) disabled else tertiary,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(start = 8.dp)
             )
         }
 
@@ -132,10 +132,10 @@ fun MeetingControlPanel(
                 contentAlignment = Alignment.Center
             ) {
                 ControlIcon(
-                    resId = if (isMicOn) R.drawable.mic else micIcon,
+                    resId = if (micEnabled) R.drawable.mic else micIcon,
                     description = "마이크",
                     enabled = !isWaiting,
-                    onClick = { viewModel.streamController.toggleMic(!micEnabled) },
+                    onClick = { viewModel.toggleMic(context) },
                     28.dp,
                     tint = if (isWaiting) disabled else primaryTextColor
                 )
@@ -145,7 +145,9 @@ fun MeetingControlPanel(
                 resId = R.drawable.out,
                 description = "나가기",
                 enabled = !isWaiting,
-                onClick = { showLeaveDialog = true },
+                onClick = {
+                    showLeaveDialog = true
+                          },
                 24.dp,
                 tint = if (isWaiting) disabled else primaryTextColor
             )
@@ -155,7 +157,7 @@ fun MeetingControlPanel(
     if (showDialog && !isWaiting) {
         showExitDialog(
             description = "회의를 종료하시겠습니까?",
-            confirmText = "종료",
+            confirmText = "예",
             onConfirm = {
                 if (meetingId != null) {
                     viewModel.updateMeetingStatus(meetingId, MeetingStatus.COMPLETED)
@@ -172,10 +174,10 @@ fun MeetingControlPanel(
 
     if (showLeaveDialog && !isWaiting) {
         showExitDialog(
-            description = "회의에서 나가시겠습니까?",
-            confirmText = "나가기",
+            description = "회의를 떠나시겠습니까?",
+            confirmText = "예",
             onConfirm = {
-                viewModel.streamController.pauseEncoding()
+                context?.stopService(Intent(context, MeetingSseService::class.java))
                 onFinish(SilRokNavigation.Home)
             },
             onDismiss = { showLeaveDialog = false }
@@ -184,7 +186,7 @@ fun MeetingControlPanel(
 }
 
 @Composable
-private fun showExitDialog(
+fun showExitDialog(
     description: String,
     confirmText: String,
     onConfirm: () -> Unit,

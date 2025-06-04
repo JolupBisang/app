@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.imhungry.jjongseol.ui.theme.Pretend
+import com.imhungry.jjongseol.ui.theme.primaryTextColor
+import com.imhungry.jjongseol.ui.theme.tertiary
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -30,6 +32,7 @@ fun SummaryListItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 28.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -37,8 +40,8 @@ fun SummaryListItem(
         ) {
             Box(
                 modifier = Modifier
-                    .size(6.dp)
-                    .background(Color.DarkGray, shape = CircleShape)
+                    .size(3.dp)
+                    .background(primaryTextColor, shape = CircleShape)
             )
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -47,20 +50,21 @@ fun SummaryListItem(
                 text = summary,
                 fontFamily = Pretend,
                 fontWeight = FontWeight.Medium,
+                color = primaryTextColor,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f)
             )
-        }
 
-        Text(
-            text = extractTimeOnly(timeText),
-            fontFamily = Pretend,
-            fontWeight = FontWeight.Medium,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier
-                .align(Alignment.End)
-                .padding(top = 4.dp)
-        )
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = extractTimeOnly(timeText),
+                fontFamily = Pretend,
+                fontWeight = FontWeight.Medium,
+                color = tertiary,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
     }
 }
 

@@ -13,16 +13,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.imhungry.jjongseol.ui.theme.Pretend
+import com.imhungry.jjongseol.ui.theme.gray500
+import com.imhungry.jjongseol.ui.theme.orange100
+import com.imhungry.jjongseol.ui.theme.orange500
+import com.imhungry.jjongseol.ui.theme.primaryTextColor
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -43,7 +49,7 @@ fun Notification(
             modifier = modifier
                 .padding(horizontal = 20.dp)
                 .background(
-                    color = Color(0xFF969696),
+                    color = gray500,
                     shape = MaterialTheme.shapes.medium
                 )
         ) {
@@ -63,7 +69,7 @@ fun Notification(
                         fontFamily = Pretend,
                         fontWeight = FontWeight.Medium,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black
+                        color = primaryTextColor
                     )
                 }
 
@@ -78,6 +84,7 @@ fun Notification(
                         text = extractTimeOnly(time),
                         fontFamily = Pretend,
                         fontWeight = FontWeight.Medium,
+                        color = primaryTextColor,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.constrainAs(timeRef) {
                             top.linkTo(parent.top)
@@ -91,7 +98,7 @@ fun Notification(
                         Box(
                             modifier = Modifier
                                 .size(6.dp)
-                                .background(Color(0xFFF80000), shape = CircleShape)
+                                .background(orange100, shape = CircleShape)
                                 .constrainAs(dotRef) {
                                     top.linkTo(parent.top)
                                     end.linkTo(parent.end)

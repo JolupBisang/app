@@ -5,12 +5,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,15 +32,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.constraintlayout.compose.Dimension
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
@@ -48,10 +45,13 @@ import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
+import com.imhungry.jjongseol.ui.meeting.bottom.showExitDialog
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingSummaryScreen
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
+import com.imhungry.jjongseol.ui.theme.green200
+import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.ui.theme.whiteColor
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
@@ -102,6 +102,7 @@ fun MeetingScreen(
     }
 
     LaunchedEffect(meetingId) {
+        meetingViewModel.setTopSheetExpanded(false)
         meetingViewModel.loadMeetingDetail2(meetingId)
     }
 
@@ -142,6 +143,25 @@ fun MeetingScreen(
     val allReady = permissionGranted && !isMeetingLoading && !isAgendaLoading
     val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating
 
+    var showLeaveDialog by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = true) {
+        showLeaveDialog = true
+    }
+
+    if (showLeaveDialog) {
+        showExitDialog(
+            description = "회의를 떠나시겠습니까?",
+            confirmText = "예",
+            onConfirm = {
+                context.stopService(Intent(context, MeetingSseService::class.java))
+                onFinish(SilRokNavigation.Home)
+                showLeaveDialog = false
+            },
+            onDismiss = { showLeaveDialog = false }
+        )
+    }
+
     LaunchedEffect(allReady) {
         if (allReady && startTimeMillis == null) {
             startTimeMillis = System.currentTimeMillis()
@@ -159,18 +179,18 @@ fun MeetingScreen(
     }
 
     val timeText = rememberMeetingElapsedTime(startTimeMillis)
+    SetNavigationBarColor(primaryBackground)
 
     if (!allReady || showLoading) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(whiteColor),
+                .background(primaryBackground),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = Color(0xFF969696))
+            CircularProgressIndicator(color = primaryBackground)
         }
     } else {
-        SetNavigationBarColor(Color(0xFFE5E5E5))
         LaunchedEffect(allReady) {
             if (!sseStarted) {
                 context.startForegroundService(
@@ -228,48 +248,41 @@ fun MeetingScreenContent(
 ) {
     val pagerState = rememberPagerState(initialPage = 1)
 
-    ConstraintLayout(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(primaryBackground)
     ) {
-        val (pager, indicator, control) = createRefs()
-
-        HorizontalPager(
-            count = 3,
-            state = pagerState,
+        Box(
             modifier = Modifier
-                .constrainAs(pager) {
-                    top.linkTo(parent.top)
-                    bottom.linkTo(control.top)
-                    height = Dimension.fillToConstraints
-                }
+                .weight(1f)
                 .fillMaxWidth()
-        ) { page ->
-            when (page) {
-                0 -> MeetingSummaryScreen(
-                    meetingViewModel = meetingViewModel,
-                    agendaViewModel = agendaViewModel
-                )
-                1 -> MeetingRecordScreen(
-                    meetingViewModel = meetingViewModel,
-                    agendaViewModel = agendaViewModel,
-                    meetingId = meetingId
-                )
-                2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel)
-            }
-        }
-
-        CustomHorizontalPagerIndicator(
-            pagerState = pagerState,
-            modifier = Modifier
-                .padding(bottom = 12.dp)
-                .constrainAs(indicator) {
-                    bottom.linkTo(control.top)
-                    centerHorizontallyTo(parent)
+        ) {
+            HorizontalPager(
+                count = 3,
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (page) {
+                    0 -> MeetingSummaryScreen(
+                        meetingViewModel = meetingViewModel,
+                        agendaViewModel = agendaViewModel
+                    )
+                    1 -> MeetingRecordScreen(
+                        meetingViewModel = meetingViewModel,
+                        agendaViewModel = agendaViewModel,
+                        meetingId = meetingId
+                    )
+                    2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel)
                 }
-        )
-
+            }
+            CustomHorizontalPagerIndicator(
+                pagerState = pagerState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 4.dp)
+            )
+        }
         MeetingControlPanel(
             timeText = timeText,
             remainingTimeText = remainingTime,
@@ -278,12 +291,8 @@ fun MeetingScreenContent(
             navController = navController,
             viewModel = viewModel,
             modifier = Modifier
-                .background(Color(0xFFE5E5E5))
-                .constrainAs(control) {
-                    bottom.linkTo(parent.bottom)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                },
+                .background(primaryBackground)
+                .fillMaxWidth(),
             meetingId = meetingId,
             context = context
         )
@@ -296,8 +305,8 @@ fun CustomHorizontalPagerIndicator(
     pagerState: PagerState,
     modifier: Modifier = Modifier,
     pageCount: Int = pagerState.pageCount,
-    activeColor: Color = Color(0xFF0004F8),
-    inactiveColor: Color = Color(0xFFF6F6F6),
+    activeColor: Color = green200,
+    inactiveColor: Color = whiteColor,
     backgroundColor: Color = Color(0xFFD9D9D9),
     indicatorSize: Int = 8,
     indicatorSpacing: Int = 7,

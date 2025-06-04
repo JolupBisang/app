@@ -11,11 +11,14 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
+import com.imhungry.jjongseol.data.model.chat.DiarizedSegment
 import com.imhungry.jjongseol.data.model.response.ErrorResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponseType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.*
@@ -24,7 +27,6 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
@@ -35,6 +37,7 @@ class AudioWebSocketClient(
     private val scope: CoroutineScope,
     private val onError: (String) -> Unit = {},
     private val onMessage: (String) -> Unit = {},
+    private val onNewDiarizedSegment: (DiarizedSegment) -> Unit
 ) : WebSocketListener() {
 
     private var webSocket: WebSocket? = null
@@ -46,15 +49,20 @@ class AudioWebSocketClient(
     private var isConnected = false
 
     private val sampleRate = 16000
-    private val frameSize = 10912
+    private val frameSize = 16000
     private val bufferSize = AudioRecord.getMinBufferSize(
         sampleRate,
         AudioFormat.CHANNEL_IN_MONO,
         AudioFormat.ENCODING_PCM_16BIT
-    ).coerceAtLeast(frameSize * 2)
+    ).coerceAtLeast(frameSize)
 
-    //fun pauseEncoding() { isEncodingPaused = true }
-    //fun resumeEncoding() { isEncodingPaused = false }
+    fun pauseEncoding() {
+        isEncodingPaused = true
+    }
+
+    fun resumeEncoding() {
+        isEncodingPaused = false
+    }
 
     // /data/data/com.imhungry.jjongseol/cache/audio_packets/
     private val packetDir by lazy { File(context.cacheDir, "audio_packets/$meetingId") }
@@ -100,6 +108,10 @@ class AudioWebSocketClient(
                     Log.i("Audio", "회의 종료 메시지 수신, 연결 종료 처리")
                     onMessage("MEETING_COMPLETED")
                     stop(true)
+                }
+                SocketResponseType.DIARIZED_SEGMENT -> {
+                    val message = Gson().fromJson(Gson().toJson(response.data), DiarizedSegment::class.java)
+                    onNewDiarizedSegment(message)
                 }
                 else -> Log.d("Audio", "알 수 없는 메시지 타입 수신: ${response.type}")
             }
@@ -188,7 +200,6 @@ class AudioWebSocketClient(
         rawDir.mkdirs()
         val rawPcmFile = File(rawDir, "all_raw.pcm")
         val rawPcmOutput = FileOutputStream(rawPcmFile, true)
-
         scope.launch {
             val pcmBuffer = ByteArray(frameSize * 2)
             while (isActive && isStreaming) {
@@ -196,22 +207,37 @@ class AudioWebSocketClient(
                 if (read > 0 && !isEncodingPaused) {
                     val pcmChunk = pcmBuffer.copyOf(read)
                     // 1. 전체 raw 저장
-                    rawPcmOutput.write(pcmChunk)
+                    try {
+                        rawPcmOutput.write(pcmChunk)
+                    } catch (e: Exception) {
+                    }
                     // 2. 청크별 저장
-                    val chunkFile = File(chunkDir, "chunk_${chunkId}.pcm")
-                    chunkFile.parentFile?.mkdirs()
-                    chunkFile.outputStream().use { it.write(pcmChunk) }
+                    try {
+                        val chunkFile = File(chunkDir, "chunk_${chunkId}.pcm")
+                        chunkFile.parentFile?.mkdirs()
+                        chunkFile.outputStream().use { it.write(pcmChunk) }
+                    } catch (e: Exception) {
+                    }
                     // 3. 서버에 보낼 패킷 생성
                     val packet = buildAudioPacket(chunkId, pcmChunk)
                     // 4. 패킷 파일로 저장
-                    File(packetDir, "packet_${chunkId}.bin").outputStream().use { it.write(packet) }
+                    try {
+                        val packetFile = File(packetDir, "packet_${chunkId}.bin")
+                        packetFile.parentFile?.mkdirs()
+                        packetFile.outputStream().use { it.write(packet) }
+                    } catch (e: Exception) {
+                        Log.w("Audio", "packetFile 저장 실패: ${e.message}", e)
+                    }
                     // 5. 서버로 송신
                     sendBinary(packet)
                     Log.d("Audio", "오디오 데이터 전송: chunkId=$chunkId, size=${packet.size}")
                     chunkId++
                 }
             }
-            rawPcmOutput.close()
+            try {
+                rawPcmOutput.close()
+            } catch (e: Exception) {
+            }
         }
     }
 
@@ -256,7 +282,10 @@ class AudioWebSocketClient(
         isConnected = false
 
         if (deleteLocalPackets) {
-            scope.launch(Dispatchers.IO) { deleteAllPackets() }
+            scope.launch(Dispatchers.IO) {
+                kotlinx.coroutines.delay(500)
+                deleteAllPackets()
+            }
         }
     }
 
