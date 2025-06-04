@@ -1,6 +1,9 @@
 package com.imhungry.jjongseol.ui.component.dialog
 
+import android.content.Intent
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import kotlin.system.exitProcess
@@ -26,6 +29,7 @@ fun ErrorDialogHandler(
     clearError: () -> Unit,
     loginViewModel: LoginViewModel
 ) {
+    val context = LocalContext.current
     val isTokenExpired = errorMessage == "만료된 토큰입니다."
     val isNetworkError = errorMessage.isNetworkError()
     val isNotHostError = errorMessage == "해당 작업은 회의 리더만 수행할 수 있습니다."
@@ -52,10 +56,12 @@ fun ErrorDialogHandler(
                         onFinish(SilRokNavigation.Login)
                     }
                     isNetworkError -> {
-                        exitProcess(0)
+                        context.stopService(Intent(context, MeetingSseService::class.java))
+                        onFinish(SilRokNavigation.Home)
                     }
                     isServerInternalError -> {
-                        exitProcess(0)
+                        context.stopService(Intent(context, MeetingSseService::class.java))
+                        onFinish(SilRokNavigation.Home)
                     }
                     isNotHostError -> {
                     }

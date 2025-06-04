@@ -1,8 +1,14 @@
 package com.imhungry.jjongseol.viewmodel
 
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import android.util.Log
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
+import com.imhungry.jjongseol.data.model.chat.DiarizedSegment
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
@@ -14,15 +20,17 @@ import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
 import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.imhungry.jjongseol.ui.home.meetingdata.MeetingInfo
 import com.imhungry.jjongseol.data.network.api.MeetingApi
+import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
 import com.imhungry.jjongseol.data.repository.MeetingRepository
 import com.imhungry.jjongseol.data.repository.MeetingResult
 import com.imhungry.jjongseol.data.repository.SummaryRepository
-import com.imhungry.jjongseol.feature.meeting.MeetingStreamController
+import com.imhungry.jjongseol.service.MeetingSseService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -34,7 +42,6 @@ class MeetingViewModel @Inject constructor(
     private val meetingRepository: MeetingRepository,
     private val meetingApi: MeetingApi,
     private val agendaApi: AgendaApi,
-    val streamController: MeetingStreamController,
     private val feedbackRepository: FeedbackRepository,
     private val summaryRepository: SummaryRepository
 ) : ViewModel() {
@@ -78,6 +85,49 @@ class MeetingViewModel @Inject constructor(
     private val _scheduledMonthOffset = MutableStateFlow(0)
     private val _pastMonthOffset = MutableStateFlow(0)
 
+    private val _micEnabled = MutableStateFlow(true)
+    val micEnabled: StateFlow<Boolean> = _micEnabled
+
+    private val _diarizedSegments = MutableStateFlow<List<DiarizedSegment>>(emptyList())
+    val diarizedSegments: StateFlow<List<DiarizedSegment>> = _diarizedSegments.asStateFlow()
+
+    fun onNewdiarizedSegments(msg: DiarizedSegment) {
+        _diarizedSegments.update { oldList ->
+            val mutable = oldList.toMutableList()
+            while (mutable.size <= msg.order) mutable.add(
+                DiarizedSegment("", -1, mutable.size, "")
+            )
+            mutable[msg.order] = msg
+            mutable
+        }
+    }
+
+    fun toggleMic(context: Context) {
+        val newState = !_micEnabled.value
+        setMicEnabled(context, newState)
+        _micEnabled.value = newState
+    }
+
+    fun setMicEnabled(context: Context, enabled: Boolean) {
+        _micEnabled.value = enabled
+        val intent = Intent(context, MeetingSseService::class.java).apply {
+            action = MeetingSseService.ACTION_SET_MIC
+            putExtra(MeetingSseService.EXTRA_MIC_ENABLED, enabled)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+    private val _isTopSheetExpanded = mutableStateOf(false)
+    val isTopSheetExpanded: State<Boolean> get() = _isTopSheetExpanded
+
+    fun setTopSheetExpanded(expanded: Boolean) {
+        _isTopSheetExpanded.value = expanded
+    }
+
     init {
         viewModelScope.launch {
             feedbackRepository.feedbackFlow.collect { feedback ->
@@ -87,6 +137,11 @@ class MeetingViewModel @Inject constructor(
         viewModelScope.launch {
             summaryRepository.summaryFlow.collect { summary ->
                 _summaryList.value = _summaryList.value + summary
+            }
+        }
+        viewModelScope.launch {
+            DiarizedSegmentRepository.diarizedSegmentFlow.collect { msg ->
+                onNewdiarizedSegments(msg)
             }
         }
     }

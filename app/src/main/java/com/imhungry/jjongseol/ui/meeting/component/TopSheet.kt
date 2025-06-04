@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.ui.component.layout
+package com.imhungry.jjongseol.ui.meeting.component
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
@@ -72,11 +72,11 @@ fun TopSheet(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(8.dp)
+            .height(10.dp)
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0x33C2C2C2),
+                        Color(0x33A1A1A1),
                         Color.Transparent
                     )
                 )

@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -36,13 +37,13 @@ import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
 import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
-import com.imhungry.jjongseol.ui.component.layout.TopSheet
+import com.imhungry.jjongseol.ui.meeting.component.TopSheet
 import com.imhungry.jjongseol.ui.meeting.bottom.MeetingControlPanel
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
+import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.ui.theme.primarySurface
 import com.imhungry.jjongseol.ui.theme.tertiary
-import com.imhungry.jjongseol.ui.theme.whiteColor
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
@@ -56,6 +57,7 @@ fun MeetingWaitingScreen(
     navController: NavController,
     meetingId: Long
 ) {
+    val context = LocalContext.current
     val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val agendas by agendaViewModel.agendaItems.collectAsState()
     val agendaError by agendaViewModel.errorMessage.collectAsState()
@@ -66,9 +68,10 @@ fun MeetingWaitingScreen(
     val isMeetingLoading by meetingViewModel.isLoading.collectAsState()
     val isAgendaLoading by agendaViewModel.isLoading.collectAsState()
     val isStatusUpdating by meetingViewModel.isStatusUpdating.collectAsState()
-    var isTopSheetExpanded by remember { mutableStateOf(false) }
+    val isTopSheetExpanded by meetingViewModel.isTopSheetExpanded
 
     LaunchedEffect(meetingId) {
+        meetingViewModel.setTopSheetExpanded(false)
         meetingViewModel.loadMeetingDetail2(meetingId)
     }
 
@@ -89,7 +92,9 @@ fun MeetingWaitingScreen(
 
     LaunchedEffect(meetingStatus) {
         if (meetingStatus == MeetingStatus.IN_PROGRESS) {
-            navController.navigate("meetingRoute/inprogress/$meetingId")
+            navController.navigate("meetingRoute/inprogress/$meetingId") {
+                popUpTo(0)
+            }
         }
     }
 
@@ -97,13 +102,13 @@ fun MeetingWaitingScreen(
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
     val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating
 
-    SetNavigationBarColor(whiteColor)
+    SetNavigationBarColor(primaryBackground)
 
     if (showLoading) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(whiteColor),
+                .background(primaryBackground),
             contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator(color = Color(0xFF969696))
@@ -112,7 +117,7 @@ fun MeetingWaitingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(whiteColor)
+                .background(primaryBackground)
         ) {
             ErrorDialogHandler(
                 errorMessage = dialogMessage,
@@ -125,7 +130,7 @@ fun MeetingWaitingScreen(
             if (!isAgendaLoading && peekIndex in agendas.indices) {
                 TopSheet(
                     expanded = isTopSheetExpanded,
-                    onExpandedChange = { isTopSheetExpanded = it },
+                    onExpandedChange = { meetingViewModel.setTopSheetExpanded(it) },
                     peekContent = {
                         CheckItem(
                             text = agendas[peekIndex].content,
@@ -188,7 +193,8 @@ fun MeetingWaitingScreen(
                 navController = navController,
                 viewModel = meetingViewModel,
                 isWaiting = true,
-                meetingId = meetingId
+                meetingId = meetingId,
+                context = context
             )
         }
     }

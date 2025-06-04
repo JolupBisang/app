@@ -236,7 +236,9 @@ fun MainHomeScreen(navController: NavController){
             MeetingCardList(
                 meetings = meetings,
                 onJoinMeeting = { meeting ->
-                    navController.navigate("meetingRoute/inprogress/${meeting.id}")
+                    navController.navigate("meetingRoute/inprogress/${meeting.id}") {
+                        popUpTo(0)
+                    }
                 }
             )
         }

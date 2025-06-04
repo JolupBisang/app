@@ -2,13 +2,21 @@ package com.imhungry.jjongseol.ui.meeting
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,13 +29,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import coil.decode.GifDecoder
+import coil.request.ImageRequest
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
-import com.imhungry.jjongseol.ui.SilRokNavigation
+import com.imhungry.jjongseol.ui.theme.Pretend
+import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
+import com.imhungry.jjongseol.ui.theme.inverseText
+import com.imhungry.jjongseol.ui.theme.primaryBackground
+import com.imhungry.jjongseol.ui.theme.primaryButton
+import com.imhungry.jjongseol.ui.theme.primaryTextColor
+import com.imhungry.jjongseol.ui.theme.whiteColor
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.delay
 
@@ -46,39 +65,77 @@ fun MeetingEndScreen(
         }
     }
 
-    LaunchedEffect(isCompleted) {
-        if (isCompleted) {
-            delay(1000)
-            navController.navigate("meetingRoute/completed/$meetingId")  {
-                popUpTo(0)
-            }
-        }
-    }
+    SetNavigationBarColor(primaryBackground)
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .background(primaryBackground)
+            .padding(
+                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding(),
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            )
     ) {
-        Text(
-            text = if (isCompleted) "회의록 완성!" else "회의록 생성 중...",
-            style = MaterialTheme.typography.titleLarge,
-            color = Color.Gray,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(48.dp))
-
-        Image(
-            painter = painterResource(
-                id = if (isCompleted) R.drawable.complete else R.drawable.loading
-            ),
-            contentDescription = if (isCompleted) "회의록 완성 이미지" else "회의록 생성 중 이미지",
+        Column(
             modifier = Modifier
-                .size(200.dp)
-        )
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .padding(top = 96.dp, start = 20.dp, end = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(R.drawable.gif)
+                        .decoderFactory(GifDecoder.Factory())
+                        .build()
+                ),
+                contentDescription = "회의록 생성 중 gif",
+                modifier = Modifier.size(140.dp)
+            )
+             Text(
+                text = if (isCompleted) "회의록 생성 완료" else "회의록 생성 중",
+                fontFamily = Pretend,
+                fontWeight = FontWeight.Bold,
+                color = primaryTextColor,
+                style = MaterialTheme.typography.titleLarge,
+                fontSize = 28.sp,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = if (isCompleted) "회의 내용을 성공적으로 저장하였습니다." else "회의 내용을 생성하는 중입니다.",
+                style = MaterialTheme.typography.labelMedium,
+                color = primaryTextColor,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        if (isCompleted) {
+            Button(
+                onClick = {
+                    navController.navigate("meetingRoute/completed/$meetingId") {
+                        popUpTo(0)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = primaryButton,
+                    contentColor = inverseText
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 20.dp, vertical = 24.dp),
+                shape = RoundedCornerShape(8.dp),
+                elevation = null
+            ) {
+                Text(
+                    text = "완료",
+                    fontFamily = Pretend,
+                    color = inverseText,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
     }
 }
