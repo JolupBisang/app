@@ -96,6 +96,11 @@ class AudioWebSocketClient(
                     Log.w("Audio", "WebSocket 에러 메시지 수신: $message")
                     onError(message)
                 }
+                SocketResponseType.MEETING_COMPLETED -> {
+                    Log.i("Audio", "회의 종료 메시지 수신, 연결 종료 처리")
+                    onMessage("MEETING_COMPLETED")
+                    stop(true)
+                }
                 else -> Log.d("Audio", "알 수 없는 메시지 타입 수신: ${response.type}")
             }
         } catch (e: Exception) {
@@ -213,14 +218,14 @@ class AudioWebSocketClient(
     private fun buildAudioPacket(chunkId: Long, audioBytes: ByteArray): ByteArray {
         val now = LocalDateTime.now()
         val meta = JSONObject().apply {
-            put("type", "pcm")
+            put("type", "audio")
             put("chunkId", chunkId)
-            put("encoding", "audio/pcm")
+            put("encoding", "opus")
             put("timestamp", now.toString())
         }
         val metaBytes = meta.toString().toByteArray(Charsets.UTF_8)
         val metaLen = metaBytes.size
-        val buf = ByteBuffer.allocate(4 + metaLen + audioBytes.size).order(ByteOrder.BIG_ENDIAN)
+        val buf = ByteBuffer.allocate(4 + metaLen + audioBytes.size)
         buf.putInt(metaLen)
         buf.put(metaBytes)
         buf.put(audioBytes)
@@ -265,14 +270,6 @@ class AudioWebSocketClient(
                 rawDir.listFiles()?.forEach { it.delete() }
                 rawDir.delete()
             }
-        }
-    }
-
-    fun close() {
-        if (isConnected) {
-            webSocket?.close(1000, "Normal closure")
-            webSocket = null
-            isConnected = false
         }
     }
 

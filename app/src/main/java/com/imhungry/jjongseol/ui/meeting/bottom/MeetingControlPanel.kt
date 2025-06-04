@@ -161,7 +161,9 @@ fun MeetingControlPanel(
                     viewModel.updateMeetingStatus(meetingId, MeetingStatus.COMPLETED)
                 }
                 context?.stopService(Intent(context, MeetingSseService::class.java))
-                navController.navigate("meetingRoute/end/$meetingId")
+                navController.navigate("meetingRoute/end/$meetingId")  {
+                    popUpTo(0)
+                }
                 showDialog = false
             },
             onDismiss = { showDialog = false }

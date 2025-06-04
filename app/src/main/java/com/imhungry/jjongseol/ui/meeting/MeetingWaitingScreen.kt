@@ -99,57 +99,64 @@ fun MeetingWaitingScreen(
 
     SetNavigationBarColor(whiteColor)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(whiteColor)
-    ) {
-        ErrorDialogHandler(
-            errorMessage = dialogMessage,
-            showDialog = showDialog,
-            onFinish = onFinish,
-            clearError = { meetingViewModel.clearErrorMessage() },
-            loginViewModel = loginViewModel
-        )
-
-        if (!isAgendaLoading && peekIndex in agendas.indices) {
-            TopSheet(
-                expanded = isTopSheetExpanded,
-                onExpandedChange = { isTopSheetExpanded = it },
-                peekContent = {
-                    CheckItem(
-                        text = agendas[peekIndex].content,
-                        checked = agendas[peekIndex].isCompleted,
-                        isFocused = !agendas[peekIndex].isCompleted,
-                        onToggle = { agendaViewModel.onToggleAgenda(peekIndex) }
-                    )
-                },
-                content = {
-                    LazyColumn (
-                        modifier = Modifier.heightIn(max = 161.dp)
-                    ) {
-                        itemsIndexed(agendas) { i, item ->
-                            CheckItem(
-                                text = item.content,
-                                checked = item.isCompleted,
-                                isFocused = !item.isCompleted && firstUncheckedIndex == i,
-                                onToggle = { agendaViewModel.onToggleAgenda(i) }
-                            )
-                        }
-                    }
-                }
-            )
-        }
-
+    if (showLoading) {
         Box(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
+                .fillMaxSize()
+                .background(whiteColor),
             contentAlignment = Alignment.Center
         ) {
-            if (showLoading) {
-                CircularProgressIndicator(color = Color(0xFF969696))
-            } else {
+            CircularProgressIndicator(color = Color(0xFF969696))
+        }
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(whiteColor)
+        ) {
+            ErrorDialogHandler(
+                errorMessage = dialogMessage,
+                showDialog = showDialog,
+                onFinish = onFinish,
+                clearError = { meetingViewModel.clearErrorMessage() },
+                loginViewModel = loginViewModel
+            )
+
+            if (!isAgendaLoading && peekIndex in agendas.indices) {
+                TopSheet(
+                    expanded = isTopSheetExpanded,
+                    onExpandedChange = { isTopSheetExpanded = it },
+                    peekContent = {
+                        CheckItem(
+                            text = agendas[peekIndex].content,
+                            checked = agendas[peekIndex].isCompleted,
+                            isFocused = !agendas[peekIndex].isCompleted,
+                            onToggle = { agendaViewModel.onToggleAgenda(peekIndex) }
+                        )
+                    },
+                    content = {
+                        LazyColumn (
+                            modifier = Modifier.heightIn(max = 161.dp)
+                        ) {
+                            itemsIndexed(agendas) { i, item ->
+                                CheckItem(
+                                    text = item.content,
+                                    checked = item.isCompleted,
+                                    isFocused = !item.isCompleted && firstUncheckedIndex == i,
+                                    onToggle = { agendaViewModel.onToggleAgenda(i) }
+                                )
+                            }
+                        }
+                    }
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -166,22 +173,24 @@ fun MeetingWaitingScreen(
                             meetingId = meetingId,
                             targetStatus = MeetingStatus.IN_PROGRESS
                         )
-                        navController.navigate("meetingRoute/inprogress/$meetingId")
+                        navController.navigate("meetingRoute/inprogress/$meetingId")  {
+                            popUpTo(0)
+                        }
                     })
                 }
             }
-        }
 
-        MeetingControlPanel(
-            timeText = "00:00:00",
-            remainingTimeText = remainingTime,
-            micIcon = R.drawable.mic,
-            onFinish = onFinish,
-            navController = navController,
-            viewModel = meetingViewModel,
-            isWaiting = true,
-            meetingId = meetingId
-        )
+            MeetingControlPanel(
+                timeText = "00:00:00",
+                remainingTimeText = remainingTime,
+                micIcon = R.drawable.mic,
+                onFinish = onFinish,
+                navController = navController,
+                viewModel = meetingViewModel,
+                isWaiting = true,
+                meetingId = meetingId
+            )
+        }
     }
 }
 

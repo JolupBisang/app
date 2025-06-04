@@ -49,7 +49,9 @@ fun MeetingEndScreen(
     LaunchedEffect(isCompleted) {
         if (isCompleted) {
             delay(1000)
-            navController.navigate("meetingRoute/completed/$meetingId")
+            navController.navigate("meetingRoute/completed/$meetingId")  {
+                popUpTo(0)
+            }
         }
     }
 
