@@ -11,14 +11,12 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
-import com.imhungry.jjongseol.data.model.chat.DiarizedSegment
+import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.response.ErrorResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponseType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.*
@@ -67,12 +65,13 @@ class AudioWebSocketClient(
     // /data/data/com.imhungry.jjongseol/cache/audio_packets/
     private val packetDir by lazy { File(context.cacheDir, "audio_packets/$meetingId") }
     // /storage/emulated/0/Android/data/com.imhungry.jjongseol/files/pcm_chunks/
-    private val chunkDir by lazy { File(context.getExternalFilesDir(null), "pcm_chunks/$meetingId") }
+    //private val chunkDir by lazy { File(context.getExternalFilesDir(null), "pcm_chunks/$meetingId") }
     // /storage/emulated/0/Android/data/com.imhungry.jjongseol/files/pcm_raw/
-    private val rawDir by lazy { File(context.getExternalFilesDir(null), "pcm_raw/$meetingId") }
+    //private val rawDir by lazy { File(context.getExternalFilesDir(null), "pcm_raw/$meetingId") }
 
     fun connect() {
         if (isConnected) disconnect()
+        Log.d("Audio", "WebSocket 새로 연결")
 
         val request = Request.Builder()
             .url(url)
@@ -174,7 +173,10 @@ class AudioWebSocketClient(
             Log.e("Audio", "RECORD_AUDIO 권한 없음")
             return
         }
-
+        if (audioRecord != null && audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+            Log.w("Audio", "이미 녹음이 진행 중입니다. 중복 생성 방지")
+            return
+        }
         try {
             audioRecord = AudioRecord(
                 MediaRecorder.AudioSource.MIC,
@@ -204,7 +206,14 @@ class AudioWebSocketClient(
             val pcmBuffer = ByteArray(frameSize * 2)
             while (isActive && isStreaming) {
                 val read = audioRecord?.read(pcmBuffer, 0, pcmBuffer.size) ?: 0
+                if (read <= 0) {
+                    Log.e("Audio", "AudioRecord read 실패: $read, 녹음 중단")
+                    break
+                }
                 if (read > 0 && !isEncodingPaused) {
+                    if (audioRecord != null && audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                        Log.w("Audio", "녹음 진행 중")
+                    }
                     val pcmChunk = pcmBuffer.copyOf(read)
                     // 1. 전체 raw 저장
                     try {
@@ -212,12 +221,12 @@ class AudioWebSocketClient(
                     } catch (e: Exception) {
                     }
                     // 2. 청크별 저장
-                    try {
-                        val chunkFile = File(chunkDir, "chunk_${chunkId}.pcm")
-                        chunkFile.parentFile?.mkdirs()
-                        chunkFile.outputStream().use { it.write(pcmChunk) }
-                    } catch (e: Exception) {
-                    }
+//                    try {
+//                        val chunkFile = File(chunkDir, "chunk_${chunkId}.pcm")
+//                        chunkFile.parentFile?.mkdirs()
+//                        chunkFile.outputStream().use { it.write(pcmChunk) }
+//                    } catch (e: Exception) {
+//                    }
                     // 3. 서버에 보낼 패킷 생성
                     val packet = buildAudioPacket(chunkId, pcmChunk)
                     // 4. 패킷 파일로 저장
@@ -294,10 +303,10 @@ class AudioWebSocketClient(
             runCatching {
                 packetDir.listFiles()?.forEach { it.delete() }
                 packetDir.delete()
-                chunkDir.listFiles()?.forEach { it.delete() }
-                chunkDir.delete()
-                rawDir.listFiles()?.forEach { it.delete() }
-                rawDir.delete()
+//                chunkDir.listFiles()?.forEach { it.delete() }
+//                chunkDir.delete()
+//                rawDir.listFiles()?.forEach { it.delete() }
+//                rawDir.delete()
             }
         }
     }

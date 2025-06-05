@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.meeting.component.ChatBubble
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
@@ -62,7 +63,8 @@ fun MeetingRecordScreen(
     meetingViewModel: MeetingViewModel,
     agendaViewModel: AgendaViewModel,
     meetingId: Long,
-    navController: NavController
+    navController: NavController,
+    participantInfos: List<UserInfoResponse>
 ) {
     val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val agendas by agendaViewModel.agendaItems.collectAsState()
@@ -76,6 +78,9 @@ fun MeetingRecordScreen(
     val latestFeedback = feedbackList.lastOrNull()
     var feedbackVisible by remember(latestFeedback) { mutableStateOf(latestFeedback != null) }
     val listState = rememberLazyListState()
+    val nicknameMap = remember(participantInfos) {
+        participantInfos.associateBy({ it.id }, { it.nickname })
+    }
 
     LaunchedEffect(diarizedSegments.size) {
         if (diarizedSegments.isNotEmpty()) {
@@ -99,7 +104,7 @@ fun MeetingRecordScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, top = 4.dp, bottom = 8.dp),
+                    .padding(start = 16.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
@@ -159,8 +164,8 @@ fun MeetingRecordScreen(
                         }
                         ChatBubble(
                             diarizedSegment = message,
-                            isMe = message.order % 2 == 0,
-                            index = message.order
+                            nickname = nicknameMap[message.userId] ?: "알 수 없음",
+                            isMe = message.userId == 1L
                         )
                         if (index == diarizedSegments.lastIndex) {
                             Spacer(modifier = Modifier.padding(bottom = 28.dp))

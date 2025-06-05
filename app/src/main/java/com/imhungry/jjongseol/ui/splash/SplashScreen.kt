@@ -1,6 +1,5 @@
 package com.imhungry.jjongseol.ui.splash
 
-import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -13,10 +12,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -32,30 +32,37 @@ import com.imhungry.jjongseol.ui.login.GoogleLoginButton
 import com.imhungry.jjongseol.ui.theme.BasicBackGround
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
-import com.imhungry.jjongseol.viewmodel.SplashViewModel
+import com.imhungry.jjongseol.viewmodel.LoginViewModel
+import com.imhungry.jjongseol.viewmodel.UserViewModel
 import kotlinx.coroutines.delay
+import kotlin.math.log
 
 @Composable
 fun SplashScreen(
-    splashViewModel: SplashViewModel = hiltViewModel(),
+    userViewModel: UserViewModel = hiltViewModel(),
+    loginViewModel: LoginViewModel = hiltViewModel(),
     navController: NavHostController
 ) {
     val context = LocalContext.current
-    val isTokenExists = splashViewModel.isTokenExists
     val appPrefs = AppPrefs(context)
     val isVoiceTutorialCompleted = appPrefs.isVoiceTutorialCompleted()
+    val errorMessage by userViewModel.errorMessage.collectAsState()
 
     LaunchedEffect(Unit) {
+        userViewModel.loadMyNickname2()
         delay(1500)
-        navController.navigate(
-            if (isTokenExists) {
+        if (errorMessage != null) {
+            loginViewModel.clearToken()
+            navController.navigate(SilRokNavigation.Login.route) {
+                popUpTo(0)
+            }
+        } else {
+            navController.navigate(
                 if (isVoiceTutorialCompleted) SilRokNavigation.Home.route
                 else SilRokNavigation.LearningVoiceFirst.route
-            } else {
-                SilRokNavigation.Login.route
+            ) {
+                popUpTo(0)
             }
-        ) {
-            popUpTo(0)
         }
     }
     SetNavigationBarColor(BasicBackGround)

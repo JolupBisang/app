@@ -41,6 +41,7 @@ import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
+import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
@@ -56,6 +57,7 @@ import com.imhungry.jjongseol.ui.theme.whiteColor
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
+import com.imhungry.jjongseol.viewmodel.UserViewModel
 import kotlinx.coroutines.delay
 
 @Composable
@@ -63,6 +65,7 @@ fun MeetingScreen(
     loginViewModel: LoginViewModel = hiltViewModel(),
     meetingViewModel: MeetingViewModel,
     agendaViewModel: AgendaViewModel,
+    userViewModel: UserViewModel = hiltViewModel(),
     onFinish: (SilRokNavigation) -> Unit,
     navController: NavController,
     meetingId: Long
@@ -71,6 +74,7 @@ fun MeetingScreen(
     val agendaError by agendaViewModel.errorMessage.collectAsState()
     val isMeetingLoading by meetingViewModel.isLoading.collectAsState()
     val isAgendaLoading by agendaViewModel.isLoading.collectAsState()
+    val isParticipantLoading by meetingViewModel.isParticipantLoading.collectAsState()
     val isStatusUpdating by meetingViewModel.isStatusUpdating.collectAsState()
     val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val meetingError by meetingViewModel.errorMessage.collectAsState()
@@ -141,9 +145,9 @@ fun MeetingScreen(
     )
 
     val allReady = permissionGranted && !isMeetingLoading && !isAgendaLoading
-    val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating
-
+    val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating || isParticipantLoading
     var showLeaveDialog by remember { mutableStateOf(false) }
+    val participantInfos by meetingViewModel.participantInfos.collectAsState()
 
     BackHandler(enabled = true) {
         showLeaveDialog = true
@@ -213,7 +217,8 @@ fun MeetingScreen(
             meetingId = meetingId,
             timeText = timeText,
             remainingTime = remainingTime,
-            context = context
+            context = context,
+            participantInfos = participantInfos
         )
     }
 }
@@ -244,7 +249,8 @@ fun MeetingScreenContent(
     meetingId: Long,
     timeText: String,
     remainingTime: String,
-    context: Context
+    context: Context,
+    participantInfos: List<UserInfoResponse>
 ) {
     val pagerState = rememberPagerState(initialPage = 1)
 
@@ -272,7 +278,8 @@ fun MeetingScreenContent(
                         meetingViewModel = meetingViewModel,
                         agendaViewModel = agendaViewModel,
                         meetingId = meetingId,
-                        navController = navController
+                        navController = navController,
+                        participantInfos = participantInfos
                     )
                     2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel)
                 }
