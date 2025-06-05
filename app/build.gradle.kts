@@ -15,6 +15,7 @@ val baseUrl = localProperties.getProperty("base_url") ?: ""
 val oAuthClientId = localProperties.getProperty("oauth_client_id") ?: ""
 val oAuthRedirectUri = localProperties.getProperty("redirect-uris.app") ?: ""
 val ipAddress = localProperties.getProperty("ip_address") ?: ""
+val wsHost = localProperties.getProperty("ws_host") ?: ""
 
 android {
     namespace = "com.imhungry.jjongseol"
@@ -33,6 +34,7 @@ android {
         buildConfigField("String", "OAUTH_CLIENT_ID", "\"$oAuthClientId\"")
         buildConfigField("String", "OAUTH_REDIRECT_URI", "\"$oAuthRedirectUri\"")
         buildConfigField("String", "IP_ADDRESS", "\"$ipAddress\"")
+        buildConfigField("String", "WS_HOST", "\"$wsHost\"")
     }
 
     buildTypes {

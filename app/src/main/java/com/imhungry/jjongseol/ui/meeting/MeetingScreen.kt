@@ -271,7 +271,8 @@ fun MeetingScreenContent(
                     1 -> MeetingRecordScreen(
                         meetingViewModel = meetingViewModel,
                         agendaViewModel = agendaViewModel,
-                        meetingId = meetingId
+                        meetingId = meetingId,
+                        navController = navController
                     )
                     2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel)
                 }

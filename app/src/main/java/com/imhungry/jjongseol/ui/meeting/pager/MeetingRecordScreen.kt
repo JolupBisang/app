@@ -2,18 +2,24 @@ package com.imhungry.jjongseol.ui.meeting.pager
 
 import android.util.Log
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -30,8 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.meeting.component.ChatBubble
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
 import com.imhungry.jjongseol.ui.component.dialog.MeetingTerminationNotification
@@ -51,7 +61,8 @@ import java.time.format.DateTimeFormatter
 fun MeetingRecordScreen(
     meetingViewModel: MeetingViewModel,
     agendaViewModel: AgendaViewModel,
-    meetingId: Long
+    meetingId: Long,
+    navController: NavController
 ) {
     val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val agendas by agendaViewModel.agendaItems.collectAsState()
@@ -82,8 +93,30 @@ fun MeetingRecordScreen(
     Box(modifier = Modifier
         .fillMaxSize()
         .background(primaryBackground)
+        .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 4.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.back),
+                    contentDescription = "뒤로가기",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            navController.navigate(SilRokNavigation.Home.route) {
+                                popUpTo(0)
+                            }
+                        }
+                )
+            }
             if (hasAgendas && peekIndex in agendas.indices) {
                 TopSheet(
                     expanded = isTopSheetExpanded,

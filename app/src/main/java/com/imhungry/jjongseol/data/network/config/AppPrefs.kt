@@ -10,4 +10,22 @@ class AppPrefs(context: Context) {
     fun setVoiceTutorialCompleted() {
         prefs.edit().putBoolean("voice_tutorial_completed", true).apply()
     }
+
+    fun isMeetingForegroundServiceRunning(): Boolean =
+        prefs.getBoolean("meeting_fg_service_running", false)
+
+    fun setMeetingForegroundServiceRunning(running: Boolean) {
+        prefs.edit().putBoolean("meeting_fg_service_running", running).apply()
+    }
+
+    fun getRunningMeetingId(): Long =
+        prefs.getLong("running_meeting_id", -1L)
+
+    fun setRunningMeetingId(meetingId: Long) {
+        prefs.edit().putLong("running_meeting_id", meetingId).apply()
+    }
+
+    fun clearRunningMeetingId() {
+        prefs.edit().remove("running_meeting_id").apply()
+    }
 }

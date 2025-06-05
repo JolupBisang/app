@@ -15,6 +15,7 @@ import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
 import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
 import com.imhungry.jjongseol.data.network.client.AudioWebSocketClient
+import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
 import com.imhungry.jjongseol.data.repository.LoginRepository
@@ -63,6 +64,7 @@ class MeetingSseService : Service() {
     private var audioWsClient: AudioWebSocketClient? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO)
     private var currentMicEnabled: Boolean = true
+    private lateinit var appPrefs: AppPrefs
 
     private fun createNotification(content: String): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -211,9 +213,17 @@ class MeetingSseService : Service() {
             }
             return START_STICKY
         }
+        appPrefs = AppPrefs(applicationContext)
         currentMeetingId = intent?.getLongExtra("meetingId", -1L) ?: -1L
         isServiceStopped = false
-        if (currentMeetingId == -1L) { stopSelf(); return START_NOT_STICKY }
+        if (currentMeetingId == -1L) {
+            appPrefs.setMeetingForegroundServiceRunning(false)
+            appPrefs.clearRunningMeetingId()
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        appPrefs.setMeetingForegroundServiceRunning(true)
+        appPrefs.setRunningMeetingId(currentMeetingId)
         startForeground(1, createNotification("회의 진행 중.."))
         connectSse(currentMeetingId)
         val token = loginRepository.getToken() ?: ""
@@ -231,7 +241,7 @@ class MeetingSseService : Service() {
     }
 
     private fun connectAudioWebSocket(meetingId: Long, token: String) {
-        val url = "ws://${BuildConfig.IP_ADDRESS}/ws/meeting/audio/$meetingId?token=$token"
+        val url = "ws://${BuildConfig.WS_HOST}/ws/meeting/audio/$meetingId?token=$token"
 
         audioWsClient?.disconnect()
         audioWsClient = AudioWebSocketClient(
@@ -252,8 +262,14 @@ class MeetingSseService : Service() {
         audioWsClient?.connect()
     }
 
+    private fun clearMeetingServiceState() {
+        appPrefs.setMeetingForegroundServiceRunning(false)
+        appPrefs.clearRunningMeetingId()
+    }
+
     override fun onDestroy() {
         Log.d("MeetingSseService", "SSE 종료")
+        clearMeetingServiceState()
         isServiceStopped = true
         currentMeetingId = -1L
         stopReconnectTimer()
@@ -269,6 +285,7 @@ class MeetingSseService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         Log.d("MeetingSseService", "SSE 종료")
+        clearMeetingServiceState()
         isServiceStopped = true
         currentMeetingId = -1L
         stopReconnectTimer()
@@ -284,6 +301,7 @@ class MeetingSseService : Service() {
 
     private fun stopAllConnections() {
         Log.i("MeetingSseService", "회의 종료됨: SSE/AudioWebSocket 모두 종료")
+        clearMeetingServiceState()
         isServiceStopped = true
         stopReconnectTimer()
         summaryEventSource?.cancel()
