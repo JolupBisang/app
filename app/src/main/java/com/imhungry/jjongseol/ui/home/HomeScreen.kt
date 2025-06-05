@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.home
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -47,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,6 +58,7 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.theme.BasicBackGround
 import com.imhungry.jjongseol.ui.theme.TransparentGreen
 import com.imhungry.jjongseol.ui.theme.UserGray
@@ -71,6 +74,15 @@ fun HomeScreen(navController: NavController) {
     val scope = rememberCoroutineScope()
     val searchText = remember { mutableStateOf("") }
 
+    val context = LocalContext.current
+    val appPrefs = remember { AppPrefs(context) }
+
+    // 앱 진입시 포그라운드 서비스 및 meetingId 상태 확인
+    LaunchedEffect(Unit) {
+        val isRunning = appPrefs.isMeetingForegroundServiceRunning()
+        val meetingId = appPrefs.getRunningMeetingId()
+        Log.d("HomeScreen", "포그라운드 서비스 실행 중? $isRunning, 실행 중인 회의 ID: $meetingId")
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
