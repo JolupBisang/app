@@ -77,10 +77,13 @@ fun HomeScreen(navController: NavController) {
     val context = LocalContext.current
     val appPrefs = remember { AppPrefs(context) }
 
+    var isRunning by remember { mutableStateOf(false) }
+    var meetingId by remember { mutableStateOf(-1L) }
+
     // 앱 진입시 포그라운드 서비스 및 meetingId 상태 확인
     LaunchedEffect(Unit) {
-        val isRunning = appPrefs.isMeetingForegroundServiceRunning()
-        val meetingId = appPrefs.getRunningMeetingId()
+        isRunning = appPrefs.isMeetingForegroundServiceRunning()
+        meetingId = appPrefs.getRunningMeetingId()
         Log.d("HomeScreen", "포그라운드 서비스 실행 중? $isRunning, 실행 중인 회의 ID: $meetingId")
     }
 
@@ -99,7 +102,11 @@ fun HomeScreen(navController: NavController) {
                 ) {
                     //MakeProfile(navController)
                     //CreateNewMeetingScreen(navController)
-                    MainHomeScreen(navController)
+                    MainHomeScreen(
+                        navController = navController,
+                        isRunning = isRunning,
+                        meetingId = meetingId
+                    )
 
                     Box(
                         modifier = Modifier
@@ -173,7 +180,9 @@ fun HomeScreen(navController: NavController) {
 
 
 @Composable
-fun MainHomeScreen(navController: NavController){
+fun MainHomeScreen(navController: NavController,
+                   isRunning: Boolean,
+                   meetingId: Long){
     val viewModel: MeetingViewModel = hiltViewModel()
     val meetings by viewModel.meetings.collectAsState()
 
@@ -203,10 +212,10 @@ fun MainHomeScreen(navController: NavController){
                 Spacer(Modifier.height(40.dp))
                 Row(
                     modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(5.dp),
+                        .fillMaxWidth()
+                        .padding(5.dp),
                     horizontalArrangement = Arrangement.End,
-                    ){
+                ){
                     Text(text = if(calendarToggle) "캘린더" else "리스트"
                         ,color = UserGreen1
                         ,modifier = Modifier
@@ -251,7 +260,9 @@ fun MainHomeScreen(navController: NavController){
                     navController.navigate("meetingRoute/inprogress/${meeting.id}") {
                         popUpTo(0)
                     }
-                }
+                },
+                isRunning = isRunning,
+                meetingId = meetingId
             )
         }
 
