@@ -1,6 +1,7 @@
 package com.imhungry.jjongseol.ui.learningvoice
 import android.content.Context
 import android.media.MediaRecorder
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,12 +11,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import coil.decode.GifDecoder
+import coil.request.ImageRequest
+import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
@@ -106,12 +110,12 @@ fun RecordingVoiceScreen(
             .fillMaxSize()
             .background(blackColor)
             .navigationBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 40.dp)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween,
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 40.dp),
+            //verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -120,24 +124,39 @@ fun RecordingVoiceScreen(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
+            Spacer(modifier = Modifier.height(80.dp))
+            Image(
+                painter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(if (showRetry) R.drawable.warning else R.drawable.voiceing)
+                        .decoderFactory(GifDecoder.Factory())
+                        .build()
+                ),
+                contentDescription = if (showRetry) "녹음 실패 경고 gif" else "목소리 인식 중 gif",
+                modifier = Modifier.size(200.dp)
+            )
+            Text(
+                text = "휴대폰 마이크에 대고 다음과 같이 말씀해주세요.",
+                color = Color.LightGray,
+                fontSize = 14.sp
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = scripts[currentIndex],
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                lineHeight = 32.sp
+            )
+        }
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "휴대폰 마이크에 대고 다음과 같이 말씀해주세요.",
-                    color = Color.LightGray,
-                    fontSize = 14.sp
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = scripts[currentIndex],
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 32.sp
-                )
-            }
-
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 40.dp),
+            verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             when {
                 showRetry -> {
                     Column(
