@@ -13,12 +13,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
+import com.imhungry.jjongseol.data.network.config.AppPrefs
+import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.theme.BasicBackGround
 import com.imhungry.jjongseol.ui.theme.SkyBlue
 import com.imhungry.jjongseol.ui.theme.UserGreen1
@@ -26,16 +30,16 @@ import com.imhungry.jjongseol.viewmodel.UserViewModel
 
 @Composable
 fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
+    val context = LocalContext.current
+
     val scope = rememberCoroutineScope()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val drawerWidth = screenWidth * 0.6f
 
     val userViewModel: UserViewModel = hiltViewModel()
-    //val nickname by userViewModel.nickname.collectAsState()
-
-    LaunchedEffect(Unit) {
-        //userViewModel.loadMyNickname2()
-    }
+    val appPrefs = remember { AppPrefs(context) }
+    val myProfile: UserInfoResponse? = appPrefs.loadMyProfile()
+    val nickname: String? = myProfile?.nickname
 
     Column(
         modifier = Modifier
@@ -52,7 +56,7 @@ fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween){
                 Text(
-                    text =  "로딩 중...",
+                    text = nickname ?: "로딩 중...",
                     style = TextStyle(fontSize = 20.sp),
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
