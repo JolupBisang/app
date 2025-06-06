@@ -64,7 +64,6 @@ fun CreateNewMeetingScreen(navController: NavController){
     val userViewModel: UserViewModel = hiltViewModel()
 
     val meetingTitle = remember { mutableStateOf("") }
-    val leaderName = remember { mutableStateOf("") }
 
     val selectedMembers = remember { mutableStateOf(listOf<String>()) }
 
@@ -82,6 +81,12 @@ fun CreateNewMeetingScreen(navController: NavController){
 
     val breakTime = remember { mutableStateOf("") }
     val breakTimeMinute = remember { mutableStateOf("") }
+
+    val isTitleError = remember { mutableStateOf(false) }
+    val isTimeError = remember { mutableStateOf(false) }
+    val isPlaceError = remember { mutableStateOf(false) }
+    val isAgendaError = remember { mutableStateOf(false) }
+    val isBreakTimeError = remember { mutableStateOf(false) }
 
     ConstraintLayout (modifier = Modifier
         .background(Color.White)
@@ -159,6 +164,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
                     )
                 }
+                ValidationErrorText(isTitleError.value)
             }
 
             item {
@@ -265,6 +271,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
                     }
                 }
+                ValidationErrorText(isTimeError.value)
             }
 
             item {
@@ -311,6 +318,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                         )
                     )
                 }
+                ValidationErrorText(isPlaceError.value)
             }
 
             item {
@@ -333,6 +341,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                         AgendaListScreen(agendaList = agendaList, enabled = true)
                     }
                 }
+                ValidationErrorText(isAgendaError.value)
             }
 
             item{
@@ -358,6 +367,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                             BreakTimeRow(breakTime = breakTime, breakTimeMinute = breakTimeMinute, enabled = true)
                         }
                     }
+                    ValidationErrorText(isBreakTimeError.value)
                 }
 
             }
@@ -375,6 +385,17 @@ fun CreateNewMeetingScreen(navController: NavController){
                     onClick = {
                         val agendas = agendaList.toList()
                         val participants = selectedMembers.value
+
+                        var hasError = false
+                        isTitleError.value = meetingTitle.value.isBlank().also { if (it) hasError = true }
+                        isTimeError.value = startTime.value == "HH:MM" || endTime.value == "HH:MM"
+                        if (isTimeError.value) hasError = true
+                        isPlaceError.value = place.value.isBlank().also { if (it) hasError = true }
+                        isAgendaError.value = agendas.isEmpty().also { if (it) hasError = true }
+                        isBreakTimeError.value = breakTime.value.isBlank() || breakTimeMinute.value.isBlank()
+                        if (isBreakTimeError.value) hasError = true
+
+                        if (hasError) return@Button
 
                         if (agendas.isEmpty()) {
                             Log.e("MeetingCreate", "아젠다가 비어있음")
@@ -472,5 +493,15 @@ fun CustomBackButton(onClick: () -> Unit) {
     )
 }
 
-
+@Composable
+fun ValidationErrorText(visible: Boolean, modifier: Modifier = Modifier) {
+    if (visible) {
+        Text(
+            "필수항목이 작성되지 않았습니다.",
+            color = Color.Red,
+            fontSize = 12.sp,
+            modifier = modifier.padding(start = 70.dp, top = 4.dp)
+        )
+    }
+}
 
