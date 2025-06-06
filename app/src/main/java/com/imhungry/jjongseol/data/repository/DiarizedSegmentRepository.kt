@@ -1,6 +1,6 @@
 package com.imhungry.jjongseol.data.repository
 
-import com.imhungry.jjongseol.data.model.chat.DiarizedSegment
+import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 

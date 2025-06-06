@@ -7,10 +7,13 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
@@ -118,6 +121,7 @@ fun MeetingWaitingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(primaryBackground)
+                .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
         ) {
             ErrorDialogHandler(
                 errorMessage = dialogMessage,

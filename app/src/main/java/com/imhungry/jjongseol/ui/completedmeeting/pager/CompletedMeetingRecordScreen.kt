@@ -41,7 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.model.chat.DiarizedSegment
+import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.ui.meeting.component.ChatBubble
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
 import kotlinx.coroutines.flow.collectLatest
@@ -93,7 +93,7 @@ fun CompletedMeetingRecordScreen() {
                 .padding(bottom = 8.dp)
         ) {
             items(chatMessages.reversed()) { message ->
-                ChatBubble(diarizedSegment = message, isMe = Random.nextBoolean(), index = 1)
+                ChatBubble(diarizedSegment = message, nickname = "", isMe = Random.nextBoolean(), time = "")
             }
         }
     }

@@ -1,8 +1,8 @@
-package com.imhungry.jjongseol.data.model.chat
+package com.imhungry.jjongseol.data.model.segment
 
 data class DiarizedSegment(
     val timestamp: String,
-    val userId: Int,
+    val userId: Long,
     val order: Int,
     val text: String
 )

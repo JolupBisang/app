@@ -40,7 +40,10 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.model.meeting.MeetingState
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
+import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
+import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
@@ -56,6 +59,7 @@ import com.imhungry.jjongseol.ui.theme.whiteColor
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
+import com.imhungry.jjongseol.viewmodel.UserViewModel
 import kotlinx.coroutines.delay
 
 @Composable
@@ -63,6 +67,7 @@ fun MeetingScreen(
     loginViewModel: LoginViewModel = hiltViewModel(),
     meetingViewModel: MeetingViewModel,
     agendaViewModel: AgendaViewModel,
+    userViewModel: UserViewModel = hiltViewModel(),
     onFinish: (SilRokNavigation) -> Unit,
     navController: NavController,
     meetingId: Long
@@ -71,6 +76,7 @@ fun MeetingScreen(
     val agendaError by agendaViewModel.errorMessage.collectAsState()
     val isMeetingLoading by meetingViewModel.isLoading.collectAsState()
     val isAgendaLoading by agendaViewModel.isLoading.collectAsState()
+    val isParticipantLoading by meetingViewModel.isParticipantLoading.collectAsState()
     val isStatusUpdating by meetingViewModel.isStatusUpdating.collectAsState()
     val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val meetingError by meetingViewModel.errorMessage.collectAsState()
@@ -112,10 +118,6 @@ fun MeetingScreen(
         }
     }
 
-    val remainingTime by remember(meetingDetail) {
-        mutableStateOf(formatTargetTime(meetingDetail?.targetTime))
-    }
-
     LaunchedEffect(meetingError, agendaError) {
         dialogMessage = meetingError ?: agendaError
         showDialog = dialogMessage != null
@@ -141,9 +143,9 @@ fun MeetingScreen(
     )
 
     val allReady = permissionGranted && !isMeetingLoading && !isAgendaLoading
-    val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating
-
+    val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating || isParticipantLoading
     var showLeaveDialog by remember { mutableStateOf(false) }
+    val participantInfos by meetingViewModel.participantInfos.collectAsState()
 
     BackHandler(enabled = true) {
         showLeaveDialog = true
@@ -178,7 +180,33 @@ fun MeetingScreen(
         }
     }
 
-    val timeText = rememberMeetingElapsedTime(startTimeMillis)
+    val appPrefs = remember { AppPrefs(context) }
+
+    LaunchedEffect(allReady, showLoading) {
+        if (allReady && !showLoading) {
+            val meetingStates = appPrefs.loadMeetingStates().toMutableMap()
+            if (meetingStates[meetingId] == null) {
+                val startTime = System.currentTimeMillis()
+                val targetTimeMinutes = meetingDetail?.targetTime ?: 0
+                val endTime = startTime + targetTimeMinutes * 60_000L
+                val meetingState = MeetingState(
+                    meetingId = meetingId,
+                    micEnabled = true,
+                    startTime = startTime,
+                    endTime = endTime
+                )
+                meetingStates[meetingId] = meetingState
+                appPrefs.saveMeetingStates(meetingStates)
+            }
+        }
+    }
+    val meetingState = appPrefs.loadMeetingStates()[meetingId]
+    val savedStartTime = meetingState?.startTime
+    val savedEndTime = meetingState?.endTime
+
+    val timeText = rememberMeetingElapsedTime(savedStartTime)
+    val remainingTime = rememberMeetingRemainingTime(savedEndTime)
+
     SetNavigationBarColor(primaryBackground)
 
     if (!allReady || showLoading) {
@@ -213,16 +241,17 @@ fun MeetingScreen(
             meetingId = meetingId,
             timeText = timeText,
             remainingTime = remainingTime,
-            context = context
+            context = context,
+            participantInfos = participantInfos
         )
     }
 }
 
 @Composable
-fun rememberMeetingElapsedTime(startTimeMillis: Long?): String {
-    val elapsedTime = produceState(initialValue = "00:00:00", startTimeMillis) {
-        while (startTimeMillis != null) {
-            val elapsed = (System.currentTimeMillis() - startTimeMillis) / 1000
+fun rememberMeetingElapsedTime(savedStartTime: Long?): String {
+    val elapsedTime = produceState(initialValue = "00:00:00", savedStartTime) {
+        while (savedStartTime != null) {
+            val elapsed = (System.currentTimeMillis() - savedStartTime) / 1000
             val h = elapsed / 3600
             val m = (elapsed % 3600) / 60
             val s = elapsed % 60
@@ -231,6 +260,21 @@ fun rememberMeetingElapsedTime(startTimeMillis: Long?): String {
         }
     }
     return elapsedTime.value
+}
+
+@Composable
+fun rememberMeetingRemainingTime(savedEndTime: Long?): String {
+    val remainingTime = produceState(initialValue = "00:00:00", savedEndTime) {
+        while (savedEndTime != null) {
+            val remain = ((savedEndTime - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
+            val h = remain / 3600
+            val m = (remain % 3600) / 60
+            val s = remain % 60
+            value = String.format("%02d:%02d:%02d", h, m, s)
+            delay(1000)
+        }
+    }
+    return remainingTime.value
 }
 
 @OptIn(ExperimentalPagerApi::class)
@@ -244,7 +288,8 @@ fun MeetingScreenContent(
     meetingId: Long,
     timeText: String,
     remainingTime: String,
-    context: Context
+    context: Context,
+    participantInfos: List<UserInfoResponse>
 ) {
     val pagerState = rememberPagerState(initialPage = 1)
 
@@ -266,15 +311,20 @@ fun MeetingScreenContent(
                 when (page) {
                     0 -> MeetingSummaryScreen(
                         meetingViewModel = meetingViewModel,
-                        agendaViewModel = agendaViewModel
+                        agendaViewModel = agendaViewModel,
+                        meetingId = meetingId
                     )
                     1 -> MeetingRecordScreen(
                         meetingViewModel = meetingViewModel,
                         agendaViewModel = agendaViewModel,
                         meetingId = meetingId,
-                        navController = navController
+                        navController = navController,
+                        participantInfos = participantInfos
                     )
-                    2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel)
+                    2 -> MeetingFeedbackScreen(
+                        meetingViewModel = meetingViewModel,
+                        meetingId = meetingId
+                    )
                 }
             }
             CustomHorizontalPagerIndicator(

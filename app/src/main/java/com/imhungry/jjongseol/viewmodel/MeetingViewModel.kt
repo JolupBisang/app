@@ -8,7 +8,7 @@ import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
-import com.imhungry.jjongseol.data.model.chat.DiarizedSegment
+import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
@@ -17,6 +17,7 @@ import com.imhungry.jjongseol.data.model.home.MeetingResponse
 import com.imhungry.jjongseol.data.model.home.toMeetingInfo
 import com.imhungry.jjongseol.data.model.meeting.request.MeetingUpdateReq
 import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
+import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.imhungry.jjongseol.ui.home.meetingdata.MeetingInfo
 import com.imhungry.jjongseol.data.network.api.MeetingApi
@@ -25,8 +26,11 @@ import com.imhungry.jjongseol.data.repository.FeedbackRepository
 import com.imhungry.jjongseol.data.repository.MeetingRepository
 import com.imhungry.jjongseol.data.repository.MeetingResult
 import com.imhungry.jjongseol.data.repository.SummaryRepository
+import com.imhungry.jjongseol.data.repository.UserRepository
+import com.imhungry.jjongseol.data.repository.UserResult
 import com.imhungry.jjongseol.service.MeetingSseService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,6 +44,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MeetingViewModel @Inject constructor(
     private val meetingRepository: MeetingRepository,
+    private val userRepository: UserRepository,
     private val meetingApi: MeetingApi,
     private val agendaApi: AgendaApi,
     private val feedbackRepository: FeedbackRepository,
@@ -88,6 +93,12 @@ class MeetingViewModel @Inject constructor(
     private val _micEnabled = MutableStateFlow(true)
     val micEnabled: StateFlow<Boolean> = _micEnabled
 
+    private val _participantInfos = MutableStateFlow<List<UserInfoResponse>>(emptyList())
+    val participantInfos: StateFlow<List<UserInfoResponse>> = _participantInfos
+
+    private val _isParticipantLoading = MutableStateFlow(false)
+    val isParticipantLoading: StateFlow<Boolean> = _isParticipantLoading
+
     private val _diarizedSegments = MutableStateFlow<List<DiarizedSegment>>(emptyList())
     val diarizedSegments: StateFlow<List<DiarizedSegment>> = _diarizedSegments.asStateFlow()
 
@@ -97,7 +108,12 @@ class MeetingViewModel @Inject constructor(
             while (mutable.size <= msg.order) mutable.add(
                 DiarizedSegment("", -1, mutable.size, "")
             )
-            mutable[msg.order] = msg
+            val old = mutable[msg.order]
+            mutable[msg.order] = if (old == null || old == DiarizedSegment("", -1, msg.order, "")) {
+                msg
+            } else {
+                old.copy(text = msg.text)
+            }
             mutable
         }
     }
@@ -173,10 +189,23 @@ class MeetingViewModel @Inject constructor(
     fun loadMeetingDetail2(meetingId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
+            _isParticipantLoading.value = true
             when (val result = meetingRepository.getMeetingDetail(meetingId)) {
                 is MeetingResult.Success -> {
                     _meetingDetail.value = result.data
                     _meetingStatus.value = MeetingStatus.from(result.data.meetingStatus)
+                    // 참가자 이메일로 userInfo 로딩 시작
+                    val emails = result.data.participants.map { it.email }
+                    // 병렬 요청
+                    val userInfoList = emails.map { email ->
+                        async {
+                            when (val userResult = userRepository.getUserInfo(email)) {
+                                is UserResult.Success -> userResult.data
+                                else -> null
+                            }
+                        }
+                    }.mapNotNull { it.await() }
+                    _participantInfos.value = userInfoList
                 }
                 is MeetingResult.Error -> {
                     _errorMessage.value = result.errorResponse?.message ?: result.message
@@ -186,6 +215,7 @@ class MeetingViewModel @Inject constructor(
                 }
             }
             _isLoading.value = false
+            _isParticipantLoading.value = false
         }
     }
 
@@ -408,4 +438,9 @@ class MeetingViewModel @Inject constructor(
             }
         }
     }
+
+    fun addFeedback(feedback: FeedbackDto) {
+        _feedbackList.update { old -> old + feedback }
+    }
+
 }

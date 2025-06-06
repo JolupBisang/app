@@ -22,20 +22,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.component.feedback.Notification
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
-fun MeetingFeedbackScreen(meetingViewModel: MeetingViewModel) {
+fun MeetingFeedbackScreen(
+    meetingViewModel: MeetingViewModel,
+    meetingId: Long
+) {
+    val context = LocalContext.current
+    val appPrefs = remember { AppPrefs(context) }
+    val meetingState = appPrefs.loadMeetingStates()[meetingId]
+    val startTime = meetingState?.startTime
+
     val feedbackList by meetingViewModel.feedbackList.collectAsState()
     DisposableEffect(Unit) {
         onDispose {
@@ -75,10 +86,12 @@ fun MeetingFeedbackScreen(meetingViewModel: MeetingViewModel) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(feedbackList) { index, feedback ->
+                val elapsed = getElapsedString(startTime, feedback.timestamp)
+
                 Notification(
                     visible = true,
                     message = feedback.comment,
-                    time = feedback.timestamp,
+                    time = elapsed,
                     isRead = feedback.isRead
                 )
                 if (index == feedbackList.lastIndex) {

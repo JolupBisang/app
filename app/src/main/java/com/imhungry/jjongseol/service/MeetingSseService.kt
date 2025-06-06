@@ -102,9 +102,11 @@ class MeetingSseService : Service() {
 
     private fun connectSse(meetingId: Long) {
         if (isConnecting) {
-            Log.d("MeetingSseService", "Already connecting, skip!")
+            Log.d("Audio", "Already connecting, skip!")
             return
         }
+        Log.d("Audio", "SSE 새로 연결")
+
         isConnecting = true
 
         summaryEventSource?.cancel()
@@ -156,25 +158,25 @@ class MeetingSseService : Service() {
                             }
                         }
                         "CONNECT" -> {
-                            Log.d("MeetingSseService", "CONNECT: $data")
+                            Log.d("Audio", "CONNECT: $data")
                         }
                         else -> {
-                            Log.w("MeetingSseService", "data: $data")
+                            Log.w("Audio", "data: $data")
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("MeetingSseService", "Exception: ${e.message}", e)
+                    Log.e("Audio", "Exception: ${e.message}", e)
                 }
             }
 
             override fun onClosed(source: EventSource) {
-                Log.d("MeetingSseService", "SSE 연결 종료, 재연결 시도")
+                Log.d("Audio", "SSE 연결 종료, 재연결 시도")
                 isConnecting = false
                 reconnectSse(meetingId)
             }
             override fun onFailure(source: EventSource, t: Throwable?, response: Response?) {
                 Log.e(
-                    "MeetingSseService",
+                    "Audio",
                     "SSE 연결 실패: ${t?.message}, response=${response?.code} / ${response?.message}", t
                 )
                 isConnecting = false
@@ -205,6 +207,7 @@ class MeetingSseService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d("Audio", "포그라운드 서비스 새로 생성")
         if (intent?.action == ACTION_SET_MIC) {
             intent?.let {
                 val micEnabled = it.getBooleanExtra(EXTRA_MIC_ENABLED, true)
@@ -249,7 +252,8 @@ class MeetingSseService : Service() {
             url = url,
             meetingId = meetingId,
             scope = serviceScope,
-            onError = { errMsg -> Log.e("MeetingSseService", "오디오 오류: $errMsg") },
+            isServiceStopped = { isServiceStopped },
+            onError = { errMsg -> Log.e("Audio", "오디오 오류: $errMsg") },
             onMessage = { msg ->
                 if (msg == "MEETING_COMPLETED") {
                     stopAllConnections()
@@ -268,7 +272,7 @@ class MeetingSseService : Service() {
     }
 
     override fun onDestroy() {
-        Log.d("MeetingSseService", "SSE 종료")
+        Log.d("Audio", "SSE 종료")
         clearMeetingServiceState()
         isServiceStopped = true
         currentMeetingId = -1L
@@ -277,6 +281,7 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        audioWsClient?.isClosedByUser = true
         audioWsClient?.stop()
         audioWsClient = null
         stopForeground(true)
@@ -284,7 +289,7 @@ class MeetingSseService : Service() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        Log.d("MeetingSseService", "SSE 종료")
+        Log.d("Audio", "SSE 종료")
         clearMeetingServiceState()
         isServiceStopped = true
         currentMeetingId = -1L
@@ -293,6 +298,7 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        audioWsClient?.isClosedByUser = true
         audioWsClient?.stop()
         audioWsClient = null
         stopForeground(true)
@@ -300,7 +306,7 @@ class MeetingSseService : Service() {
     }
 
     private fun stopAllConnections() {
-        Log.i("MeetingSseService", "회의 종료됨: SSE/AudioWebSocket 모두 종료")
+        Log.i("Audio", "회의 종료됨: SSE/AudioWebSocket 모두 종료")
         clearMeetingServiceState()
         isServiceStopped = true
         stopReconnectTimer()
@@ -308,6 +314,7 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        audioWsClient?.isClosedByUser = true
         audioWsClient?.stop(true)
         audioWsClient = null
         stopForeground(true)

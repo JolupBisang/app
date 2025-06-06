@@ -58,7 +58,7 @@ fun SummaryListItem(
             Spacer(modifier = Modifier.width(12.dp))
 
             Text(
-                text = extractTimeOnly(timeText),
+                text = timeText,
                 fontFamily = Pretend,
                 fontWeight = FontWeight.Medium,
                 color = tertiary,
@@ -66,9 +66,4 @@ fun SummaryListItem(
             )
         }
     }
-}
-
-fun extractTimeOnly(isoString: String): String {
-    val dt = LocalDateTime.parse(isoString)
-    return dt.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
 }
