@@ -9,14 +9,20 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.lifecycleScope
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.theme.AppTheme
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
+import com.imhungry.jjongseol.viewmodel.UserViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+    private val userViewModel: UserViewModel by viewModels()
     private val loginViewModel: LoginViewModel by viewModels()
     private val startDestinationState = mutableStateOf(SilRokNavigation.Splash)
     private lateinit var appPrefs: AppPrefs
@@ -52,6 +58,7 @@ class MainActivity : AppCompatActivity() {
     private fun handleIntent(intent: Intent?) {
         intent?.data?.getQueryParameter("token")?.let { token ->
             loginViewModel.onLoginSuccess(token)
+            loadAndSaveMyProfile()
         }
     }
 
@@ -64,5 +71,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return false
+    }
+
+    private fun loadAndSaveMyProfile() {
+        userViewModel.loadMyProfile()
+        lifecycleScope.launch {
+            userViewModel.userInfo.collectLatest { userInfo ->
+                if (userInfo != null) {
+                    appPrefs.saveMyProfile(userInfo)
+                    this.cancel()
+                }
+            }
+        }
     }
 }

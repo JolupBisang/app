@@ -16,6 +16,6 @@ interface UserApi {
         @Path("email") email: String
     ): Response<SuccessResponse<UserInfoResponse>>
 
-    @GET("/api/users/my_nickname")
-    suspend fun getMyNickname2(): Response<SuccessResponse<String>>
+    @GET("/api/users/my-profile")
+    suspend fun getMyProfile(): Response<SuccessResponse<UserInfoResponse>>
 }

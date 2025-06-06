@@ -26,9 +26,9 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun getMyNickname2(): UserResult<String> {
+    suspend fun getMyProfile(): UserResult<UserInfoResponse> {
         return try {
-            val response = userApi.getMyNickname2()
+            val response = userApi.getMyProfile()
             handleApiResponse(response)
         } catch (e: Exception) {
             UserResult.Exception(e)

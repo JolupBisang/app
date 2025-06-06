@@ -31,10 +31,10 @@ fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
     val drawerWidth = screenWidth * 0.6f
 
     val userViewModel: UserViewModel = hiltViewModel()
-    val nickname by userViewModel.nickname.collectAsState()
+    //val nickname by userViewModel.nickname.collectAsState()
 
     LaunchedEffect(Unit) {
-        userViewModel.loadMyNickname2()
+        //userViewModel.loadMyNickname2()
     }
 
     Column(
@@ -52,7 +52,7 @@ fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween){
                 Text(
-                    text = nickname ?: "로딩 중...",
+                    text =  "로딩 중...",
                     style = TextStyle(fontSize = 20.sp),
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier

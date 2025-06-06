@@ -93,6 +93,9 @@ fun MeetingRecordScreen(
     val meetingState = appPrefs.loadMeetingStates()[meetingId]
     val startTime = meetingState?.startTime
 
+    val myProfile: UserInfoResponse? = appPrefs.loadMyProfile()
+    val myUserId: Long? = myProfile?.id
+
     LaunchedEffect(diarizedSegments.size) {
         if (diarizedSegments.isNotEmpty()) {
             listState.animateScrollToItem(diarizedSegments.size - 1)
@@ -192,7 +195,7 @@ fun MeetingRecordScreen(
                         ChatBubble(
                             diarizedSegment = message,
                             nickname = nicknameMap[message.userId] ?: "알 수 없음",
-                            isMe = true,
+                            isMe = message.userId == myUserId,
                             time = elapsed
                         )
                         if (index == diarizedSegments.lastIndex) {

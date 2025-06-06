@@ -35,8 +35,6 @@ import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.UserViewModel
-import kotlinx.coroutines.delay
-import kotlin.math.log
 
 @Composable
 fun SplashScreen(
@@ -47,24 +45,31 @@ fun SplashScreen(
     val context = LocalContext.current
     val appPrefs = AppPrefs(context)
     val isVoiceTutorialCompleted = appPrefs.isVoiceTutorialCompleted()
-    val nickname by userViewModel.nickname.collectAsState()
     val errorMessage by userViewModel.errorMessage.collectAsState()
-    Log.d("Splash", "nickname : $nickname, errorMessage : $errorMessage")
+    val userInfo by userViewModel.userInfo.collectAsState()
+    val isLoading by userViewModel.isLoading.collectAsState()
 
-    LaunchedEffect(errorMessage, nickname) {
-        userViewModel.loadMyNickname2()
-        delay(1500)
-        if (errorMessage != null || nickname == null) {
-            loginViewModel.clearToken()
-            navController.navigate(SilRokNavigation.Login.route) {
-                popUpTo(0)
-            }
-        } else {
-            navController.navigate(
-                if (isVoiceTutorialCompleted) SilRokNavigation.Home.route
-                else SilRokNavigation.LearningVoiceFirst.route
-            ) {
-                popUpTo(0)
+    LaunchedEffect(Unit) {
+        userViewModel.loadMyProfile()
+    }
+
+    LaunchedEffect(isLoading) {
+        if (!isLoading) {
+            if (userInfo != null) {
+                appPrefs.saveMyProfile(userInfo!!)
+                navController.navigate(
+                    if (isVoiceTutorialCompleted) SilRokNavigation.Home.route
+                    else SilRokNavigation.LearningVoiceFirst.route
+                ) {
+                    popUpTo(0)
+                }
+            } else {
+                if (errorMessage != null) {
+                    loginViewModel.clearToken()
+                    navController.navigate(SilRokNavigation.Login.route) {
+                        popUpTo(0)
+                    }
+                }
             }
         }
     }
