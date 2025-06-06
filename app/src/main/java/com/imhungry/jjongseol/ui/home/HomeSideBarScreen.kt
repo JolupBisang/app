@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.home
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,16 +17,25 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.ui.theme.BasicBackGround
 import com.imhungry.jjongseol.ui.theme.SkyBlue
 import com.imhungry.jjongseol.ui.theme.UserGreen1
+import com.imhungry.jjongseol.viewmodel.UserViewModel
 
 @Composable
 fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
     val scope = rememberCoroutineScope()
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val drawerWidth = screenWidth * 0.6f
+
+    val userViewModel: UserViewModel = hiltViewModel()
+    val nickname by userViewModel.nickname.collectAsState()
+
+    LaunchedEffect(Unit) {
+        userViewModel.loadMyNickname2()
+    }
 
     Column(
         modifier = Modifier
@@ -42,7 +52,7 @@ fun HomeSideBar(drawerState: DrawerState, navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween){
                 Text(
-                    "김작가",
+                    text = nickname ?: "로딩 중...",
                     style = TextStyle(fontSize = 20.sp),
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
