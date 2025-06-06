@@ -252,6 +252,7 @@ class MeetingSseService : Service() {
             url = url,
             meetingId = meetingId,
             scope = serviceScope,
+            isServiceStopped = { isServiceStopped },
             onError = { errMsg -> Log.e("Audio", "오디오 오류: $errMsg") },
             onMessage = { msg ->
                 if (msg == "MEETING_COMPLETED") {
@@ -280,6 +281,7 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        audioWsClient?.isClosedByUser = true
         audioWsClient?.stop()
         audioWsClient = null
         stopForeground(true)
@@ -296,6 +298,7 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        audioWsClient?.isClosedByUser = true
         audioWsClient?.stop()
         audioWsClient = null
         stopForeground(true)
@@ -311,6 +314,7 @@ class MeetingSseService : Service() {
         feedbackEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        audioWsClient?.isClosedByUser = true
         audioWsClient?.stop(true)
         audioWsClient = null
         stopForeground(true)

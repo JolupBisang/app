@@ -35,7 +35,8 @@ class AudioWebSocketClient(
     private val scope: CoroutineScope,
     private val onError: (String) -> Unit = {},
     private val onMessage: (String) -> Unit = {},
-    private val onNewDiarizedSegment: (DiarizedSegment) -> Unit
+    private val onNewDiarizedSegment: (DiarizedSegment) -> Unit,
+    private val isServiceStopped: () -> Boolean,
 ) : WebSocketListener() {
 
     private var webSocket: WebSocket? = null
@@ -62,6 +63,11 @@ class AudioWebSocketClient(
         isEncodingPaused = false
     }
 
+    private var isReconnecting = false
+    private var reconnectAttempts = 0
+    private val reconnectDelayMillis = 2000L
+    var isClosedByUser: Boolean = false
+
     // /data/data/com.imhungry.jjongseol/cache/audio_packets/
     private val packetDir by lazy { File(context.cacheDir, "audio_packets/$meetingId") }
     // /storage/emulated/0/Android/data/com.imhungry.jjongseol/files/pcm_chunks/
@@ -70,25 +76,41 @@ class AudioWebSocketClient(
     //private val rawDir by lazy { File(context.getExternalFilesDir(null), "pcm_raw/$meetingId") }
 
     fun connect() {
+        if (isServiceStopped() || isClosedByUser) {
+            Log.d("Audio", "서비스 중단됨: WebSocket 연결 시도 안 함")
+            disconnect()
+            return
+        }
+        isClosedByUser = false
         if (isConnected) disconnect()
         Log.d("Audio", "WebSocket 새로 연결")
+        tryConnect()
+    }
 
-        val request = Request.Builder()
-            .url(url)
-            .build()
-
+    private fun tryConnect() {
+        if (isServiceStopped() || isClosedByUser) {
+            Log.d("Audio", "서비스 중단됨: WebSocket 연결 시도 안 함")
+            disconnect()
+            return
+        }
+        val request = Request.Builder().url(url).build()
         val client = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).build()
         webSocket = client.newWebSocket(request, this)
     }
 
     override fun onOpen(ws: WebSocket, response: Response) {
         isConnected = true
+        isReconnecting = false
         Log.d("Audio", "WebSocket 연결됨")
     }
 
     override fun onMessage(ws: WebSocket, text: String) {
         Log.d("Audio", "onMessage 수신됨: $text")
-
+        if (isServiceStopped() || isClosedByUser) {
+            Log.d("Audio", "서비스 중단됨: WebSocket 연결 시도 안 함")
+            disconnect()
+            return
+        }
         try {
             val response = Gson().fromJson(text, SocketResponse::class.java)
             when (response.type) {
@@ -99,7 +121,7 @@ class AudioWebSocketClient(
                 }
                 SocketResponseType.ERROR -> {
                     val error = Gson().fromJson(Gson().toJson(response.data), ErrorResponse::class.java)
-                    val message = error.message ?: "알 수 없는 오류가 발생했습니다"
+                    val message = error.message
                     Log.w("Audio", "WebSocket 에러 메시지 수신: $message")
                     onError(message)
                 }
@@ -121,16 +143,38 @@ class AudioWebSocketClient(
     }
 
     override fun onClosed(ws: WebSocket, code: Int, reason: String) {
-        isConnected = false
         Log.i("Audio", "WebSocket 닫힘 $code/$reason")
-        stopRecording()
+        disconnect()
+        if (isServiceStopped()) {
+            Log.d("Audio", "서비스 중단됨: WebSocket 연결 시도 안 함")
+            disconnect()
+            return
+        }
+        tryReconnect()
     }
 
     override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
-        isConnected = false
         Log.e("Audio", "WebSocket 실패: ${t.message}")
         stopRecording()
         onError(t.message ?: "WebSocket 오류")
+        tryReconnect()
+    }
+
+    private fun tryReconnect() {
+        if (isServiceStopped() || isClosedByUser || isReconnecting || isConnected)  {
+            disconnect()
+            return
+        }
+        isReconnecting = true
+        reconnectAttempts++
+        Log.w("Audio", "WebSocket $reconnectAttempts 번째 재연결 시도 예정 (${reconnectDelayMillis}ms 후)")
+        scope.launch {
+            kotlinx.coroutines.delay(reconnectDelayMillis)
+            if (!isConnected && !isClosedByUser) {
+                Log.w("Audio", "WebSocket 재연결 시도...")
+                tryConnect()
+            }
+        }
     }
 
     private fun resendMissingLocalPackets(lastServerChunkId: Long, onComplete: () -> Unit) {
@@ -206,10 +250,6 @@ class AudioWebSocketClient(
             val pcmBuffer = ByteArray(frameSize * 2)
             while (isActive && isStreaming) {
                 val read = audioRecord?.read(pcmBuffer, 0, pcmBuffer.size) ?: 0
-                if (read <= 0) {
-                    Log.e("Audio", "AudioRecord read 실패: $read, 녹음 중단")
-                    break
-                }
                 if (read > 0 && !isEncodingPaused) {
                     if (audioRecord != null && audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
                         Log.w("Audio", "녹음 진행 중")
@@ -273,6 +313,7 @@ class AudioWebSocketClient(
     }
 
     fun stop(deleteLocalPackets: Boolean = false) {
+        isClosedByUser = true
         isStreaming = false
         try {
             audioRecord?.let { record ->
@@ -325,6 +366,7 @@ class AudioWebSocketClient(
     }
 
     fun disconnect() {
+        isClosedByUser = true
         stopRecording()
         webSocket?.close(1000, "Normal closure")
         webSocket = null
