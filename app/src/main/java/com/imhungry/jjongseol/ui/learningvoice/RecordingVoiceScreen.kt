@@ -124,7 +124,7 @@ fun RecordingVoiceScreen(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(40.dp))
             Image(
                 painter = rememberAsyncImagePainter(
                     model = ImageRequest.Builder(LocalContext.current)

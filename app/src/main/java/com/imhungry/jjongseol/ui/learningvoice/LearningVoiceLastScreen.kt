@@ -20,6 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import coil.decode.GifDecoder
+import coil.request.ImageRequest
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
@@ -36,12 +39,38 @@ fun LearningVoiceLastScreen(navController: NavController) {
             .background(blackColor)
             .navigationBarsPadding()
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.learningvoicelastscreen),
-            contentDescription = "Learning Voice Last Screen Background",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+        Column(modifier = Modifier.fillMaxWidth().padding(top = 130.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(R.drawable.gif)
+                        .decoderFactory(GifDecoder.Factory())
+                        .build()
+                ),
+                contentDescription = "목소리 인식 완료 gif",
+                modifier = Modifier.size(140.dp).fillMaxWidth()
+            )
+
+            Text(text = "목소리 학습 완료",
+                color = Color.White,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold)
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    modifier = Modifier.padding(top = 20.dp),
+                    text = "회의실록이 당신의 목소리를 기억합니다.",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                )
+                Text(
+                    text = "이제 서비스를 사용할 준비가 끝났어요!",
+                    color = Color.White,
+                    fontSize = 13.sp,
+                )
+            }
+        }
 
         Column(
             modifier = Modifier

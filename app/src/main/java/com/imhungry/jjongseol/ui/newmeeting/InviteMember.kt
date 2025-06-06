@@ -9,9 +9,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Surface
 import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -35,48 +41,86 @@ fun SearchScreen(
 ) {
     var query by remember { mutableStateOf("") }
     var matchedEmail by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     Column {
-        OutlinedTextField(
-            value = query,
-            onValueChange = {
-                query = it
-                matchedEmail = null
-                if (enabled && it.isNotBlank()) {
-                    scope.launch {
-                        try {
-                            val response = userApi.getUserByEmail(it)
-                            matchedEmail = response.data.email
-                        } catch (e: HttpException) {
-                            if (e.code() == 404) {
-                                matchedEmail = null
-                            }
-                        }
-                    }
-                }
-            },
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
-                .border(1.dp, Color.Gray, RoundedCornerShape(10.dp)),
-            singleLine = true,
-            textStyle = TextStyle(fontSize = 16.sp),
-            placeholder = {
-                Text("이름, 이메일, 팀으로 검색",
-                    style = TextStyle(color = Color.LightGray)
+                .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(10.dp))
+        ) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = {
+                    query = it
+                    matchedEmail = null
+                    errorMessage = null
+                },
+                singleLine = true,
+                textStyle = TextStyle(fontSize = 16.sp),
+                placeholder = {
+                    Text("이름, 이메일, 팀으로 검색", color = Color.LightGray, fontSize = 13.sp)
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .padding(end = 0.dp),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    textColor = Color.Black,
+                    cursorColor = Color.Black,
+                    backgroundColor = Color.Transparent,
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    disabledBorderColor = Color.Transparent,
+
+                ),
+                enabled = enabled
+            )
+
+            Box(
+                modifier = Modifier
+                    .width(50.dp)
+                    .fillMaxHeight()
+                    .clickable(enabled = enabled) {
+                        if (query.isNotBlank() && enabled) {
+                            scope.launch {
+                                try {
+                                    val response = userApi.getUserByEmail(query)
+                                    matchedEmail = response.data.email
+                                    errorMessage = null
+                                } catch (e: HttpException) {
+                                    if (e.code() == 404) {
+                                        matchedEmail = null
+                                        errorMessage = "사용자를 찾을 수 없습니다."
+                                    } else {
+                                        errorMessage = "오류가 발생했습니다."
+                                    }
+                                }
+                            }
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Search,
+                    contentDescription = "검색하기",
+                    modifier = Modifier.size(20.dp),
+                    tint = Color.Black
                 )
-            },
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                textColor = Color.Black,
-                cursorColor = Color.Black,
-                backgroundColor = Color.White,
-                focusedBorderColor = Color.Transparent,
-                unfocusedBorderColor = Color.Transparent,
-                disabledBorderColor = Color.Transparent
-            ),
-            enabled = enabled
-        )
+            }
+        }
+
+        errorMessage?.let {
+            Text(
+                text = it,
+                color = Color.Red,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
 
         if (matchedEmail != null && !selectedEmails.value.contains(matchedEmail)) {
             Column(
@@ -89,6 +133,7 @@ fun SearchScreen(
                             selectedEmails.value = selectedEmails.value + matchedEmail!!
                             query = ""
                             matchedEmail = null
+                            errorMessage = null
                         } else Modifier
                     )
             ) {
