@@ -159,10 +159,7 @@ fun MeetingControlPanel(
             description = "회의를 종료하시겠습니까?",
             confirmText = "예",
             onConfirm = {
-                if (meetingId != null) {
-                    viewModel.updateMeetingStatus(meetingId, MeetingStatus.COMPLETED)
-                }
-                context?.stopService(Intent(context, MeetingSseService::class.java))
+                context.stopService(Intent(context, MeetingSseService::class.java))
                 navController.navigate("meetingRoute/end/$meetingId")  {
                     popUpTo(0)
                 }

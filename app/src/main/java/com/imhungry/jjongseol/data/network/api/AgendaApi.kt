@@ -17,7 +17,7 @@ interface AgendaApi {
         @Body agendaStatusReq: AgendaStatusReq
     ): Response<SuccessResponse<AgendaChangeStatusRes>>
 
-    @GET("/api/agendas/{meetingId}")
+    @GET("/api/meetings/{meetingId}/agendas")
     suspend fun getAgendas(
         @Path("meetingId") meetingId: Long
     ): Response<SuccessResponse<AgendaDetailRes>>

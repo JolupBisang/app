@@ -40,6 +40,8 @@ import coil.decode.GifDecoder
 import coil.request.ImageRequest
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
+import com.imhungry.jjongseol.ui.SilRokNavigation
+import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.ui.theme.inverseText
@@ -47,17 +49,31 @@ import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.ui.theme.primaryButton
 import com.imhungry.jjongseol.ui.theme.primaryTextColor
 import com.imhungry.jjongseol.ui.theme.whiteColor
+import com.imhungry.jjongseol.viewmodel.AgendaViewModel
+import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun MeetingEndScreen(
+    loginViewModel: LoginViewModel,
+    onFinish: (SilRokNavigation) -> Unit,
     meetingViewModel: MeetingViewModel,
     navController: NavController,
     meetingId: Long
 ) {
     val meetingStatus by meetingViewModel.meetingStatus.collectAsState()
     var isCompleted by remember { mutableStateOf(false) }
+    val meetingError by meetingViewModel.errorMessage.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        meetingViewModel.updateMeetingStatus(meetingId, MeetingStatus.COMPLETED)
+    }
+
+    LaunchedEffect(meetingError) {
+        showDialog = true
+    }
 
     LaunchedEffect(meetingStatus) {
         if (meetingStatus == MeetingStatus.COMPLETED) {
@@ -76,6 +92,13 @@ fun MeetingEndScreen(
                 bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
             )
     ) {
+        ErrorDialogHandler(
+            errorMessage = meetingError,
+            showDialog = showDialog,
+            onFinish = onFinish,
+            clearError = { meetingViewModel.clearErrorMessage() },
+            loginViewModel = loginViewModel
+        )
         Column(
             modifier = Modifier
                 .fillMaxWidth()
