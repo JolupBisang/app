@@ -11,13 +11,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun ProportionalBarChart(
-    proportions: List<Float>,
+    proportions: List<Double>,
     colors: List<Color>,
     modifier: Modifier = Modifier,
     height: Int = 17,
     cornerRadius: Int = 4
 ) {
-    val total = proportions.sum().takeIf { it > 0 } ?: 1f
+    val total = proportions.sum().takeIf { it > 0 } ?: 1.0
     val normalized = proportions.map { it / total }
 
     Row(
@@ -29,9 +29,9 @@ fun ProportionalBarChart(
         normalized.forEachIndexed { index, fraction ->
             Box(
                 modifier = Modifier
-                    .weight(fraction)
+                    .weight(fraction.toFloat())
                     .fillMaxHeight()
-                    .background(colors.getOrElse(index) { Color.Gray })
+                    .background(colors.getOrElse(index) { Color(0xFFF5F5F5) })
             )
         }
     }

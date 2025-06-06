@@ -68,8 +68,10 @@ fun MeetingSummaryScreen(
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
     val hasAgendas = agendas.isNotEmpty()
     val summaryList by meetingViewModel.summaryList.collectAsState()
-    val data = listOf(45f, 30f, 20f, 10f, 5f)
-    val names = listOf("김부장", "조사원", "정대리", "정과장", "김상병")
+    val participationRates by meetingViewModel.participationRates.collectAsState()
+    val sortedRates = participationRates.sortedByDescending { it.rate }
+    val participantData = sortedRates.map { (it.rate * 100f) }
+    val participantNames = sortedRates.map { it.nickname }
     var expanded by remember { mutableStateOf(true) }
     val appPrefs = remember { AppPrefs(context) }
     val meetingState = appPrefs.loadMeetingStates()[meetingId]
@@ -107,7 +109,7 @@ fun MeetingSummaryScreen(
                                     drawRect(
                                         color = Color(0x40186848),
                                         topLeft = Offset(0f, size.height - underlineHeight),
-                                        size = androidx.compose.ui.geometry.Size(size.width, underlineHeight)
+                                        size = Size(size.width, underlineHeight)
                                     )
                                 }
                         ) {
@@ -129,10 +131,10 @@ fun MeetingSummaryScreen(
                     )
                 }
 
-                if (expanded) {
+                if (expanded && participantData.isNotEmpty() && participantNames.isNotEmpty()) {
                     ConversationSummaryBar(
-                        participantData = data,
-                        participantNames = names
+                        participantData = participantData,
+                        participantNames = participantNames
                     )
                 }
             }

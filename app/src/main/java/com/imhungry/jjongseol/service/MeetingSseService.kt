@@ -13,12 +13,14 @@ import androidx.core.app.NotificationCompat
 import com.imhungry.jjongseol.BuildConfig
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
+import com.imhungry.jjongseol.data.model.meeting.dto.ParticipationRateDto
 import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
 import com.imhungry.jjongseol.data.network.client.AudioWebSocketClient
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
 import com.imhungry.jjongseol.data.repository.LoginRepository
+import com.imhungry.jjongseol.data.repository.ParticipationRateRepository
 import com.imhungry.jjongseol.data.repository.SummaryRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -45,6 +47,7 @@ class MeetingSseService : Service() {
 
     private var summaryEventSource: EventSource? = null
     private var feedbackEventSource: EventSource? = null
+    private var participationRateEventSource: EventSource? = null
 
     private var reconnectHandler: android.os.Handler? = null
     private var reconnectRunnable: Runnable? = null
@@ -132,6 +135,9 @@ class MeetingSseService : Service() {
         val feedbackRequest = Request.Builder()
             .url(BuildConfig.BASE_URL + "api/feedback/subscribe/$meetingId")
             .build()
+        val participationRateRequest = Request.Builder()
+            .url(BuildConfig.BASE_URL + "api/participation_rate/subscribe/$meetingId")
+            .build()
 
         val listener = object : EventSourceListener() {
             override fun onEvent(source: EventSource, id: String?, type: String?, data: String) {
@@ -155,6 +161,17 @@ class MeetingSseService : Service() {
                             )
                             CoroutineScope(Dispatchers.IO).launch {
                                 feedbackRepository.emitFeedback(feedback)
+                            }
+                        }
+                        "PARTICIPATION_RATE" -> {
+                            val json = JSONObject(data)
+                            val participationRate = ParticipationRateDto(
+                                userId = json.optLong("userId"),
+                                nickname = json.optString("nickname"),
+                                rate = json.optDouble("rate")
+                            )
+                            CoroutineScope(Dispatchers.IO).launch {
+                                ParticipationRateRepository.emitParticipationRate(participationRate)
                             }
                         }
                         "CONNECT" -> {
@@ -279,8 +296,10 @@ class MeetingSseService : Service() {
         stopReconnectTimer()
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
+        participationRateEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        participationRateEventSource = null
         audioWsClient?.isClosedByUser = true
         audioWsClient?.stop()
         audioWsClient = null
@@ -296,8 +315,10 @@ class MeetingSseService : Service() {
         stopReconnectTimer()
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
+        participationRateEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        participationRateEventSource = null
         audioWsClient?.isClosedByUser = true
         audioWsClient?.stop()
         audioWsClient = null
@@ -309,13 +330,16 @@ class MeetingSseService : Service() {
         Log.i("Audio", "회의 종료됨: SSE/AudioWebSocket 모두 종료")
         clearMeetingServiceState()
         isServiceStopped = true
+        currentMeetingId = -1L
         stopReconnectTimer()
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
+        participationRateEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        participationRateEventSource = null
         audioWsClient?.isClosedByUser = true
-        audioWsClient?.stop(true)
+        audioWsClient?.stop()
         audioWsClient = null
         stopForeground(true)
         stopSelf()

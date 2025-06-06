@@ -25,7 +25,7 @@ import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.generateParticipantColors
 
 @Composable
-fun ConversationSummaryBar(participantData: List<Float>, participantNames: List<String>) {
+fun ConversationSummaryBar(participantData: List<Double>, participantNames: List<String>) {
     val colors = generateParticipantColors(participantData.size)
 
     Column(
