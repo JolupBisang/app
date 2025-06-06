@@ -438,4 +438,9 @@ class MeetingViewModel @Inject constructor(
             }
         }
     }
+
+    fun addFeedback(feedback: FeedbackDto) {
+        _feedbackList.update { old -> old + feedback }
+    }
+
 }

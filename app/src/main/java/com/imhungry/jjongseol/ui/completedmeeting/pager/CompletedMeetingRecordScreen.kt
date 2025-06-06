@@ -93,7 +93,7 @@ fun CompletedMeetingRecordScreen() {
                 .padding(bottom = 8.dp)
         ) {
             items(chatMessages.reversed()) { message ->
-                ChatBubble(diarizedSegment = message, nickname = "", isMe = Random.nextBoolean())
+                ChatBubble(diarizedSegment = message, nickname = "", isMe = Random.nextBoolean(), time = "")
             }
         }
     }

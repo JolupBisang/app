@@ -81,7 +81,7 @@ fun Notification(
                     val (timeRef, dotRef) = createRefs()
 
                     Text(
-                        text = extractTimeOnly(time),
+                        text = time,
                         fontFamily = Pretend,
                         fontWeight = FontWeight.Medium,
                         color = primaryTextColor,
@@ -109,9 +109,4 @@ fun Notification(
             }
         }
     }
-}
-
-fun extractTimeOnly(isoString: String): String {
-    val dt = LocalDateTime.parse(isoString)
-    return dt.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
 }

@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.splash
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -46,12 +47,14 @@ fun SplashScreen(
     val context = LocalContext.current
     val appPrefs = AppPrefs(context)
     val isVoiceTutorialCompleted = appPrefs.isVoiceTutorialCompleted()
+    val nickname by userViewModel.nickname.collectAsState()
     val errorMessage by userViewModel.errorMessage.collectAsState()
+    Log.d("Splash", "nickname : $nickname, errorMessage : $errorMessage")
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(errorMessage, nickname) {
         userViewModel.loadMyNickname2()
         delay(1500)
-        if (errorMessage != null) {
+        if (errorMessage != null || nickname == null) {
             loginViewModel.clearToken()
             navController.navigate(SilRokNavigation.Login.route) {
                 popUpTo(0)

@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,17 +46,24 @@ import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextLayoutResult
+import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.theme.gray400
 import com.imhungry.jjongseol.ui.theme.primaryBackground
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun MeetingSummaryScreen(
     meetingViewModel: MeetingViewModel,
-    agendaViewModel: AgendaViewModel
+    agendaViewModel: AgendaViewModel,
+    meetingId: Long
 ) {
-    val agendas by agendaViewModel.agendaItems.collectAsState()
+    val context = LocalContext.current
 
+    val agendas by agendaViewModel.agendaItems.collectAsState()
     val firstUncheckedIndex = agendas.indexOfFirst { !it.isCompleted }
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
     val hasAgendas = agendas.isNotEmpty()
@@ -63,6 +71,9 @@ fun MeetingSummaryScreen(
     val data = listOf(45f, 30f, 20f, 10f, 5f)
     val names = listOf("김부장", "조사원", "정대리", "정과장", "김상병")
     var expanded by remember { mutableStateOf(true) }
+    val appPrefs = remember { AppPrefs(context) }
+    val meetingState = appPrefs.loadMeetingStates()[meetingId]
+    val startTime = meetingState?.startTime
 
     LazyColumn(
         modifier = Modifier
@@ -144,7 +155,7 @@ fun MeetingSummaryScreen(
                         drawRect(
                             color = Color(0x40186848),
                             topLeft = Offset(0f, size.height - underlineHeight),
-                            size = androidx.compose.ui.geometry.Size(size.width, underlineHeight)
+                            size = Size(size.width, underlineHeight)
                         )
                     }
             ) {
@@ -158,11 +169,23 @@ fun MeetingSummaryScreen(
             }
         }
         itemsIndexed(summaryList) { index, summary ->
-            SummaryListItem(summary.summary, summary.timestamp)
+            val elapsed = getElapsedString(startTime, summary.timestamp)
+            SummaryListItem(summary.summary, elapsed)
             Spacer(Modifier.height(12.dp))
             if (index == summaryList.lastIndex) {
                 Spacer(Modifier.height(12.dp))
             }
         }
     }
+}
+
+fun getElapsedString(startMillis: Long?, isoTimestamp: String): String {
+    if (startMillis == null) return "00:00:00"
+    val summaryDateTime = LocalDateTime.parse(isoTimestamp, DateTimeFormatter.ISO_DATE_TIME)
+    val summaryMillis = summaryDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    val elapsed = ((summaryMillis - startMillis) / 1000).coerceAtLeast(0)
+    val h = elapsed / 3600
+    val m = (elapsed % 3600) / 60
+    val s = elapsed % 60
+    return String.format("%02d:%02d:%02d", h, m, s)
 }

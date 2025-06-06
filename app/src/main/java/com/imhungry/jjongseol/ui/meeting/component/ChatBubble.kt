@@ -39,7 +39,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun ChatBubble(diarizedSegment: DiarizedSegment, nickname: String, isMe : Boolean) {
+fun ChatBubble(diarizedSegment: DiarizedSegment, nickname: String, isMe : Boolean, time: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -47,15 +47,15 @@ fun ChatBubble(diarizedSegment: DiarizedSegment, nickname: String, isMe : Boolea
         horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
     ) {
         if (isMe) {
-            MyMessage(diarizedSegment)
+            MyMessage(diarizedSegment, time)
         } else {
-            OthersMessage(diarizedSegment, nickname)
+            OthersMessage(diarizedSegment, nickname, time)
         }
     }
 }
 
 @Composable
-private fun MyMessage(diarizedSegment: DiarizedSegment) {
+private fun MyMessage(diarizedSegment: DiarizedSegment, time: String) {
     Column(horizontalAlignment = Alignment.End) {
         ChatBox(
             text = diarizedSegment.text,
@@ -64,7 +64,7 @@ private fun MyMessage(diarizedSegment: DiarizedSegment) {
         )
 
         TimestampText(
-            time = formatKoreanTime(diarizedSegment.timestamp),
+            time = time,
             modifier = Modifier.padding(top = 2.dp, end = 1.dp)
         )
     }
@@ -85,7 +85,7 @@ val profileDrawables = listOf(
 )
 
 @Composable
-private fun OthersMessage(diarizedSegment: DiarizedSegment, nickname: String) {
+private fun OthersMessage(diarizedSegment: DiarizedSegment, nickname: String, time: String) {
     val profileIndex = (diarizedSegment.userId % profileDrawables.size).toInt()
     val profileRes = profileDrawables[profileIndex]
 
@@ -119,7 +119,7 @@ private fun OthersMessage(diarizedSegment: DiarizedSegment, nickname: String) {
     }
 
     TimestampText(
-        time = formatKoreanTime(diarizedSegment.timestamp),
+        time = time,
         modifier = Modifier.padding(start = 51.dp, top = 2.dp)
     )
 }
@@ -161,7 +161,7 @@ private fun TimestampText(
     )
 }
 
-fun formatKoreanTime(isoString: String): String {
+/*fun formatKoreanTime(isoString: String): String {
     return try {
         val dateTime = LocalDateTime.parse(isoString, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         val hour24 = dateTime.hour
@@ -177,4 +177,4 @@ fun formatKoreanTime(isoString: String): String {
     } catch (e: Exception) {
         ""
     }
-}
+}*/

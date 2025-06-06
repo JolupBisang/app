@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.meeting.pager
 
+import android.content.Intent
 import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
@@ -36,18 +37,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
+import com.imhungry.jjongseol.data.network.config.AppPrefs
+import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.meeting.component.ChatBubble
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
 import com.imhungry.jjongseol.ui.component.dialog.MeetingTerminationNotification
 import com.imhungry.jjongseol.ui.component.feedback.Notification
 import com.imhungry.jjongseol.ui.login.LoginScreen
+import com.imhungry.jjongseol.ui.meeting.component.BreakFeedbackChecker
+import com.imhungry.jjongseol.ui.meeting.component.EndFeedbackChecker
 import com.imhungry.jjongseol.ui.meeting.component.TopSheet
 import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
@@ -66,13 +73,14 @@ fun MeetingRecordScreen(
     navController: NavController,
     participantInfos: List<UserInfoResponse>
 ) {
+    val context = LocalContext.current
+
     val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val agendas by agendaViewModel.agendaItems.collectAsState()
     val isTopSheetExpanded by meetingViewModel.isTopSheetExpanded
     val firstUncheckedIndex = agendas.indexOfFirst { !it.isCompleted }
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
     val hasAgendas = agendas.isNotEmpty()
-    val showTerminationNotification = remember { mutableStateOf(false) }
     val feedbackList by meetingViewModel.feedbackList.collectAsState()
     val diarizedSegments by meetingViewModel.diarizedSegments.collectAsState()
     val latestFeedback = feedbackList.lastOrNull()
@@ -81,6 +89,9 @@ fun MeetingRecordScreen(
     val nicknameMap = remember(participantInfos) {
         participantInfos.associateBy({ it.id }, { it.nickname })
     }
+    val appPrefs = remember { AppPrefs(context) }
+    val meetingState = appPrefs.loadMeetingStates()[meetingId]
+    val startTime = meetingState?.startTime
 
     LaunchedEffect(diarizedSegments.size) {
         if (diarizedSegments.isNotEmpty()) {
@@ -94,7 +105,21 @@ fun MeetingRecordScreen(
             feedbackVisible = false
         }
     }
-
+    BreakFeedbackChecker(
+        meetingId = meetingId,
+        meetingDetail = meetingDetail,
+        startTime = startTime,
+        feedbackList = feedbackList
+    ) { newFeedback ->
+        meetingViewModel.addFeedback(newFeedback)
+    }
+    EndFeedbackChecker(
+        meetingId = meetingId,
+        meetingDetail = meetingDetail,
+        startTime = startTime,
+        feedbackList = feedbackList,
+        onAddFeedback = { meetingViewModel.addFeedback(it) }
+    )
     Box(modifier = Modifier
         .fillMaxSize()
         .background(primaryBackground)
@@ -159,13 +184,16 @@ fun MeetingRecordScreen(
             ) {
                 itemsIndexed(diarizedSegments) { index, message ->
                     if (message.text.isNotBlank()) {
+                        val elapsed = getElapsedString(startTime, message.timestamp)
+
                         if (index == 0) {
                             Spacer(modifier = Modifier.padding(top = 4.dp))
                         }
                         ChatBubble(
                             diarizedSegment = message,
                             nickname = nicknameMap[message.userId] ?: "알 수 없음",
-                            isMe = message.userId == 1L
+                            isMe = true,
+                            time = elapsed
                         )
                         if (index == diarizedSegments.lastIndex) {
                             Spacer(modifier = Modifier.padding(bottom = 28.dp))
@@ -175,18 +203,9 @@ fun MeetingRecordScreen(
             }
         }
         when {
-            showTerminationNotification.value -> {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 8.dp)
-                ) {
-                    MeetingTerminationNotification(
-                        onDismiss = { showTerminationNotification.value = false }
-                    )
-                }
-            }
             latestFeedback != null && feedbackVisible -> {
+                val elapsed = getElapsedString(startTime, latestFeedback.timestamp)
+
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -195,7 +214,7 @@ fun MeetingRecordScreen(
                 ) {
                     SwipeToDismissNotification(
                         message = latestFeedback.comment,
-                        time = latestFeedback.timestamp,
+                        time = elapsed,
                         onDismiss = { feedbackVisible = false }
                     )
                 }

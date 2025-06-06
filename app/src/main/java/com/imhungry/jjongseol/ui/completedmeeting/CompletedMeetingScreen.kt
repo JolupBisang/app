@@ -45,6 +45,7 @@ fun CompletedMeetingScreen(
 
     CompletedMeetingContent(
         navController,
+        meetingId = meetingId
     )
 }
 
@@ -53,7 +54,8 @@ fun CompletedMeetingScreen(
 fun CompletedMeetingContent(
     navController: NavController,
     meetingViewModel: MeetingViewModel = hiltViewModel(),
-    viewModel: CompletedMeetingViewModel = hiltViewModel()
+    viewModel: CompletedMeetingViewModel = hiltViewModel(),
+    meetingId: Long
 ) {
     var currentPosition by remember { mutableStateOf(0f) }
     var isPlaying by remember { mutableStateOf(false) }
@@ -85,7 +87,7 @@ fun CompletedMeetingContent(
             when (page) {
                 0 -> CompletedMeetingSummaryScreen()
                 1 -> CompletedMeetingRecordScreen()
-                2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel)
+                2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel, meetingId = meetingId)
             }
         }
 
