@@ -128,6 +128,10 @@ fun MeetingScreen(
         }
     }
 
+    LaunchedEffect(meetingId) {
+        meetingViewModel.syncMicStateFromServiceOrPrefs(context, meetingId)
+    }
+
     // 3. 아젠다 불러오기
     LaunchedEffect(meetingDetail) {
         if (meetingDetail != null) {

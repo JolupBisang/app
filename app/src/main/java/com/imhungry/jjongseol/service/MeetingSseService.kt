@@ -241,17 +241,17 @@ class MeetingSseService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("Audio", "포그라운드 서비스 새로 생성")
-        if (intent?.action == ACTION_SET_MIC) {
-            intent?.let {
-                val micEnabled = it.getBooleanExtra(EXTRA_MIC_ENABLED, true)
-                setMicEnabled(micEnabled)
-                currentMicEnabled = micEnabled
-            }
-            return START_STICKY
-        }
         appPrefs = AppPrefs(applicationContext)
         currentMeetingId = intent?.getLongExtra("meetingId", -1L) ?: -1L
         isServiceStopped = false
+
+        if (intent?.action == ACTION_SET_MIC) {
+            val micEnabled = intent.getBooleanExtra(EXTRA_MIC_ENABLED, true)
+            val id = intent.getLongExtra("meetingId", currentMeetingId)
+            currentMeetingId = id
+            setMicEnabled(micEnabled)
+            return START_STICKY
+        }
         if (currentMeetingId == -1L) {
             appPrefs.setMeetingForegroundServiceRunning(false)
             appPrefs.clearRunningMeetingId()
@@ -264,11 +264,15 @@ class MeetingSseService : Service() {
         connectSse(currentMeetingId)
         val token = loginRepository.getToken() ?: ""
         connectAudioWebSocket(currentMeetingId, token)
+        currentMicEnabled = appPrefs.getMicEnabled(currentMeetingId)
         setMicEnabled(currentMicEnabled)
         return START_STICKY
     }
 
     fun setMicEnabled(enabled: Boolean) {
+        appPrefs.setMicEnabled(currentMeetingId, enabled)
+        currentMicEnabled = enabled
+        audioWsClient?.micEnabled = enabled
         if (enabled) {
             audioWsClient?.resumeEncoding()
         } else {
@@ -278,7 +282,7 @@ class MeetingSseService : Service() {
 
     private fun connectAudioWebSocket(meetingId: Long, token: String) {
         val url = "ws://${BuildConfig.WS_HOST}/ws/meeting/audio/$meetingId?token=$token"
-
+        val micEnabled = appPrefs.getMicEnabled(meetingId)
         audioWsClient?.disconnect()
         audioWsClient = AudioWebSocketClient(
             context = this,
@@ -309,7 +313,8 @@ class MeetingSseService : Service() {
                 serviceScope.launch {
                     AgendaSocketEventRepository.emitAgendaUpdate(updateDto)
                 }
-            }
+            },
+            micEnabled = micEnabled
         )
         audioWsClient?.connect()
     }

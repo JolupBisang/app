@@ -50,55 +50,11 @@ class AppPrefs(context: Context) {
         prefs.edit().remove("running_meeting_id").apply()
     }
 
-    fun saveMeetingStates(states: Map<Long, MeetingState>) {
-        prefs.edit().putString("meeting_states", gson.toJson(states)).apply()
+    fun setMicEnabled(meetingId: Long, enabled: Boolean) {
+        prefs.edit().putBoolean("mic_enabled_$meetingId", enabled).apply()
     }
 
-    fun loadMeetingStates(): Map<Long, MeetingState> {
-        val json = prefs.getString("meeting_states", null) ?: return emptyMap()
-        val type = object : TypeToken<Map<Long, MeetingState>>() {}.type
-        return gson.fromJson(json, type) ?: emptyMap()
-    }
-
-    fun addOrUpdateMeetingState(
-        context: Context,
-        meetingId: Long,
-        micEnabled: Boolean,
-        startTime: Long,
-        endTime: Long
-    ) {
-        val appPrefs = AppPrefs(context)
-        val states = appPrefs.loadMeetingStates().toMutableMap()
-        states[meetingId] = MeetingState(meetingId, micEnabled, startTime, endTime)
-        appPrefs.saveMeetingStates(states)
-    }
-
-    fun updateMicStatus(context: Context, meetingId: Long, micEnabled: Boolean) {
-        val appPrefs = AppPrefs(context)
-        val states = appPrefs.loadMeetingStates().toMutableMap()
-        val state = states[meetingId]
-        if (state != null) {
-            states[meetingId] = state.copy(micEnabled = micEnabled)
-            appPrefs.saveMeetingStates(states)
-        }
-    }
-
-    fun removeMeetingState(context: Context, meetingId: Long) {
-        val appPrefs = AppPrefs(context)
-        val states = appPrefs.loadMeetingStates().toMutableMap()
-        states.remove(meetingId)
-        appPrefs.saveMeetingStates(states)
-    }
-
-    fun scheduleMeetingAutoEnd(context: Context, meetingId: Long, endTime: Long) {
-        val now = System.currentTimeMillis()
-        val delay = endTime - now
-        if (delay > 0) {
-            Handler(Looper.getMainLooper()).postDelayed({
-
-            }, delay)
-        } else {
-
-        }
+    fun getMicEnabled(meetingId: Long): Boolean {
+        return prefs.getBoolean("mic_enabled_$meetingId", true)
     }
 }

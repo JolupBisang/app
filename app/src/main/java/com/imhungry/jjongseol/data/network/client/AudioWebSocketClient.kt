@@ -49,7 +49,8 @@ class AudioWebSocketClient(
     private val onNewDiarizedSegment: (DiarizedSegment) -> Unit,
     private val isServiceStopped: () -> Boolean,
     private val onMeetingStartTime: ((Long) -> Unit)? = null,
-    private val onAgendaUpdated: ((AgendaDto) -> Unit)? = null
+    private val onAgendaUpdated: ((AgendaDto) -> Unit)? = null,
+    var micEnabled: Boolean
 ) : WebSocketListener() {
     private var webSocket: WebSocket? = null
     private var chunkId: Long = 0
@@ -67,19 +68,20 @@ class AudioWebSocketClient(
         AudioFormat.ENCODING_PCM_16BIT
     ).coerceAtLeast(frameSize)
 
-    fun pauseEncoding() {
-        isEncodingPaused = true
-    }
-
-    fun resumeEncoding() {
-        isEncodingPaused = false
-    }
-
     private var isReconnecting = false
     private var reconnectAttempts = 0
     private val reconnectDelayMillis = 2000L
     var isClosedByUser: Boolean = false
     private var isAudioClosedByMeetingCompleted: Boolean = false
+    private var recordJob: Job? = null
+
+    fun pauseEncoding() {
+        stopRecording() // 녹음 자체를 멈춤
+    }
+
+    fun resumeEncoding() {
+        startRecording(scope) // 녹음 자체를 시작
+    }
 
     // /data/data/com.imhungry.jjongseol/cache/audio_packets/
     private val packetDir by lazy { File(context.cacheDir, "audio_packets/$meetingId") }
@@ -253,7 +255,11 @@ class AudioWebSocketClient(
         }
         setInitialChunkId(lastServerChunkId)
         resendMissingLocalPackets(lastServerChunkId.toLong()) {
-            startRecording(scope)
+            if (micEnabled) {
+                startRecording(scope)
+            } else {
+                Log.d("Audio", "micEnabled=false 상태이므로 녹음 시작 안함")
+            }
         }
     }
 
@@ -302,7 +308,9 @@ class AudioWebSocketClient(
         rawDir.mkdirs()
         val rawPcmFile = File(rawDir, "all_raw.pcm")
         val rawPcmOutput = FileOutputStream(rawPcmFile, true)
-        scope.launch {
+
+        recordJob?.cancel()
+        recordJob = scope.launch {
             val pcmBuffer = ByteArray(frameSize * 2)
             while (isActive && isStreaming) {
                 val read = audioRecord?.read(pcmBuffer, 0, pcmBuffer.size) ?: 0
@@ -420,6 +428,9 @@ class AudioWebSocketClient(
             }
         } catch (e: Exception) { }
         audioRecord = null
+
+        recordJob?.cancel()
+        recordJob = null
     }
 
     fun disconnect() {
