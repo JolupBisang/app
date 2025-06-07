@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.meeting.pager
 
+import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -71,7 +72,8 @@ fun MeetingSummaryScreen(
     val participationRates by meetingViewModel.participationRates.collectAsState()
     val sortedRates = participationRates.sortedByDescending { it.rate }
     val participantData = sortedRates.map { (it.rate * 100f) }
-    val participantNames = sortedRates.map { it.nickname }
+    val participantNames = sortedRates.map { it.userId.toString() }
+
     var expanded by remember { mutableStateOf(true) }
     val appPrefs = remember { AppPrefs(context) }
     val meetingState = appPrefs.loadMeetingStates()[meetingId]
@@ -132,6 +134,7 @@ fun MeetingSummaryScreen(
                 }
 
                 if (expanded && participantData.isNotEmpty() && participantNames.isNotEmpty()) {
+                    Log.d("participationRates", "rate : " + participantData[0] + ", nickname: " + participantNames[0])
                     ConversationSummaryBar(
                         participantData = participantData,
                         participantNames = participantNames

@@ -9,12 +9,15 @@ import android.media.MediaRecorder
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
+import com.imhungry.jjongseol.data.model.meeting.MeetingState
 import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.response.ErrorResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponseType
+import com.imhungry.jjongseol.data.network.config.AppPrefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
@@ -26,6 +29,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 class AudioWebSocketClient(
@@ -37,8 +43,8 @@ class AudioWebSocketClient(
     private val onMessage: (String) -> Unit = {},
     private val onNewDiarizedSegment: (DiarizedSegment) -> Unit,
     private val isServiceStopped: () -> Boolean,
+    private val onMeetingStartTime: ((Long) -> Unit)? = null,
 ) : WebSocketListener() {
-
     private var webSocket: WebSocket? = null
     private var chunkId: Long = 0
     private var audioRecord: AudioRecord? = null
@@ -114,9 +120,16 @@ class AudioWebSocketClient(
         try {
             val response = Gson().fromJson(text, SocketResponse::class.java)
             when (response.type) {
-                SocketResponseType.LAST_PROCESSED_CHUNK_ID -> {
-                    val lastChunkId = (response.data as Double).toInt()
-                    Log.i("Audio", "마지막 chunkId 수신됨: $lastChunkId")
+                SocketResponseType.CONNECTION_ESTABLISHED -> {
+                    val json = JSONObject(text)
+                    val data = json.optJSONObject("data")
+                    val lastChunkId = data?.optInt("lastProcessedChunkId", -1) ?: -1
+                    val meetingStartTime = data?.optString("meetingStartTime")
+                    Log.i("Audio", "CONNECTION_ESTABLISHED: chunkId=$lastChunkId, startTime=$meetingStartTime")
+                    if (meetingStartTime != null) {
+                        val startTimeMillis = isoToMillis(meetingStartTime)
+                        onMeetingStartTime?.invoke(startTimeMillis)
+                    }
                     preloadLocalPacketsAndThenStart(lastChunkId, scope)
                 }
                 SocketResponseType.ERROR -> {
@@ -134,11 +147,14 @@ class AudioWebSocketClient(
                     val message = Gson().fromJson(Gson().toJson(response.data), DiarizedSegment::class.java)
                     onNewDiarizedSegment(message)
                 }
-                else -> Log.d("Audio", "알 수 없는 메시지 타입 수신: ${response.type}")
+                else -> {
+                    Log.d("Audio", "알 수 없는 메시지 타입 수신: ${response.type}")
+                    onError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
+                }
             }
         } catch (e: Exception) {
-            Log.w("Audio", "SocketResponse 파싱 실패. 일반 텍스트로 처리", e)
-            onMessage(text)
+            Log.w("Audio", e)
+            onError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
         }
     }
 
@@ -350,6 +366,7 @@ class AudioWebSocketClient(
 //                rawDir.delete()
             }
         }
+        Log.d("Audio","모든 패킷 삭제 완료")
     }
 
     private fun stopRecording() {
@@ -380,5 +397,10 @@ class AudioWebSocketClient(
                 Manifest.permission.RECORD_AUDIO
             ) == PackageManager.PERMISSION_GRANTED
         } else true
+    }
+
+    fun isoToMillis(isoTimestamp: String): Long {
+        val startDateTime = LocalDateTime.parse(isoTimestamp, DateTimeFormatter.ISO_DATE_TIME)
+        return startDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
     }
 }

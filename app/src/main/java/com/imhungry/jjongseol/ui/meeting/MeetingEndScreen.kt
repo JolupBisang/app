@@ -40,6 +40,7 @@ import coil.decode.GifDecoder
 import coil.request.ImageRequest
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
+import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
 import com.imhungry.jjongseol.ui.theme.Pretend
@@ -62,6 +63,8 @@ fun MeetingEndScreen(
     navController: NavController,
     meetingId: Long
 ) {
+    val context = LocalContext.current
+    val appPrefs = AppPrefs(context)
     val meetingStatus by meetingViewModel.meetingStatus.collectAsState()
     var isCompleted by remember { mutableStateOf(false) }
     val meetingError by meetingViewModel.errorMessage.collectAsState()
@@ -72,11 +75,15 @@ fun MeetingEndScreen(
     }
 
     LaunchedEffect(meetingError) {
+        appPrefs.setMeetingForegroundServiceRunning(true)
+        appPrefs.setRunningMeetingId(meetingId)
         showDialog = true
     }
 
     LaunchedEffect(meetingStatus) {
         if (meetingStatus == MeetingStatus.COMPLETED) {
+            appPrefs.setMeetingForegroundServiceRunning(false)
+            appPrefs.clearRunningMeetingId()
             isCompleted = true
         }
     }

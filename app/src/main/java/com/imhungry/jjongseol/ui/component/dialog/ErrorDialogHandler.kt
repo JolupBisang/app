@@ -35,6 +35,7 @@ fun ErrorDialogHandler(
     val isNotHostError = errorMessage == "해당 작업은 회의 리더만 수행할 수 있습니다."
     val isServerInternalError = errorMessage == "서버 내부 오류입니다. 관리자에게 문의해주세요."
     val isUserNotFound = errorMessage == "존재하지 않는 회원입니다."
+    val isNotInProgressError = errorMessage == "진행중인 회의가 아닙니다."
 
     if (showDialog && errorMessage != null) {
         CustomDialog(
@@ -68,6 +69,10 @@ fun ErrorDialogHandler(
                         onFinish(SilRokNavigation.Home)
                     }
                     isNotHostError -> {
+                    }
+                    isNotInProgressError -> {
+                        context.stopService(Intent(context, MeetingSseService::class.java))
+                        onFinish(SilRokNavigation.Home)
                     }
                     else -> {
                         onFinish(SilRokNavigation.Home)

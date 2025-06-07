@@ -23,9 +23,11 @@ import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.imhungry.jjongseol.ui.home.meetingdata.MeetingInfo
 import com.imhungry.jjongseol.data.network.api.MeetingApi
 import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
+import com.imhungry.jjongseol.data.repository.ErrorEventRepository
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
 import com.imhungry.jjongseol.data.repository.MeetingRepository
 import com.imhungry.jjongseol.data.repository.MeetingResult
+import com.imhungry.jjongseol.data.repository.MeetingStartTimeEventBus
 import com.imhungry.jjongseol.data.repository.ParticipationRateRepository
 import com.imhungry.jjongseol.data.repository.SummaryRepository
 import com.imhungry.jjongseol.data.repository.UserRepository
@@ -107,6 +109,9 @@ class MeetingViewModel @Inject constructor(
     private val _diarizedSegments = MutableStateFlow<List<DiarizedSegment>>(emptyList())
     val diarizedSegments: StateFlow<List<DiarizedSegment>> = _diarizedSegments.asStateFlow()
 
+    private val _meetingStartTime = MutableStateFlow<Long?>(null)
+    val meetingStartTime: StateFlow<Long?> = _meetingStartTime
+
     fun onNewdiarizedSegments(msg: DiarizedSegment) {
         _diarizedSegments.update { oldList ->
             val mutable = oldList.toMutableList()
@@ -177,6 +182,16 @@ class MeetingViewModel @Inject constructor(
         viewModelScope.launch {
             DiarizedSegmentRepository.diarizedSegmentFlow.collect { msg ->
                 onNewdiarizedSegments(msg)
+            }
+        }
+        viewModelScope.launch {
+            ErrorEventRepository.errorEvents.collect { msg ->
+                _errorMessage.value = msg
+            }
+        }
+        viewModelScope.launch {
+            MeetingStartTimeEventBus.startTimeFlow.collect { (id, time) ->
+                _meetingStartTime.value = time
             }
         }
     }
