@@ -136,7 +136,7 @@ fun MeetingScreen(
     }
 
     LaunchedEffect(meetingError, agendaError) {
-        dialogMessage = meetingError ?: agendaError
+        dialogMessage = agendaError ?: meetingError
         showDialog = dialogMessage != null
     }
 

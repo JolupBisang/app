@@ -16,7 +16,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface AgendaApi {
-    @PATCH("/api/agendas/{agendaId}")
+    @PATCH("/api/agendas/status/{agendaId}")
     suspend fun changeAgendaStatus(
         @Path("agendaId") agendaId: Long,
         @Body agendaStatusReq: AgendaStatusReq

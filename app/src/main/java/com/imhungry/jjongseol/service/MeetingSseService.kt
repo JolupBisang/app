@@ -17,6 +17,7 @@ import com.imhungry.jjongseol.data.model.meeting.dto.ParticipationRateDto
 import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
 import com.imhungry.jjongseol.data.network.client.AudioWebSocketClient
 import com.imhungry.jjongseol.data.network.config.AppPrefs
+import com.imhungry.jjongseol.data.repository.AgendaSocketEventRepository
 import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
 import com.imhungry.jjongseol.data.repository.ErrorEventRepository
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
@@ -117,8 +118,10 @@ class MeetingSseService : Service() {
 
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
+        participationRateEventSource?.cancel()
         summaryEventSource = null
         feedbackEventSource = null
+        participationRateEventSource = null
         if (isServiceStopped || meetingId == -1L) return
 
         val client = OkHttpClient.Builder()
@@ -301,6 +304,11 @@ class MeetingSseService : Service() {
             },
             onMeetingStartTime = { startTimeMillis ->
                 MeetingStartTimeEventBus.send(meetingId, startTimeMillis)
+            },
+            onAgendaUpdated = { updateDto ->
+                serviceScope.launch {
+                    AgendaSocketEventRepository.emitAgendaUpdate(updateDto)
+                }
             }
         )
         audioWsClient?.connect()

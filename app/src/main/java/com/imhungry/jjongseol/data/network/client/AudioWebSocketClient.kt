@@ -12,6 +12,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
+import com.imhungry.jjongseol.data.model.agenda.dto.AgendaDto
 import com.imhungry.jjongseol.data.model.meeting.MeetingState
 import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.response.ErrorResponse
@@ -48,6 +49,7 @@ class AudioWebSocketClient(
     private val onNewDiarizedSegment: (DiarizedSegment) -> Unit,
     private val isServiceStopped: () -> Boolean,
     private val onMeetingStartTime: ((Long) -> Unit)? = null,
+    private val onAgendaUpdated: ((AgendaDto) -> Unit)? = null
 ) : WebSocketListener() {
     private var webSocket: WebSocket? = null
     private var chunkId: Long = 0
@@ -170,6 +172,13 @@ class AudioWebSocketClient(
                     stop(true)
                     onMessage("MEETING_RECORD_MADED")
                     MeetingNoteEventBus.send(MeetingNoteEvent.Completed(meetingId))
+                }
+                SocketResponseType.AGENDA_UPDATED -> {
+                    val json = JSONObject(text)
+                    val type = json.optString("type")
+                    val data = json.optJSONObject("data")
+                    val updated = Gson().fromJson(data.toString(), AgendaDto::class.java)
+                    onAgendaUpdated?.invoke(updated)
                 }
                 else -> {
                     Log.d("Audio", "알 수 없는 메시지 타입 수신: ${response.type}")

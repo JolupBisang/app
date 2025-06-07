@@ -6,6 +6,7 @@ import com.imhungry.jjongseol.data.model.agenda.dto.AgendaDto
 import com.imhungry.jjongseol.data.repository.AgendaRepository
 import com.imhungry.jjongseol.data.repository.AgendaResult
 import com.imhungry.jjongseol.data.model.agenda.AgendaItem
+import com.imhungry.jjongseol.data.repository.AgendaSocketEventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +28,14 @@ class AgendaViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
+
+    init {
+        viewModelScope.launch {
+            AgendaSocketEventRepository.agendaUpdates.collect { updateDto ->
+                updateAgendaFromSocket(updateDto.agendaId, updateDto.content, updateDto.isCompleted)
+            }
+        }
+    }
 
     fun loadAgendas(meetingId: Long) {
         currentMeetingId = meetingId
@@ -179,6 +188,13 @@ class AgendaViewModel @Inject constructor(
                     }
                 }
             }
+        }
+    }
+
+    fun updateAgendaFromSocket(agendaId: Long, content: String, isCompleted: Boolean) {
+        _agendaItems.value = _agendaItems.value.map {
+            if (it.id == agendaId) it.copy(text = content, isCompleted = isCompleted)
+            else it
         }
     }
 
