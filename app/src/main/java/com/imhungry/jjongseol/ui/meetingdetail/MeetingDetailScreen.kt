@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,6 +25,8 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
+import com.imhungry.jjongseol.data.network.api.MeetingUserApi
+import com.imhungry.jjongseol.data.network.config.RetrofitModule
 import com.imhungry.jjongseol.ui.home.DataPickerCalendar
 import com.imhungry.jjongseol.ui.newmeeting.CustomBackButton
 import com.imhungry.jjongseol.ui.newmeeting.agenda.AgendaListScreen
@@ -36,7 +39,9 @@ import com.imhungry.jjongseol.ui.theme.UserGray
 import com.imhungry.jjongseol.ui.theme.UserGreen1
 import com.imhungry.jjongseol.ui.theme.UserGreen2
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import com.imhungry.jjongseol.viewmodel.UserViewModel
+import dagger.hilt.android.EntryPointAccessors
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -64,6 +69,17 @@ fun MeetingDetailScreen(
 
     val agendaViewModel: AgendaViewModel = hiltViewModel()
     val agendaItems by agendaViewModel.agendaItems.collectAsState()
+
+    val userViewModel: UserViewModel = hiltViewModel()
+    val context = LocalContext.current
+    val meetingUserApi = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            RetrofitModule.MeetingUserApiEntryPoint::class.java
+        ).meetingUserApi()
+    }
+
+    val selectedEmails = remember { mutableStateOf(participants) }
 
     LaunchedEffect(id) {
         agendaViewModel.loadAgendas(id)
@@ -172,8 +188,10 @@ fun MeetingDetailScreen(
 
                     Column(modifier = Modifier.weight(5f)) {
                         SearchScreen(
-                            selectedEmails = remember { mutableStateOf(participants) },
-                            userApi = hiltViewModel<UserViewModel>().userApi,
+                            meetingId = id,
+                            selectedEmails = selectedEmails,
+                            userApi = userViewModel.userApi,
+                            meetingUserApi = meetingUserApi,
                             enabled = isEditable
                         )
 

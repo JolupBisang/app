@@ -44,7 +44,10 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import android.util.Log
+import androidx.compose.ui.platform.LocalContext
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
+import com.imhungry.jjongseol.data.network.api.MeetingUserApi
+import com.imhungry.jjongseol.data.network.config.RetrofitModule
 import com.imhungry.jjongseol.ui.home.DataPickerCalendar
 import com.imhungry.jjongseol.ui.newmeeting.agenda.AgendaListScreen
 import com.imhungry.jjongseol.ui.newmeeting.breaktime.BreakTimeRow
@@ -54,6 +57,7 @@ import com.imhungry.jjongseol.ui.theme.Purple1
 import com.imhungry.jjongseol.ui.theme.UserGreen1
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import com.imhungry.jjongseol.viewmodel.UserViewModel
+import dagger.hilt.android.EntryPointAccessors
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -62,6 +66,14 @@ import java.time.format.DateTimeFormatter
 fun CreateNewMeetingScreen(navController: NavController){
     val meetingViewModel: MeetingViewModel = hiltViewModel()
     val userViewModel: UserViewModel = hiltViewModel()
+
+    val context = LocalContext.current
+    val meetingUserApi = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            RetrofitModule.MeetingUserApiEntryPoint::class.java
+        ).meetingUserApi()
+    }
 
     val meetingTitle = remember { mutableStateOf("") }
 
@@ -87,7 +99,6 @@ fun CreateNewMeetingScreen(navController: NavController){
     val isPlaceError = remember { mutableStateOf(false) }
     val isAgendaError = remember { mutableStateOf(false) }
     val isBreakTimeError = remember { mutableStateOf(false) }
-
     ConstraintLayout (modifier = Modifier
         .background(Color.White)
         .fillMaxSize()){
@@ -186,8 +197,10 @@ fun CreateNewMeetingScreen(navController: NavController){
 
                     Column(modifier = Modifier.weight(5f)) {
                         SearchScreen(
+                            meetingId = -1L,
                             selectedEmails = selectedMembers,
                             userApi = userViewModel.userApi,
+                            meetingUserApi = meetingUserApi,
                             enabled = true
                         )
                     }

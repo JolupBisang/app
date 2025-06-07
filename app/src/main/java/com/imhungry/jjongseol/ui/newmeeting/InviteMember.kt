@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.newmeeting.invite
 
+import android.util.Log
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -26,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.imhungry.jjongseol.data.model.meeting.request.ParticipantAddReq
+import com.imhungry.jjongseol.data.network.api.MeetingUserApi
 import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import com.imhungry.jjongseol.data.network.api.UserApi
 import com.imhungry.jjongseol.ui.theme.BasicBackGround
@@ -35,8 +38,10 @@ import retrofit2.HttpException
 
 @Composable
 fun SearchScreen(
+    meetingId: Long,
     selectedEmails: MutableState<List<String>>,
     userApi: UserApi,
+    meetingUserApi: MeetingUserApi,
     enabled: Boolean
 ) {
     var query by remember { mutableStateOf("") }
@@ -122,23 +127,33 @@ fun SearchScreen(
             )
         }
 
-        if (matchedEmail != null && !selectedEmails.value.contains(matchedEmail)) {
+        val emailToAdd = matchedEmail
+        if (!emailToAdd.isNullOrBlank() && !selectedEmails.value.contains(emailToAdd)) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp, vertical = 5.dp)
                     .border(0.5.dp, Color.Gray, RoundedCornerShape(10.dp))
-                    .then(
-                        if (enabled) Modifier.clickable {
-                            selectedEmails.value = selectedEmails.value + matchedEmail!!
-                            query = ""
-                            matchedEmail = null
-                            errorMessage = null
-                        } else Modifier
-                    )
+                    .then(if (enabled) Modifier.clickable {
+                        scope.launch {
+                            try {
+                                meetingUserApi.addParticipants(
+                                    meetingId,
+                                    ParticipantAddReq(listOf(emailToAdd))
+                                )
+                                selectedEmails.value = selectedEmails.value + emailToAdd
+                                query = ""
+                                matchedEmail = null
+                                errorMessage = null
+                            } catch (e: HttpException) {
+                                val errorBody = e.response()?.errorBody()?.string()
+                                errorMessage = "참가자 추가 실패: ${e.code()} ${e.message()} \n$errorBody"
+                            }
+                        }
+                    } else Modifier)
             ) {
                 Text(
-                    text = matchedEmail!!,
+                    text = emailToAdd,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp),
@@ -156,9 +171,24 @@ fun SearchScreen(
         ) {
             selectedEmails.value.forEach { email ->
                 Chip(email, enabled = enabled, onRemove = {
-                    selectedEmails.value = selectedEmails.value - email
+                    scope.launch {
+                        try {
+                            val userDto = userApi.getUserByEmail(email)
+                            val userId = userDto.userId
+                            Log.d("SearchScreen", "삭제 요청: meetingId=$meetingId, email=$email, userId=$userId")
+                            if (userId != null) {
+                                meetingUserApi.removeParticipant(meetingId, userId)
+                                selectedEmails.value = selectedEmails.value - email
+                            } else {
+                                errorMessage = "삭제 실패: 사용자 ID를 찾을 수 없습니다."
+                            }
+                        } catch (e: Exception) {
+                            errorMessage = "참가자 삭제 실패: ${e.message}"
+                        }
+                    }
                 })
             }
+
         }
     }
 }

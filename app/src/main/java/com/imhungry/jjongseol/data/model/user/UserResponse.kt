@@ -1,7 +1,6 @@
 package com.imhungry.jjongseol.data.model.user
 
-data class UserDto(
-    val userId: Long,
+data class UserResponse(
     val message: String,
     val data: UserData
 )
