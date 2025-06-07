@@ -153,7 +153,7 @@ fun MeetingRecordScreen(
                     onExpandedChange = { meetingViewModel.setTopSheetExpanded(it) },
                     peekContent = {
                         CheckItem(
-                            text = agendas[peekIndex].content,
+                            text = agendas[peekIndex].text,
                             checked = agendas[peekIndex].isCompleted,
                             isFocused = !agendas[peekIndex].isCompleted,
                             onToggle = { agendaViewModel.onToggleAgenda(peekIndex) }
@@ -165,7 +165,7 @@ fun MeetingRecordScreen(
                         ) {
                             itemsIndexed(agendas) { i, item ->
                                 CheckItem(
-                                    text = item.content,
+                                    text = item.text,
                                     checked = item.isCompleted,
                                     isFocused = !item.isCompleted && firstUncheckedIndex == i,
                                     onToggle = { agendaViewModel.onToggleAgenda(i) }

@@ -35,6 +35,7 @@ import com.imhungry.jjongseol.ui.theme.Purple2
 import com.imhungry.jjongseol.ui.theme.UserGray
 import com.imhungry.jjongseol.ui.theme.UserGreen1
 import com.imhungry.jjongseol.ui.theme.UserGreen2
+import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.UserViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -60,6 +61,13 @@ fun MeetingDetailScreen(
     onConfirmEditClicked: () -> Unit
 ) {
     var showCalendarDialog by remember { mutableStateOf(false) }
+
+    val agendaViewModel: AgendaViewModel = hiltViewModel()
+    val agendaItems by agendaViewModel.agendaItems.collectAsState()
+
+    LaunchedEffect(id) {
+        agendaViewModel.loadAgendas(id)
+    }
 
     ConstraintLayout(
         modifier = Modifier
@@ -324,7 +332,16 @@ fun MeetingDetailScreen(
                         )
                     )
                     Row(modifier = Modifier.weight(5f)) {
-                        AgendaListScreen(agendaList = remember { mutableStateListOf(*agendas.toTypedArray()) }, enabled = isEditable)
+                        AgendaListScreen(
+                            agendaItems = agendaItems,
+                            onEdit = { item, newText ->
+                                agendaViewModel.onEditAgendaItem(item, newText)
+                            },
+                            onDelete = { item -> if (item.id != null) agendaViewModel.deleteAgenda(item.id) },
+                            onAdd = { agendaViewModel.addPlaceholderItem() },
+                            enabled = isEditable
+                        )
+
                     }
                 }
             }
