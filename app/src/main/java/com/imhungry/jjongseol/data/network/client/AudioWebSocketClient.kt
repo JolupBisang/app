@@ -159,21 +159,22 @@ class AudioWebSocketClient(
                     Log.i("Audio", "MEETING_COMPLETED 메시지 수신, 오디오 연결 종료")
                     isAudioClosedByMeetingCompleted = true
                     stopRecording()
+                    Log.i("Audio", "회의록 생성 중 화면으로 이동")
+                    onMessage("MEETING_COMPLETED")
+                    MeetingNoteEventBus.send(MeetingNoteEvent.Created(meetingId))
                 }
                 SocketResponseType.DIARIZED_SEGMENT -> {
                     val message = Gson().fromJson(Gson().toJson(response.data), DiarizedSegment::class.java)
                     onNewDiarizedSegment(message)
                 }
                 SocketResponseType.MEETING_NOTE_CREATED -> {
-                    Log.i("Audio", "MEETING_NOTE_CREATED 메시지 수신, 회의록 생성 중 화면으로 이동")
-                    onMessage("MEETING_NOTE_CREATED")
-                    MeetingNoteEventBus.send(MeetingNoteEvent.Created(meetingId))
-                }
-                SocketResponseType.MEETING_RECORD_MADED -> {
-                    Log.i("Audio", "MEETING_RECORD_MADED 메시지 수신, 모든 연결 종료")
+                    Log.i("Audio", "회의록 완성")
                     stop(true)
                     onMessage("MEETING_RECORD_MADED")
                     MeetingNoteEventBus.send(MeetingNoteEvent.Completed(meetingId))
+                }
+                SocketResponseType.MEETING_RECORD_MADED -> {
+                    Log.i("Audio", "MEETING_RECORD_MADED 메시지 수신, 모든 연결 종료")
                 }
                 SocketResponseType.AGENDA_UPDATED -> {
                     val json = JSONObject(text)

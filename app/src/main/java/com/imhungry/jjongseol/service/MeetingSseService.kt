@@ -298,7 +298,7 @@ class MeetingSseService : Service() {
                     "MEETING_RECORD_MADED" -> {
                         stopAllConnections()
                     }
-                    "MEETING_NOTE_CREATED" -> {
+                    "MEETING_COMPLETED" -> {
                         notifyMeetingNoteCreated()
                     }
                 }
