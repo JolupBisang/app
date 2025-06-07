@@ -246,7 +246,8 @@ fun MeetingScreen(
             timeText = timeText,
             remainingTime = remainingTime,
             context = context,
-            participantInfos = participantInfos
+            participantInfos = participantInfos,
+            startTime = savedStartTime
         )
     }
 }
@@ -293,7 +294,8 @@ fun MeetingScreenContent(
     timeText: String,
     remainingTime: String,
     context: Context,
-    participantInfos: List<UserInfoResponse>
+    participantInfos: List<UserInfoResponse>,
+    startTime: Long?
 ) {
     val pagerState = rememberPagerState(initialPage = 1)
 
@@ -317,18 +319,21 @@ fun MeetingScreenContent(
                         meetingViewModel = meetingViewModel,
                         agendaViewModel = agendaViewModel,
                         meetingId = meetingId,
-                        participantInfos = participantInfos
+                        participantInfos = participantInfos,
+                        startTime = startTime
                     )
                     1 -> MeetingRecordScreen(
                         meetingViewModel = meetingViewModel,
                         agendaViewModel = agendaViewModel,
                         meetingId = meetingId,
                         navController = navController,
-                        participantInfos = participantInfos
+                        participantInfos = participantInfos,
+                        startTime = startTime
                     )
                     2 -> MeetingFeedbackScreen(
                         meetingViewModel = meetingViewModel,
-                        meetingId = meetingId
+                        meetingId = meetingId,
+                        startTime = startTime
                     )
                 }
             }

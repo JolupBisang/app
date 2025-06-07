@@ -71,7 +71,8 @@ fun MeetingRecordScreen(
     agendaViewModel: AgendaViewModel,
     meetingId: Long,
     navController: NavController,
-    participantInfos: List<UserInfoResponse>
+    participantInfos: List<UserInfoResponse>,
+    startTime: Long?
 ) {
     val context = LocalContext.current
 
@@ -90,9 +91,6 @@ fun MeetingRecordScreen(
         participantInfos.associateBy({ it.id }, { it.nickname })
     }
     val appPrefs = remember { AppPrefs(context) }
-    val meetingState = appPrefs.loadMeetingStates()[meetingId]
-    val startTime = meetingState?.startTime
-
     val myProfile: UserInfoResponse? = appPrefs.loadMyProfile()
     val myUserId: Long? = myProfile?.id
 

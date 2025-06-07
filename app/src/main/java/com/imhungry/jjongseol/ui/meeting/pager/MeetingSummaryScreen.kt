@@ -62,7 +62,8 @@ fun MeetingSummaryScreen(
     meetingViewModel: MeetingViewModel,
     agendaViewModel: AgendaViewModel,
     meetingId: Long,
-    participantInfos: List<UserInfoResponse>
+    participantInfos: List<UserInfoResponse>,
+    startTime: Long?
 ) {
     val context = LocalContext.current
 
@@ -79,9 +80,6 @@ fun MeetingSummaryScreen(
     val participantData = sortedRates.map { (it.rate * 100f) }
     val participantNames = sortedRates.map { nicknameMap[it.userId] ?: "알 수 없음" }
     var expanded by remember { mutableStateOf(true) }
-    val appPrefs = remember { AppPrefs(context) }
-    val meetingState = appPrefs.loadMeetingStates()[meetingId]
-    val startTime = meetingState?.startTime
 
     LazyColumn(
         modifier = Modifier

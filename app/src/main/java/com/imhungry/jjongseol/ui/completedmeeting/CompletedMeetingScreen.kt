@@ -87,7 +87,7 @@ fun CompletedMeetingContent(
             when (page) {
                 0 -> CompletedMeetingSummaryScreen()
                 1 -> CompletedMeetingRecordScreen()
-                2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel, meetingId = meetingId)
+                2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel, meetingId = meetingId, startTime = null)
             }
         }
 
