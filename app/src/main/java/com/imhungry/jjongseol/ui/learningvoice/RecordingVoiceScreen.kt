@@ -1,6 +1,9 @@
 package com.imhungry.jjongseol.ui.learningvoice
 import android.content.Context
 import android.media.MediaRecorder
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -28,6 +31,7 @@ import com.imhungry.jjongseol.ui.theme.blackColor
 import com.imhungry.jjongseol.ui.theme.danger
 import com.imhungry.jjongseol.viewmodel.AudioViewModel
 import java.io.File
+import android.Manifest
 
 @Composable
 fun RecordingVoiceScreen(
@@ -36,6 +40,28 @@ fun RecordingVoiceScreen(
 ) {
     val context = LocalContext.current
     val isVoiceTutorialCompleted = remember { AppPrefs(context).isVoiceTutorialCompleted() }
+
+    var permissionGranted by remember { mutableStateOf(false) }
+    var permissionRequested by remember { mutableStateOf(false) }
+
+    val requiredPermissions = remember {
+        buildList {
+            add(Manifest.permission.RECORD_AUDIO)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        permissionGranted = requiredPermissions.all {
+            perms[it] == true
+        }
+        permissionRequested = true
+    }
+
 
     LaunchedEffect(isVoiceTutorialCompleted) {
         if (isVoiceTutorialCompleted) {

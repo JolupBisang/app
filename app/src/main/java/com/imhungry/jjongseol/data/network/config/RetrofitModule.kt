@@ -4,9 +4,11 @@ import com.imhungry.jjongseol.BuildConfig
 import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.imhungry.jjongseol.data.network.api.AudioApi
 import com.imhungry.jjongseol.data.network.api.MeetingApi
+import com.imhungry.jjongseol.data.network.api.MeetingUserApi
 import com.imhungry.jjongseol.data.network.api.UserApi
 import dagger.Module
 import dagger.Provides
+import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
@@ -61,4 +63,17 @@ object RetrofitModule {
     fun provideAudioApi(retrofit: Retrofit): AudioApi {
         return retrofit.create(AudioApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideMeetingUserApi(retrofit: Retrofit): MeetingUserApi {
+        return retrofit.create(MeetingUserApi::class.java)
+    }
+
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface MeetingUserApiEntryPoint {
+        fun meetingUserApi(): MeetingUserApi
+    }
+
 }

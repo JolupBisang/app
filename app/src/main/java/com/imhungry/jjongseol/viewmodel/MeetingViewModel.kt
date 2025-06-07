@@ -31,6 +31,7 @@ import com.imhungry.jjongseol.data.repository.MeetingNoteEventBus
 import com.imhungry.jjongseol.data.repository.MeetingRepository
 import com.imhungry.jjongseol.data.repository.MeetingResult
 import com.imhungry.jjongseol.data.repository.MeetingStartTimeEventBus
+import com.imhungry.jjongseol.data.repository.MeetingUserRepository
 import com.imhungry.jjongseol.data.repository.ParticipationRateRepository
 import com.imhungry.jjongseol.data.repository.SummaryRepository
 import com.imhungry.jjongseol.data.repository.UserRepository
@@ -56,6 +57,7 @@ class MeetingViewModel @Inject constructor(
     private val agendaApi: AgendaApi,
     private val feedbackRepository: FeedbackRepository,
     private val summaryRepository: SummaryRepository,
+    private val meetingUserRepository: MeetingUserRepository,
 ) : ViewModel() {
 
     private val _meetingDetail = MutableStateFlow<MeetingDetailRes?>(null)
@@ -120,6 +122,9 @@ class MeetingViewModel @Inject constructor(
 
     private val _meetingNoteStatus = MutableStateFlow<Pair<Boolean, Boolean>>(false to false) // (created, completed)
     val meetingNoteStatus: StateFlow<Pair<Boolean, Boolean>> = _meetingNoteStatus
+
+    private val _isHost = MutableStateFlow(false)
+    val isHost: StateFlow<Boolean> = _isHost
 
     fun onNewdiarizedSegments(msg: DiarizedSegment) {
         _diarizedSegments.update { oldList ->
@@ -258,6 +263,7 @@ class MeetingViewModel @Inject constructor(
                 is MeetingResult.Success -> {
                     _meetingDetail.value = result.data
                     _meetingStatus.value = MeetingStatus.from(result.data.meetingStatus)
+                    _isHost.value = result.data.isHost
                     // 참가자 이메일로 userInfo 로딩 시작
                     val emails = result.data.participants.map { it.email }
                     // 병렬 요청
@@ -505,6 +511,20 @@ class MeetingViewModel @Inject constructor(
 
     fun addFeedback(feedback: FeedbackDto) {
         _feedbackList.update { old -> old + feedback }
+    }
+
+    fun addParticipants(meetingId: Long, emails: List<String>, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            val result = meetingUserRepository.addParticipants(meetingId, emails)
+            if (result) onSuccess() else onError("참가자 추가 실패")
+        }
+    }
+
+    fun removeParticipant(meetingId: Long, participantUserId: Long, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            val result = meetingUserRepository.removeParticipant(meetingId, participantUserId)
+            if (result) onSuccess() else onError("참가자 삭제 실패")
+        }
     }
 
 }
