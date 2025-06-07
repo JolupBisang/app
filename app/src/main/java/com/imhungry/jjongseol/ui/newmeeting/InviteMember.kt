@@ -33,6 +33,7 @@ import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import com.imhungry.jjongseol.data.network.api.UserApi
 import com.imhungry.jjongseol.ui.theme.BasicBackGround
 import com.imhungry.jjongseol.ui.theme.UserGray
+import com.imhungry.jjongseol.ui.theme.UserGreen2
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
@@ -42,7 +43,8 @@ fun SearchScreen(
     selectedEmails: MutableState<List<String>>,
     userApi: UserApi,
     meetingUserApi: MeetingUserApi,
-    enabled: Boolean
+    enabled: Boolean,
+    hostEmail: String
 ) {
     var query by remember { mutableStateOf("") }
     var matchedEmail by remember { mutableStateOf<String?>(null) }
@@ -170,7 +172,7 @@ fun SearchScreen(
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             selectedEmails.value.forEach { email ->
-                Chip(email, enabled = enabled, onRemove = {
+                Chip(email, enabled = enabled, isHostParticipant = email == hostEmail, onRemove = {
                     scope.launch {
                         try {
                             val userDto = userApi.getUserByEmail(email)
@@ -183,7 +185,7 @@ fun SearchScreen(
                                 errorMessage = "삭제 실패: 사용자 ID를 찾을 수 없습니다."
                             }
                         } catch (e: Exception) {
-                            errorMessage = "참가자 삭제 실패: ${e.message}"
+                            Log.d("SearchScreen","참가자 삭제 실패: ${e.message}")
                         }
                     }
                 })
@@ -194,35 +196,43 @@ fun SearchScreen(
 }
 
 @Composable
-fun Chip(text: String, enabled: Boolean, onRemove: () -> Unit) {
+fun Chip(
+    text: String,
+    enabled: Boolean,
+    isHostParticipant: Boolean,
+    onRemove: () -> Unit
+) {
+    val canRemove = enabled && !isHostParticipant
+    val chipColor = if (isHostParticipant) UserGreen2 else BasicBackGround
+
     Surface(
         modifier = Modifier
             .padding(4.dp)
-            .then(if (enabled) Modifier.clickable { onRemove() } else Modifier),
-        color = BasicBackGround,
+            .then(if (canRemove) Modifier.clickable { onRemove() } else Modifier),
+        color = chipColor,
         shape = RoundedCornerShape(20)
     ) {
-        CustomStyledText(text, enabled)
+        CustomStyledText(text = text, showX = canRemove)
     }
 }
 
-
 @Composable
-fun CustomStyledText(text: String, enabled: Boolean) {
+fun CustomStyledText(text: String, showX: Boolean) {
     val annotatedString = buildAnnotatedString {
         withStyle(style = SpanStyle(color = Color.Black, fontSize = 12.sp)) {
             append(text)
         }
-        withStyle(
-            style = SpanStyle(
-                color = Color.DarkGray,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        ) {
-            append(" X")
+        if (showX) {
+            withStyle(
+                style = SpanStyle(
+                    color = Color.DarkGray,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            ) {
+                append(" X")
+            }
         }
-
     }
 
     Text(

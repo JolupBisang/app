@@ -123,6 +123,9 @@ class MeetingViewModel @Inject constructor(
     private val _meetingNoteStatus = MutableStateFlow<Pair<Boolean, Boolean>>(false to false) // (created, completed)
     val meetingNoteStatus: StateFlow<Pair<Boolean, Boolean>> = _meetingNoteStatus
 
+    private val _isHost = MutableStateFlow(false)
+    val isHost: StateFlow<Boolean> = _isHost
+
     fun onNewdiarizedSegments(msg: DiarizedSegment) {
         _diarizedSegments.update { oldList ->
             val mutable = oldList.toMutableList()
@@ -260,6 +263,7 @@ class MeetingViewModel @Inject constructor(
                 is MeetingResult.Success -> {
                     _meetingDetail.value = result.data
                     _meetingStatus.value = MeetingStatus.from(result.data.meetingStatus)
+                    _isHost.value = result.data.isHost
                     // 참가자 이메일로 userInfo 로딩 시작
                     val emails = result.data.participants.map { it.email }
                     // 병렬 요청

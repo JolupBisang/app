@@ -44,6 +44,7 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import android.util.Log
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.network.api.MeetingUserApi
@@ -99,6 +100,12 @@ fun CreateNewMeetingScreen(navController: NavController){
     val isPlaceError = remember { mutableStateOf(false) }
     val isAgendaError = remember { mutableStateOf(false) }
     val isBreakTimeError = remember { mutableStateOf(false) }
+
+    val isHost by meetingViewModel.isHost.collectAsState()
+
+    val userInfo by userViewModel.userInfo.collectAsState()
+    val myEmail = userInfo?.email.orEmpty()
+
     ConstraintLayout (modifier = Modifier
         .background(Color.White)
         .fillMaxSize()){
@@ -201,7 +208,8 @@ fun CreateNewMeetingScreen(navController: NavController){
                             selectedEmails = selectedMembers,
                             userApi = userViewModel.userApi,
                             meetingUserApi = meetingUserApi,
-                            enabled = true
+                            enabled = true,
+                            hostEmail = myEmail
                         )
                     }
                 }

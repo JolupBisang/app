@@ -81,8 +81,15 @@ fun MeetingDetailScreen(
 
     val selectedEmails = remember { mutableStateOf(participants) }
 
+    val userInfo by userViewModel.userInfo.collectAsState()
+    val myEmail = userInfo?.email.orEmpty()
+
     LaunchedEffect(id) {
         agendaViewModel.loadAgendas(id)
+    }
+
+    LaunchedEffect(Unit) {
+        userViewModel.loadMyProfile()
     }
 
     ConstraintLayout(
@@ -192,7 +199,8 @@ fun MeetingDetailScreen(
                             selectedEmails = selectedEmails,
                             userApi = userViewModel.userApi,
                             meetingUserApi = meetingUserApi,
-                            enabled = isEditable
+                            enabled = isEditable,
+                            hostEmail = myEmail
                         )
 
                     }
