@@ -18,8 +18,12 @@ import com.imhungry.jjongseol.data.model.response.ErrorResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponseType
 import com.imhungry.jjongseol.data.network.config.AppPrefs
+import com.imhungry.jjongseol.data.repository.MeetingNoteEvent
+import com.imhungry.jjongseol.data.repository.MeetingNoteEventBus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.*
@@ -73,6 +77,7 @@ class AudioWebSocketClient(
     private var reconnectAttempts = 0
     private val reconnectDelayMillis = 2000L
     var isClosedByUser: Boolean = false
+    private var isAudioClosedByMeetingCompleted: Boolean = false
 
     // /data/data/com.imhungry.jjongseol/cache/audio_packets/
     private val packetDir by lazy { File(context.cacheDir, "audio_packets/$meetingId") }
@@ -82,6 +87,10 @@ class AudioWebSocketClient(
     //private val rawDir by lazy { File(context.getExternalFilesDir(null), "pcm_raw/$meetingId") }
 
     fun connect() {
+        if (isAudioClosedByMeetingCompleted) {
+            Log.d("Audio", "MEETING_COMPLETED 이후 재접속 시도 차단")
+            return
+        }
         if (isServiceStopped() || isClosedByUser) {
             Log.d("Audio", "서비스 중단됨: WebSocket 연결 시도 안 함")
             disconnect()
@@ -94,6 +103,10 @@ class AudioWebSocketClient(
     }
 
     private fun tryConnect() {
+        if (isAudioClosedByMeetingCompleted) {
+            Log.d("Audio", "MEETING_COMPLETED 이후 재접속 시도 차단")
+            return
+        }
         if (isServiceStopped() || isClosedByUser) {
             Log.d("Audio", "서비스 중단됨: WebSocket 연결 시도 안 함")
             disconnect()
@@ -139,17 +152,27 @@ class AudioWebSocketClient(
                     onError(message)
                 }
                 SocketResponseType.MEETING_COMPLETED -> {
-                    Log.i("Audio", "회의 종료 메시지 수신, 연결 종료 처리")
-                    onMessage("MEETING_COMPLETED")
-                    stop(true)
+                    Log.i("Audio", "MEETING_COMPLETED 메시지 수신, 오디오 연결 종료")
+                    isAudioClosedByMeetingCompleted = true
+                    stopRecording()
                 }
                 SocketResponseType.DIARIZED_SEGMENT -> {
                     val message = Gson().fromJson(Gson().toJson(response.data), DiarizedSegment::class.java)
                     onNewDiarizedSegment(message)
                 }
+                SocketResponseType.MEETING_NOTE_CREATED -> {
+                    Log.i("Audio", "MEETING_NOTE_CREATED 메시지 수신, 회의록 생성 중 화면으로 이동")
+                    onMessage("MEETING_NOTE_CREATED")
+                    MeetingNoteEventBus.send(MeetingNoteEvent.Created(meetingId))
+                }
+                SocketResponseType.MEETING_RECORD_MADED -> {
+                    Log.i("Audio", "MEETING_RECORD_MADED 메시지 수신, 모든 연결 종료")
+                    stop(true)
+                    onMessage("MEETING_RECORD_MADED")
+                    MeetingNoteEventBus.send(MeetingNoteEvent.Completed(meetingId))
+                }
                 else -> {
                     Log.d("Audio", "알 수 없는 메시지 타입 수신: ${response.type}")
-                    onError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
                 }
             }
         } catch (e: Exception) {
@@ -215,6 +238,10 @@ class AudioWebSocketClient(
     }
 
     fun preloadLocalPacketsAndThenStart(lastServerChunkId: Int, scope: CoroutineScope) {
+        if (isAudioClosedByMeetingCompleted) {
+            Log.d("Audio", "MEETING_COMPLETED 이후 재접속 시도 차단")
+            return
+        }
         setInitialChunkId(lastServerChunkId)
         resendMissingLocalPackets(lastServerChunkId.toLong()) {
             startRecording(scope)
@@ -231,6 +258,10 @@ class AudioWebSocketClient(
     private fun startRecording(scope: CoroutineScope) {
         if (!hasRecordPermission()) {
             Log.e("Audio", "RECORD_AUDIO 권한 없음")
+            return
+        }
+        if (isAudioClosedByMeetingCompleted) {
+            Log.d("Audio", "MEETING_COMPLETED 이후 재접속 시도 차단")
             return
         }
         if (audioRecord != null && audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {

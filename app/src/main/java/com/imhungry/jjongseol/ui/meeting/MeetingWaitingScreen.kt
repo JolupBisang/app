@@ -103,7 +103,7 @@ fun MeetingWaitingScreen(
 
     val firstUncheckedIndex = agendas.indexOfFirst { !it.isCompleted }
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
-    val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating
+    val showLoading = isMeetingLoading || (meetingDetail != null && isAgendaLoading) || meetingDetail == null
 
     SetNavigationBarColor(primaryBackground)
 

@@ -58,7 +58,7 @@ fun MeetingControlPanel(
     onFinish: (SilRokNavigation) -> Unit,
     viewModel: MeetingViewModel,
     isWaiting: Boolean = false,
-    meetingId: Long? = null,
+    meetingId: Long,
     context: Context,
 ) {
     val micEnabled by viewModel.micEnabled.collectAsState()
@@ -159,10 +159,7 @@ fun MeetingControlPanel(
             description = "회의를 종료하시겠습니까?",
             confirmText = "예",
             onConfirm = {
-                context.stopService(Intent(context, MeetingSseService::class.java))
-                navController.navigate("meetingRoute/end/$meetingId")  {
-                    popUpTo(0)
-                }
+                viewModel.updateMeetingStatus(meetingId, MeetingStatus.COMPLETED)
                 showDialog = false
             },
             onDismiss = { showDialog = false }

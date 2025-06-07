@@ -90,6 +90,7 @@ fun MeetingScreen(
     var showLeaveDialog by remember { mutableStateOf(false) }
     val participantInfos by meetingViewModel.participantInfos.collectAsState()
     val startTime by meetingViewModel.meetingStartTime.collectAsState()
+    val meetingNoteCreated by meetingViewModel.meetingNoteCreated.collectAsState()
 
     // 1. 권한 체크
     val requiredPermissions = remember {
@@ -164,13 +165,11 @@ fun MeetingScreen(
     }
 
     // 5. 회의 시작 & 종료 시간 설정
-    val targetTimeMinutes = meetingDetail?.targetTime ?: 0
     val savedStartTime = startTime
+    val targetTimeMinutes = meetingDetail?.targetTime ?: 0
     val savedEndTime = if (savedStartTime != null && targetTimeMinutes > 0) {
         savedStartTime + targetTimeMinutes * 60_000L
-    } else {
-        null
-    }
+    } else null
 
     val timeText = rememberMeetingElapsedTime(savedStartTime)
     val remainingTime = rememberMeetingRemainingTime(savedEndTime)
@@ -192,13 +191,13 @@ fun MeetingScreen(
         )
     }
 
-    LaunchedEffect(meetingStatus) {
-        if (meetingStatus == MeetingStatus.COMPLETED) {
-            context.stopService(Intent(context, MeetingSseService::class.java))
-            sseStarted = false
-            navController.navigate("meetingRoute/completed/$meetingId")  {
+    LaunchedEffect(meetingNoteCreated) {
+        val mid = meetingNoteCreated
+        if (mid != null) {
+            navController.navigate("meetingRoute/end/$mid") {
                 popUpTo(0)
             }
+            meetingViewModel.resetMeetingNoteCreated()
         }
     }
 
@@ -317,7 +316,8 @@ fun MeetingScreenContent(
                     0 -> MeetingSummaryScreen(
                         meetingViewModel = meetingViewModel,
                         agendaViewModel = agendaViewModel,
-                        meetingId = meetingId
+                        meetingId = meetingId,
+                        participantInfos = participantInfos
                     )
                     1 -> MeetingRecordScreen(
                         meetingViewModel = meetingViewModel,
