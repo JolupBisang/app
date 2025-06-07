@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -61,6 +62,7 @@ fun MeetingDetailEditScreen(
     val originalRestDuration = remember { mutableStateOf("0") }
     val originalAgendas = remember { mutableStateListOf<String>() }
     val originalParticipants = remember { mutableStateListOf<String>() }
+    val agendaViewModel: AgendaViewModel = hiltViewModel()
 
     if (meeting == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -125,6 +127,8 @@ fun MeetingDetailEditScreen(
             restDuration = restDuration.value.toIntOrNull() ?: 0,
             agendas = agendaList,
             onSuccess = {
+                viewModel.loadAgendas(safeMeeting.meetingId)
+
                 isEditable.value = false
                 originalTitle.value = title.value
                 originalLocation.value = location.value
@@ -178,6 +182,20 @@ fun MeetingDetailEditScreen(
             text = { Text("수정한 내용이 모두 사라집니다. 정말 취소하시겠습니까?") },
             confirmButton = {
                 TextButton(onClick = {
+                    title.value = originalTitle.value
+                    location.value = originalLocation.value
+                    date.value = originalDate.value
+                    startTime.value = originalStartTime.value
+                    endTime.value = originalEndTime.value
+                    totalTime.value = originalTotalTime.value
+                    restInterval.value = originalRestInterval.value
+                    restDuration.value = originalRestDuration.value
+
+                    agendaViewModel.restoreAgendas(originalAgendas.toList())
+
+                    participants.clear()
+                    participants.addAll(originalParticipants)
+
                     isEditable.value = false
                     showCancelDialog.value = false
                 }) {
@@ -192,3 +210,4 @@ fun MeetingDetailEditScreen(
         )
     }
 }
+

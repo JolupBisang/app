@@ -1,11 +1,7 @@
 package com.imhungry.jjongseol.data.model.agenda.response
 
-data class AgendaDetailRes(
-    val agendaDetails: List<AgendaDetailDto>
-)
+import com.imhungry.jjongseol.data.model.agenda.dto.AgendaDto
 
-data class AgendaDetailDto(
-    val agendaId: Long,
-    val content: String,
-    val isCompleted: Boolean
+data class AgendaDetailRes(
+    val agendaDetails: List<AgendaDto>
 )
