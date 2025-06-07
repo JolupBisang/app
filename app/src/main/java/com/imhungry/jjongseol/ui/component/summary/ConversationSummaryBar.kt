@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.component.summary
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,12 +21,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.imhungry.jjongseol.ui.login.LoginScreen
 import com.imhungry.jjongseol.ui.meeting.component.ProportionalBarChart
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.generateParticipantColors
 
 @Composable
-fun ConversationSummaryBar(participantData: List<Float>, participantNames: List<String>) {
+fun ConversationSummaryBar(participantData: List<Double>, participantNames: List<String>) {
     val colors = generateParticipantColors(participantData.size)
 
     Column(

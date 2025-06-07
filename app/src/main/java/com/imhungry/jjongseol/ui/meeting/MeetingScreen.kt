@@ -86,9 +86,12 @@ fun MeetingScreen(
     val context = LocalContext.current
     var permissionGranted by remember { mutableStateOf(false) }
     var permissionRequested by remember { mutableStateOf(false) }
-    var startTimeMillis by remember { mutableStateOf<Long?>(null) }
     var sseStarted by remember { mutableStateOf(false) }
+    var showLeaveDialog by remember { mutableStateOf(false) }
+    val participantInfos by meetingViewModel.participantInfos.collectAsState()
+    val startTime by meetingViewModel.meetingStartTime.collectAsState()
 
+    // 1. 권한 체크
     val requiredPermissions = remember {
         buildList {
             add(Manifest.permission.RECORD_AUDIO)
@@ -108,10 +111,23 @@ fun MeetingScreen(
     }
 
     LaunchedEffect(meetingId) {
-        meetingViewModel.setTopSheetExpanded(false)
-        meetingViewModel.loadMeetingDetail2(meetingId)
+        permissionGranted = requiredPermissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+        if (!permissionGranted && !permissionRequested) {
+            launcher.launch(requiredPermissions.toTypedArray())
+        }
     }
 
+    // 2. 회의 정보 불러오기
+    LaunchedEffect(meetingId, permissionGranted) {
+        if (permissionGranted) {
+            meetingViewModel.setTopSheetExpanded(false)
+            meetingViewModel.loadMeetingDetail2(meetingId)
+        }
+    }
+
+    // 3. 아젠다 불러오기
     LaunchedEffect(meetingDetail) {
         if (meetingDetail != null) {
             agendaViewModel.loadAgendas(meetingId)
@@ -121,15 +137,6 @@ fun MeetingScreen(
     LaunchedEffect(meetingError, agendaError) {
         dialogMessage = meetingError ?: agendaError
         showDialog = dialogMessage != null
-    }
-
-    LaunchedEffect(meetingId) {
-        permissionGranted = requiredPermissions.all {
-            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-        }
-        if (!permissionGranted && !permissionRequested) {
-            launcher.launch(requiredPermissions.toTypedArray())
-        }
     }
 
     ErrorDialogHandler(
@@ -142,10 +149,31 @@ fun MeetingScreen(
         loginViewModel = loginViewModel
     )
 
-    val allReady = permissionGranted && !isMeetingLoading && !isAgendaLoading
-    val showLoading = isMeetingLoading || isAgendaLoading || isStatusUpdating || isParticipantLoading
-    var showLeaveDialog by remember { mutableStateOf(false) }
-    val participantInfos by meetingViewModel.participantInfos.collectAsState()
+    val allReady = permissionGranted && !isMeetingLoading && !isAgendaLoading && !isParticipantLoading
+
+    // 4. MeetingSseService 시작
+    LaunchedEffect(allReady) {
+        if (allReady && !sseStarted) {
+            context.startForegroundService(
+                Intent(context, MeetingSseService::class.java).apply {
+                    putExtra("meetingId", meetingId)
+                }
+            )
+            sseStarted = true
+        }
+    }
+
+    // 5. 회의 시작 & 종료 시간 설정
+    val targetTimeMinutes = meetingDetail?.targetTime ?: 0
+    val savedStartTime = startTime
+    val savedEndTime = if (savedStartTime != null && targetTimeMinutes > 0) {
+        savedStartTime + targetTimeMinutes * 60_000L
+    } else {
+        null
+    }
+
+    val timeText = rememberMeetingElapsedTime(savedStartTime)
+    val remainingTime = rememberMeetingRemainingTime(savedEndTime)
 
     BackHandler(enabled = true) {
         showLeaveDialog = true
@@ -164,12 +192,6 @@ fun MeetingScreen(
         )
     }
 
-    LaunchedEffect(allReady) {
-        if (allReady && startTimeMillis == null) {
-            startTimeMillis = System.currentTimeMillis()
-        }
-    }
-
     LaunchedEffect(meetingStatus) {
         if (meetingStatus == MeetingStatus.COMPLETED) {
             context.stopService(Intent(context, MeetingSseService::class.java))
@@ -180,36 +202,19 @@ fun MeetingScreen(
         }
     }
 
-    val appPrefs = remember { AppPrefs(context) }
+    // 준비 상태 체크
+    val fullyReady = permissionGranted
+            && !isMeetingLoading
+            && !isAgendaLoading
+            && !isParticipantLoading
+            && startTime != null
+            && meetingDetail != null
 
-    LaunchedEffect(allReady, showLoading) {
-        if (allReady && !showLoading) {
-            val meetingStates = appPrefs.loadMeetingStates().toMutableMap()
-            if (meetingStates[meetingId] == null) {
-                val startTime = System.currentTimeMillis()
-                val targetTimeMinutes = meetingDetail?.targetTime ?: 0
-                val endTime = startTime + targetTimeMinutes * 60_000L
-                val meetingState = MeetingState(
-                    meetingId = meetingId,
-                    micEnabled = true,
-                    startTime = startTime,
-                    endTime = endTime
-                )
-                meetingStates[meetingId] = meetingState
-                appPrefs.saveMeetingStates(meetingStates)
-            }
-        }
-    }
-    val meetingState = appPrefs.loadMeetingStates()[meetingId]
-    val savedStartTime = meetingState?.startTime
-    val savedEndTime = meetingState?.endTime
-
-    val timeText = rememberMeetingElapsedTime(savedStartTime)
-    val remainingTime = rememberMeetingRemainingTime(savedEndTime)
+    val shouldShowLoading = isStatusUpdating || !fullyReady
 
     SetNavigationBarColor(primaryBackground)
 
-    if (!allReady || showLoading) {
+    if (shouldShowLoading) {
         Box(
             modifier = Modifier
                 .fillMaxSize()

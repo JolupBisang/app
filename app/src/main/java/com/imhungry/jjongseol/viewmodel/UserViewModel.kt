@@ -20,9 +20,6 @@ class UserViewModel @Inject constructor(
     private val _userInfo = MutableStateFlow<UserInfoResponse?>(null)
     val userInfo: StateFlow<UserInfoResponse?> = _userInfo
 
-    private val _nickname = MutableStateFlow<String?>(null)
-    val nickname: StateFlow<String?> = _nickname
-
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
@@ -48,12 +45,13 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    fun loadMyNickname2() {
+    fun loadMyProfile() {
         viewModelScope.launch {
             _isLoading.value = true
-            when (val result = userRepository.getMyNickname2()) {
+            when (val result = userRepository.getMyProfile()) {
                 is UserResult.Success -> {
-                    _nickname.value = result.data
+                    _userInfo.value = result.data
+                    _errorMessage.value = null
                 }
                 is UserResult.Error -> {
                     _errorMessage.value = result.errorResponse?.message ?: result.message

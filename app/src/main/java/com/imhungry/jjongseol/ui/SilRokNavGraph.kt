@@ -158,7 +158,11 @@ fun SilRokNavGraph(
         composable("meetingRoute/end/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id")?.toLongOrNull() ?: return@composable
             MeetingEndScreen(
+                loginViewModel = loginViewModel,
                 meetingViewModel = meetingViewModel,
+                onFinish = { destination ->
+                    navActions.navigateTo(destination, SilRokNavigation.MeetingEnd)
+                },
                 navController = navController,
                 meetingId = id
             )

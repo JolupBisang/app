@@ -15,6 +15,7 @@ import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
 import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
 import com.imhungry.jjongseol.data.model.home.MeetingResponse
 import com.imhungry.jjongseol.data.model.home.toMeetingInfo
+import com.imhungry.jjongseol.data.model.meeting.dto.ParticipationRateDto
 import com.imhungry.jjongseol.data.model.meeting.request.MeetingUpdateReq
 import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
@@ -22,9 +23,12 @@ import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.imhungry.jjongseol.ui.home.meetingdata.MeetingInfo
 import com.imhungry.jjongseol.data.network.api.MeetingApi
 import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
+import com.imhungry.jjongseol.data.repository.ErrorEventRepository
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
 import com.imhungry.jjongseol.data.repository.MeetingRepository
 import com.imhungry.jjongseol.data.repository.MeetingResult
+import com.imhungry.jjongseol.data.repository.MeetingStartTimeEventBus
+import com.imhungry.jjongseol.data.repository.ParticipationRateRepository
 import com.imhungry.jjongseol.data.repository.SummaryRepository
 import com.imhungry.jjongseol.data.repository.UserRepository
 import com.imhungry.jjongseol.data.repository.UserResult
@@ -48,7 +52,7 @@ class MeetingViewModel @Inject constructor(
     private val meetingApi: MeetingApi,
     private val agendaApi: AgendaApi,
     private val feedbackRepository: FeedbackRepository,
-    private val summaryRepository: SummaryRepository
+    private val summaryRepository: SummaryRepository,
 ) : ViewModel() {
 
     private val _meetingDetail = MutableStateFlow<MeetingDetailRes?>(null)
@@ -71,6 +75,9 @@ class MeetingViewModel @Inject constructor(
 
     private val _summaryList = MutableStateFlow<List<SummaryDto>>(emptyList())
     val summaryList: StateFlow<List<SummaryDto>> = _summaryList.asStateFlow()
+
+    private val _participationRates = MutableStateFlow<List<ParticipationRateDto>>(emptyList())
+    val participationRates: StateFlow<List<ParticipationRateDto>> = _participationRates.asStateFlow()
 
     private val _scheduledMeetings = MutableStateFlow<List<MeetingInfo>>(emptyList())
     val scheduledMeetings: StateFlow<List<MeetingInfo>> = _scheduledMeetings.asStateFlow()
@@ -101,6 +108,9 @@ class MeetingViewModel @Inject constructor(
 
     private val _diarizedSegments = MutableStateFlow<List<DiarizedSegment>>(emptyList())
     val diarizedSegments: StateFlow<List<DiarizedSegment>> = _diarizedSegments.asStateFlow()
+
+    private val _meetingStartTime = MutableStateFlow<Long?>(null)
+    val meetingStartTime: StateFlow<Long?> = _meetingStartTime
 
     fun onNewdiarizedSegments(msg: DiarizedSegment) {
         _diarizedSegments.update { oldList ->
@@ -156,8 +166,32 @@ class MeetingViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            ParticipationRateRepository.participationRates.collect { dto ->
+                _participationRates.update { oldList ->
+                    val mutable = oldList.toMutableList()
+                    val index = mutable.indexOfFirst { it.userId == dto.userId }
+                    if (index != -1) {
+                        mutable[index] = dto
+                    } else {
+                        mutable.add(dto)
+                    }
+                    mutable
+                }
+            }
+        }
+        viewModelScope.launch {
             DiarizedSegmentRepository.diarizedSegmentFlow.collect { msg ->
                 onNewdiarizedSegments(msg)
+            }
+        }
+        viewModelScope.launch {
+            ErrorEventRepository.errorEvents.collect { msg ->
+                _errorMessage.value = msg
+            }
+        }
+        viewModelScope.launch {
+            MeetingStartTimeEventBus.startTimeFlow.collect { (id, time) ->
+                _meetingStartTime.value = time
             }
         }
     }

@@ -45,7 +45,7 @@ fun CompletedMeetingSummaryScreen() {
     var isExpanded3 by remember { mutableStateOf(true) }
     var isExpanded4 by remember { mutableStateOf(true) }
 
-    val data = listOf(45f, 30f, 20f, 10f, 5f)
+    val data = listOf(45.0, 30.0, 20.0, 10.0, 5.0)
     val names = listOf("지안", "상정", "원영", "유진", "은경")
     val summaryList = listOf(
         SummaryDto("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
