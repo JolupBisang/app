@@ -49,6 +49,7 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextLayoutResult
+import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.theme.gray400
 import com.imhungry.jjongseol.ui.theme.primaryBackground
@@ -60,7 +61,8 @@ import java.time.format.DateTimeFormatter
 fun MeetingSummaryScreen(
     meetingViewModel: MeetingViewModel,
     agendaViewModel: AgendaViewModel,
-    meetingId: Long
+    meetingId: Long,
+    participantInfos: List<UserInfoResponse>
 ) {
     val context = LocalContext.current
 
@@ -69,11 +71,13 @@ fun MeetingSummaryScreen(
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
     val hasAgendas = agendas.isNotEmpty()
     val summaryList by meetingViewModel.summaryList.collectAsState()
+    val nicknameMap = remember(participantInfos) {
+        participantInfos.associateBy({ it.id }, { it.nickname })
+    }
     val participationRates by meetingViewModel.participationRates.collectAsState()
     val sortedRates = participationRates.sortedByDescending { it.rate }
     val participantData = sortedRates.map { (it.rate * 100f) }
-    val participantNames = sortedRates.map { it.userId.toString() }
-
+    val participantNames = sortedRates.map { nicknameMap[it.userId] ?: "알 수 없음" }
     var expanded by remember { mutableStateOf(true) }
     val appPrefs = remember { AppPrefs(context) }
     val meetingState = appPrefs.loadMeetingStates()[meetingId]

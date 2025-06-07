@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.meeting
 
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -41,6 +42,7 @@ import coil.request.ImageRequest
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.data.network.config.AppPrefs
+import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
 import com.imhungry.jjongseol.ui.theme.Pretend
@@ -64,29 +66,19 @@ fun MeetingEndScreen(
     meetingId: Long
 ) {
     val context = LocalContext.current
+    val noteStatus by meetingViewModel.meetingNoteStatus.collectAsState()
     val appPrefs = AppPrefs(context)
-    val meetingStatus by meetingViewModel.meetingStatus.collectAsState()
-    var isCompleted by remember { mutableStateOf(false) }
     val meetingError by meetingViewModel.errorMessage.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        meetingViewModel.updateMeetingStatus(meetingId, MeetingStatus.COMPLETED)
-    }
-
-    LaunchedEffect(meetingError) {
-        appPrefs.setMeetingForegroundServiceRunning(true)
-        appPrefs.setRunningMeetingId(meetingId)
-        showDialog = true
-    }
-
-    LaunchedEffect(meetingStatus) {
-        if (meetingStatus == MeetingStatus.COMPLETED) {
+    LaunchedEffect(noteStatus.second) {
+        if (noteStatus.second) {
             appPrefs.setMeetingForegroundServiceRunning(false)
             appPrefs.clearRunningMeetingId()
-            isCompleted = true
         }
     }
+
+    val isCompleted = noteStatus.second
 
     SetNavigationBarColor(primaryBackground)
 
@@ -144,6 +136,7 @@ fun MeetingEndScreen(
         if (isCompleted) {
             Button(
                 onClick = {
+                    context.stopService(Intent(context, MeetingSseService::class.java))
                     navController.navigate("meetingRoute/completed/$meetingId") {
                         popUpTo(0)
                     }

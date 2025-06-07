@@ -25,6 +25,9 @@ import com.imhungry.jjongseol.data.network.api.MeetingApi
 import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
 import com.imhungry.jjongseol.data.repository.ErrorEventRepository
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
+import com.imhungry.jjongseol.data.repository.MeetingNoteCreatedEventBus
+import com.imhungry.jjongseol.data.repository.MeetingNoteEvent
+import com.imhungry.jjongseol.data.repository.MeetingNoteEventBus
 import com.imhungry.jjongseol.data.repository.MeetingRepository
 import com.imhungry.jjongseol.data.repository.MeetingResult
 import com.imhungry.jjongseol.data.repository.MeetingStartTimeEventBus
@@ -112,6 +115,12 @@ class MeetingViewModel @Inject constructor(
     private val _meetingStartTime = MutableStateFlow<Long?>(null)
     val meetingStartTime: StateFlow<Long?> = _meetingStartTime
 
+    private val _meetingNoteCreated = MutableStateFlow<Long?>(null)
+    val meetingNoteCreated: StateFlow<Long?> = _meetingNoteCreated
+
+    private val _meetingNoteStatus = MutableStateFlow<Pair<Boolean, Boolean>>(false to false) // (created, completed)
+    val meetingNoteStatus: StateFlow<Pair<Boolean, Boolean>> = _meetingNoteStatus
+
     fun onNewdiarizedSegments(msg: DiarizedSegment) {
         _diarizedSegments.update { oldList ->
             val mutable = oldList.toMutableList()
@@ -194,6 +203,27 @@ class MeetingViewModel @Inject constructor(
                 _meetingStartTime.value = time
             }
         }
+        viewModelScope.launch {
+            MeetingNoteCreatedEventBus.flow.collect { mid ->
+                _meetingNoteCreated.value = mid
+            }
+        }
+        viewModelScope.launch {
+            MeetingNoteEventBus.flow.collect { event ->
+                when (event) {
+                    is MeetingNoteEvent.Created -> _meetingNoteStatus.value = true to false
+                    is MeetingNoteEvent.Completed -> _meetingNoteStatus.value = true to true
+                }
+            }
+        }
+    }
+
+    fun resetMeetingNoteStatus() {
+        _meetingNoteStatus.value = false to false
+    }
+
+    fun resetMeetingNoteCreated() {
+        _meetingNoteCreated.value = null
     }
 
     fun resetMonthOffsets() {

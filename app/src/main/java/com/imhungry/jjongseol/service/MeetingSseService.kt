@@ -21,6 +21,7 @@ import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
 import com.imhungry.jjongseol.data.repository.ErrorEventRepository
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
 import com.imhungry.jjongseol.data.repository.LoginRepository
+import com.imhungry.jjongseol.data.repository.MeetingNoteCreatedEventBus
 import com.imhungry.jjongseol.data.repository.MeetingStartTimeEventBus
 import com.imhungry.jjongseol.data.repository.ParticipationRateRepository
 import com.imhungry.jjongseol.data.repository.SummaryRepository
@@ -286,8 +287,13 @@ class MeetingSseService : Service() {
                 ErrorEventRepository.emitError(errMsg)
             },
             onMessage = { msg ->
-                if (msg == "MEETING_COMPLETED") {
-                    stopAllConnections()
+                when (msg) {
+                    "MEETING_RECORD_MADED" -> {
+                        stopAllConnections()
+                    }
+                    "MEETING_NOTE_CREATED" -> {
+                        notifyMeetingNoteCreated()
+                    }
                 }
             },
             onNewDiarizedSegment = { chatMessage ->
@@ -364,5 +370,9 @@ class MeetingSseService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
+    }
+
+    private fun notifyMeetingNoteCreated() {
+        MeetingNoteCreatedEventBus.send(currentMeetingId)
     }
 }
