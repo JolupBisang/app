@@ -6,6 +6,9 @@ import com.imhungry.jjongseol.data.model.agenda.response.AgendaDetailRes
 import com.imhungry.jjongseol.data.model.response.ErrorResponse
 import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.google.gson.Gson
+import com.imhungry.jjongseol.data.model.agenda.dto.AgendaDto
+import com.imhungry.jjongseol.data.model.agenda.request.AgendaCreateReq
+import com.imhungry.jjongseol.data.model.agenda.request.AgendaUpdateReq
 import com.imhungry.jjongseol.data.model.response.SuccessResponse
 import retrofit2.Response
 import javax.inject.Inject
@@ -40,10 +43,17 @@ class AgendaRepository @Inject constructor(
     private inline fun <reified T> handleApiResponse(response: Response<SuccessResponse<T>>): AgendaResult<T> {
         return if (response.isSuccessful) {
             val body = response.body()
-            if (body != null && body.data != null) {
-                AgendaResult.Success(body.data)
+            if (body != null) {
+                if (T::class == Unit::class) {
+                    @Suppress("UNCHECKED_CAST")
+                    AgendaResult.Success(Unit as T)
+                } else if (body.data != null) {
+                    AgendaResult.Success(body.data)
+                } else {
+                    AgendaResult.Error("서버 응답이 올바르지 않습니다.", null)
+                }
             } else {
-                AgendaResult.Error("서버 응답이 올바르지 않습니다.", null)
+                AgendaResult.Error("서버 응답이 없습니다.", null)
             }
         } else {
             val errorBody = response.errorBody()?.string()
@@ -55,4 +65,31 @@ class AgendaRepository @Inject constructor(
             AgendaResult.Error(errorResponse?.message ?: "서버 오류 발생", errorResponse)
         }
     }
+    suspend fun addAgenda(meetingId: Long, content: String): AgendaResult<AgendaDto> {
+        return try {
+            val response = agendaApi.addAgenda(meetingId, AgendaCreateReq(content))
+            handleApiResponse(response)
+        } catch (e: Exception) {
+            AgendaResult.Exception(e)
+        }
+    }
+
+    suspend fun deleteAgenda(agendaId: Long): AgendaResult<Unit> {
+        return try {
+            val response = agendaApi.deleteAgenda(agendaId)
+            handleApiResponse(response)
+        } catch (e: Exception) {
+            AgendaResult.Exception(e)
+        }
+    }
+
+    suspend fun updateAgenda(agendaId: Long, content: String): AgendaResult<Long> {
+        return try {
+            val response = agendaApi.updateAgenda(agendaId, AgendaUpdateReq(content))
+            handleApiResponse(response)
+        } catch (e: Exception) {
+            AgendaResult.Exception(e)
+        }
+    }
+
 }
