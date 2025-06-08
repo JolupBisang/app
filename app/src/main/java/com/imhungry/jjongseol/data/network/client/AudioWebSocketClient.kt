@@ -153,9 +153,7 @@ class AudioWebSocketClient(
                     val error = Gson().fromJson(Gson().toJson(response.data), ErrorResponse::class.java)
                     val message = error.message
                     Log.w("Audio", "WebSocket 에러 메시지 수신: $message")
-                    if(message.equals("진행중인 회의가 아닙니다.")) {
-                        onError(message)
-                    }
+                    onError(message)
                 }
                 SocketResponseType.MEETING_COMPLETED -> {
                     Log.i("Audio", "MEETING_COMPLETED 메시지 수신, 오디오 연결 종료")
