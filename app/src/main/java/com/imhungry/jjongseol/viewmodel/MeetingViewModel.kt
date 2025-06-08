@@ -22,6 +22,7 @@ import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.imhungry.jjongseol.ui.home.meetingdata.MeetingInfo
 import com.imhungry.jjongseol.data.network.api.MeetingApi
+import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
 import com.imhungry.jjongseol.data.repository.ErrorEventRepository
 import com.imhungry.jjongseol.data.repository.FeedbackRepository
@@ -144,15 +145,16 @@ class MeetingViewModel @Inject constructor(
 
     fun toggleMic(context: Context) {
         val newState = !_micEnabled.value
-        setMicEnabled(context, newState)
+        meetingDetail.value?.let { setMicEnabled(context, it.meetingId, newState) }
         _micEnabled.value = newState
     }
 
-    fun setMicEnabled(context: Context, enabled: Boolean) {
+    fun setMicEnabled(context: Context, meetingId: Long, enabled: Boolean) {
         _micEnabled.value = enabled
         val intent = Intent(context, MeetingSseService::class.java).apply {
             action = MeetingSseService.ACTION_SET_MIC
             putExtra(MeetingSseService.EXTRA_MIC_ENABLED, enabled)
+            putExtra("meetingId", meetingId)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
@@ -512,6 +514,12 @@ class MeetingViewModel @Inject constructor(
     fun addFeedback(feedback: FeedbackDto) {
         _feedbackList.update { old -> old + feedback }
     }
+
+    fun syncMicStateFromServiceOrPrefs(context: Context, meetingId: Long) {
+        val micState = AppPrefs(context).getMicEnabled(meetingId)
+        _micEnabled.value = micState
+    }
+
 
     fun addParticipants(meetingId: Long, emails: List<String>, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {

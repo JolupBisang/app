@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,8 +41,6 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.model.meeting.MeetingState
-import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.service.MeetingSseService
@@ -72,6 +71,8 @@ fun MeetingScreen(
     navController: NavController,
     meetingId: Long
 ) {
+    val context = LocalContext.current
+    val appPrefs = AppPrefs(context)
     val agendas by agendaViewModel.agendaItems.collectAsState()
     val agendaError by agendaViewModel.errorMessage.collectAsState()
     val isMeetingLoading by meetingViewModel.isLoading.collectAsState()
@@ -83,7 +84,6 @@ fun MeetingScreen(
     var showDialog by remember { mutableStateOf(false) }
     var dialogMessage by remember { mutableStateOf<String?>(null) }
     val meetingStatus by meetingViewModel.meetingStatus.collectAsState()
-    val context = LocalContext.current
     var permissionGranted by remember { mutableStateOf(false) }
     var permissionRequested by remember { mutableStateOf(false) }
     var sseStarted by remember { mutableStateOf(false) }
@@ -120,12 +120,27 @@ fun MeetingScreen(
         }
     }
 
+    var isRunning by remember { mutableStateOf(false) }
+    val runningMeetingId = appPrefs.getRunningMeetingId()
+    if (runningMeetingId != -1L && runningMeetingId != meetingId) {
+        dialogMessage = "진행중인 회의가 아닙니다."
+        showDialog = true
+    }
+
+    LaunchedEffect(Unit) {
+        isRunning = appPrefs.isMeetingForegroundServiceRunning()
+    }
+
     // 2. 회의 정보 불러오기
     LaunchedEffect(meetingId, permissionGranted) {
         if (permissionGranted) {
             meetingViewModel.setTopSheetExpanded(false)
             meetingViewModel.loadMeetingDetail2(meetingId)
         }
+    }
+
+    LaunchedEffect(meetingId) {
+        meetingViewModel.syncMicStateFromServiceOrPrefs(context, meetingId)
     }
 
     // 3. 아젠다 불러오기
@@ -136,7 +151,7 @@ fun MeetingScreen(
     }
 
     LaunchedEffect(meetingError, agendaError) {
-        dialogMessage = meetingError ?: agendaError
+        dialogMessage = agendaError ?: meetingError
         showDialog = dialogMessage != null
     }
 
@@ -146,6 +161,8 @@ fun MeetingScreen(
         onFinish = onFinish,
         clearError = {
             meetingViewModel.clearErrorMessage()
+            agendaViewModel.clearErrorMessage()
+            dialogMessage = null
         },
         loginViewModel = loginViewModel
     )
@@ -154,7 +171,7 @@ fun MeetingScreen(
 
     // 4. MeetingSseService 시작
     LaunchedEffect(allReady) {
-        if (allReady && !sseStarted) {
+        if (allReady && !sseStarted && !isRunning && !showDialog) {
             context.startForegroundService(
                 Intent(context, MeetingSseService::class.java).apply {
                     putExtra("meetingId", meetingId)
@@ -208,6 +225,7 @@ fun MeetingScreen(
             && !isParticipantLoading
             && startTime != null
             && meetingDetail != null
+            && !showDialog
 
     val shouldShowLoading = isStatusUpdating || !fullyReady
 
@@ -246,7 +264,8 @@ fun MeetingScreen(
             timeText = timeText,
             remainingTime = remainingTime,
             context = context,
-            participantInfos = participantInfos
+            participantInfos = participantInfos,
+            startTime = savedStartTime
         )
     }
 }
@@ -293,7 +312,8 @@ fun MeetingScreenContent(
     timeText: String,
     remainingTime: String,
     context: Context,
-    participantInfos: List<UserInfoResponse>
+    participantInfos: List<UserInfoResponse>,
+    startTime: Long?
 ) {
     val pagerState = rememberPagerState(initialPage = 1)
 
@@ -317,18 +337,21 @@ fun MeetingScreenContent(
                         meetingViewModel = meetingViewModel,
                         agendaViewModel = agendaViewModel,
                         meetingId = meetingId,
-                        participantInfos = participantInfos
+                        participantInfos = participantInfos,
+                        startTime = startTime
                     )
                     1 -> MeetingRecordScreen(
                         meetingViewModel = meetingViewModel,
                         agendaViewModel = agendaViewModel,
                         meetingId = meetingId,
                         navController = navController,
-                        participantInfos = participantInfos
+                        participantInfos = participantInfos,
+                        startTime = startTime
                     )
                     2 -> MeetingFeedbackScreen(
                         meetingViewModel = meetingViewModel,
-                        meetingId = meetingId
+                        meetingId = meetingId,
+                        startTime = startTime
                     )
                 }
             }
