@@ -36,7 +36,6 @@ class MainActivity : AppCompatActivity() {
             val isRunning = isServiceRunning(this, MeetingSseService::class.java)
             if (!isRunning) {
                 appPrefs.setMeetingForegroundServiceRunning(false)
-                appPrefs.clearRunningMeetingId()
             }
         }
 

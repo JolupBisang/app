@@ -161,6 +161,10 @@ class AudioWebSocketClient(
                     stopRecording()
                     Log.i("Audio", "회의록 생성 중 화면으로 이동")
                     onMessage("MEETING_COMPLETED")
+                    scope.launch(Dispatchers.IO) {
+                        delay(500)
+                        deleteAllPackets()
+                    }
                     MeetingNoteEventBus.send(MeetingNoteEvent.Created(meetingId))
                 }
                 SocketResponseType.DIARIZED_SEGMENT -> {
@@ -169,7 +173,7 @@ class AudioWebSocketClient(
                 }
                 SocketResponseType.MEETING_NOTE_CREATED -> {
                     Log.i("Audio", "회의록 완성")
-                    stop(true)
+                    stop()
                     onMessage("MEETING_RECORD_MADED")
                     MeetingNoteEventBus.send(MeetingNoteEvent.Completed(meetingId))
                 }
@@ -377,7 +381,7 @@ class AudioWebSocketClient(
         if (!ok) Log.e("Audio", "WebSocket 바이너리 전송 실패")
     }
 
-    fun stop(deleteLocalPackets: Boolean = false) {
+    fun stop() {
         isClosedByUser = true
         isStreaming = false
         try {
@@ -395,13 +399,6 @@ class AudioWebSocketClient(
         webSocket?.close(1000, "Normal closure")
         webSocket = null
         isConnected = false
-
-        if (deleteLocalPackets) {
-            scope.launch(Dispatchers.IO) {
-                kotlinx.coroutines.delay(500)
-                deleteAllPackets()
-            }
-        }
     }
 
     fun deleteAllPackets() {

@@ -438,7 +438,7 @@ fun MeetingDetailScreen(
                                 contentColor = Color.White
                             ),
                             onClick = {
-                                navController.navigate("meetingRoute/inprogress/$id")
+                                navController.navigate("meetingRoute/waiting/$id")
                             }
                         ) {
                             Text("입장", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
