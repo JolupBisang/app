@@ -60,7 +60,7 @@ class AgendaViewModel @Inject constructor(
 
         val updated = current.toMutableList()
         updated.add(
-            AgendaItem(id = null, text = "새 아젠다", isPlaceholder = true)
+            AgendaItem(id = null, text = "", isPlaceholder = true)
         )
         _agendaItems.value = updated
     }
@@ -93,11 +93,11 @@ class AgendaViewModel @Inject constructor(
     }
 
     fun onEditAgendaItem(item: AgendaItem, newText: String) {
-        if (item.isPlaceholder) {
-            removeAgendaByText(item.text)
-            addAgenda(newText)
-        } else if (item.id != null) {
-            editAgenda(item.id, newText)
+        val updatedList = _agendaItems.value.toMutableList()
+        val index = updatedList.indexOfFirst { it == item }
+        if (index != -1) {
+            updatedList[index] = item.copy(text = newText)
+            _agendaItems.value = updatedList
         }
     }
 

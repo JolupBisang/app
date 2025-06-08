@@ -99,6 +99,7 @@ fun CreateNewMeetingScreen(navController: NavController){
     val isTimeError = remember { mutableStateOf(false) }
     val isPlaceError = remember { mutableStateOf(false) }
     val isAgendaError = remember { mutableStateOf(false) }
+    val isAgendaLengthError = remember { mutableStateOf(false) }
     val isBreakTimeError = remember { mutableStateOf(false) }
 
     val isHost by meetingViewModel.isHost.collectAsState()
@@ -363,6 +364,7 @@ fun CreateNewMeetingScreen(navController: NavController){
                     }
                 }
                 ValidationErrorText(isAgendaError.value)
+                ValidationErrorText(isAgendaLengthError.value, message = "회의 안건은 1글자 이상이어야 합니다.")
             }
 
             item{
@@ -413,6 +415,8 @@ fun CreateNewMeetingScreen(navController: NavController){
                         if (isTimeError.value) hasError = true
                         isPlaceError.value = place.value.isBlank().also { if (it) hasError = true }
                         isAgendaError.value = agendas.isEmpty().also { if (it) hasError = true }
+                        isAgendaLengthError.value = agendas.any { it.trim().length < 1 }
+                        if (isAgendaLengthError.value) hasError = true
                         isBreakTimeError.value = breakTime.value.isBlank() || breakTimeMinute.value.isBlank()
                         if (isBreakTimeError.value) hasError = true
 
@@ -515,10 +519,10 @@ fun CustomBackButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun ValidationErrorText(visible: Boolean, modifier: Modifier = Modifier) {
+fun ValidationErrorText(visible: Boolean, message: String = "필수항목이 작성되지 않았습니다.", modifier: Modifier = Modifier) {
     if (visible) {
         Text(
-            "필수항목이 작성되지 않았습니다.",
+            message,
             color = Color.Red,
             fontSize = 12.sp,
             modifier = modifier.padding(start = 70.dp, top = 4.dp)
