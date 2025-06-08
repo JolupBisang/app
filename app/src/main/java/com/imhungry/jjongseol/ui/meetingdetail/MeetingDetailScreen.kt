@@ -411,9 +411,7 @@ fun MeetingDetailScreen(
                     } catch (e: IllegalArgumentException) {
                         null
                     }
-
-                    if (isHost && meetingStatus == MeetingStatus.WAITING) {
-                        //호스트이면서 회의 상태가 WAITING일 경우
+                    if (isEditable) {
                         Button(
                             modifier = Modifier
                                 .weight(1f)
@@ -423,7 +421,7 @@ fun MeetingDetailScreen(
                                 backgroundColor = UserGray,
                                 contentColor = Color.Black
                             ),
-                            onClick = { navController.popBackStack() }
+                            onClick = { onEditClicked() }
                         ) {
                             Text("취소", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
                         }
@@ -437,49 +435,105 @@ fun MeetingDetailScreen(
                                 backgroundColor = UserGreen1,
                                 contentColor = Color.White
                             ),
-                            onClick = {
-                                navController.navigate("meetingRoute/inprogress/$id")
-                            }
+                            onClick = { onConfirmEditClicked() }
                         ) {
-                            Text("입장", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
-                        }
-
-                        Button(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(50.dp)
-                                .border(1.dp, UserGreen2, RoundedCornerShape(15.dp)),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = UserGreen2,
-                                contentColor = Color.Black
-                            ),
-                            onClick = onEditClicked
-                        ) {
-                            Text("수정", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
+                            Text("확인", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
                         }
                     } else {
-                        //호스트가 아니거나 WAITING이 아닌 경우
-                        val buttonText = if (meetingStatus == MeetingStatus.COMPLETED) "회의록 조회" else "입장"
-
-                        Button(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                                .border(1.dp, UserGreen1, RoundedCornerShape(15.dp)),
-                            colors = ButtonDefaults.buttonColors(
-                                backgroundColor = UserGreen1,
-                                contentColor = Color.White
-                            ),
-                            onClick = {
-                                when (meetingStatus) {
-                                    MeetingStatus.WAITING -> navController.navigate("meetingRoute/waiting/$id")
-                                    MeetingStatus.IN_PROGRESS -> navController.navigate("meetingRoute/inprogress/$id")
-                                    MeetingStatus.COMPLETED -> navController.navigate("meetingRoute/completed/$id")
-                                    else -> {}
-                                }
+                        if (isHost && meetingStatus == MeetingStatus.WAITING) {
+                            //호스트이면서 회의 상태가 WAITING일 경우
+                            Button(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp)
+                                    .border(1.dp, UserGray, RoundedCornerShape(15.dp)),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = UserGray,
+                                    contentColor = Color.Black
+                                ),
+                                onClick = { navController.popBackStack() }
+                            ) {
+                                Text(
+                                    "취소",
+                                    style = TextStyle(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    )
+                                )
                             }
-                        ) {
-                            Text(buttonText, style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 15.sp))
+
+                            Button(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp)
+                                    .border(1.dp, UserGreen1, RoundedCornerShape(15.dp)),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = UserGreen1,
+                                    contentColor = Color.White
+                                ),
+                                onClick = {
+                                    navController.navigate("meetingRoute/waiting/$id")
+                                }
+                            ) {
+                                Text(
+                                    "입장",
+                                    style = TextStyle(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    )
+                                )
+                            }
+
+                            Button(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp)
+                                    .border(1.dp, UserGreen2, RoundedCornerShape(15.dp)),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = UserGreen2,
+                                    contentColor = Color.Black
+                                ),
+                                onClick = onEditClicked
+                            ) {
+                                Text(
+                                    "수정",
+                                    style = TextStyle(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    )
+                                )
+                            }
+                        } else {
+                            //호스트가 아니거나 WAITING이 아닌 경우
+                            val buttonText =
+                                if (meetingStatus == MeetingStatus.COMPLETED) "회의록 조회" else "입장"
+
+                            Button(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .border(1.dp, UserGreen1, RoundedCornerShape(15.dp)),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = UserGreen1,
+                                    contentColor = Color.White
+                                ),
+                                onClick = {
+                                    when (meetingStatus) {
+                                        MeetingStatus.WAITING -> navController.navigate("meetingRoute/waiting/$id")
+                                        MeetingStatus.IN_PROGRESS -> navController.navigate("meetingRoute/inprogress/$id")
+                                        MeetingStatus.COMPLETED -> navController.navigate("meetingRoute/completed/$id")
+                                        else -> {}
+                                    }
+                                }
+                            ) {
+                                Text(
+                                    buttonText,
+                                    style = TextStyle(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    )
+                                )
+                            }
                         }
                     }
                 }
