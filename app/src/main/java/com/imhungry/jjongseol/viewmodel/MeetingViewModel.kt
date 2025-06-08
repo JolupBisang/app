@@ -45,8 +45,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
@@ -121,13 +123,17 @@ class MeetingViewModel @Inject constructor(
     private val _meetingNoteCreated = MutableStateFlow<Long?>(null)
     val meetingNoteCreated: StateFlow<Long?> = _meetingNoteCreated
 
-    private val _meetingNoteStatus = MutableStateFlow<Pair<Boolean, Boolean>>(false to false) // (created, completed)
+    private val _meetingNoteStatus = MutableStateFlow<Pair<Boolean, Boolean>>(false to false)
     val meetingNoteStatus: StateFlow<Pair<Boolean, Boolean>> = _meetingNoteStatus
 
     private val _isHost = MutableStateFlow(false)
     val isHost: StateFlow<Boolean> = _isHost
 
     private var hasLoadedInitialMeetings = false
+
+    fun markAllFeedbackAsRead() {
+        _feedbackList.value = _feedbackList.value.map { it.copy(isRead = true) }
+    }
 
     fun onNewdiarizedSegments(msg: DiarizedSegment) {
         _diarizedSegments.update { oldList ->
@@ -539,5 +545,4 @@ class MeetingViewModel @Inject constructor(
             if (result) onSuccess() else onError("참가자 삭제 실패")
         }
     }
-
 }

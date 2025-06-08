@@ -49,7 +49,7 @@ fun MeetingFeedbackScreen(
     val feedbackList by meetingViewModel.feedbackList.collectAsState()
     DisposableEffect(Unit) {
         onDispose {
-            //markAllFeedbackAsRead()
+            meetingViewModel.markAllFeedbackAsRead()
         }
     }
 
@@ -100,4 +100,3 @@ fun MeetingFeedbackScreen(
         }
     }
 }
-

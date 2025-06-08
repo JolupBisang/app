@@ -27,6 +27,8 @@ class LoginViewModel @Inject constructor(
 
     fun clearToken() = loginRepository.clearToken()
 
+    fun getToken() = loginRepository.getToken()
+
     fun isLoggedIn(): Boolean = loginRepository.isLoggedIn()
 
     fun launchGoogleLogin(context: Context) = authRepository.launchGoogleOAuth(context)

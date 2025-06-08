@@ -53,6 +53,7 @@ import com.imhungry.jjongseol.ui.meeting.pager.MeetingRecordScreen
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingSummaryScreen
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.ui.theme.green200
+import com.imhungry.jjongseol.ui.theme.orange100
 import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.ui.theme.whiteColor
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
@@ -215,8 +216,7 @@ fun MeetingScreen(
     val fullyReady = permissionGranted
             && !isMeetingLoading
             && !isAgendaLoading
-            && startTime != null
-            && meetingDetail != null
+            && sseStarted
 
     SetNavigationBarColor(primaryBackground)
 
@@ -271,7 +271,6 @@ fun rememberMeetingElapsedTime(savedStartTime: Long?): String {
             delay(1000)
         }
     }
-    Log.d("MeetingStart", "회의 시작 시간 설정")
     return elapsedTime.value
 }
 
@@ -287,7 +286,6 @@ fun rememberMeetingRemainingTime(savedEndTime: Long?): String {
             delay(1000)
         }
     }
-    Log.d("MeetingStart", "회의 종료 시간 설정")
     return remainingTime.value
 }
 
@@ -306,7 +304,25 @@ fun MeetingScreenContent(
     participantInfos: List<UserInfoResponse>,
     startTime: Long?
 ) {
+    val feedbackList by meetingViewModel.feedbackList.collectAsState()
     val pagerState = rememberPagerState(initialPage = 1)
+    var hasUnreadFeedback by remember { mutableStateOf(false) }
+    var prevFeedbackCount by remember { mutableStateOf(feedbackList.size) }
+
+    // 새 피드백이 오면 unread 표시
+    LaunchedEffect(feedbackList) {
+        if (pagerState.currentPage != 2 && feedbackList.size > prevFeedbackCount) {
+            hasUnreadFeedback = true
+        }
+        prevFeedbackCount = feedbackList.size
+    }
+
+    // 피드백 페이지로 이동하면 unread 해제
+    LaunchedEffect(pagerState.currentPage) {
+        if (pagerState.currentPage == 2) {
+            hasUnreadFeedback = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -350,7 +366,8 @@ fun MeetingScreenContent(
                 pagerState = pagerState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 4.dp)
+                    .padding(bottom = 4.dp),
+                unreadFeedback = hasUnreadFeedback
             )
         }
         MeetingControlPanel(
@@ -381,7 +398,9 @@ fun CustomHorizontalPagerIndicator(
     indicatorSize: Int = 8,
     indicatorSpacing: Int = 7,
     paddingHorizontal: Int = 10,
-    paddingVertical: Int = 7
+    paddingVertical: Int = 7,
+    unreadFeedback: Boolean = false,
+    unreadIndicatorColor: Color = orange100
 ) {
     Box(
         modifier = modifier
@@ -396,11 +415,17 @@ fun CustomHorizontalPagerIndicator(
             verticalAlignment = Alignment.CenterVertically
         ) {
             repeat(pageCount) { index ->
+                val isActive = pagerState.currentPage == index
+                val isUnreadFeedback = (index == 2) && unreadFeedback && !isActive
                 Box(
                     modifier = Modifier
                         .size(indicatorSize.dp)
                         .background(
-                            color = if (pagerState.currentPage == index) activeColor else inactiveColor,
+                            color = when {
+                                isActive -> activeColor
+                                isUnreadFeedback -> unreadIndicatorColor
+                                else -> inactiveColor
+                            },
                             shape = CircleShape
                         )
                 )
