@@ -50,7 +50,10 @@ fun SplashScreen(
     val isLoading by userViewModel.isLoading.collectAsState()
 
     LaunchedEffect(Unit) {
-        userViewModel.loadMyProfile()
+        navController.navigate(SilRokNavigation.Login.route) {
+            popUpTo(0)
+        }
+        //userViewModel.loadMyProfile()
     }
 
     LaunchedEffect(isLoading) {

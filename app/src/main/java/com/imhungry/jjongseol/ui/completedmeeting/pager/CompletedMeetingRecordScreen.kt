@@ -44,20 +44,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.model.agenda.AgendaItem
 import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.meeting.component.ChatBubble
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
+import com.imhungry.jjongseol.viewmodel.AgendaViewModel
+import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import com.imhungry.jjongseol.viewmodel.SegmentViewModel
 import kotlinx.coroutines.flow.collectLatest
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 import kotlin.random.Random
 
 @Composable
 fun CompletedMeetingRecordScreen(
     meetingId: Long,
+    agendaViewModel: AgendaViewModel = hiltViewModel(),
+    meetingViewModel: MeetingViewModel = hiltViewModel(),
     segmentViewModel: SegmentViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -65,17 +72,22 @@ fun CompletedMeetingRecordScreen(
     val appPrefs = remember { AppPrefs(context) }
     val myProfile: UserInfoResponse? = appPrefs.loadMyProfile()
     val currentUserId: Long? = myProfile?.id
-
-    val items = remember { dummyAgenda() }
-    val checkedStates = remember { mutableStateListOf(false, false, false, false, false) }
     val lastCheckedIndex = remember { mutableStateOf(0) }
-    val firstUncheckedIndex = checkedStates.indexOfFirst { !it }
+    val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
+    val agendas by agendaViewModel.agendaItems.collectAsState()
+    val title = meetingDetail?.title ?: ""
+    val location = meetingDetail?.location ?: ""
+    val scheduledStartTime = meetingDetail?.scheduledStartTime ?: ""
     val segments by segmentViewModel.segments.collectAsState()
     val listState = rememberLazyListState()
     var isCollapsed by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
+    val summary = "회의 요약이 없습니다."
+    val formattedDate = scheduledStartTime.toKoreanDateStringWithDayOfWeek()
 
     LaunchedEffect(meetingId) {
+        agendaViewModel.loadAgendas(meetingId)
+        meetingViewModel.loadMeetingDetail2(meetingId)
         segmentViewModel.loadSegments(meetingId, reset = true)
     }
 
@@ -98,9 +110,11 @@ fun CompletedMeetingRecordScreen(
             isExpanded = isExpanded,
             onToggleCollapse = { isCollapsed = !isCollapsed },
             onToggleAgenda = { isExpanded = !isExpanded },
-            items = items,
-            checkedStates = checkedStates,
-            firstUncheckedIndex = firstUncheckedIndex,
+            title = title,
+            location = location,
+            formattedDate = formattedDate,
+            summary = summary,
+            agendaItems = agendas,
             lastCheckedIndex = lastCheckedIndex
         )
 
@@ -135,9 +149,11 @@ fun HeaderSection(
     isExpanded: Boolean,
     onToggleCollapse: () -> Unit,
     onToggleAgenda: () -> Unit,
-    items: List<String>,
-    checkedStates: MutableList<Boolean>,
-    firstUncheckedIndex: Int,
+    title: String,
+    location: String,
+    formattedDate: String,
+    summary: String,
+    agendaItems: List<AgendaItem>,
     lastCheckedIndex: MutableState<Int>
 ) {
     Box(
@@ -147,7 +163,7 @@ fun HeaderSection(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "2025.03.26 수, IT관 777호",
+                text = formattedDate + ", $location",
                 color = Color.Gray,
                 fontSize = 13.sp
             )
@@ -163,7 +179,7 @@ fun HeaderSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "회의 제목",
+                    text = title,
                     color = Color.Black,
                     fontSize = 20.sp,
                     modifier = Modifier.weight(1f)
@@ -192,7 +208,7 @@ fun HeaderSection(
                             .padding(12.dp)
                     ) {
                         Text(
-                            text = "이 회의는 채식 메뉴와 고기 메뉴 사이의 갈등을 조율하며, 샤브샤브라는 절충안을 도출한 사례입니다.",
+                            text = summary,
                             color = Color.DarkGray
                         )
                     }
@@ -228,14 +244,13 @@ fun HeaderSection(
                                 .fillMaxWidth()
                                 .padding(horizontal = 4.dp)
                         ) {
-                            items.forEachIndexed { i, item ->
+                            agendaItems.forEachIndexed { i, item ->
                                 CheckItem(
-                                    text = item,
-                                    checked = checkedStates[i],
-                                    isFocused = !checkedStates[i] && firstUncheckedIndex == i,
+                                    text = item.text,
+                                    checked = item.isCompleted,
+                                    isFocused = !item.isCompleted && agendaItems.indexOfFirst { !it.isCompleted } == i,
                                     onToggle = {
-                                        checkedStates[i] = !checkedStates[i]
-                                        if (checkedStates[i]) lastCheckedIndex.value = i
+                                        lastCheckedIndex.value = i
                                     },
                                     topPadding = 14.dp
                                 )
@@ -275,10 +290,6 @@ fun Divider() {
 }
 
 
-fun dummyAgenda(): List<String> = listOf(
-    "저메추", "지구는 평평한가?", "35세는 어린이인가?", "가르마 왼쪽 vs 오른쪽", "왼손잡이는 똑똑할까?"
-)
-
 fun formatKoreanTime(isoString: String): String {
     return try {
         val dateTime = LocalDateTime.parse(isoString, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
@@ -292,6 +303,16 @@ fun formatKoreanTime(isoString: String): String {
             else -> hour24
         }
         "$amPm ${hour12}시 ${minute}분"
+    } catch (e: Exception) {
+        ""
+    }
+}
+
+fun String.toKoreanDateStringWithDayOfWeek(): String {
+    return try {
+        val dt = LocalDateTime.parse(this, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        val dayOfWeek = dt.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN)
+        "${dt.year}.${dt.monthValue.toString().padStart(2, '0')}.${dt.dayOfMonth.toString().padStart(2, '0')} $dayOfWeek"
     } catch (e: Exception) {
         ""
     }
