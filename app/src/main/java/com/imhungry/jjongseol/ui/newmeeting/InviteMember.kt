@@ -96,15 +96,19 @@ fun SearchScreen(
                             scope.launch {
                                 try {
                                     val response = userApi.getUserByEmail(query)
-                                    matchedEmail = response.data.email
-                                    errorMessage = null
-                                } catch (e: HttpException) {
-                                    if (e.code() == 404) {
+                                    if (response.isSuccessful) {
+                                        matchedEmail = response.body()?.data?.email
+                                        errorMessage = null
+                                    } else if (response.code() == 404) {
                                         matchedEmail = null
                                         errorMessage = "사용자를 찾을 수 없습니다."
                                     } else {
-                                        errorMessage = "오류가 발생했습니다."
+                                        errorMessage = "오류가 발생했습니다: ${response.code()}"
                                     }
+                                } catch (e: HttpException) {
+                                    errorMessage = "네트워크 오류: ${e.message}"
+                                } catch (e: Exception) {
+                                    errorMessage = "예외 발생: ${e.message}"
                                 }
                             }
                         }
@@ -175,14 +179,18 @@ fun SearchScreen(
                 Chip(email, enabled = enabled, isHostParticipant = email == hostEmail, onRemove = {
                     scope.launch {
                         try {
-                            val userDto = userApi.getUserByEmail(email)
-                            val userId = userDto.userId
-                            Log.d("SearchScreen", "삭제 요청: meetingId=$meetingId, email=$email, userId=$userId")
-                            if (userId != null) {
-                                meetingUserApi.removeParticipant(meetingId, userId)
-                                selectedEmails.value = selectedEmails.value - email
+                            val response = userApi.getUserByEmail(email)
+                            if (response.isSuccessful) {
+                                val userId = response.body()?.data?.id
+                                Log.d("SearchScreen", "삭제 요청: meetingId=$meetingId, email=$email, userId=$userId")
+                                if (userId != null) {
+                                    meetingUserApi.removeParticipant(meetingId, userId)
+                                    selectedEmails.value = selectedEmails.value - email
+                                } else {
+                                    errorMessage = "삭제 실패: 사용자 ID를 찾을 수 없습니다."
+                                }
                             } else {
-                                errorMessage = "삭제 실패: 사용자 ID를 찾을 수 없습니다."
+                                errorMessage = "사용자 조회 실패: ${response.code()}"
                             }
                         } catch (e: Exception) {
                             Log.d("SearchScreen","참가자 삭제 실패: ${e.message}")
