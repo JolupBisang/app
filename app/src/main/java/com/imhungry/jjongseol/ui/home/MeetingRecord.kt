@@ -28,8 +28,10 @@ fun MeetingRecordsScreen(navController: NavController,  viewModel: MeetingViewMo
     val currentList = pastMeetings.take(pagingIndex)
 
     LaunchedEffect(Unit) {
-        viewModel.resetMonthOffsets()
-        viewModel.loadMeetings()
+        if (pastMeetings.isEmpty()) {
+            viewModel.resetMonthOffsets()
+            viewModel.loadMeetings()
+        }
     }
 
     Column(

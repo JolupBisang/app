@@ -65,6 +65,9 @@ import com.imhungry.jjongseol.ui.theme.UserGray
 import com.imhungry.jjongseol.ui.theme.UserGreen1
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.launch
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import kotlinx.coroutines.delay
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -180,66 +183,78 @@ fun HomeScreen(navController: NavController) {
 
 
 @Composable
-fun MainHomeScreen(navController: NavController,
-                   isRunning: Boolean,
-                   meetingId: Long){
+fun MainHomeScreen(
+    navController: NavController,
+    isRunning: Boolean,
+    meetingId: Long
+) {
     val viewModel: MeetingViewModel = hiltViewModel()
     val meetings by viewModel.meetings.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadMeetings()
-    }
+    val scope = rememberCoroutineScope()
+    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = isLoading)
 
     var calendarToggle by remember { mutableStateOf(true) }
 
-    ConstraintLayout (modifier = Modifier
-        .fillMaxSize()){
+    ConstraintLayout(modifier = Modifier.fillMaxSize()) {
         val (scrollList, bottomArea) = createRefs()
 
-        LazyColumn(
+        SwipeRefresh(
+            state = swipeRefreshState,
+            onRefresh = {
+                scope.launch {
+                    viewModel.loadMeetings()
+                    delay(600)
+                }
+            },
             modifier = Modifier
-                .padding(top = 30.dp, start = 20.dp, bottom = 50.dp, end = 20.dp)
                 .fillMaxSize()
                 .constrainAs(scrollList) {
                     top.linkTo(parent.top)
                     bottom.linkTo(parent.bottom)
                     end.linkTo(parent.end)
                     start.linkTo(parent.start)
-                    height = Dimension.fillToConstraints
-                },
-        ) {
-            item {
-                Spacer(Modifier.height(40.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(5.dp),
-                    horizontalArrangement = Arrangement.End,
-                ){
-                    Text(text = if(calendarToggle) "캘린더" else "리스트"
-                        ,color = UserGreen1
-                        ,modifier = Modifier
-                            .padding(end = 2.dp)
-                            .clickable { calendarToggle = !calendarToggle })
                 }
-                Divider(
-                    color = Color.Gray,
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(vertical = 5.dp)
-                )
-                if(calendarToggle) {
-                    ScheduledMeetingScreen(navController)
-
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(top = 30.dp, start = 20.dp, bottom = 50.dp, end = 20.dp)
+                    .fillMaxSize()
+            ) {
+                item {
+                    Spacer(Modifier.height(40.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        Text(
+                            text = if (calendarToggle) "캘린더" else "리스트",
+                            color = UserGreen1,
+                            modifier = Modifier
+                                .padding(end = 2.dp)
+                                .clickable { calendarToggle = !calendarToggle }
+                        )
+                    }
                     Divider(
                         color = Color.Gray,
                         thickness = 1.dp,
                         modifier = Modifier.padding(vertical = 5.dp)
                     )
-                    MeetingRecordsScreen(navController)
 
-                }
-                else{
-                    CalendarScreen(navController)
+                    if (calendarToggle) {
+                        ScheduledMeetingScreen(navController)
+                        Divider(
+                            color = Color.Gray,
+                            thickness = 1.dp,
+                            modifier = Modifier.padding(vertical = 5.dp)
+                        )
+                        MeetingRecordsScreen(navController)
+                    } else {
+                        CalendarScreen(navController)
+                    }
                 }
             }
         }
@@ -272,7 +287,6 @@ fun MainHomeScreen(navController: NavController,
         ) {
             CreateNewMeetingButton(onClick = { navController.navigate("createNewMeeting") })
         }
-
     }
 }
 

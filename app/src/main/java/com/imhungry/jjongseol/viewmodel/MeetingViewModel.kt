@@ -127,6 +127,8 @@ class MeetingViewModel @Inject constructor(
     private val _isHost = MutableStateFlow(false)
     val isHost: StateFlow<Boolean> = _isHost
 
+    private var hasLoadedInitialMeetings = false
+
     fun onNewdiarizedSegments(msg: DiarizedSegment) {
         _diarizedSegments.update { oldList ->
             val mutable = oldList.toMutableList()
@@ -313,34 +315,37 @@ class MeetingViewModel @Inject constructor(
         _errorMessage.value = null
     }
 
-    fun loadMeetings() {
+
+
+    fun loadMeetings(force: Boolean = false) {
+        if (hasLoadedInitialMeetings && !force) return
+
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 val now = LocalDate.now()
                 val response = meetingApi.getMeetings(now.year, now.monthValue)
-
                 if (response.isSuccessful) {
-                    val meetings = response.body()?.data?.meetings ?: emptyList<MeetingResponse>()
+                    val meetings = response.body()?.data?.meetings.orEmpty()
                     _meetings.value = meetings
 
-                    Log.d("loadMeetings", "응답 회의 수: ${meetings.size}")
                     val meetingInfos = meetings.map { it.toMeetingInfo() }
                     val (upcoming, past) = splitAndSortMeetings(meetingInfos)
 
-                    Log.d("loadMeetings", "예정: ${upcoming.size}, 지난: ${past.size}")
                     _scheduledMeetings.value = upcoming
                     _pastMeetings.value = past
-
+                    hasLoadedInitialMeetings = true
                 } else {
                     _errorMessage.value = "불러오기 실패: ${response.code()}"
-                    Log.e("loadMeetings", "API 실패: ${response.code()}")
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "예외 발생: ${e.message}"
-                Log.e("loadMeetings", "예외 발생: ${e.message}")
+            } finally {
+                _isLoading.value = false
             }
         }
     }
+
 
     fun loadMorePastMeetings() {
         viewModelScope.launch {
