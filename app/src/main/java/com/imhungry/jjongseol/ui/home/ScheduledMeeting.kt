@@ -28,9 +28,12 @@ fun ScheduledMeetingScreen(navController: NavController, viewModel: MeetingViewM
     val currentList = scheduledMeetings.take(pagingIndex)
 
     LaunchedEffect(Unit) {
-        viewModel.resetMonthOffsets()
-        viewModel.loadMeetings()
+        if (scheduledMeetings.isEmpty()) {
+            viewModel.resetMonthOffsets()
+            viewModel.loadMeetings()
+        }
     }
+
 
     Column(
         modifier = Modifier
