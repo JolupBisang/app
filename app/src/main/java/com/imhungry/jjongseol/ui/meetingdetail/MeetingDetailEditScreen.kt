@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.imhungry.jjongseol.ui.component.dialog.CustomDialog
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import java.time.LocalDateTime
@@ -176,36 +177,28 @@ fun MeetingDetailEditScreen(
     )
 
     if (showCancelDialog.value) {
-        AlertDialog(
+        CustomDialog(
+            description = "수정한 내용이 모두 사라집니다. 정말 취소하시겠습니까?",
+            confirmText = "확인",
+            dismissText = "취소",
             onDismissRequest = { showCancelDialog.value = false },
-            title = { Text("수정 취소") },
-            text = { Text("수정한 내용이 모두 사라집니다. 정말 취소하시겠습니까?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    title.value = originalTitle.value
-                    location.value = originalLocation.value
-                    date.value = originalDate.value
-                    startTime.value = originalStartTime.value
-                    endTime.value = originalEndTime.value
-                    totalTime.value = originalTotalTime.value
-                    restInterval.value = originalRestInterval.value
-                    restDuration.value = originalRestDuration.value
+            onConfirmExit = {
+                title.value = originalTitle.value
+                location.value = originalLocation.value
+                date.value = originalDate.value
+                startTime.value = originalStartTime.value
+                endTime.value = originalEndTime.value
+                totalTime.value = originalTotalTime.value
+                restInterval.value = originalRestInterval.value
+                restDuration.value = originalRestDuration.value
 
-                    agendaViewModel.restoreAgendas(originalAgendas.toList())
+                agendaViewModel.restoreAgendas(originalAgendas.toList())
 
-                    participants.clear()
-                    participants.addAll(originalParticipants)
+                participants.clear()
+                participants.addAll(originalParticipants)
 
-                    isEditable.value = false
-                    showCancelDialog.value = false
-                }) {
-                    Text("확인")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCancelDialog.value = false }) {
-                    Text("취소")
-                }
+                isEditable.value = false
+                showCancelDialog.value = false
             }
         )
     }
