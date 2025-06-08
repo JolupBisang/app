@@ -18,6 +18,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
@@ -40,7 +43,7 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>, enabled: Boolean) {
         }
     }
 
-    LaunchedEffect(itemList.size) {
+    fun syncAgendaList() {
         agendaList.clear()
         agendaList.addAll(itemList.map { it.text })
     }
@@ -49,31 +52,25 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>, enabled: Boolean) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (enabled) 180.dp else 100.dp)
+                .height(180.dp)
                 .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
         ) {
             items(
                 items = itemList,
-                key = { it.id ?: UUID.randomUUID().hashCode().toLong() }
+                key = { it.id ?: it.hashCode() }
             ) { item ->
                 ListItemWithCircle(
                     item = item,
                     onEdit = { newText ->
                         val index = itemList.indexOf(item)
                         if (index != -1) {
-                            itemList[index] = item.copy(
-                                id = UUID.randomUUID().hashCode().toLong(),
-                                text = newText,
-                                isPlaceholder = false
-                            )
-                            agendaList.clear()
-                            agendaList.addAll(itemList.map { it.text })
+                            itemList[index] = item.copy(text = newText, isPlaceholder = false)
+                            syncAgendaList()
                         }
                     },
                     onDelete = {
                         itemList.remove(item)
-                        agendaList.clear()
-                        agendaList.addAll(itemList.map { it.text })
+                        syncAgendaList()
                     },
                     enabled = enabled
                 )
@@ -90,11 +87,11 @@ fun AgendaListScreen(agendaList: SnapshotStateList<String>, enabled: Boolean) {
                 onClick = {
                     val newItem = AgendaItem(
                         id = UUID.randomUUID().hashCode().toLong(),
-                        text = "새 아젠다",
+                        text = "",
                         isPlaceholder = true
                     )
                     itemList.add(newItem)
-                    agendaList.add(newItem.text)
+                    syncAgendaList()
                 }
             ) {
                 Text("+", style = TextStyle(color = Color.Black, fontSize = 25.sp))
@@ -115,7 +112,7 @@ fun AgendaListScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (enabled) 180.dp else 100.dp)
+                .height(180.dp)
                 .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
         ) {
             items(
@@ -146,25 +143,30 @@ fun AgendaListScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () -> Unit, enabled: Boolean) {
-    var editText by remember { mutableStateOf(item.text) }
-    var editing by remember { mutableStateOf(false) }
+fun ListItemWithCircle(
+    item: AgendaItem,
+    onEdit: (String) -> Unit,
+    onDelete: () -> Unit,
+    enabled: Boolean
+) {
+    var editText by remember(item.id) { mutableStateOf(item.text) }
+    val focusRequester = remember { FocusRequester() }
+
+    val shouldRequestFocus = enabled && item.isPlaceholder && editText.isBlank()
+
+    LaunchedEffect(item.id) {
+        if (shouldRequestFocus) {
+            kotlinx.coroutines.delay(50)
+            focusRequester.requestFocus()
+        }
+    }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp)
-            .combinedClickable(
-                enabled = enabled,
-                onClick = {},
-                onLongClick = {
-                    editing = true
-                    if (item.isPlaceholder) editText = ""
-                }
-            )
     ) {
         Box(
             modifier = Modifier
@@ -172,45 +174,47 @@ fun ListItemWithCircle(item: AgendaItem, onEdit: (String) -> Unit, onDelete: () 
                 .size(5.dp)
                 .background(color = Color.LightGray, shape = CircleShape)
         )
+
         Spacer(modifier = Modifier.width(10.dp))
 
-        if (editing) {
-            EditableTextField(
-                value = editText,
-                onValueChange = { editText = it },
-                onDone = {
-                    editing = false
-                    onEdit(editText)
-                },
-                enabled = enabled,
-                placeholderText = item.text.takeIf { item.isPlaceholder }
+        OutlinedTextField(
+            value = editText,
+            onValueChange = {
+                editText = it
+                onEdit(it)
+            },
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp)
+                .focusRequester(focusRequester)
+                .focusTarget(),
+            singleLine = true,
+            textStyle = TextStyle(fontSize = 15.sp, color = Color.Black),
+            placeholder = {
+                if (item.isPlaceholder && editText.isBlank()) {
+                    Text("새 아젠다", style = TextStyle(color = Color.Gray))
+                }
+            },
+            enabled = enabled,
+            readOnly = !enabled,
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                textColor = Color.Black,
+                backgroundColor = Color.Transparent,
+                focusedBorderColor = if (enabled) Color.Gray else Color.Transparent,
+                unfocusedBorderColor = if (enabled) Color.Gray else Color.Transparent,
+                disabledBorderColor = Color.Transparent,
+                cursorColor = Color.Black,
+                placeholderColor = Color.LightGray
             )
-        } else {
-            Text(
-                text = editText,
-                style = TextStyle(
-                    fontSize = 15.sp,
-                    lineHeight = 20.sp,
-                    color = if (item.isPlaceholder) Color.Gray else Color.Black
-                ),
-                modifier = Modifier
-                    .weight(1f)
-                    .align(Alignment.CenterVertically),
-                maxLines = 1
-            )
-        }
+        )
 
         if (enabled) {
-            Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier
-                .clickable {
-                    editing = true
-                    if (item.isPlaceholder) editText = ""
-                }
-                .padding(5.dp)
-            )
-            Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier
-                .clickable { onDelete() }
-                .padding(5.dp)
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Delete",
+                modifier = Modifier
+                    .clickable { onDelete() }
+                    .padding(5.dp)
             )
         }
     }
