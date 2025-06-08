@@ -76,7 +76,6 @@ fun ErrorDialogHandler(
                     isNotHostError -> {
                     }
                     isNotInProgressError -> {
-                        context.stopService(Intent(context, MeetingSseService::class.java))
                         onFinish(SilRokNavigation.Home)
                     }
                     isInvalidInput ||

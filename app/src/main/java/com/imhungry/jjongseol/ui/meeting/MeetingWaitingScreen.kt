@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.meeting
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
+import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
 import com.imhungry.jjongseol.ui.component.dialog.ErrorDialogHandler
@@ -72,6 +74,7 @@ fun MeetingWaitingScreen(
     val isAgendaLoading by agendaViewModel.isLoading.collectAsState()
     val isStatusUpdating by meetingViewModel.isStatusUpdating.collectAsState()
     val isTopSheetExpanded by meetingViewModel.isTopSheetExpanded
+    val appPrefs = AppPrefs(context)
 
     LaunchedEffect(meetingId) {
         meetingViewModel.setTopSheetExpanded(false)
@@ -103,9 +106,12 @@ fun MeetingWaitingScreen(
 
     val firstUncheckedIndex = agendas.indexOfFirst { !it.isCompleted }
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
-    val showLoading = isMeetingLoading || (meetingDetail != null && isAgendaLoading) || meetingDetail == null
+    val showLoading = isMeetingLoading || (meetingDetail != null && isAgendaLoading)
 
     SetNavigationBarColor(primaryBackground)
+
+    var isRunning by remember { mutableStateOf(false) }
+    val runningMeetingId = appPrefs.getRunningMeetingId()
 
     if (showLoading) {
         Box(
@@ -178,12 +184,14 @@ fun MeetingWaitingScreen(
                         fontWeight = FontWeight.Bold
                     )
                     StartButton(onClick = {
-                        meetingViewModel.updateMeetingStatus(
-                            meetingId = meetingId,
-                            targetStatus = MeetingStatus.IN_PROGRESS
-                        )
-                        navController.navigate("meetingRoute/inprogress/$meetingId")  {
-                            popUpTo(0)
+                        if (runningMeetingId != -1L && runningMeetingId != meetingId) {
+                            dialogMessage = "진행중인 회의가 아닙니다."
+                            showDialog = true
+                        } else {
+                            meetingViewModel.updateMeetingStatus(
+                                meetingId = meetingId,
+                                targetStatus = MeetingStatus.IN_PROGRESS
+                            )
                         }
                     })
                 }

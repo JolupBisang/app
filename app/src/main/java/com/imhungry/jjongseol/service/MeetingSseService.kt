@@ -254,7 +254,6 @@ class MeetingSseService : Service() {
         }
         if (currentMeetingId == -1L) {
             appPrefs.setMeetingForegroundServiceRunning(false)
-            appPrefs.clearRunningMeetingId()
             stopSelf()
             return START_NOT_STICKY
         }
@@ -321,7 +320,6 @@ class MeetingSseService : Service() {
 
     private fun clearMeetingServiceState() {
         appPrefs.setMeetingForegroundServiceRunning(false)
-        appPrefs.clearRunningMeetingId()
     }
 
     override fun onDestroy() {

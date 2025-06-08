@@ -171,7 +171,7 @@ fun MeetingControlPanel(
             description = "회의를 떠나시겠습니까?",
             confirmText = "예",
             onConfirm = {
-                context?.stopService(Intent(context, MeetingSseService::class.java))
+                context.stopService(Intent(context, MeetingSseService::class.java))
                 onFinish(SilRokNavigation.Home)
             },
             onDismiss = { showLeaveDialog = false }
