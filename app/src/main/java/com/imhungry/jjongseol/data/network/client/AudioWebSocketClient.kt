@@ -188,7 +188,7 @@ class AudioWebSocketClient(
                     onAgendaUpdated?.invoke(updated)
                 }
                 else -> {
-                    Log.d("Audio", "알 수 없는 메시지 타입 수신: ${response.type}")
+                    Log.d("Audio", "Socket 응답 : ${response.type}")
                 }
             }
         } catch (e: Exception) {

@@ -3,7 +3,6 @@ package com.imhungry.jjongseol.data.repository
 import com.imhungry.jjongseol.data.model.response.SliceResponse
 import com.imhungry.jjongseol.data.model.segment.response.SegmentListRes
 import com.imhungry.jjongseol.data.network.api.SegmentApi
-import retrofit2.Response
 import javax.inject.Inject
 
 sealed class SegmentResult<out T> {

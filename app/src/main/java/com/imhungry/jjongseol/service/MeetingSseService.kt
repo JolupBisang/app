@@ -193,7 +193,7 @@ class MeetingSseService : Service() {
                             Log.d("Audio", "CONNECT: $data")
                         }
                         else -> {
-                            Log.w("Audio", "data: $data")
+                            Log.w("Audio", "SSE 응답 : $data")
                         }
                     }
                 } catch (e: Exception) {
