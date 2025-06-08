@@ -137,13 +137,13 @@ class MeetingSseService : Service() {
             .build()
 
         val summaryRequest = Request.Builder()
-            .url(BuildConfig.BASE_URL + "api/summary/subscribe/$meetingId")
+            .url(BuildConfig.BASE_URL + "api/sse/subscribe/summary/$meetingId")
             .build()
         val feedbackRequest = Request.Builder()
-            .url(BuildConfig.BASE_URL + "api/feedback/subscribe/$meetingId")
+            .url(BuildConfig.BASE_URL + "api/sse/subscribe/feedback/$meetingId")
             .build()
         val participationRateRequest = Request.Builder()
-            .url(BuildConfig.BASE_URL + "api/participation_rate/subscribe/$meetingId")
+            .url(BuildConfig.BASE_URL + "api/sse/subscribe/participation-rate/$meetingId")
             .build()
 
         val listener = object : EventSourceListener() {
