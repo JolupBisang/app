@@ -40,12 +40,10 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 @Composable
 fun MeetingFeedbackScreen(
     meetingViewModel: MeetingViewModel,
-    meetingId: Long
+    meetingId: Long,
+    startTime: Long?
 ) {
     val context = LocalContext.current
-    val appPrefs = remember { AppPrefs(context) }
-    val meetingState = appPrefs.loadMeetingStates()[meetingId]
-    val startTime = meetingState?.startTime
 
     val feedbackList by meetingViewModel.feedbackList.collectAsState()
     DisposableEffect(Unit) {

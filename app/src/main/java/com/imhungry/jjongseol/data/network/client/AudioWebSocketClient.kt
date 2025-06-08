@@ -12,6 +12,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
+import com.imhungry.jjongseol.data.model.agenda.dto.AgendaDto
 import com.imhungry.jjongseol.data.model.meeting.MeetingState
 import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.response.ErrorResponse
@@ -48,6 +49,8 @@ class AudioWebSocketClient(
     private val onNewDiarizedSegment: (DiarizedSegment) -> Unit,
     private val isServiceStopped: () -> Boolean,
     private val onMeetingStartTime: ((Long) -> Unit)? = null,
+    private val onAgendaUpdated: ((AgendaDto) -> Unit)? = null,
+    var micEnabled: Boolean
 ) : WebSocketListener() {
     private var webSocket: WebSocket? = null
     private var chunkId: Long = 0
@@ -65,19 +68,20 @@ class AudioWebSocketClient(
         AudioFormat.ENCODING_PCM_16BIT
     ).coerceAtLeast(frameSize)
 
-    fun pauseEncoding() {
-        isEncodingPaused = true
-    }
-
-    fun resumeEncoding() {
-        isEncodingPaused = false
-    }
-
     private var isReconnecting = false
     private var reconnectAttempts = 0
     private val reconnectDelayMillis = 2000L
     var isClosedByUser: Boolean = false
     private var isAudioClosedByMeetingCompleted: Boolean = false
+    private var recordJob: Job? = null
+
+    fun pauseEncoding() {
+        stopRecording() // 녹음 자체를 멈춤
+    }
+
+    fun resumeEncoding() {
+        startRecording(scope) // 녹음 자체를 시작
+    }
 
     // /data/data/com.imhungry.jjongseol/cache/audio_packets/
     private val packetDir by lazy { File(context.cacheDir, "audio_packets/$meetingId") }
@@ -155,21 +159,29 @@ class AudioWebSocketClient(
                     Log.i("Audio", "MEETING_COMPLETED 메시지 수신, 오디오 연결 종료")
                     isAudioClosedByMeetingCompleted = true
                     stopRecording()
+                    Log.i("Audio", "회의록 생성 중 화면으로 이동")
+                    onMessage("MEETING_COMPLETED")
+                    MeetingNoteEventBus.send(MeetingNoteEvent.Created(meetingId))
                 }
                 SocketResponseType.DIARIZED_SEGMENT -> {
                     val message = Gson().fromJson(Gson().toJson(response.data), DiarizedSegment::class.java)
                     onNewDiarizedSegment(message)
                 }
                 SocketResponseType.MEETING_NOTE_CREATED -> {
-                    Log.i("Audio", "MEETING_NOTE_CREATED 메시지 수신, 회의록 생성 중 화면으로 이동")
-                    onMessage("MEETING_NOTE_CREATED")
-                    MeetingNoteEventBus.send(MeetingNoteEvent.Created(meetingId))
-                }
-                SocketResponseType.MEETING_RECORD_MADED -> {
-                    Log.i("Audio", "MEETING_RECORD_MADED 메시지 수신, 모든 연결 종료")
+                    Log.i("Audio", "회의록 완성")
                     stop(true)
                     onMessage("MEETING_RECORD_MADED")
                     MeetingNoteEventBus.send(MeetingNoteEvent.Completed(meetingId))
+                }
+                SocketResponseType.MEETING_RECORD_MADED -> {
+                    Log.i("Audio", "MEETING_RECORD_MADED 메시지 수신, 모든 연결 종료")
+                }
+                SocketResponseType.AGENDA_UPDATED -> {
+                    val json = JSONObject(text)
+                    val type = json.optString("type")
+                    val data = json.optJSONObject("data")
+                    val updated = Gson().fromJson(data.toString(), AgendaDto::class.java)
+                    onAgendaUpdated?.invoke(updated)
                 }
                 else -> {
                     Log.d("Audio", "알 수 없는 메시지 타입 수신: ${response.type}")
@@ -244,7 +256,11 @@ class AudioWebSocketClient(
         }
         setInitialChunkId(lastServerChunkId)
         resendMissingLocalPackets(lastServerChunkId.toLong()) {
-            startRecording(scope)
+            if (micEnabled) {
+                startRecording(scope)
+            } else {
+                Log.d("Audio", "micEnabled=false 상태이므로 녹음 시작 안함")
+            }
         }
     }
 
@@ -293,7 +309,9 @@ class AudioWebSocketClient(
         rawDir.mkdirs()
         val rawPcmFile = File(rawDir, "all_raw.pcm")
         val rawPcmOutput = FileOutputStream(rawPcmFile, true)
-        scope.launch {
+
+        recordJob?.cancel()
+        recordJob = scope.launch {
             val pcmBuffer = ByteArray(frameSize * 2)
             while (isActive && isStreaming) {
                 val read = audioRecord?.read(pcmBuffer, 0, pcmBuffer.size) ?: 0
@@ -411,6 +429,9 @@ class AudioWebSocketClient(
             }
         } catch (e: Exception) { }
         audioRecord = null
+
+        recordJob?.cancel()
+        recordJob = null
     }
 
     fun disconnect() {

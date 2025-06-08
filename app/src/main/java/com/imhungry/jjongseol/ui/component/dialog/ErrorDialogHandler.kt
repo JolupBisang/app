@@ -36,6 +36,11 @@ fun ErrorDialogHandler(
     val isServerInternalError = errorMessage == "서버 내부 오류입니다. 관리자에게 문의해주세요."
     val isUserNotFound = errorMessage == "존재하지 않는 회원입니다."
     val isNotInProgressError = errorMessage == "진행중인 회의가 아닙니다."
+    val isInvalidInput = errorMessage == "잘못된 입력입니다."
+    val isAgendaNotFound = errorMessage == "존재하지 않는 안건입니다."
+    val isEditNotAllowedInNotWaiting = errorMessage == "대기 중인 회의에서만 안건을 수정할 수 있습니다."
+    val isNoParticipationData = errorMessage == "해당 회의의 참여율 데이터가 존재하지 않습니다."
+    val isNotEditableMeeting = errorMessage == "종료되었거나 취소된 회의는 수정할 수 없습니다."
 
     if (showDialog && errorMessage != null) {
         CustomDialog(
@@ -73,6 +78,12 @@ fun ErrorDialogHandler(
                     isNotInProgressError -> {
                         context.stopService(Intent(context, MeetingSseService::class.java))
                         onFinish(SilRokNavigation.Home)
+                    }
+                    isInvalidInput ||
+                    isAgendaNotFound ||
+                    isEditNotAllowedInNotWaiting ||
+                    isNoParticipationData ||
+                    isNotEditableMeeting -> {
                     }
                     else -> {
                         onFinish(SilRokNavigation.Home)
