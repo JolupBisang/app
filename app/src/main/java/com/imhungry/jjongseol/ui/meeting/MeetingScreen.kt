@@ -120,22 +120,12 @@ fun MeetingScreen(
         }
     }
 
-    var isRunning by remember { mutableStateOf(false) }
-    val runningMeetingId = appPrefs.getRunningMeetingId()
-    if (runningMeetingId != -1L && runningMeetingId != meetingId) {
-        dialogMessage = "진행중인 회의가 아닙니다."
-        showDialog = true
-    }
-
-    LaunchedEffect(Unit) {
-        isRunning = appPrefs.isMeetingForegroundServiceRunning()
-    }
-
     // 2. 회의 정보 불러오기
     LaunchedEffect(meetingId, permissionGranted) {
         if (permissionGranted) {
             meetingViewModel.setTopSheetExpanded(false)
             meetingViewModel.loadMeetingDetail2(meetingId)
+            Log.d("MeetingStart", "회의 정보 불러옴")
         }
     }
 
@@ -147,6 +137,7 @@ fun MeetingScreen(
     LaunchedEffect(meetingDetail) {
         if (meetingDetail != null) {
             agendaViewModel.loadAgendas(meetingId)
+            Log.d("MeetingStart", "아젠다 정보 불러옴")
         }
     }
 
@@ -167,11 +158,13 @@ fun MeetingScreen(
         loginViewModel = loginViewModel
     )
 
-    val allReady = permissionGranted && !isMeetingLoading && !isAgendaLoading && !isParticipantLoading
+    val allReady = permissionGranted && !isMeetingLoading && !isAgendaLoading
 
     // 4. MeetingSseService 시작
     LaunchedEffect(allReady) {
-        if (allReady && !sseStarted && !isRunning && !showDialog) {
+        if (allReady && !sseStarted) {
+            context.stopService(Intent(context, MeetingSseService::class.java))
+            Log.d("MeetingStart", "포그라운드 서비스 시작")
             context.startForegroundService(
                 Intent(context, MeetingSseService::class.java).apply {
                     putExtra("meetingId", meetingId)
@@ -222,16 +215,12 @@ fun MeetingScreen(
     val fullyReady = permissionGranted
             && !isMeetingLoading
             && !isAgendaLoading
-            && !isParticipantLoading
             && startTime != null
             && meetingDetail != null
-            && !showDialog
-
-    val shouldShowLoading = isStatusUpdating || !fullyReady
 
     SetNavigationBarColor(primaryBackground)
 
-    if (shouldShowLoading) {
+    if (!fullyReady) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -282,6 +271,7 @@ fun rememberMeetingElapsedTime(savedStartTime: Long?): String {
             delay(1000)
         }
     }
+    Log.d("MeetingStart", "회의 시작 시간 설정")
     return elapsedTime.value
 }
 
@@ -297,6 +287,7 @@ fun rememberMeetingRemainingTime(savedEndTime: Long?): String {
             delay(1000)
         }
     }
+    Log.d("MeetingStart", "회의 종료 시간 설정")
     return remainingTime.value
 }
 

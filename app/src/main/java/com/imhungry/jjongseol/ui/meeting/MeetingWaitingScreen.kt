@@ -110,9 +110,6 @@ fun MeetingWaitingScreen(
 
     SetNavigationBarColor(primaryBackground)
 
-    var isRunning by remember { mutableStateOf(false) }
-    val runningMeetingId = appPrefs.getRunningMeetingId()
-
     if (showLoading) {
         Box(
             modifier = Modifier
@@ -184,15 +181,10 @@ fun MeetingWaitingScreen(
                         fontWeight = FontWeight.Bold
                     )
                     StartButton(onClick = {
-                        if (runningMeetingId != -1L && runningMeetingId != meetingId) {
-                            dialogMessage = "진행중인 회의가 아닙니다."
-                            showDialog = true
-                        } else {
-                            meetingViewModel.updateMeetingStatus(
-                                meetingId = meetingId,
-                                targetStatus = MeetingStatus.IN_PROGRESS
-                            )
-                        }
+                        meetingViewModel.updateMeetingStatus(
+                            meetingId = meetingId,
+                            targetStatus = MeetingStatus.IN_PROGRESS
+                        )
                     })
                 }
             }

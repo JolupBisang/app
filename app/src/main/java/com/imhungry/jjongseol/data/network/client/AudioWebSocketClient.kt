@@ -69,8 +69,6 @@ class AudioWebSocketClient(
     ).coerceAtLeast(frameSize)
 
     private var isReconnecting = false
-    private var reconnectAttempts = 0
-    private val reconnectDelayMillis = 2000L
     var isClosedByUser: Boolean = false
     private var isAudioClosedByMeetingCompleted: Boolean = false
     private var recordJob: Job? = null
@@ -153,7 +151,9 @@ class AudioWebSocketClient(
                     val error = Gson().fromJson(Gson().toJson(response.data), ErrorResponse::class.java)
                     val message = error.message
                     Log.w("Audio", "WebSocket 에러 메시지 수신: $message")
-                    onError(message)
+                    if (message.equals("진행중인 회의가 아닙니다.")) {
+                        onError(message)
+                    }
                 }
                 SocketResponseType.MEETING_COMPLETED -> {
                     Log.i("Audio", "MEETING_COMPLETED 메시지 수신, 오디오 연결 종료")
@@ -221,10 +221,8 @@ class AudioWebSocketClient(
             return
         }
         isReconnecting = true
-        reconnectAttempts++
-        Log.w("Audio", "WebSocket $reconnectAttempts 번째 재연결 시도 예정 (${reconnectDelayMillis}ms 후)")
         scope.launch {
-            kotlinx.coroutines.delay(reconnectDelayMillis)
+            delay(2000)
             if (!isConnected && !isClosedByUser) {
                 Log.w("Audio", "WebSocket 재연결 시도...")
                 tryConnect()
@@ -450,6 +448,6 @@ class AudioWebSocketClient(
 
     fun isoToMillis(isoTimestamp: String): Long {
         val startDateTime = LocalDateTime.parse(isoTimestamp, DateTimeFormatter.ISO_DATE_TIME)
-        return startDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        return startDateTime.atZone(ZoneId.of("Asia/Seoul")).toInstant().toEpochMilli()
     }
 }
