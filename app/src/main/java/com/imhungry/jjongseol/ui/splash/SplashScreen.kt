@@ -35,6 +35,7 @@ import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.UserViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
@@ -50,10 +51,8 @@ fun SplashScreen(
     val isLoading by userViewModel.isLoading.collectAsState()
 
     LaunchedEffect(Unit) {
-        navController.navigate(SilRokNavigation.Login.route) {
-            popUpTo(0)
-        }
-        //userViewModel.loadMyProfile()
+        delay(1500L)
+        userViewModel.loadMyProfile()
     }
 
     LaunchedEffect(isLoading) {

@@ -57,4 +57,13 @@ class AppPrefs(context: Context) {
     fun getMicEnabled(meetingId: Long): Boolean {
         return prefs.getBoolean("mic_enabled_$meetingId", true)
     }
+
+    fun setMeetingStartTime(meetingId: Long, startTimeMillis: Long) {
+        prefs.edit().putLong("meeting_start_time_$meetingId", startTimeMillis).apply()
+    }
+
+    fun getMeetingStartTime(meetingId: Long): Long? {
+        val millis = prefs.getLong("meeting_start_time_$meetingId", -1L)
+        return if (millis == -1L) null else millis
+    }
 }

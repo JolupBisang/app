@@ -1,4 +1,3 @@
-// viewmodel/SegmentViewModel.kt
 package com.imhungry.jjongseol.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -22,6 +21,9 @@ class SegmentViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     private var hasNextPage = true
     private var currentPage = 0
 
@@ -34,6 +36,7 @@ class SegmentViewModel @Inject constructor(
         if (!hasNextPage) return
 
         viewModelScope.launch {
+            _isLoading.value = true
             when (val result = segmentRepository.getSegments(meetingId, currentPage)) {
                 is SegmentResult.Success -> {
                     val slice = result.data
@@ -44,6 +47,7 @@ class SegmentViewModel @Inject constructor(
                 is SegmentResult.Error -> _errorMessage.value = result.message
                 is SegmentResult.Exception -> _errorMessage.value = result.throwable.message ?: "네트워크 오류"
             }
+            _isLoading.value = false
         }
     }
 }

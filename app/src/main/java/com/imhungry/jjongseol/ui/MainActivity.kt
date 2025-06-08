@@ -14,12 +14,17 @@ import androidx.lifecycle.lifecycleScope
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.theme.AppTheme
+import com.imhungry.jjongseol.util.DateTimeUtils
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.UserViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {

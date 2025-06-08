@@ -53,6 +53,7 @@ import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.theme.gray400
 import com.imhungry.jjongseol.ui.theme.primaryBackground
+import com.imhungry.jjongseol.util.DateTimeUtils
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -176,7 +177,7 @@ fun MeetingSummaryScreen(
             }
         }
         itemsIndexed(summaryList) { index, summary ->
-            val elapsed = getElapsedString(startTime, summary.timestamp)
+            val elapsed = DateTimeUtils.getElapsedString(startTime, summary.timestamp)
             SummaryListItem(summary.summary, elapsed)
             Spacer(Modifier.height(12.dp))
             if (index == summaryList.lastIndex) {
@@ -186,13 +187,3 @@ fun MeetingSummaryScreen(
     }
 }
 
-fun getElapsedString(startMillis: Long?, isoTimestamp: String): String {
-    if (startMillis == null) return "00:00:00"
-    val summaryDateTime = LocalDateTime.parse(isoTimestamp, DateTimeFormatter.ISO_DATE_TIME)
-    val summaryMillis = summaryDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-    val elapsed = ((summaryMillis - startMillis) / 1000).coerceAtLeast(0)
-    val h = elapsed / 3600
-    val m = (elapsed % 3600) / 60
-    val s = elapsed % 60
-    return String.format("%02d:%02d:%02d", h, m, s)
-}

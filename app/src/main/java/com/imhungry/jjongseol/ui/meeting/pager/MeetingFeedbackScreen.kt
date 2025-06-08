@@ -35,6 +35,7 @@ import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.component.feedback.Notification
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.primaryBackground
+import com.imhungry.jjongseol.util.DateTimeUtils
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
@@ -84,7 +85,7 @@ fun MeetingFeedbackScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(feedbackList) { index, feedback ->
-                val elapsed = getElapsedString(startTime, feedback.timestamp)
+                val elapsed = DateTimeUtils.getElapsedString(startTime, feedback.timestamp)
 
                 Notification(
                     visible = true,

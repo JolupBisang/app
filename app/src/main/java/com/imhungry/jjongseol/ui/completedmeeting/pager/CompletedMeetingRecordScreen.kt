@@ -1,3 +1,4 @@
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -50,6 +51,8 @@ import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.meeting.component.ChatBubble
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
+import com.imhungry.jjongseol.ui.login.LoginScreen
+import com.imhungry.jjongseol.util.DateTimeUtils
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import com.imhungry.jjongseol.viewmodel.SegmentViewModel
@@ -68,7 +71,10 @@ fun CompletedMeetingRecordScreen(
     segmentViewModel: SegmentViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-
+    val agendaLoading by agendaViewModel.isLoading.collectAsState()
+    val meetingLoading by meetingViewModel.isLoading.collectAsState()
+    val segmentLoading by segmentViewModel.isLoading.collectAsState()
+    val isLoading = agendaLoading || meetingLoading || segmentLoading
     val appPrefs = remember { AppPrefs(context) }
     val myProfile: UserInfoResponse? = appPrefs.loadMyProfile()
     val currentUserId: Long? = myProfile?.id
@@ -83,7 +89,7 @@ fun CompletedMeetingRecordScreen(
     var isCollapsed by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
     val summary = "회의 요약이 없습니다."
-    val formattedDate = scheduledStartTime.toKoreanDateStringWithDayOfWeek()
+    val startMillis = appPrefs.getMeetingStartTime(meetingId)
 
     LaunchedEffect(meetingId) {
         agendaViewModel.loadAgendas(meetingId)
@@ -102,42 +108,44 @@ fun CompletedMeetingRecordScreen(
             }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+    if (!isLoading) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
-        HeaderSection(
-            isCollapsed = isCollapsed,
-            isExpanded = isExpanded,
-            onToggleCollapse = { isCollapsed = !isCollapsed },
-            onToggleAgenda = { isExpanded = !isExpanded },
-            title = title,
-            location = location,
-            formattedDate = formattedDate,
-            summary = summary,
-            agendaItems = agendas,
-            lastCheckedIndex = lastCheckedIndex
-        )
+            HeaderSection(
+                isCollapsed = isCollapsed,
+                isExpanded = isExpanded,
+                onToggleCollapse = { isCollapsed = !isCollapsed },
+                onToggleAgenda = { isExpanded = !isExpanded },
+                title = title,
+                location = location,
+                scheduledStartTime = scheduledStartTime,
+                summary = summary,
+                agendaItems = agendas,
+                lastCheckedIndex = lastCheckedIndex
+            )
 
-        Divider()
+            Divider()
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 8.dp),
-        ) {
-            items(segments) { segment ->
-                ChatBubble(
-                    diarizedSegment = DiarizedSegment(
-                        timestamp = segment.timestamp,
-                        userId = segment.userId,
-                        text = segment.text,
-                        order = segment.segmentOrder
-                    ),
-                    nickname = segment.userName,
-                    isMe = (segment.userId == currentUserId),
-                    time = formatKoreanTime(segment.timestamp)
-                )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 8.dp),
+            ) {
+                items(segments) { segment ->
+                    ChatBubble(
+                        diarizedSegment = DiarizedSegment(
+                            timestamp = segment.timestamp,
+                            userId = segment.userId,
+                            text = segment.text,
+                            order = segment.segmentOrder
+                        ),
+                        nickname = segment.userName,
+                        isMe = (segment.userId == currentUserId),
+                        time = DateTimeUtils.getElapsedString(startMillis, segment.timestamp)
+                    )
+                }
             }
         }
     }
@@ -151,7 +159,7 @@ fun HeaderSection(
     onToggleAgenda: () -> Unit,
     title: String,
     location: String,
-    formattedDate: String,
+    scheduledStartTime: String,
     summary: String,
     agendaItems: List<AgendaItem>,
     lastCheckedIndex: MutableState<Int>
@@ -163,7 +171,7 @@ fun HeaderSection(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = formattedDate + ", $location",
+                text = DateTimeUtils.localIsoToDateString(scheduledStartTime) + ", $location",
                 color = Color.Gray,
                 fontSize = 13.sp
             )
@@ -287,33 +295,4 @@ fun Divider() {
             .height(1.dp)
             .background(Color(0xFFDCDCDC))
     )
-}
-
-
-fun formatKoreanTime(isoString: String): String {
-    return try {
-        val dateTime = LocalDateTime.parse(isoString, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        val hour24 = dateTime.hour
-        val minute = dateTime.minute
-
-        val amPm = if (hour24 < 12) "오전" else "오후"
-        val hour12 = when {
-            hour24 == 0 -> 12
-            hour24 > 12 -> hour24 - 12
-            else -> hour24
-        }
-        "$amPm ${hour12}시 ${minute}분"
-    } catch (e: Exception) {
-        ""
-    }
-}
-
-fun String.toKoreanDateStringWithDayOfWeek(): String {
-    return try {
-        val dt = LocalDateTime.parse(this, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        val dayOfWeek = dt.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN)
-        "${dt.year}.${dt.monthValue.toString().padStart(2, '0')}.${dt.dayOfMonth.toString().padStart(2, '0')} $dayOfWeek"
-    } catch (e: Exception) {
-        ""
-    }
 }

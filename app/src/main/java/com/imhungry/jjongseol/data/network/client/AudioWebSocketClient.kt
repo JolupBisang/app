@@ -21,6 +21,7 @@ import com.imhungry.jjongseol.data.model.response.SocketResponseType
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.data.repository.MeetingNoteEvent
 import com.imhungry.jjongseol.data.repository.MeetingNoteEventBus
+import com.imhungry.jjongseol.util.DateTimeUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -72,6 +73,7 @@ class AudioWebSocketClient(
     var isClosedByUser: Boolean = false
     private var isAudioClosedByMeetingCompleted: Boolean = false
     private var recordJob: Job? = null
+    val appPrefs = AppPrefs(context)
 
     fun pauseEncoding() {
         stopRecording() // 녹음 자체를 멈춤
@@ -142,7 +144,8 @@ class AudioWebSocketClient(
                     val meetingStartTime = data?.optString("meetingStartTime")
                     Log.i("Audio", "CONNECTION_ESTABLISHED: chunkId=$lastChunkId, startTime=$meetingStartTime")
                     if (meetingStartTime != null) {
-                        val startTimeMillis = isoToMillis(meetingStartTime)
+                        val startTimeMillis = DateTimeUtils.isoToMillis(meetingStartTime)
+                        appPrefs.setMeetingStartTime(meetingId, startTimeMillis)
                         onMeetingStartTime?.invoke(startTimeMillis)
                     }
                     preloadLocalPacketsAndThenStart(lastChunkId, scope)
@@ -444,10 +447,5 @@ class AudioWebSocketClient(
                 Manifest.permission.RECORD_AUDIO
             ) == PackageManager.PERMISSION_GRANTED
         } else true
-    }
-
-    fun isoToMillis(isoTimestamp: String): Long {
-        val startDateTime = LocalDateTime.parse(isoTimestamp, DateTimeFormatter.ISO_DATE_TIME)
-        return startDateTime.atZone(ZoneId.of("Asia/Seoul")).toInstant().toEpochMilli()
     }
 }

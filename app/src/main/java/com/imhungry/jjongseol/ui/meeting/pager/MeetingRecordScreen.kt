@@ -57,6 +57,7 @@ import com.imhungry.jjongseol.ui.meeting.component.BreakFeedbackChecker
 import com.imhungry.jjongseol.ui.meeting.component.EndFeedbackChecker
 import com.imhungry.jjongseol.ui.meeting.component.TopSheet
 import com.imhungry.jjongseol.ui.theme.primaryBackground
+import com.imhungry.jjongseol.util.DateTimeUtils
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.coroutineScope
@@ -185,7 +186,7 @@ fun MeetingRecordScreen(
             ) {
                 itemsIndexed(diarizedSegments) { index, message ->
                     if (message.text.isNotBlank()) {
-                        val elapsed = getElapsedString(startTime, message.timestamp)
+                        val elapsed = DateTimeUtils.getElapsedString(startTime, message.timestamp)
 
                         if (index == 0) {
                             Spacer(modifier = Modifier.padding(top = 4.dp))
@@ -205,7 +206,7 @@ fun MeetingRecordScreen(
         }
         when {
             latestFeedback != null && feedbackVisible -> {
-                val elapsed = getElapsedString(startTime, latestFeedback.timestamp)
+                val elapsed = DateTimeUtils.getElapsedString(startTime, latestFeedback.timestamp)
 
                 Box(
                     modifier = Modifier
