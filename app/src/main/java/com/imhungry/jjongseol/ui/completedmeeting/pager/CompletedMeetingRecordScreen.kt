@@ -110,7 +110,7 @@ fun CompletedMeetingRecordScreen(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 8.dp)
+                .padding(bottom = 8.dp),
         ) {
             items(segments) { segment ->
                 ChatBubble(

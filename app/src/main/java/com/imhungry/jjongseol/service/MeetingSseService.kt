@@ -72,6 +72,8 @@ class MeetingSseService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.IO)
     private var currentMicEnabled: Boolean = true
     private lateinit var appPrefs: AppPrefs
+    private var reconnectAttempts = 0
+    private val maxReconnectAttempts = 3
 
     private fun createNotification(content: String): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -112,8 +114,7 @@ class MeetingSseService : Service() {
             Log.d("Audio", "Already connecting, skip!")
             return
         }
-        Log.d("Audio", "SSE 새로 연결")
-
+        Log.d("Audio", "SSE 연결 시도")
         isConnecting = true
 
         summaryEventSource?.cancel()
@@ -188,6 +189,7 @@ class MeetingSseService : Service() {
                             }
                         }
                         "CONNECT" -> {
+                            reconnectAttempts = 0
                             Log.d("Audio", "CONNECT: $data")
                         }
                         else -> {
@@ -228,7 +230,11 @@ class MeetingSseService : Service() {
             Log.d("MeetingSseService", "Reconnect requested while already connecting")
             return
         }
-
+        reconnectAttempts++
+        if (reconnectAttempts > maxReconnectAttempts) {
+            ErrorEventRepository.emitError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
+            return
+        }
         summaryEventSource?.cancel()
         feedbackEventSource?.cancel()
         participationRateEventSource?.cancel()
