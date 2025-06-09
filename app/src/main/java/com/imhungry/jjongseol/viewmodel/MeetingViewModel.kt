@@ -11,11 +11,11 @@ import androidx.lifecycle.viewModelScope
 import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
-import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
-import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
+import com.imhungry.jjongseol.data.model.feedback.dto.FeedbackDto
+import com.imhungry.jjongseol.data.model.summary.dto.SummaryDto
 import com.imhungry.jjongseol.data.model.home.MeetingResponse
 import com.imhungry.jjongseol.data.model.home.toMeetingInfo
-import com.imhungry.jjongseol.data.model.meeting.dto.ParticipationRateDto
+import com.imhungry.jjongseol.data.model.participationrate.dto.ParticipationRateDto
 import com.imhungry.jjongseol.data.model.meeting.request.MeetingUpdateReq
 import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
@@ -24,17 +24,17 @@ import com.imhungry.jjongseol.ui.home.meetingdata.MeetingInfo
 import com.imhungry.jjongseol.data.network.api.MeetingApi
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
-import com.imhungry.jjongseol.data.repository.ErrorEventRepository
-import com.imhungry.jjongseol.data.repository.FeedbackRepository
-import com.imhungry.jjongseol.data.repository.MeetingNoteCreatedEventBus
-import com.imhungry.jjongseol.data.repository.MeetingNoteEvent
-import com.imhungry.jjongseol.data.repository.MeetingNoteEventBus
+import com.imhungry.jjongseol.data.repository.event.ErrorEventRepository
+import com.imhungry.jjongseol.data.repository.event.FeedbackEventRepository
+import com.imhungry.jjongseol.data.repository.event.MeetingNoteCreatedEventBus
+import com.imhungry.jjongseol.data.repository.event.MeetingNoteEvent
+import com.imhungry.jjongseol.data.repository.event.MeetingNoteEventBus
 import com.imhungry.jjongseol.data.repository.MeetingRepository
 import com.imhungry.jjongseol.data.repository.MeetingResult
-import com.imhungry.jjongseol.data.repository.MeetingStartTimeEventBus
+import com.imhungry.jjongseol.data.repository.event.MeetingStartTimeEventBus
 import com.imhungry.jjongseol.data.repository.MeetingUserRepository
-import com.imhungry.jjongseol.data.repository.ParticipationRateRepository
-import com.imhungry.jjongseol.data.repository.SummaryRepository
+import com.imhungry.jjongseol.data.repository.event.ParticipationRateEventRepository
+import com.imhungry.jjongseol.data.repository.event.SummaryEventRepository
 import com.imhungry.jjongseol.data.repository.UserRepository
 import com.imhungry.jjongseol.data.repository.UserResult
 import com.imhungry.jjongseol.service.MeetingSseService
@@ -45,10 +45,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
@@ -58,8 +56,8 @@ class MeetingViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val meetingApi: MeetingApi,
     private val agendaApi: AgendaApi,
-    private val feedbackRepository: FeedbackRepository,
-    private val summaryRepository: SummaryRepository,
+    private val feedbackEventRepository: FeedbackEventRepository,
+    private val summaryEventRepository: SummaryEventRepository,
     private val meetingUserRepository: MeetingUserRepository,
 ) : ViewModel() {
 
@@ -180,17 +178,17 @@ class MeetingViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            feedbackRepository.feedbackFlow.collect { feedback ->
+            feedbackEventRepository.feedbackFlow.collect { feedback ->
                 _feedbackList.value = _feedbackList.value + feedback
             }
         }
         viewModelScope.launch {
-            summaryRepository.summaryFlow.collect { summary ->
+            summaryEventRepository.summaryFlow.collect { summary ->
                 _summaryList.value = _summaryList.value + summary
             }
         }
         viewModelScope.launch {
-            ParticipationRateRepository.participationRates.collect { dto ->
+            ParticipationRateEventRepository.participationRates.collect { dto ->
                 _participationRates.update { oldList ->
                     val mutable = oldList.toMutableList()
                     val index = mutable.indexOfFirst { it.userId == dto.userId }

@@ -34,7 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
+import com.imhungry.jjongseol.data.model.summary.dto.SummaryDto
 import com.imhungry.jjongseol.ui.component.summary.ConversationSummaryBar
 import com.imhungry.jjongseol.ui.component.summary.SummaryListItem
 
@@ -45,8 +45,8 @@ fun CompletedMeetingSummaryScreen() {
     var isExpanded3 by remember { mutableStateOf(true) }
     var isExpanded4 by remember { mutableStateOf(true) }
 
-    val data = listOf(45.0, 30.0, 20.0, 10.0, 5.0)
-    val names = listOf("지안", "상정", "원영", "유진", "은경")
+    val data = listOf(80.0, 20.0)
+    val names = listOf("유진", "은경")
     val summaryList = listOf(
         SummaryDto("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
         SummaryDto("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),

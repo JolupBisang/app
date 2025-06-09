@@ -33,6 +33,7 @@ import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.completedmeeting.component.AudioPlayerBar
+import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
 import com.imhungry.jjongseol.ui.meeting.CustomHorizontalPagerIndicator
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
@@ -113,7 +114,7 @@ fun CompletedMeetingContent(
                 when (page) {
                     0 -> CompletedMeetingSummaryScreen()
                     1 -> CompletedMeetingRecordScreen(meetingId = meetingId, navController = navController)
-                    2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel, meetingId = meetingId, startTime = null)
+                    2 -> CompletedMeetingFeedbackScreen(meetingId = meetingId)
                 }
             }
             CustomHorizontalPagerIndicator(

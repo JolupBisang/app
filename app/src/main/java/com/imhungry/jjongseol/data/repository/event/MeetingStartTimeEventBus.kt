@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.data.repository
+package com.imhungry.jjongseol.data.repository.event
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow

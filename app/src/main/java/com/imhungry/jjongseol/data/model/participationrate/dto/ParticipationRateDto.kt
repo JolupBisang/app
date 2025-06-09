@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.data.model.meeting.dto
+package com.imhungry.jjongseol.data.model.participationrate.dto
 
 data class ParticipationRateDto(
     val userId: Long,

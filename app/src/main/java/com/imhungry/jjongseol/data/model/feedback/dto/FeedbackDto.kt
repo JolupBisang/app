@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.data.model.meeting.dto
+package com.imhungry.jjongseol.data.model.feedback.dto
 
 data class FeedbackDto(
     val timestamp: String,

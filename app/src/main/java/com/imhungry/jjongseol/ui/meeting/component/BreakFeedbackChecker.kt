@@ -3,7 +3,7 @@ package com.imhungry.jjongseol.ui.meeting.component
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
+import com.imhungry.jjongseol.data.model.feedback.dto.FeedbackDto
 import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
 import kotlinx.coroutines.delay
 

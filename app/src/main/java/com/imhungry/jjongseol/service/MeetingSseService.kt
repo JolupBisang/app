@@ -12,20 +12,20 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.imhungry.jjongseol.BuildConfig
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.model.meeting.dto.FeedbackDto
-import com.imhungry.jjongseol.data.model.meeting.dto.ParticipationRateDto
-import com.imhungry.jjongseol.data.model.meeting.dto.SummaryDto
+import com.imhungry.jjongseol.data.model.feedback.dto.FeedbackDto
+import com.imhungry.jjongseol.data.model.participationrate.dto.ParticipationRateDto
+import com.imhungry.jjongseol.data.model.summary.dto.SummaryDto
 import com.imhungry.jjongseol.data.network.client.AudioWebSocketClient
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.data.repository.AgendaSocketEventRepository
 import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
-import com.imhungry.jjongseol.data.repository.ErrorEventRepository
-import com.imhungry.jjongseol.data.repository.FeedbackRepository
+import com.imhungry.jjongseol.data.repository.event.ErrorEventRepository
+import com.imhungry.jjongseol.data.repository.event.FeedbackEventRepository
 import com.imhungry.jjongseol.data.repository.LoginRepository
-import com.imhungry.jjongseol.data.repository.MeetingNoteCreatedEventBus
-import com.imhungry.jjongseol.data.repository.MeetingStartTimeEventBus
-import com.imhungry.jjongseol.data.repository.ParticipationRateRepository
-import com.imhungry.jjongseol.data.repository.SummaryRepository
+import com.imhungry.jjongseol.data.repository.event.MeetingNoteCreatedEventBus
+import com.imhungry.jjongseol.data.repository.event.MeetingStartTimeEventBus
+import com.imhungry.jjongseol.data.repository.event.ParticipationRateEventRepository
+import com.imhungry.jjongseol.data.repository.event.SummaryEventRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,9 +45,9 @@ class MeetingSseService : Service() {
     @Inject
     lateinit var loginRepository: LoginRepository
     @Inject
-    lateinit var feedbackRepository: FeedbackRepository
+    lateinit var feedbackEventRepository: FeedbackEventRepository
     @Inject
-    lateinit var summaryRepository: SummaryRepository
+    lateinit var summaryEventRepository: SummaryEventRepository
 
     private var summaryEventSource: EventSource? = null
     private var feedbackEventSource: EventSource? = null
@@ -157,7 +157,7 @@ class MeetingSseService : Service() {
                                 summary = json.optString("summary")
                             )
                             CoroutineScope(Dispatchers.IO).launch {
-                                summaryRepository.emitSummary(summary)
+                                summaryEventRepository.emitSummary(summary)
                             }
                         }
                         "FEEDBACK" -> {
@@ -167,7 +167,7 @@ class MeetingSseService : Service() {
                                 comment = json.optString("comment")
                             )
                             CoroutineScope(Dispatchers.IO).launch {
-                                feedbackRepository.emitFeedback(feedback)
+                                feedbackEventRepository.emitFeedback(feedback)
                             }
                         }
                         "PARTICIPATION_RATE" -> {
@@ -184,7 +184,7 @@ class MeetingSseService : Service() {
                             }
                             CoroutineScope(Dispatchers.IO).launch {
                                 list.forEach {
-                                    ParticipationRateRepository.emitParticipationRate(it)
+                                    ParticipationRateEventRepository.emitParticipationRate(it)
                                 }
                             }
                         }

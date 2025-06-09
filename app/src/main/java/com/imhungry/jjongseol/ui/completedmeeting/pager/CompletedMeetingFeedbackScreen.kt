@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.ui.meeting.pager
+package com.imhungry.jjongseol.ui.completedmeeting.pager
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +17,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -28,25 +28,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.component.feedback.Notification
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.util.DateTimeUtils
-import com.imhungry.jjongseol.viewmodel.MeetingViewModel
+import com.imhungry.jjongseol.viewmodel.FeedbackViewModel
 
 @Composable
-fun MeetingFeedbackScreen(
-    meetingViewModel: MeetingViewModel,
-    meetingId: Long,
-    startTime: Long?
+fun CompletedMeetingFeedbackScreen(
+    feedbackViewModel: FeedbackViewModel = hiltViewModel(),
+    meetingId: Long
 ) {
     val context = LocalContext.current
+    val feedbackList by feedbackViewModel.feedbacks.collectAsState()
+    val startTime = AppPrefs(context).getMeetingStartTime(meetingId)
 
-    val feedbackList by meetingViewModel.feedbackList.collectAsState()
-    DisposableEffect(Unit) {
-        onDispose {
-            meetingViewModel.markAllFeedbackAsRead()
-        }
+    LaunchedEffect(meetingId) {
+        feedbackViewModel.loadFeedbacks(meetingId, reset = true)
     }
 
     Column(
@@ -87,7 +87,7 @@ fun MeetingFeedbackScreen(
                     visible = true,
                     message = feedback.comment,
                     time = elapsed,
-                    isRead = feedback.isRead
+                    isRead = true
                 )
                 if (index == feedbackList.lastIndex) {
                     Spacer(modifier = Modifier.height(48.dp))
@@ -96,3 +96,4 @@ fun MeetingFeedbackScreen(
         }
     }
 }
+

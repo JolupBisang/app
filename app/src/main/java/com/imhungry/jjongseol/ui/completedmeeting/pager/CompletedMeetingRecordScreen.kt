@@ -216,25 +216,6 @@ fun HeaderSection(
 
             AnimatedVisibility(visible = !isCollapsed) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "요약",
-                        color = Color(0xFFC5C5C5),
-                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.White)
-                            .border(1.dp, Color(0xFFD3D3D3), RoundedCornerShape(12.dp))
-                            .padding(12.dp)
-                    ) {
-                        Text(
-                            text = summary,
-                            color = Color.DarkGray
-                        )
-                    }
-
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

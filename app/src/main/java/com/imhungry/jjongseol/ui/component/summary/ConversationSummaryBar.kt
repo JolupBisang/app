@@ -41,7 +41,7 @@ fun ConversationSummaryBar(participantData: List<Double>, participantNames: List
             modifier = Modifier.fillMaxWidth()
         )
 
-        val columnCount = 3
+        val columnCount = 2
         val minColumnSize = participantNames.size / columnCount
         val extra = participantNames.size % columnCount
 

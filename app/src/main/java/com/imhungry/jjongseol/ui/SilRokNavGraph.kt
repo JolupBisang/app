@@ -122,6 +122,10 @@ fun SilRokNavGraph(
             CompletedMeetingSummaryScreen()
         }
 
+        composable(SilRokNavigation.CompletedMeetingFeedback.route) {
+            CompletedMeetingSummaryScreen()
+        }
+
         composable("meetingDetail/{id}") { backStackEntry ->
             val meetingId = backStackEntry.arguments?.getString("id")?.toLong() ?: return@composable
             MeetingDetailEditScreen(meetingId = meetingId, navController = navController)

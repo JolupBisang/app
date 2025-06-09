@@ -15,6 +15,7 @@ sealed class SilRokNavigation(val route: String) {
     object CompleteNewMeeting : SilRokNavigation("CompleteNewMeeting")
     object CompletedMeeting : SilRokNavigation("CompletedMeeting")
     object CompletedMeetingSummary : SilRokNavigation("CompletedMeetingSummary")
+    object CompletedMeetingFeedback : SilRokNavigation("CompletedMeetingFeedback")
     object LearningVoiceFirst : SilRokNavigation("LearningVoiceFirst")
     object RecordingVoice : SilRokNavigation("RecordingVoice")
     object LearningVoiceLast : SilRokNavigation("LearningVoiceLast")

@@ -3,12 +3,18 @@ package com.imhungry.jjongseol.data.network.config
 import com.imhungry.jjongseol.BuildConfig
 import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.imhungry.jjongseol.data.network.api.AudioApi
+import com.imhungry.jjongseol.data.network.api.FeedbackApi
 import com.imhungry.jjongseol.data.network.api.MeetingApi
 import com.imhungry.jjongseol.data.network.api.MeetingUserApi
+import com.imhungry.jjongseol.data.network.api.ParticipationRateApi
 import com.imhungry.jjongseol.data.network.api.SegmentApi
+import com.imhungry.jjongseol.data.network.api.SummaryApi
 import com.imhungry.jjongseol.data.network.api.UserApi
 import com.imhungry.jjongseol.data.repository.AudioRepository
+import com.imhungry.jjongseol.data.repository.FeedbackRepository
+import com.imhungry.jjongseol.data.repository.ParticipationRateRepository
 import com.imhungry.jjongseol.data.repository.SegmentRepository
+import com.imhungry.jjongseol.data.repository.SummaryRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.EntryPoint
@@ -95,4 +101,37 @@ object RetrofitModule {
     fun provideAudioRepository(audioApi: AudioApi): AudioRepository {
         return AudioRepository(audioApi)
     }
+
+    @Provides
+    @Singleton
+    fun provideSummaryApi(retrofit: Retrofit): SummaryApi {
+        return retrofit.create(SummaryApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSummaryRepository(summaryApi: SummaryApi): SummaryRepository =
+        SummaryRepository(summaryApi)
+
+    @Provides
+    @Singleton
+    fun provideParticipationRateApi(retrofit: Retrofit): ParticipationRateApi {
+        return retrofit.create(ParticipationRateApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideParticipationRateRepository(api: ParticipationRateApi): ParticipationRateRepository =
+        ParticipationRateRepository(api)
+
+    @Provides
+    @Singleton
+    fun provideFeedbackApi(retrofit: Retrofit): FeedbackApi {
+        return retrofit.create(FeedbackApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFeedbackRepository(feedbackApi: FeedbackApi): FeedbackRepository =
+        FeedbackRepository(feedbackApi)
 }

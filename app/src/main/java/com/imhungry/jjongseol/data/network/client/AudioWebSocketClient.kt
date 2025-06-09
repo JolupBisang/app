@@ -9,18 +9,16 @@ import android.media.MediaRecorder
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.imhungry.jjongseol.data.model.agenda.dto.AgendaDto
-import com.imhungry.jjongseol.data.model.meeting.MeetingState
 import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.response.ErrorResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponse
 import com.imhungry.jjongseol.data.model.response.SocketResponseType
 import com.imhungry.jjongseol.data.network.config.AppPrefs
-import com.imhungry.jjongseol.data.repository.MeetingNoteEvent
-import com.imhungry.jjongseol.data.repository.MeetingNoteEventBus
+import com.imhungry.jjongseol.data.repository.event.MeetingNoteEvent
+import com.imhungry.jjongseol.data.repository.event.MeetingNoteEventBus
 import com.imhungry.jjongseol.util.DateTimeUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,9 +33,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 class AudioWebSocketClient(
