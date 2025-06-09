@@ -44,11 +44,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.agenda.AgendaItem
 import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
+import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.meeting.component.ChatBubble
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
 import com.imhungry.jjongseol.ui.login.LoginScreen
@@ -68,7 +70,8 @@ fun CompletedMeetingRecordScreen(
     meetingId: Long,
     agendaViewModel: AgendaViewModel = hiltViewModel(),
     meetingViewModel: MeetingViewModel = hiltViewModel(),
-    segmentViewModel: SegmentViewModel = hiltViewModel()
+    segmentViewModel: SegmentViewModel = hiltViewModel(),
+    navController: NavController
 ) {
     val context = LocalContext.current
     val agendaLoading by agendaViewModel.isLoading.collectAsState()
@@ -122,7 +125,8 @@ fun CompletedMeetingRecordScreen(
                 scheduledStartTime = scheduledStartTime,
                 summary = summary,
                 agendaItems = agendas,
-                lastCheckedIndex = lastCheckedIndex
+                lastCheckedIndex = lastCheckedIndex,
+                navController = navController
             )
 
             Divider()
@@ -162,7 +166,8 @@ fun HeaderSection(
     scheduledStartTime: String,
     summary: String,
     agendaItems: List<AgendaItem>,
-    lastCheckedIndex: MutableState<Int>
+    lastCheckedIndex: MutableState<Int>,
+    navController: NavController
 ) {
     Box(
         modifier = Modifier
@@ -194,9 +199,18 @@ fun HeaderSection(
                 )
 
                 Image(
-                    painter = painterResource(id = R.drawable.edit),
-                    contentDescription = "수정 아이콘",
-                    modifier = Modifier.size(26.dp)
+                    painter = painterResource(id = R.drawable.home),
+                    contentDescription = "홈으로",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            navController.navigate(SilRokNavigation.Home.route) {
+                                popUpTo(0)
+                            }
+                        }
                 )
             }
 

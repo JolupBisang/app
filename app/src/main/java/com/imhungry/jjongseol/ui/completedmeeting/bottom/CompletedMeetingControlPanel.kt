@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,7 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.ui.component.summary.PlaybackSpeedBottomSheet
+import com.imhungry.jjongseol.ui.completedmeeting.component.PlaybackSpeedBottomSheet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -62,7 +61,6 @@ fun CompletedMeetingControlPanel(
     }
 
     Column(
-        modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center
     ) {
         Row(
@@ -91,7 +89,7 @@ fun CompletedMeetingControlPanel(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.playprev),
+                    painter = painterResource(id = R.drawable.backward),
                     contentDescription = "5초 전",
                     modifier = Modifier
                         .size(32.dp)
@@ -125,7 +123,7 @@ fun CompletedMeetingControlPanel(
 
                 Image(
                     painter = painterResource(
-                        id = if (isPlaying) R.drawable.pause else R.drawable.play
+                        id = if (isPlaying) R.drawable.playfalse else R.drawable.playtrue
                     ),
                     contentDescription = if (isPlaying) "pause" else "play",
                     modifier = Modifier
@@ -141,7 +139,7 @@ fun CompletedMeetingControlPanel(
                 Spacer(modifier = Modifier.width(14.dp))
 
                 Image(
-                    painter = painterResource(id = R.drawable.playnext),
+                    painter = painterResource(id = R.drawable.forward),
                     contentDescription = "5초 후",
                     modifier = Modifier
                         .size(32.dp)
@@ -171,15 +169,6 @@ fun CompletedMeetingControlPanel(
                         }
                 )
             }
-
-            Image(
-                painter = painterResource(id = R.drawable.chat_bubble),
-                contentDescription = "익명 채팅",
-                modifier = Modifier
-                    .size(26.dp)
-                    .weight(1f),
-                alignment = Alignment.CenterEnd
-            )
         }
     }
 }

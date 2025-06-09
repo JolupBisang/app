@@ -7,6 +7,7 @@ import com.imhungry.jjongseol.data.network.api.MeetingApi
 import com.imhungry.jjongseol.data.network.api.MeetingUserApi
 import com.imhungry.jjongseol.data.network.api.SegmentApi
 import com.imhungry.jjongseol.data.network.api.UserApi
+import com.imhungry.jjongseol.data.repository.AudioRepository
 import com.imhungry.jjongseol.data.repository.SegmentRepository
 import dagger.Module
 import dagger.Provides
@@ -88,4 +89,10 @@ object RetrofitModule {
     @Singleton
     fun provideSegmentRepository(segmentApi: SegmentApi): SegmentRepository =
         SegmentRepository(segmentApi)
+
+    @Provides
+    @Singleton
+    fun provideAudioRepository(audioApi: AudioApi): AudioRepository {
+        return AudioRepository(audioApi)
+    }
 }

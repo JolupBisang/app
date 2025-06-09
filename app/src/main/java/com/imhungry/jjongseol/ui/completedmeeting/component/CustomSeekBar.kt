@@ -1,13 +1,18 @@
-package com.imhungry.jjongseol.ui.component.seekbar
+package com.imhungry.jjongseol.ui.completedmeeting.component
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,16 +26,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.imhungry.jjongseol.ui.theme.primarySurface
 
 @Composable
-fun CustomSnapSeekBar(
-    value: Float,
-    onValueChange: (Float) -> Unit
+fun CustomSeekBar(
+    currentPosition: Float,
+    duration: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier
 ) {
-    val snapPoints = listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
-    val density = LocalDensity.current
     val thumbRadius = 6.dp
-    val trackHeight = 2.dp
+    val trackHeight = 3.dp
+
+    val density = LocalDensity.current
     val thumbRadiusPx = with(density) { thumbRadius.toPx() }
     val trackHeightPx = with(density) { trackHeight.toPx() }
 
@@ -40,48 +49,44 @@ fun CustomSnapSeekBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(36.dp)
-                .pointerInput(Unit) {
+                .wrapContentHeight()
+                .pointerInput(duration) {
                     detectTapGestures { offset ->
-                        val ratio = (offset.x / barWidth).coerceIn(0f, 1f)
-                        val tappedValue = snapPoints.closestTo(ratio)
-                        onValueChange(tappedValue)
+                        val newValue = (offset.x / barWidth) * duration
+                        onValueChange(newValue.coerceIn(0f, duration))
                     }
                 }
         ) {
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(36.dp)
-                    .padding(horizontal = 6.dp)
-                    .pointerInput(Unit) {
+                    .height(12.dp)
+                    .pointerInput(duration) {
                         detectDragGestures { change, _ ->
-                            val ratio = (change.position.x / barWidth).coerceIn(0f, 1f)
-                            val snapped = snapPoints.closestTo(ratio)
-                            onValueChange(snapped)
+                            val newValue = (change.position.x / barWidth) * duration
+                            onValueChange(newValue.coerceIn(0f, duration))
                         }
                     }
             ) {
                 barWidth = size.width
 
                 drawRoundRect(
-                    color = Color.LightGray,
+                    color = primarySurface,
                     topLeft = Offset(0f, size.height / 2 - trackHeightPx / 2),
                     size = Size(size.width, trackHeightPx),
                     cornerRadius = CornerRadius(trackHeightPx / 2, trackHeightPx / 2)
                 )
 
-                val progressRatio = (value - snapPoints.first()) / (snapPoints.last() - snapPoints.first())
-                val progressWidth = progressRatio * size.width
+                val progressWidth = (currentPosition / duration) * size.width
                 drawRoundRect(
-                    color = Color(0xFF1E93EF),
+                    color = primarySurface,
                     topLeft = Offset(0f, size.height / 2 - trackHeightPx / 2),
                     size = Size(progressWidth, trackHeightPx),
                     cornerRadius = CornerRadius(trackHeightPx / 2, trackHeightPx / 2)
                 )
 
                 drawCircle(
-                    color = Color(0xFF1E93EF),
+                    color = primarySurface,
                     radius = thumbRadiusPx,
                     center = Offset(progressWidth, size.height / 2)
                 )
@@ -90,7 +95,3 @@ fun CustomSnapSeekBar(
     }
 }
 
-fun List<Float>.closestTo(ratio: Float): Float {
-    val target = 0.5f + ratio * (2.0f - 0.5f)
-    return this.minByOrNull { kotlin.math.abs(it - target) } ?: this.first()
-}

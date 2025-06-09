@@ -2,15 +2,19 @@ package com.imhungry.jjongseol.ui.completedmeeting
 
 import CompletedMeetingRecordScreen
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,11 +30,16 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
-import com.imhungry.jjongseol.ui.SilRokNavigation
-import com.imhungry.jjongseol.ui.completedmeeting.bottom.CompletedMeetingControlPanel
+import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
+import com.imhungry.jjongseol.data.network.config.AppPrefs
+import com.imhungry.jjongseol.ui.completedmeeting.component.AudioPlayerBar
 import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
-import com.imhungry.jjongseol.ui.component.seekbar.CustomSeekBar
+import com.imhungry.jjongseol.ui.meeting.CustomHorizontalPagerIndicator
 import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
+import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
+import com.imhungry.jjongseol.ui.theme.primaryBackground
+import com.imhungry.jjongseol.ui.theme.whiteColor
+import com.imhungry.jjongseol.viewmodel.AudioViewModel
 import com.imhungry.jjongseol.viewmodel.CompletedMeetingViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.delay
@@ -42,6 +51,7 @@ fun CompletedMeetingScreen(
     meetingId: Long
 ) {
     val context = LocalContext.current
+    SetNavigationBarColor(whiteColor)
 
     CompletedMeetingContent(
         navController,
@@ -55,8 +65,23 @@ fun CompletedMeetingContent(
     navController: NavController,
     meetingViewModel: MeetingViewModel = hiltViewModel(),
     viewModel: CompletedMeetingViewModel = hiltViewModel(),
+    audioViewModel: AudioViewModel = hiltViewModel(),
     meetingId: Long
 ) {
+    val context = LocalContext.current
+
+    val audioList by audioViewModel.audioList.collectAsState()
+    val errorMessage by audioViewModel.errorMessage.collectAsState()
+
+    LaunchedEffect(meetingId) {
+        audioViewModel.loadAudioList(meetingId)
+    }
+
+    val appPrefs = remember { AppPrefs(context) }
+    val myProfile: UserInfoResponse? = appPrefs.loadMyProfile()
+    val id: Long? = myProfile?.id
+    val myAudioUrl = audioList.firstOrNull { it.userId == id }?.presignedUrl
+
     var currentPosition by remember { mutableStateOf(0f) }
     var isPlaying by remember { mutableStateOf(false) }
     var playbackSpeed by remember { mutableStateOf(1.0f) }
@@ -72,67 +97,40 @@ fun CompletedMeetingContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(primaryBackground)
     ) {
-        val pagerState = rememberPagerState(initialPage = 1)
-        val currentPage = pagerState.currentPage
-
-        HorizontalPager(
-            count = 3,
-            state = pagerState,
+        Box(
             modifier = Modifier
+                .weight(1f)
                 .fillMaxWidth()
-                .weight(0.85f)
-        ) { page ->
-            when (page) {
-                0 -> CompletedMeetingSummaryScreen()
-                1 -> CompletedMeetingRecordScreen(meetingId = meetingId)
-                2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel, meetingId = meetingId, startTime = null)
+        ) {
+            val pagerState = rememberPagerState(initialPage = 1)
+            HorizontalPager(
+                count = 3,
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (page) {
+                    0 -> CompletedMeetingSummaryScreen()
+                    1 -> CompletedMeetingRecordScreen(meetingId = meetingId, navController = navController)
+                    2 -> MeetingFeedbackScreen(meetingViewModel = meetingViewModel, meetingId = meetingId, startTime = null)
+                }
             }
+            CustomHorizontalPagerIndicator(
+                pagerState = pagerState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 8.dp),
+            )
         }
 
-        if (currentPage != 0) {
-            Column(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                HorizontalPagerIndicator(
-                    pagerState = pagerState,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 4.dp, bottom = 4.dp),
-                    activeColor = Color(0xFF1E93EF),
-                    inactiveColor = Color.LightGray,
-                    indicatorWidth = 6.dp,
-                    spacing = 4.dp
-                )
-                Spacer(modifier = Modifier.padding(bottom = 4.dp))
-                CustomSeekBar(
-                    currentPosition = currentPosition,
-                    duration = duration,
-                    onValueChange = { currentPosition = it }
-                )
-            }
-
-            Column(
+        if (!myAudioUrl.isNullOrEmpty()) {
+            AudioPlayerBar(
+                audioUrl = myAudioUrl,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .weight(0.15f)
+                    .fillMaxWidth()
                     .navigationBarsPadding()
-                    .padding(bottom = 16.dp)
-            ) {
-                CompletedMeetingControlPanel(
-                    currentPosition = currentPosition,
-                    duration = duration,
-                    onSeek = { currentPosition = it },
-                    isPlaying = isPlaying,
-                    onTogglePlay = { isPlaying = !isPlaying },
-                    modifier = Modifier.fillMaxWidth(),
-                    playbackSpeed = playbackSpeed,
-                    onSpeedChange = { playbackSpeed = it }
-                )
-            }
+            )
         }
     }
 }
-
-

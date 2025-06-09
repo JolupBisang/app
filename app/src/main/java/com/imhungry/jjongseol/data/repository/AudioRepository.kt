@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.data.repository
 
+import com.imhungry.jjongseol.data.model.audio.response.AudioListResponse
 import com.imhungry.jjongseol.data.network.api.AudioApi
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -33,6 +34,24 @@ class AudioRepository @Inject constructor(
                 AudioResult.Success(Unit)
             } else {
                 AudioResult.Error("업로드 실패: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            AudioResult.Exception(e)
+        }
+    }
+
+    suspend fun getAudioList(meetingId: Long): AudioResult<AudioListResponse> {
+        return try {
+            val response = audioApi.getAudioList(meetingId)
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null && body.data != null) {
+                    AudioResult.Success(body.data)
+                } else {
+                    AudioResult.Error("데이터 없음")
+                }
+            } else {
+                AudioResult.Error("오디오 목록 조회 실패: ${response.code()}")
             }
         } catch (e: Exception) {
             AudioResult.Exception(e)

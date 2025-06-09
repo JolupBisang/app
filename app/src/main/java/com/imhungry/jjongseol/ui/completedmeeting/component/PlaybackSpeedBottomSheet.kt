@@ -1,4 +1,4 @@
-package com.imhungry.jjongseol.ui.component.summary
+package com.imhungry.jjongseol.ui.completedmeeting.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,7 +16,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.imhungry.jjongseol.ui.component.seekbar.CustomSnapSeekBar
+import com.imhungry.jjongseol.ui.theme.Pretend
+import com.imhungry.jjongseol.ui.theme.primarySurface
+import com.imhungry.jjongseol.ui.theme.primaryTextColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,14 +45,16 @@ fun PlaybackSpeedBottomSheet(
                 Text(
                     text = "재생 속도",
                     fontSize = 15.sp,
+                    fontFamily = Pretend,
                     fontWeight = FontWeight.Bold,
-                    color = Color.DarkGray
+                    color = primaryTextColor
                 )
                 Text(
                     text = "${speed}x",
                     fontSize = 15.sp,
+                    fontFamily = Pretend,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E93EF)
+                    color = primarySurface
                 )
             }
 
