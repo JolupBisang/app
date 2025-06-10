@@ -38,7 +38,8 @@ fun Notification(
     message: String,
     time: String,
     isRead: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    blur: Boolean = false
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -49,7 +50,7 @@ fun Notification(
             modifier = modifier
                 .padding(horizontal = 20.dp)
                 .background(
-                    color = gray500,
+                    color = if(blur) Color(0xD9E0E0E0) else gray500,
                     shape = MaterialTheme.shapes.medium
                 )
         ) {

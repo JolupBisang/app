@@ -107,3 +107,77 @@ fun CheckItem(
         }
     }
 }
+
+
+@Composable
+fun CheckItem2(
+    text: String,
+    checked: Boolean,
+    isFocused: Boolean,
+    onToggle: () -> Unit,
+    topPadding: Dp = 8.dp,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = topPadding)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(21.dp)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onToggle
+                )
+        ) {
+            Checkbox(
+                checked = checked,
+                onCheckedChange = null,
+                modifier = Modifier
+                    .size(21.dp)
+                    .border(
+                        width = 1.dp,
+                        color = if (checked) gray400 else blackColor,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .background(
+                        color = whiteColor,
+                        shape = RoundedCornerShape(4.dp)
+                    ),
+                colors = CheckboxDefaults.colors(
+                    checkedColor = whiteColor,
+                    uncheckedColor = whiteColor,
+                    checkmarkColor = if (checked) gray400 else blackColor,
+                    disabledCheckedColor = whiteColor,
+                    disabledUncheckedColor = whiteColor
+                )
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        val textStyle = MaterialTheme.typography.bodyMedium.copy(
+            fontWeight = FontWeight.Medium,
+            textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None,
+            fontSize = 15.sp
+        )
+
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp)
+                .horizontalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = text,
+                style = textStyle,
+                color = if (checked) tertiary else primaryTextColor,
+                fontFamily = Pretend,
+            )
+        }
+    }
+}

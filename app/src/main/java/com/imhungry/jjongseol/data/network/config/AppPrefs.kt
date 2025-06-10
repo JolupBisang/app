@@ -5,7 +5,6 @@ import android.os.Handler
 import android.os.Looper
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.imhungry.jjongseol.data.model.meeting.MeetingState
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 
 class AppPrefs(context: Context) {

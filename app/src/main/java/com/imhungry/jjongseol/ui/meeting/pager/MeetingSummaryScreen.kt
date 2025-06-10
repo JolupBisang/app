@@ -87,12 +87,13 @@ fun MeetingSummaryScreen(
             .fillMaxSize()
             .background(primaryBackground)
             .padding(WindowInsets.statusBars.asPaddingValues())
+            .padding(horizontal = 20.dp)
     ) {
         item {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp, horizontal = 20.dp)
+                    .padding(vertical = 16.dp)
                     .animateContentSize()
             ) {
                 Row(
@@ -137,7 +138,7 @@ fun MeetingSummaryScreen(
                 }
 
                 if (expanded && participantData.isNotEmpty() && participantNames.isNotEmpty()) {
-                    Log.d("participationRates", "rate : " + participantData[0] + ", nickname: " + participantNames[0])
+                    Spacer(Modifier.height(12.dp))
                     ConversationSummaryBar(
                         participantData = participantData,
                         participantNames = participantNames
@@ -151,13 +152,12 @@ fun MeetingSummaryScreen(
                 thickness = 2.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
             )
         }
         item {
             Box(
                 modifier = Modifier
-                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 16.dp)
+                    .padding(top = 16.dp, bottom = 16.dp)
                     .drawBehind {
                         val underlineHeight = 7.dp.toPx()
                         drawRect(

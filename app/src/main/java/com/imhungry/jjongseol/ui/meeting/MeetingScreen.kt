@@ -220,6 +220,7 @@ fun MeetingScreen(
 
     SetNavigationBarColor(primaryBackground)
 
+    Log.d("Meeting", "fullyReady: $fullyReady")
     if (!fullyReady) {
         Box(
             modifier = Modifier
@@ -227,19 +228,9 @@ fun MeetingScreen(
                 .background(primaryBackground),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = primaryBackground)
+            CircularProgressIndicator(color = Color(0xFF969696))
         }
     } else {
-        LaunchedEffect(allReady) {
-            if (!sseStarted) {
-                context.startForegroundService(
-                    Intent(context, MeetingSseService::class.java).apply {
-                        putExtra("meetingId", meetingId)
-                    }
-                )
-                sseStarted = true
-            }
-        }
         MeetingScreenContent(
             meetingViewModel = meetingViewModel,
             agendaViewModel = agendaViewModel,

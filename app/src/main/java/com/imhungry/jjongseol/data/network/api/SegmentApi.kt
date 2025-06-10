@@ -13,6 +13,6 @@ interface SegmentApi {
         @Path("meetingId") meetingId: Long,
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 40,
-        @Query("sort") sort: String = "segmentOrder,DESC"
+        @Query("sort") sort: String = "segmentOrder,ASC"
     ): Response<SliceResponse<SegmentListRes>>
 }

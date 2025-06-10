@@ -52,32 +52,32 @@ fun SplashScreen(
 
     LaunchedEffect(Unit) {
         delay(1500L)
-        navController.navigate(SilRokNavigation.Login.route) {
-            popUpTo(0)
-        }
-        //userViewModel.loadMyProfile()
+//        navController.navigate(SilRokNavigation.Login.route) {
+//            popUpTo(0)
+//        }
+        userViewModel.loadMyProfile()
     }
 
-//    LaunchedEffect(isLoading) {
-//        if (!isLoading) {
-//            if (userInfo != null) {
-//                appPrefs.saveMyProfile(userInfo!!)
-//                navController.navigate(
-//                    if (isVoiceTutorialCompleted) SilRokNavigation.Home.route
-//                    else SilRokNavigation.LearningVoiceFirst.route
-//                ) {
-//                    popUpTo(0)
-//                }
-//            } else {
-//                if (errorMessage != null) {
-//                    loginViewModel.clearToken()
-//                    navController.navigate(SilRokNavigation.Login.route) {
-//                        popUpTo(0)
-//                    }
-//                }
-//            }
-//        }
-//    }
+    LaunchedEffect(isLoading) {
+        if (!isLoading) {
+            if (userInfo != null) {
+                appPrefs.saveMyProfile(userInfo!!)
+                navController.navigate(
+                    if (isVoiceTutorialCompleted) SilRokNavigation.Home.route
+                    else SilRokNavigation.LearningVoiceFirst.route
+                ) {
+                    popUpTo(0)
+                }
+            } else {
+                if (errorMessage != null) {
+                    loginViewModel.clearToken()
+                    navController.navigate(SilRokNavigation.Login.route) {
+                        popUpTo(0)
+                    }
+                }
+            }
+        }
+    }
     SetNavigationBarColor(BasicBackGround)
 
     Column(

@@ -37,7 +37,7 @@ fun CustomSeekBar(
     modifier: Modifier
 ) {
     val thumbRadius = 6.dp
-    val trackHeight = 3.dp
+    val trackHeight = 2.dp
 
     val density = LocalDensity.current
     val thumbRadiusPx = with(density) { thumbRadius.toPx() }

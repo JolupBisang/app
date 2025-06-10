@@ -95,7 +95,7 @@ private fun OthersMessage(diarizedSegment: DiarizedSegment, nickname: String, ti
             contentDescription = "profile",
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .size(42.dp)
+                .size(38.dp)
                 .clip(CircleShape)
                 .border(0.5.dp, blackColor, CircleShape)
         )
@@ -120,7 +120,7 @@ private fun OthersMessage(diarizedSegment: DiarizedSegment, nickname: String, ti
 
     TimestampText(
         time = time,
-        modifier = Modifier.padding(start = 51.dp, top = 2.dp)
+        modifier = Modifier.padding(start = 47.dp, top = 2.dp)
     )
 }
 

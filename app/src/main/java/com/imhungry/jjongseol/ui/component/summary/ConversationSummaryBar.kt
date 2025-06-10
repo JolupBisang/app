@@ -33,7 +33,6 @@ fun ConversationSummaryBar(participantData: List<Double>, participantNames: List
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 12.dp)
     ) {
         ProportionalBarChart(
             proportions = participantData,

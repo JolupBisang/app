@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.imhungry.jjongseol.ui.completedmeeting.CompletedMeetingScreen
 import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
+import com.imhungry.jjongseol.ui.completedmeeting.summaryList
 import com.imhungry.jjongseol.ui.home.HomeScreen
 import com.imhungry.jjongseol.ui.learningvoice.LearningVoiceFirstScreen
 import com.imhungry.jjongseol.ui.learningvoice.LearningVoiceLastScreen
@@ -118,13 +119,6 @@ fun SilRokNavGraph(
             )
         }*/
 
-        composable(SilRokNavigation.CompletedMeetingSummary.route) {
-            CompletedMeetingSummaryScreen()
-        }
-
-        composable(SilRokNavigation.CompletedMeetingFeedback.route) {
-            CompletedMeetingSummaryScreen()
-        }
 
         composable("meetingDetail/{id}") { backStackEntry ->
             val meetingId = backStackEntry.arguments?.getString("id")?.toLong() ?: return@composable

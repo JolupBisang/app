@@ -32,7 +32,6 @@ fun SummaryListItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 28.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

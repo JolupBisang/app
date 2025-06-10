@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,12 +14,14 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,17 +32,33 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.summary.dto.SummaryDto
+import com.imhungry.jjongseol.data.model.summary.response.SummaryListRes
+import com.imhungry.jjongseol.ui.completedmeeting.component.MeetingTabRow
 import com.imhungry.jjongseol.ui.component.summary.ConversationSummaryBar
 import com.imhungry.jjongseol.ui.component.summary.SummaryListItem
+import com.imhungry.jjongseol.ui.theme.Pretend
+import com.imhungry.jjongseol.ui.theme.primaryBackground
+import com.imhungry.jjongseol.ui.theme.primaryButton
+import com.imhungry.jjongseol.ui.theme.tertiary
+import com.imhungry.jjongseol.util.DateTimeUtils
 
 @Composable
-fun CompletedMeetingSummaryScreen() {
+fun CompletedMeetingSummaryScreen(
+    summarys: List<SummaryListRes>,
+    startMillis: Long,
+    selectedTab: Int,
+    onTabClick: (Int) -> Unit,
+) {
     var isExpanded by remember { mutableStateOf(true) }
     var isExpanded2 by remember { mutableStateOf(true) }
     var isExpanded3 by remember { mutableStateOf(true) }
@@ -47,90 +66,104 @@ fun CompletedMeetingSummaryScreen() {
 
     val data = listOf(80.0, 20.0)
     val names = listOf("유진", "은경")
-    val summaryList = listOf(
-        SummaryDto("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
-        SummaryDto("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
-        SummaryDto("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
-        SummaryDto("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
-        SummaryDto("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),
-        SummaryDto("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
-        SummaryDto("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
-        SummaryDto("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
-        SummaryDto("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
-        SummaryDto("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),
-        SummaryDto("지안이 점심 메뉴를 제안하며, 가볍고 건강한 음식을 원한다고 말함.", "11:51:00"),
-        SummaryDto("상정은 귀찮아하면서 빠른 결정을 원함. 과거에 자주 돈가스를 먹었다고 언급.", "11:51:10"),
-        SummaryDto("원영은 삼겹살을 먹고 싶다고 강하게 주장함.", "11:51:35"),
-        SummaryDto("유진은 채식 중이기 때문에 고기 메뉴가 어렵다며, 샐러드바를 제안함.", "11:52:23"),
-        SummaryDto("은경은 매운 음식(불닭)을 먹고 싶다고 의견을 냄.", "11:52:42"),)
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
-            .navigationBarsPadding()
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .background(primaryBackground)
+        .padding(WindowInsets.statusBars.asPaddingValues())
+        .padding(horizontal = 20.dp)
     ) {
-        item {
-            SectionWithToggle(
-                title = "진행 시간",
-                isExpanded = isExpanded,
-                onToggle = { isExpanded = !isExpanded },
-                content = {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 36.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "13:00", style = MaterialTheme.typography.bodyLarge)
-                        Spacer(Modifier.width(20.dp))
-                        Text(text = "~", style = MaterialTheme.typography.bodyLarge)
-                        Spacer(Modifier.width(20.dp))
-                        Text(text = "15:00", style = MaterialTheme.typography.bodyLarge)
-                        Spacer(Modifier.width(32.dp))
-                        Text(text = "120분", style = MaterialTheme.typography.bodyLarge)
-                    }
-                },
-                expanded = isExpanded
-            )
-        }
+        MeetingTabRow(selectedTab = selectedTab, onTabClick = onTabClick)
+        Divider()
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            item {
+                SectionWithToggle(
+                    title = "진행 시간",
+                    isExpanded = isExpanded,
+                    onToggle = { isExpanded = !isExpanded },
+                    content = {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 16.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = "13:00", style = MaterialTheme.typography.bodyLarge,
+                                    fontFamily = Pretend, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.width(15.dp))
+                                Text(text = "~", style = MaterialTheme.typography.bodyLarge,
+                                    fontFamily = Pretend, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.width(15.dp))
+                                Text(text = "15:20", style = MaterialTheme.typography.bodyLarge,
+                                    fontFamily = Pretend, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.width(32.dp))
+                                Text(text = "135분", style = MaterialTheme.typography.bodyLarge,
+                                    fontFamily = Pretend, fontWeight = FontWeight.Medium)
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 16.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = "13:00", style = MaterialTheme.typography.bodyMedium,
+                                    fontFamily = Pretend, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.width(15.dp))
+                                Text(text = "~", style = MaterialTheme.typography.bodyMedium,
+                                    fontFamily = Pretend, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.width(15.dp))
+                                Text(text = "15:00", style = MaterialTheme.typography.bodyMedium,
+                                    fontFamily = Pretend, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.width(32.dp))
+                                Text(text = "120분", style = MaterialTheme.typography.bodyMedium,
+                                    fontFamily = Pretend, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    },
+                    expanded = isExpanded
+                )
+            }
 
-        item {
-            SectionWithToggle(
-                title = "대화 점유율",
-                isExpanded = isExpanded2,
-                onToggle = { isExpanded2 = !isExpanded2 },
-                content = {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 36.dp)
-                    ) {
-                        ConversationSummaryBar(
-                            participantData = data,
-                            participantNames = names
-                        )
-                    }
-                },
-                expanded = isExpanded2
-            )
-        }
+            item {
+                SectionWithToggle(
+                    title = "대화 점유율",
+                    isExpanded = isExpanded2,
+                    onToggle = { isExpanded2 = !isExpanded2 },
+                    content = {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp)
+                        ) {
+                            ConversationSummaryBar(
+                                participantData = data,
+                                participantNames = names
+                            )
+                        }
+                    },
+                    expanded = isExpanded2
+                )
+            }
 
-        item {
-            SectionWithToggle(
-                title = "전체 요약",
-                isExpanded = isExpanded3,
-                onToggle = { isExpanded3 = !isExpanded3 },
-                content = {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 36.dp)
-                    ) {
-                        Text(
-                            text = """
+            item {
+                SectionWithToggle(
+                    title = "전체 요약",
+                    isExpanded = isExpanded3,
+                    onToggle = { isExpanded3 = !isExpanded3 },
+                    content = {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp)
+                        ) {
+                            Text(
+                                text = """
                         이번 회의에서는 점심 식사 메뉴를 결정하기 위한 활발한 논의가 이루어졌다. 지안이 비교적 기름지지 않은 음식을 선호하며 가볍게 먹고 싶다는 의견을 먼저 제시하면서 대화가 시작되었다. 이에 원영은 매번 같은 패턴으로 돈가스를 선택하는 상황을 유쾌하게 언급하며 빠르게 결정을 유도하였다.
 
                         상정은 삼겹살을 강하게 주장하며 고기 욕구를 드러냈고, 유진은 현재 채식 중이라는 개인 사정을 언급하며 샐러드바가 있는 메뉴를 제안하였다. 은경은 매운 음식에 대한 강한 선호를 표현하며 불닭을 언급하였으나, 지안은 그 선택이 속에 부담이 될 수 있다며 조심스러운 반응을 보였다. 이후, 지안은 고기와 채소가 함께 있는 ‘샤브샤브’를 타협안으로 제안하였고, 이는 팀원들에게 좋은 반응을 얻었다.
@@ -141,32 +174,39 @@ fun CompletedMeetingSummaryScreen() {
 
                         이 회의는 서로의 취향과 상황을 존중하면서도 유머를 잃지 않은 분위기 속에서 효율적인 의사결정을 이끌어낸 좋은 예시라 할 수 있다.
                     """.trimIndent(),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                },
-                expanded = isExpanded3
-            )
-        }
-        item {
-            SectionWithToggle(
-                title = "중간 요약",
-                isExpanded = isExpanded4,
-                onToggle = { isExpanded4 = !isExpanded4 },
-                showDivider = false,
-                content = {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 36.dp)
-                    ) {
-                        summaryList.forEach { summary ->
-                            SummaryListItem(summary.summary, summary.timestamp)
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontFamily = Pretend, fontWeight = FontWeight.Medium
+                            )
                         }
-                    }
-                },
-                expanded = isExpanded4
-            )
+                    },
+                    expanded = isExpanded3
+                )
+            }
+            item {
+                SectionWithToggle(
+                    title = "중간 요약",
+                    isExpanded = isExpanded4,
+                    onToggle = { isExpanded4 = !isExpanded4 },
+                    showDivider = false,
+                    content = {
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                        ) {
+                            summarys.forEachIndexed { index, summary ->
+                                val elapsed = DateTimeUtils.getElapsedString(startMillis, summary.timestamp)
+                                SummaryListItem(summary.content, elapsed)
+                                Spacer(Modifier.height(14.dp))
+                                if (index == summarys.lastIndex) {
+                                    Spacer(Modifier.height(28.dp))
+                                }
+                            }
+                        }
+                    },
+                    expanded = isExpanded4
+                )
+            }
         }
     }
 }
@@ -189,32 +229,44 @@ fun SectionWithToggle(
                     indication = null,
                     onClick = onToggle
                 )
-                .padding(horizontal = 36.dp, vertical = 16.dp),
+                .padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = title, style = MaterialTheme.typography.titleSmall)
+            Box(
+                modifier = Modifier
+                    .drawBehind {
+                        val underlineHeight = 7.dp.toPx()
+                        drawRect(
+                            color = Color(0x40186848),
+                            topLeft = Offset(0f, size.height - underlineHeight),
+                            size = androidx.compose.ui.geometry.Size(size.width, underlineHeight)
+                        )
+                    }
+            ) {
+                Text(
+                    text = title,
+                    fontFamily = Pretend,
+                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 15.sp
+                )
+            }
             Image(
-                painter = painterResource(id = R.drawable.fold),
+                painter = painterResource(id = R.drawable.expand2),
                 contentDescription = "접기",
                 modifier = Modifier
-                    .size(26.dp)
-                    .rotate(if (expanded) 180f else 0f)
+                    .size(24.dp)
+                    .rotate(if (expanded) 90f else 0f)
             )
+
         }
 
         AnimatedVisibility(visible = expanded) {
             content()
         }
-
         if (showDivider) {
-            Divider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(if (expanded) Modifier.padding(top = 12.dp) else Modifier),
-                thickness = 1.dp,
-                color = Color(0xFFDCDCDC)
-            )
+            Divider()
         }
     }
 }

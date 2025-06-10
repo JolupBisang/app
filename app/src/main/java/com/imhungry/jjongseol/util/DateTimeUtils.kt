@@ -17,8 +17,9 @@ object DateTimeUtils {
         val koreaZoneId = ZoneId.of("Asia/Seoul")
         val koreaZoned = utcZoned.withZoneSameInstant(koreaZoneId)
 
-        val millis = koreaZoned.toInstant().toEpochMilli()
-        return millis
+        return utcZoned.toInstant().toEpochMilli()
+//        val millis = koreaZoned.toInstant().toEpochMilli()
+//        return millis
     }
 
     fun getElapsedString(startMillis: Long?, isoTimestamp: String): String {

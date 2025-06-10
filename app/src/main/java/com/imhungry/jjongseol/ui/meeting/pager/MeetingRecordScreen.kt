@@ -269,7 +269,8 @@ fun SwipeToDismissNotification(
             visible = true,
             message = message,
             time = time,
-            isRead = true
+            isRead = true,
+            blur = true
         )
     }
 }
