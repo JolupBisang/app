@@ -204,6 +204,7 @@ fun MainHomeScreen(
             state = swipeRefreshState,
             onRefresh = {
                 scope.launch {
+                    viewModel.resetMonthOffsets()
                     viewModel.loadMeetings()
                     delay(600)
                 }

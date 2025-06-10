@@ -22,6 +22,7 @@ import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.api.AgendaApi
 import com.imhungry.jjongseol.ui.home.meetingdata.MeetingInfo
 import com.imhungry.jjongseol.data.network.api.MeetingApi
+import com.imhungry.jjongseol.data.network.api.MeetingUserApi
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.data.repository.DiarizedSegmentRepository
 import com.imhungry.jjongseol.data.repository.event.ErrorEventRepository
@@ -126,6 +127,19 @@ class MeetingViewModel @Inject constructor(
 
     private val _isHost = MutableStateFlow(false)
     val isHost: StateFlow<Boolean> = _isHost
+
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing
+
+    fun refreshMeetings() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            resetMonthOffsets()
+            loadMeetings()
+            _isRefreshing.value = false
+        }
+    }
+
 
     private var hasLoadedInitialMeetings = false
 
@@ -244,16 +258,22 @@ class MeetingViewModel @Inject constructor(
         _pastMonthOffset.value = 0
     }
 
+
     fun createMeeting(
         meetingReq: MeetingReq,
-        onSuccess: () -> Unit,
+        onSuccess: (Long) -> Unit,
         onError: (String) -> Unit
     ) {
         viewModelScope.launch {
             try {
                 val response = meetingApi.createMeeting(meetingReq)
                 if (response.isSuccessful) {
-                    onSuccess()
+                    val meetingId = response.body()?.data?.meetingId
+                    if (meetingId != null) {
+                        onSuccess(meetingId)
+                    } else {
+                        onError("회의 ID를 가져올 수 없습니다.")
+                    }
                 } else {
                     onError("에러 발생: ${response.code()} - ${response.errorBody()?.string()}")
                 }
@@ -262,6 +282,7 @@ class MeetingViewModel @Inject constructor(
             }
         }
     }
+
 
     fun loadMeetingDetail2(meetingId: Long) {
         viewModelScope.launch {

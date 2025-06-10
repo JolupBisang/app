@@ -39,10 +39,8 @@ import retrofit2.HttpException
 
 @Composable
 fun SearchScreen(
-    meetingId: Long,
     selectedEmails: MutableState<List<String>>,
     userApi: UserApi,
-    meetingUserApi: MeetingUserApi,
     enabled: Boolean,
     hostEmail: String
 ) {
@@ -141,21 +139,10 @@ fun SearchScreen(
                     .padding(horizontal = 10.dp, vertical = 5.dp)
                     .border(0.5.dp, Color.Gray, RoundedCornerShape(10.dp))
                     .then(if (enabled) Modifier.clickable {
-                        scope.launch {
-                            try {
-                                meetingUserApi.addParticipants(
-                                    meetingId,
-                                    ParticipantAddReq(listOf(emailToAdd))
-                                )
-                                selectedEmails.value = selectedEmails.value + emailToAdd
-                                query = ""
-                                matchedEmail = null
-                                errorMessage = null
-                            } catch (e: HttpException) {
-                                val errorBody = e.response()?.errorBody()?.string()
-                                errorMessage = "참가자 추가 실패: ${e.code()} ${e.message()} \n$errorBody"
-                            }
-                        }
+                        selectedEmails.value = selectedEmails.value + emailToAdd
+                        query = ""
+                        matchedEmail = null
+                        errorMessage = null
                     } else Modifier)
             ) {
                 Text(
@@ -177,25 +164,7 @@ fun SearchScreen(
         ) {
             selectedEmails.value.forEach { email ->
                 Chip(email, enabled = enabled, isHostParticipant = email == hostEmail, onRemove = {
-                    scope.launch {
-                        try {
-                            val response = userApi.getUserByEmail(email)
-                            if (response.isSuccessful) {
-                                val userId = response.body()?.data?.id
-                                Log.d("SearchScreen", "삭제 요청: meetingId=$meetingId, email=$email, userId=$userId")
-                                if (userId != null) {
-                                    meetingUserApi.removeParticipant(meetingId, userId)
-                                    selectedEmails.value = selectedEmails.value - email
-                                } else {
-                                    errorMessage = "삭제 실패: 사용자 ID를 찾을 수 없습니다."
-                                }
-                            } else {
-                                errorMessage = "사용자 조회 실패: ${response.code()}"
-                            }
-                        } catch (e: Exception) {
-                            Log.d("SearchScreen","참가자 삭제 실패: ${e.message}")
-                        }
-                    }
+                    selectedEmails.value = selectedEmails.value - email
                 })
             }
 

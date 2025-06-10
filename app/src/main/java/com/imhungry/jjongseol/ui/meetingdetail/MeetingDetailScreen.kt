@@ -195,10 +195,8 @@ fun MeetingDetailScreen(
 
                     Column(modifier = Modifier.weight(5f)) {
                         SearchScreen(
-                            meetingId = id,
                             selectedEmails = selectedEmails,
                             userApi = userViewModel.userApi,
-                            meetingUserApi = meetingUserApi,
                             enabled = isEditable,
                             hostEmail = myEmail
                         )

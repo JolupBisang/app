@@ -106,6 +106,7 @@ fun CreateNewMeetingScreen(navController: NavController){
 
     val userInfo by userViewModel.userInfo.collectAsState()
     val myEmail = userInfo?.email.orEmpty()
+    val participants = selectedMembers.value
 
     ConstraintLayout (modifier = Modifier
         .background(Color.White)
@@ -205,10 +206,8 @@ fun CreateNewMeetingScreen(navController: NavController){
 
                     Column(modifier = Modifier.weight(5f)) {
                         SearchScreen(
-                            meetingId = -1L,
                             selectedEmails = selectedMembers,
                             userApi = userViewModel.userApi,
-                            meetingUserApi = meetingUserApi,
                             enabled = true,
                             hostEmail = myEmail
                         )
@@ -407,7 +406,6 @@ fun CreateNewMeetingScreen(navController: NavController){
                     elevation = null,
                     onClick = {
                         val agendas = agendaList.toList()
-                        val participants = selectedMembers.value
 
                         var hasError = false
                         isTitleError.value = meetingTitle.value.isBlank().also { if (it) hasError = true }
@@ -438,14 +436,23 @@ fun CreateNewMeetingScreen(navController: NavController){
                             restDuration = breakTimeMinute.value.toIntOrNull() ?: 0,
                             scheduledStartTime = scheduledStartTime.toString(),
                             agendas = agendas,
-                            participants = participants
+                            participants = emptyList()
                         )
 
 
                         meetingViewModel.createMeeting(
                             meetingReq = meetingReq,
-                            onSuccess = {
-                                navController.navigate("CompleteNewMeeting")
+                            onSuccess = { meetingId ->
+                                meetingViewModel.addParticipants(
+                                    meetingId = meetingId,
+                                    emails = participants,
+                                    onSuccess = {
+                                        navController.navigate("CompleteNewMeeting")
+                                    },
+                                    onError = { errorMessage ->
+                                        navController.navigate("CompleteNewMeeting")
+                                    }
+                                )
                             },
                             onError = { errorMessage ->
                                 Log.e("MeetingCreate", errorMessage)
