@@ -139,6 +139,9 @@ fun CompletedMeetingRecordScreen(
                     if (index == 0) {
                         Spacer(modifier = Modifier.padding(top = 4.dp))
                     }
+
+                    val prevId = if (index > 0) segments[index - 1].userId else -1L
+                    val nextId = if (index < segments.lastIndex) segments[index + 1].userId else -1L
                     ChatBubble(
                         diarizedSegment = DiarizedSegment(
                             timestamp = segment.timestamp,
@@ -147,11 +150,14 @@ fun CompletedMeetingRecordScreen(
                             order = segment.segmentOrder
                         ),
                         nickname = segment.userName,
-                        isMe = (segment.userId == currentUserId),
-                        time = DateTimeUtils.getElapsedString(startMillis, segment.timestamp)
+                        isMe = (segment.userId == 1L),
+                        time = DateTimeUtils.getElapsedString(startMillis, segment.timestamp),
+                        prevId = prevId,
+                        nextId = nextId
                     )
+
                     if (index == segments.lastIndex) {
-                        Spacer(modifier = Modifier.padding(bottom = 28.dp))
+                        Spacer(modifier = Modifier.padding(bottom = 30.dp))
                     }
                 }
             }

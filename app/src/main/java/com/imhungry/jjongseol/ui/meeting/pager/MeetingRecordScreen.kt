@@ -191,11 +191,15 @@ fun MeetingRecordScreen(
                         if (index == 0) {
                             Spacer(modifier = Modifier.padding(top = 4.dp))
                         }
+                        val prevId = if (index > 0) diarizedSegments[index - 1].userId else -1L
+                        val nextId = if (index < diarizedSegments.lastIndex) diarizedSegments[index + 1].userId else -1L
                         ChatBubble(
                             diarizedSegment = message,
                             nickname = nicknameMap[message.userId] ?: "알 수 없음",
                             isMe = message.userId == myUserId,
-                            time = elapsed
+                            time = elapsed,
+                            prevId = prevId,
+                            nextId = nextId
                         )
                         if (index == diarizedSegments.lastIndex) {
                             Spacer(modifier = Modifier.padding(bottom = 28.dp))

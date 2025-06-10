@@ -3,6 +3,7 @@ package com.imhungry.jjongseol.ui.meeting.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,7 +41,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun ChatBubble(diarizedSegment: DiarizedSegment, nickname: String, isMe : Boolean, time: String) {
+fun ChatBubble(diarizedSegment: DiarizedSegment, nickname: String, isMe : Boolean, time: String, prevId: Long = -1L, nextId: Long = -1L) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -47,26 +49,36 @@ fun ChatBubble(diarizedSegment: DiarizedSegment, nickname: String, isMe : Boolea
         horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
     ) {
         if (isMe) {
-            MyMessage(diarizedSegment, time)
+            MyMessage(diarizedSegment, time, nextId)
         } else {
-            OthersMessage(diarizedSegment, nickname, time)
+            OthersMessage(diarizedSegment, nickname, time, prevId, nextId)
         }
     }
 }
 
 @Composable
-private fun MyMessage(diarizedSegment: DiarizedSegment, time: String) {
+private fun MyMessage(diarizedSegment: DiarizedSegment, time: String, nextId: Long) {
     Column(horizontalAlignment = Alignment.End) {
-        ChatBox(
-            text = diarizedSegment.text,
-            backgroundColor = green500,
-            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 12.dp, bottomEnd = 4.dp)
-        )
-
-        TimestampText(
-            time = time,
-            modifier = Modifier.padding(top = 2.dp, end = 1.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            if (nextId == -1L || diarizedSegment.userId != nextId) {
+                TimestampText(
+                    time = time,
+                    modifier = Modifier
+                        .align(Alignment.Bottom)
+                        .padding(bottom = 2.dp, end = 1.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            ChatBox(
+                text = diarizedSegment.text,
+                backgroundColor = green500,
+                shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 12.dp, bottomEnd = 4.dp)
+            )
+        }
     }
 }
 
@@ -85,55 +97,89 @@ val profileDrawables = listOf(
 )
 
 @Composable
-private fun OthersMessage(diarizedSegment: DiarizedSegment, nickname: String, time: String) {
+private fun OthersMessage(
+    diarizedSegment: DiarizedSegment,
+    nickname: String,
+    time: String,
+    prevId: Long,
+    nextId: Long
+) {
     val profileIndex = (diarizedSegment.userId % profileDrawables.size).toInt()
     val profileRes = profileDrawables[profileIndex]
 
     Row(verticalAlignment = Alignment.Top) {
-        Image(
-            painter = rememberAsyncImagePainter(profileRes),
-            contentDescription = "profile",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .border(0.5.dp, blackColor, CircleShape)
-        )
-
-        Spacer(modifier = Modifier.width(6.dp))
-
-        Column {
-            Text(
-                text = nickname,
-                fontFamily = Pretend,
-                style = MaterialTheme.typography.titleSmall.copy(color = Color.Black),
-                modifier = Modifier.padding(top = 1.dp, bottom = 2.dp)
+        if (prevId == -1L || prevId != diarizedSegment.userId) {
+            Image(
+                painter = rememberAsyncImagePainter(profileRes),
+                contentDescription = "profile",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .border(0.5.dp, blackColor, CircleShape)
             )
+            Spacer(modifier = Modifier.width(6.dp))
 
-            ChatBox(
-                text = diarizedSegment.text,
-                backgroundColor = brown500,
-                shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 4.dp, bottomEnd = 14.dp)
-            )
+            Column {
+                Text(
+                    text = nickname,
+                    fontFamily = Pretend,
+                    style = MaterialTheme.typography.titleSmall.copy(color = Color.Black),
+                    modifier = Modifier.padding(top = 1.dp, bottom = 2.dp)
+                )
+
+                Row(verticalAlignment = Alignment.Bottom) {
+                    ChatBox(
+                        text = diarizedSegment.text,
+                        backgroundColor = brown500,
+                        shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 4.dp, bottomEnd = 14.dp)
+                    )
+                    if (nextId == -1L || diarizedSegment.userId != nextId) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        TimestampText(
+                            time = time,
+                            modifier = Modifier
+                                .align(Alignment.Bottom)
+                                .padding(bottom = 2.dp)
+                        )
+                    }
+                }
+            }
+        } else {
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier.padding(start = 45.dp)
+            ) {
+                ChatBox(
+                    text = diarizedSegment.text,
+                    backgroundColor = brown500,
+                    shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 4.dp, bottomEnd = 14.dp)
+                )
+                if (nextId == -1L || diarizedSegment.userId != nextId) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    TimestampText(
+                        time = time,
+                        modifier = Modifier
+                            .align(Alignment.Bottom)
+                            .padding(bottom = 2.dp)
+                    )
+                }
+            }
         }
     }
-
-    TimestampText(
-        time = time,
-        modifier = Modifier.padding(start = 47.dp, top = 2.dp)
-    )
 }
 
 @Composable
 private fun ChatBox(
     text: String,
     backgroundColor: Color,
-    shape: RoundedCornerShape
+    shape: RoundedCornerShape,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .background(backgroundColor, shape = shape)
-            .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.67f)
+            .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.64f)
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Text(

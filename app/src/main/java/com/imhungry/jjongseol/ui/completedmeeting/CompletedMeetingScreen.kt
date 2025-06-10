@@ -6,12 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -22,14 +18,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.data.model.feedback.response.FeedbackListRes
 import com.imhungry.jjongseol.data.model.segment.response.SegmentListRes
@@ -37,11 +31,9 @@ import com.imhungry.jjongseol.data.model.summary.response.SummaryListRes
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.completedmeeting.component.AudioPlayerBar
-import com.imhungry.jjongseol.ui.completedmeeting.component.MeetingTabRow
 import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
 import com.imhungry.jjongseol.ui.meeting.CustomHorizontalPagerIndicator
-import com.imhungry.jjongseol.ui.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.ui.theme.whiteColor
@@ -201,13 +193,13 @@ fun CompletedMeetingContent(
     val formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSSSSS")
 
     for (i in 0 until 61) {
-        val (userId, userName) = userInfos[i % userInfos.size]
+        val userId = Random.nextInt(1, 6).toLong()
+        val userName = "user$userId"
         val text = texts[i % texts.size]
         val lang = "ko"
         val time = startTime.plusSeconds((i * 3).toLong())
         // 마이크로초는 0으로 고정 (생성시점 정보 필요없으면)
         val timestamp = "2025-06-10T" + time.format(formatter)
-
         dummySegments.add(
             SegmentListRes(
                 id = (i + 1).toLong(),
