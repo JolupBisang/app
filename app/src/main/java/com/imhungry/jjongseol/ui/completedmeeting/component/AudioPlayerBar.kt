@@ -27,7 +27,10 @@ import com.imhungry.jjongseol.ui.theme.whiteColor
 @Composable
 fun AudioPlayerBar(
     audioUrl: String,
-    modifier: Modifier
+    currentPosition: Long,
+    onPositionChange: (Long) -> Unit,
+    modifier: Modifier,
+    onPlayingChanged: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     // ExoPlayer 생성 및 관리
@@ -42,7 +45,7 @@ fun AudioPlayerBar(
     var duration by remember { mutableStateOf(0L) }
     var playbackSpeed by remember { mutableStateOf(1.0f) }
     var showSpeedSheet by remember { mutableStateOf(false) }
-
+    var isPlayingState by remember { mutableStateOf(false) }
     // ExoPlayer 상태 업데이트용
     LaunchedEffect(Unit) {
         // duration 세팅
@@ -56,11 +59,26 @@ fun AudioPlayerBar(
             delay(200L)
         }
     }
-
+    LaunchedEffect(Unit) {
+        while (true) {
+            playbackPosition = exoPlayer.currentPosition
+            onPositionChange(playbackPosition)
+            delay(200L)
+        }
+    }
     DisposableEffect(Unit) {
         val listener = object : androidx.media3.common.Player.Listener {
             override fun onIsPlayingChanged(isPlayingNow: Boolean) {
-                isPlaying = isPlayingNow
+                isPlayingState = isPlayingNow
+                isPlaying = isPlayingNow // 이 부분이 핵심입니다.
+                onPlayingChanged(isPlayingNow)  // 상태 전달
+            }
+
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == ExoPlayer.STATE_ENDED) {
+                    isPlaying = false // 재생이 끝나면 false로 설정
+                    onPlayingChanged(false)
+                }
             }
         }
         exoPlayer.addListener(listener)
@@ -166,7 +184,14 @@ fun AudioPlayerBar(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
                             ) {
-                                if (exoPlayer.isPlaying) exoPlayer.pause() else exoPlayer.play()
+                                if (exoPlayer.playbackState == ExoPlayer.STATE_ENDED) {
+                                    exoPlayer.seekTo(0)
+                                    exoPlayer.play()
+                                } else if (exoPlayer.isPlaying) {
+                                    exoPlayer.pause()
+                                } else {
+                                    exoPlayer.play()
+                                }
                             }
                     )
                     Spacer(Modifier.width(48.dp))

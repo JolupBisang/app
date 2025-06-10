@@ -199,7 +199,7 @@ fun MeetingRecordScreen(
                             isMe = message.userId == myUserId,
                             time = elapsed,
                             prevId = prevId,
-                            nextId = nextId
+                            nextId = nextId,
                         )
                         if (index == diarizedSegments.lastIndex) {
                             Spacer(modifier = Modifier.padding(bottom = 28.dp))

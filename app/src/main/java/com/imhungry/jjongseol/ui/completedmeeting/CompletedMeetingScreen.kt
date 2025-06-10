@@ -62,11 +62,8 @@ fun CompletedMeetingScreen(
 }
 
 val userInfos = listOf(
-    1L to "유진",
-    2L to "은경",
-    3L to "민수",
-    4L to "지혜",
-    5L to "철수"
+    "유진",
+    "은경"
 )
 
 val texts = listOf(
@@ -186,6 +183,7 @@ fun CompletedMeetingContent(
     val id: Long? = myProfile?.id
     val myAudioUrl = audioList.firstOrNull { it.userId == id }?.presignedUrl
 
+    var playbackPosition by remember { mutableStateOf(0L) }
     // 세그먼트 데이터
     val dummySegments = mutableListOf<SegmentListRes>()
     val startTime = LocalTime.of(12, 0, 0)
@@ -193,8 +191,8 @@ fun CompletedMeetingContent(
     val formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSSSSS")
 
     for (i in 0 until 61) {
-        val userId = Random.nextInt(1, 6).toLong()
-        val userName = "user$userId"
+        val userId = if (i % 2 == 0) 1L else 2L
+        val userName = userInfos.get(if (i % 2 == 0) 0 else 1)
         val text = texts[i % texts.size]
         val lang = "ko"
         val time = startTime.plusSeconds((i * 3).toLong())
@@ -260,8 +258,9 @@ fun CompletedMeetingContent(
                         selectedTab = pagerState.currentPage,
                         onTabClick = { idx ->
                             coroutineScope.launch { pagerState.animateScrollToPage(idx) }
-                        }
-                        //currentPosition = currentPosition,
+                        },
+                        playbackPosition = playbackPosition,
+                        isPlaying = isPlaying
                     )
                     2 -> CompletedMeetingFeedbackScreen(
                         feedbackList = feedbackList,
@@ -284,11 +283,12 @@ fun CompletedMeetingContent(
         if (!myAudioUrl.isNullOrEmpty()) {
             AudioPlayerBar(
                 audioUrl = myAudioUrl,
-                //currentPosition = currentPosition,
-                //onPositionChange = { currentPosition = it },
+                currentPosition = playbackPosition,
+                onPositionChange = { playbackPosition = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .navigationBarsPadding()
+                    .navigationBarsPadding(),
+                onPlayingChanged = { isPlaying = it },
             )
         }
     }

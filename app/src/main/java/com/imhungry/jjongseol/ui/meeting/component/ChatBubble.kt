@@ -35,13 +35,14 @@ import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.blackColor
 import com.imhungry.jjongseol.ui.theme.brown500
 import com.imhungry.jjongseol.ui.theme.green500
+import com.imhungry.jjongseol.ui.theme.md_theme_button_color_blue
 import com.imhungry.jjongseol.ui.theme.primaryTextColor
 import com.imhungry.jjongseol.ui.theme.tertiary
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun ChatBubble(diarizedSegment: DiarizedSegment, nickname: String, isMe : Boolean, time: String, prevId: Long = -1L, nextId: Long = -1L) {
+fun ChatBubble(diarizedSegment: DiarizedSegment, nickname: String, isMe : Boolean, time: String, prevId: Long, nextId: Long, highlighted: Boolean = false) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -49,15 +50,15 @@ fun ChatBubble(diarizedSegment: DiarizedSegment, nickname: String, isMe : Boolea
         horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
     ) {
         if (isMe) {
-            MyMessage(diarizedSegment, time, nextId)
+            MyMessage(diarizedSegment, time, nextId, highlighted)
         } else {
-            OthersMessage(diarizedSegment, nickname, time, prevId, nextId)
+            OthersMessage(diarizedSegment, nickname, time, prevId, nextId, highlighted)
         }
     }
 }
 
 @Composable
-private fun MyMessage(diarizedSegment: DiarizedSegment, time: String, nextId: Long) {
+private fun MyMessage(diarizedSegment: DiarizedSegment, time: String, nextId: Long, highlighted: Boolean) {
     Column(horizontalAlignment = Alignment.End) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -76,7 +77,8 @@ private fun MyMessage(diarizedSegment: DiarizedSegment, time: String, nextId: Lo
             ChatBox(
                 text = diarizedSegment.text,
                 backgroundColor = green500,
-                shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 12.dp, bottomEnd = 4.dp)
+                shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 12.dp, bottomEnd = 4.dp),
+                highlighted = highlighted
             )
         }
     }
@@ -102,7 +104,8 @@ private fun OthersMessage(
     nickname: String,
     time: String,
     prevId: Long,
-    nextId: Long
+    nextId: Long,
+    highlighted: Boolean
 ) {
     val profileIndex = (diarizedSegment.userId % profileDrawables.size).toInt()
     val profileRes = profileDrawables[profileIndex]
@@ -132,7 +135,8 @@ private fun OthersMessage(
                     ChatBox(
                         text = diarizedSegment.text,
                         backgroundColor = brown500,
-                        shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 4.dp, bottomEnd = 14.dp)
+                        shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 4.dp, bottomEnd = 14.dp),
+                        highlighted = highlighted
                     )
                     if (nextId == -1L || diarizedSegment.userId != nextId) {
                         Spacer(modifier = Modifier.width(4.dp))
@@ -153,7 +157,8 @@ private fun OthersMessage(
                 ChatBox(
                     text = diarizedSegment.text,
                     backgroundColor = brown500,
-                    shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 4.dp, bottomEnd = 14.dp)
+                    shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 4.dp, bottomEnd = 14.dp),
+                    highlighted = highlighted
                 )
                 if (nextId == -1L || diarizedSegment.userId != nextId) {
                     Spacer(modifier = Modifier.width(4.dp))
@@ -174,7 +179,8 @@ private fun ChatBox(
     text: String,
     backgroundColor: Color,
     shape: RoundedCornerShape,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    highlighted: Boolean = false
 ) {
     Box(
         modifier = modifier
@@ -186,7 +192,7 @@ private fun ChatBox(
             text = text,
             fontFamily = Pretend,
             fontWeight = FontWeight.Medium,
-            color = primaryTextColor,
+            color = if (highlighted) md_theme_button_color_blue else primaryTextColor,
             style = MaterialTheme.typography.bodyMedium
         )
     }

@@ -1,3 +1,4 @@
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,6 +29,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -58,6 +60,7 @@ import com.imhungry.jjongseol.ui.theme.tertiary
 import com.imhungry.jjongseol.util.DateTimeUtils
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -68,8 +71,10 @@ fun CompletedMeetingRecordScreen(
     navController: NavController,
     segments: List<SegmentListRes>,
     startMillis: Long,
+    playbackPosition: Long,
     selectedTab: Int,
     onTabClick: (Int) -> Unit,
+    isPlaying: Boolean
 ) {
     val context = LocalContext.current
     val agendaLoading by agendaViewModel.isLoading.collectAsState()
@@ -88,8 +93,29 @@ fun CompletedMeetingRecordScreen(
     var isCollapsed by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
     val summary = "회의 요약이 없습니다."
+    var isScrolling by remember { mutableStateOf(false) }
+    // 1. 재생 위치에 해당하는 segment index 찾기
+    val currentSegmentIndex = segments.indexOfLast { segment ->
+        val elapsed = DateTimeUtils.isoToMillis(segment.timestamp) - startMillis
+        elapsed <= playbackPosition
+    }.coerceAtLeast(0)
 
+    // 2. 재생 위치 바뀔 때마다 해당 index로 scroll
+    var lastScrolledIndex by rememberSaveable { mutableStateOf(-1) }
 
+    LaunchedEffect(currentSegmentIndex) {
+        val first = listState.firstVisibleItemIndex
+        val last = (first + listState.layoutInfo.visibleItemsInfo.size - 1).coerceAtLeast(first)
+        val needScroll = segments.isNotEmpty() &&
+                currentSegmentIndex != lastScrolledIndex &&
+                (currentSegmentIndex < first || currentSegmentIndex > last)
+        if (needScroll && !isScrolling) {
+            isScrolling = true
+            listState.animateScrollToItem(currentSegmentIndex)
+            isScrolling = false
+            lastScrolledIndex = currentSegmentIndex
+        }
+    }
     LaunchedEffect(meetingId) {
         agendaViewModel.loadAgendas(meetingId)
         meetingViewModel.loadMeetingDetail2(meetingId)
@@ -153,7 +179,8 @@ fun CompletedMeetingRecordScreen(
                         isMe = (segment.userId == 1L),
                         time = DateTimeUtils.getElapsedString(startMillis, segment.timestamp),
                         prevId = prevId,
-                        nextId = nextId
+                        nextId = nextId,
+                        highlighted = (index == currentSegmentIndex) && isPlaying
                     )
 
                     if (index == segments.lastIndex) {
