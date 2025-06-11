@@ -1,5 +1,3 @@
-import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,7 +29,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -45,10 +42,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.agenda.AgendaItem
+import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
 import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.segment.response.SegmentListRes
-import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
-import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.completedmeeting.component.MeetingTabRow
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
@@ -59,15 +55,12 @@ import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.ui.theme.tertiary
 import com.imhungry.jjongseol.util.DateTimeUtils
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
-import com.imhungry.jjongseol.viewmodel.MeetingViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
+import com.imhungry.jjongseol.viewmodel.SegmentViewModel
 
 @Composable
 fun CompletedMeetingRecordScreen(
     meetingId: Long,
     agendaViewModel: AgendaViewModel = hiltViewModel(),
-    meetingViewModel: MeetingViewModel = hiltViewModel(),
     navController: NavController,
     segments: List<SegmentListRes>,
     startMillis: Long,
@@ -76,24 +69,18 @@ fun CompletedMeetingRecordScreen(
     onTabClick: (Int) -> Unit,
     isPlaying: Boolean,
     onSeekToPosition: (Long) -> Unit,
+    meetingDetail: MeetingDetailRes,
+    currentUserId: Long,
+    segmentViewModel: SegmentViewModel,
 ) {
     val context = LocalContext.current
-    val agendaLoading by agendaViewModel.isLoading.collectAsState()
-    val meetingLoading by meetingViewModel.isLoading.collectAsState()
-    val isLoading = agendaLoading || meetingLoading
-    val appPrefs = remember { AppPrefs(context) }
-    val myProfile: UserInfoResponse? = appPrefs.loadMyProfile()
-    val currentUserId: Long? = myProfile?.id
     val lastCheckedIndex = remember { mutableStateOf(0) }
-    val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val agendas by agendaViewModel.agendaItems.collectAsState()
-    val title = meetingDetail?.title ?: ""
-    val location = meetingDetail?.location ?: ""
-    val scheduledStartTime = meetingDetail?.scheduledStartTime ?: ""
     val listState = rememberLazyListState()
     var isCollapsed by rememberSaveable { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
     var isScrolling by remember { mutableStateOf(false) }
+    val isLoading by segmentViewModel.isLoading.collectAsState()
         // 1. 재생 위치에 해당하는 segment index 찾기
     val currentSegmentIndex = segments.indexOfLast { segment ->
         val elapsed = DateTimeUtils.isoToMillis(segment.timestamp) - startMillis
@@ -125,7 +112,6 @@ fun CompletedMeetingRecordScreen(
 
     LaunchedEffect(meetingId) {
         agendaViewModel.loadAgendas(meetingId)
-        meetingViewModel.loadMeetingDetail2(meetingId)
     }
 
 //    LaunchedEffect(listState) {
@@ -151,64 +137,66 @@ fun CompletedMeetingRecordScreen(
 //            }
 //    }
 
-    if (!isLoading) {
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .background(primaryBackground)) {
-            Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .background(primaryBackground)) {
+        Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
-            HeaderSection(
-                isCollapsed = isCollapsed,
-                isExpanded = isExpanded,
-                onToggleCollapse = { isCollapsed = !isCollapsed },
-                onToggleAgenda = { isExpanded = !isExpanded },
-                title = title,
-                location = location,
-                scheduledStartTime = scheduledStartTime,
-                agendaItems = agendas,
-                lastCheckedIndex = lastCheckedIndex,
-                navController = navController,
-                selectedTab = selectedTab,
-                onTabClick = onTabClick
-            )
+        HeaderSection(
+            isCollapsed = isCollapsed,
+            isExpanded = isExpanded,
+            onToggleCollapse = { isCollapsed = !isCollapsed },
+            onToggleAgenda = { isExpanded = !isExpanded },
+            title = meetingDetail.title,
+            location = meetingDetail.location,
+            scheduledStartTime = meetingDetail.scheduledStartTime,
+            agendaItems = agendas,
+            lastCheckedIndex = lastCheckedIndex,
+            navController = navController,
+            selectedTab = selectedTab,
+            onTabClick = onTabClick
+        )
 
-            Divider()
+        Divider()
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize()
-            ) {
-                itemsIndexed(segments) { index, segment ->
-                    if (index == 0) {
-                        Spacer(modifier = Modifier.padding(top = 4.dp))
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+        ) {
+            itemsIndexed(segments) { index, segment ->
+                if (index == 0) {
+                    Spacer(modifier = Modifier.padding(top = 4.dp))
+                }
+
+                val prevId = if (index > 0) segments[index - 1].userId else -1L
+                val nextId = if (index < segments.lastIndex) segments[index + 1].userId else -1L
+                ChatBubble(
+                    diarizedSegment = DiarizedSegment(
+                        timestamp = segment.timestamp,
+                        userId = segment.userId,
+                        text = segment.text,
+                        order = segment.segmentOrder
+                    ),
+                    nickname = segment.userName,
+                    isMe = (segment.userId == currentUserId),
+                    time = DateTimeUtils.getElapsedString(startMillis, segment.timestamp),
+                    prevId = prevId,
+                    nextId = nextId,
+                    highlighted = (index == currentSegmentIndex) && isPlaying,
+                    onSegmentClick = { clickedTimestamp ->
+                        val seekMillis = DateTimeUtils.isoToMillis(clickedTimestamp) - startMillis
+                        onSeekToPosition(seekMillis.coerceAtLeast(0L))
                     }
-
-                    val prevId = if (index > 0) segments[index - 1].userId else -1L
-                    val nextId = if (index < segments.lastIndex) segments[index + 1].userId else -1L
-                    ChatBubble(
-                        diarizedSegment = DiarizedSegment(
-                            timestamp = segment.timestamp,
-                            userId = segment.userId,
-                            text = segment.text,
-                            order = segment.segmentOrder
-                        ),
-                        nickname = segment.userName,
-                        isMe = (segment.userId == 1L),
-                        time = DateTimeUtils.getElapsedString(startMillis, segment.timestamp),
-                        prevId = prevId,
-                        nextId = nextId,
-                        highlighted = (index == currentSegmentIndex) && isPlaying,
-                        onSegmentClick = { clickedTimestamp ->
-                            val seekMillis = DateTimeUtils.isoToMillis(clickedTimestamp) - startMillis
-                            onSeekToPosition(seekMillis.coerceAtLeast(0L))
-                        }
-                    )
-
-                    if (index == segments.lastIndex) {
-                        Spacer(modifier = Modifier.padding(bottom = 30.dp))
+                )
+                if (index == segments.lastIndex && !isLoading) {
+                    LaunchedEffect(key1 = segments.size) {
+                        segmentViewModel.loadSegments(meetingId, reset = false)
                     }
+                }
+                if (index == segments.lastIndex) {
+                    Spacer(modifier = Modifier.padding(bottom = 30.dp))
                 }
             }
         }

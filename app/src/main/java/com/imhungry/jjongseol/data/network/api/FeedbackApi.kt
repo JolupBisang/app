@@ -13,6 +13,6 @@ interface FeedbackApi {
         @Path("meetingId") meetingId: Long,
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 30,
-        @Query("sort") sort: String = "timestamp,DESC"
+        @Query("sort") sort: String = "timestamp,ASC"
     ): Response<SliceResponse<FeedbackListRes>>
 }

@@ -17,9 +17,8 @@ object DateTimeUtils {
         val koreaZoneId = ZoneId.of("Asia/Seoul")
         val koreaZoned = utcZoned.withZoneSameInstant(koreaZoneId)
 
-        return utcZoned.toInstant().toEpochMilli()
-//        val millis = koreaZoned.toInstant().toEpochMilli()
-//        return millis
+        val millis = koreaZoned.toInstant().toEpochMilli()
+        return millis
     }
 
     fun getElapsedString(startMillis: Long?, isoTimestamp: String): String {
@@ -39,6 +38,29 @@ object DateTimeUtils {
             val datePart = localDateTime.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
             val dayOfWeek = localDateTime.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, Locale.KOREAN)
             "$datePart $dayOfWeek"
+        } catch (e: Exception) {
+            Log.e("DateTimeUtils", "파싱 실패: $isoLocalTimestamp", e)
+            "-"
+        }
+    }
+
+    fun localIsoToTimeString(isoLocalTimestamp: String?): String {
+        if (isoLocalTimestamp.isNullOrBlank()) return "-"
+        return try {
+            val localDateTime = LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            localDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
+        } catch (e: Exception) {
+            Log.e("DateTimeUtils", "파싱 실패: $isoLocalTimestamp", e)
+            "-"
+        }
+    }
+
+    fun localIsoToTimeStringPlusMinutes(isoLocalTimestamp: String?, targetTime: Int): String {
+        if (isoLocalTimestamp.isNullOrBlank()) return "-"
+        return try {
+            val localDateTime = LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val updatedDateTime = localDateTime.plusMinutes(targetTime.toLong())
+            updatedDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
         } catch (e: Exception) {
             Log.e("DateTimeUtils", "파싱 실패: $isoLocalTimestamp", e)
             "-"

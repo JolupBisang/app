@@ -14,6 +14,6 @@ interface SummaryApi {
         @Query("isRecap") isRecap: Boolean = false,
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 30,
-        @Query("sort") sort: String = "timestamp,DESC"
+        @Query("sort") sort: String = "timestamp,ASC"
     ): Response<SliceResponse<SummaryListRes>>
 }

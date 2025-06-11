@@ -26,6 +26,8 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +44,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.model.meeting.response.MeetingDetailRes
+import com.imhungry.jjongseol.data.model.participationrate.dto.ParticipationRateDto
+import com.imhungry.jjongseol.data.model.participationrate.response.ParticipationRateHistoryRes
+import com.imhungry.jjongseol.data.model.participationrate.response.ParticipationRateHistoryRes.UserParticipationRate
 import com.imhungry.jjongseol.data.model.summary.dto.SummaryDto
 import com.imhungry.jjongseol.data.model.summary.response.SummaryListRes
 import com.imhungry.jjongseol.ui.completedmeeting.component.MeetingTabRow
@@ -52,23 +58,29 @@ import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.ui.theme.primaryButton
 import com.imhungry.jjongseol.ui.theme.tertiary
 import com.imhungry.jjongseol.util.DateTimeUtils
+import com.imhungry.jjongseol.viewmodel.SummaryViewModel
 
 @Composable
 fun CompletedMeetingSummaryScreen(
     summarys: List<SummaryListRes>,
+    fullSummary: List<SummaryListRes>,
     startMillis: Long,
     selectedTab: Int,
     onTabClick: (Int) -> Unit,
-    onTimeClick: (Long) -> Unit
+    onTimeClick: (Long) -> Unit,
+    meetingDetail: MeetingDetailRes,
+    userParticipationRates: List<UserParticipationRate>,
+    summaryViewModel: SummaryViewModel,
+    meetingId: Long
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(true) }
     var isExpanded2 by rememberSaveable { mutableStateOf(true) }
     var isExpanded3 by rememberSaveable { mutableStateOf(true) }
     var isExpanded4 by rememberSaveable { mutableStateOf(true) }
-
-    val data = listOf(80.0, 20.0)
-    val names = listOf("유진", "은경")
-
+    val sortedRates = userParticipationRates.sortedByDescending { it.rate }
+    val rateList = sortedRates.map { it.rate }
+    val nicknameList = sortedRates.map { it.nickname }
+    val isLoading by summaryViewModel.isLoading.collectAsState()
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(primaryBackground)
@@ -95,16 +107,16 @@ fun CompletedMeetingSummaryScreen(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = "13:00", style = MaterialTheme.typography.bodyLarge,
+                                Text(text = "(실제시작)", style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(15.dp))
                                 Text(text = "~", style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(15.dp))
-                                Text(text = "15:20", style = MaterialTheme.typography.bodyLarge,
+                                Text(text = "(실제종료시각)", style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(32.dp))
-                                Text(text = "135분", style = MaterialTheme.typography.bodyLarge,
+                                Text(text = "(실제진행시간)", style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                             }
                             Row(
@@ -114,16 +126,18 @@ fun CompletedMeetingSummaryScreen(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = "13:00", style = MaterialTheme.typography.bodyMedium,
+                                Text(text = DateTimeUtils.localIsoToTimeString(meetingDetail.scheduledStartTime),
+                                    style = MaterialTheme.typography.bodyMedium,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(15.dp))
                                 Text(text = "~", style = MaterialTheme.typography.bodyMedium,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(15.dp))
-                                Text(text = "15:00", style = MaterialTheme.typography.bodyMedium,
+                                Text(text = DateTimeUtils.localIsoToTimeStringPlusMinutes(meetingDetail.scheduledStartTime, meetingDetail.targetTime),
+                                    style = MaterialTheme.typography.bodyMedium,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(32.dp))
-                                Text(text = "120분", style = MaterialTheme.typography.bodyMedium,
+                                Text(text = "${meetingDetail.targetTime}분", style = MaterialTheme.typography.bodyMedium,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                             }
                         }
@@ -144,8 +158,8 @@ fun CompletedMeetingSummaryScreen(
                                 .padding(bottom = 16.dp)
                         ) {
                             ConversationSummaryBar(
-                                participantData = data,
-                                participantNames = names
+                                participantData = rateList,
+                                participantNames = nicknameList
                             )
                         }
                     },
@@ -164,21 +178,13 @@ fun CompletedMeetingSummaryScreen(
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp)
                         ) {
-                            Text(
-                                text = """
-                        이번 회의에서는 점심 식사 메뉴를 결정하기 위한 활발한 논의가 이루어졌다. 지안이 비교적 기름지지 않은 음식을 선호하며 가볍게 먹고 싶다는 의견을 먼저 제시하면서 대화가 시작되었다. 이에 원영은 매번 같은 패턴으로 돈가스를 선택하는 상황을 유쾌하게 언급하며 빠르게 결정을 유도하였다.
-
-                        상정은 삼겹살을 강하게 주장하며 고기 욕구를 드러냈고, 유진은 현재 채식 중이라는 개인 사정을 언급하며 샐러드바가 있는 메뉴를 제안하였다. 은경은 매운 음식에 대한 강한 선호를 표현하며 불닭을 언급하였으나, 지안은 그 선택이 속에 부담이 될 수 있다며 조심스러운 반응을 보였다. 이후, 지안은 고기와 채소가 함께 있는 ‘샤브샤브’를 타협안으로 제안하였고, 이는 팀원들에게 좋은 반응을 얻었다.
-
-                        상정은 고기가 포함된 메뉴라면 괜찮다는 입장을 보였고, 유진은 야채를 많이 먹을 수 있다는 점에서 샤브샤브에 긍정적인 반응을 보였다. 원영 역시 고기, 야채, 매운 맛이 모두 가능한 메뉴라며 찬성 의사를 밝혔다. 은경도 맵게 먹을 수 있다면 만족스럽다는 반응을 보이며 최종적으로 전원이 동의하는 결론에 도달하였다.
-
-                        최종적으로 메뉴는 샤브샤브로 결정되었으며, 메뉴 선택에 약 10분가량이 소요되었다. 원영은 이 정도면 꽤 빠르게 결정된 편이라며 대화를 마무리 지었고, 모두가 만족하는 선택으로 자연스럽게 외출 준비가 이어졌다.
-
-                        이 회의는 서로의 취향과 상황을 존중하면서도 유머를 잃지 않은 분위기 속에서 효율적인 의사결정을 이끌어낸 좋은 예시라 할 수 있다.
-                    """.trimIndent(),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontFamily = Pretend, fontWeight = FontWeight.Medium
-                            )
+                            fullSummary.getOrNull(0)?.let {
+                                Text(
+                                    text = it.content,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontFamily = Pretend, fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     },
                     expanded = isExpanded3
@@ -191,12 +197,10 @@ fun CompletedMeetingSummaryScreen(
                     onToggle = { isExpanded4 = !isExpanded4 },
                     showDivider = false,
                     content = {
-
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            summarys.forEachIndexed { index, summary ->
+                            itemsIndexed(summarys) { index, summary ->
                                 val elapsedMillis = DateTimeUtils.isoToMillis(summary.timestamp) - startMillis
                                 val elapsed = DateTimeUtils.getElapsedString(startMillis, summary.timestamp)
                                 SummaryListItem(
@@ -207,6 +211,18 @@ fun CompletedMeetingSummaryScreen(
                                 Spacer(Modifier.height(16.dp))
                                 if (index == summarys.lastIndex) {
                                     Spacer(Modifier.height(28.dp))
+                                }
+                                if (
+                                    index == summarys.lastIndex &&
+                                    !isLoading
+                                ) {
+                                    LaunchedEffect(key1 = summarys.size) {
+                                        summaryViewModel.loadSummaries(
+                                            meetingId = meetingId,
+                                            isRecap = true,
+                                            reset = false
+                                        )
+                                    }
                                 }
                             }
                         }

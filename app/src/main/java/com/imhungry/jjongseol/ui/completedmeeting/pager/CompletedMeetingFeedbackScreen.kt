@@ -4,7 +4,6 @@ import Divider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -15,22 +14,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.imhungry.jjongseol.data.model.feedback.response.FeedbackListRes
 import com.imhungry.jjongseol.ui.completedmeeting.component.MeetingTabRow
 import com.imhungry.jjongseol.ui.component.feedback.Notification
-import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.primaryBackground
-import com.imhungry.jjongseol.ui.theme.primaryButton
-import com.imhungry.jjongseol.ui.theme.tertiary
 import com.imhungry.jjongseol.util.DateTimeUtils
+import com.imhungry.jjongseol.viewmodel.FeedbackViewModel
 
 @Composable
 fun CompletedMeetingFeedbackScreen(
@@ -39,9 +35,11 @@ fun CompletedMeetingFeedbackScreen(
     selectedTab: Int,
     onTabClick: (Int) -> Unit,
     onTimeClick: (Long) -> Unit,
+    feedbackViewModel: FeedbackViewModel,
+    meetingId: Long
 ) {
     val context = LocalContext.current
-
+    val isLoading by feedbackViewModel.isLoading.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -71,6 +69,11 @@ fun CompletedMeetingFeedbackScreen(
                 )
                 if (index == feedbackList.lastIndex) {
                     Spacer(modifier = Modifier.height(48.dp))
+                    if (!isLoading) {
+                        LaunchedEffect(key1 = feedbackList.size) {
+                            feedbackViewModel.loadFeedbacks(meetingId, reset = false)
+                        }
+                    }
                 }
             }
         }
