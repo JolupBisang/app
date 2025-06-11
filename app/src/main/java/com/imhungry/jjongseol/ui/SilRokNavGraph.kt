@@ -2,16 +2,11 @@ package com.imhungry.jjongseol.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.imhungry.jjongseol.ui.completedmeeting.CompletedMeetingScreen
-import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
-import com.imhungry.jjongseol.ui.completedmeeting.summaryList
 import com.imhungry.jjongseol.ui.home.HomeScreen
 import com.imhungry.jjongseol.ui.learningvoice.LearningVoiceFirstScreen
 import com.imhungry.jjongseol.ui.learningvoice.LearningVoiceLastScreen

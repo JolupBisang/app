@@ -10,6 +10,7 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.gson.Gson
 import com.imhungry.jjongseol.data.model.agenda.dto.AgendaDto
 import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
@@ -33,6 +34,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 class AudioWebSocketClient(
@@ -139,6 +141,9 @@ class AudioWebSocketClient(
                     val meetingStartTime = data?.optString("meetingStartTime")
                     Log.i("Audio", "CONNECTION_ESTABLISHED: chunkId=$lastChunkId, startTime=$meetingStartTime")
                     if (meetingStartTime != null) {
+                        val db = FirebaseFirestore.getInstance()
+                        val meetingRef = db.collection("meetings").document(meetingId.toString())
+                        meetingRef.update("startTime", meetingStartTime)
                         val startTimeMillis = DateTimeUtils.isoToMillis(meetingStartTime)
                         appPrefs.setMeetingStartTime(meetingId, startTimeMillis)
                         onMeetingStartTime?.invoke(startTimeMillis)
@@ -154,6 +159,12 @@ class AudioWebSocketClient(
                     }
                 }
                 SocketResponseType.MEETING_COMPLETED -> {
+                    val db = FirebaseFirestore.getInstance()
+                    val meetingRef = db.collection("meetings").document(meetingId.toString())
+                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
+                    val now = LocalDateTime.now()
+                    val formatted = now.format(formatter)
+                    meetingRef.update("endTime", formatted)
                     Log.i("Audio", "MEETING_COMPLETED 메시지 수신, 오디오 연결 종료")
                     isAudioClosedByMeetingCompleted = true
                     stopRecording()

@@ -1,6 +1,7 @@
 package com.imhungry.jjongseol.util
 
 import android.util.Log
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
@@ -18,6 +19,15 @@ object DateTimeUtils {
         val koreaZoned = utcZoned.withZoneSameInstant(koreaZoneId)
 
         val millis = koreaZoned.toInstant().toEpochMilli()
+        return millis
+    }
+
+    fun koreanIsoToMillis(isoTimestamp: String): Long {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]")
+        val localDateTime = LocalDateTime.parse(isoTimestamp, formatter)
+
+        val zoneId = ZoneId.of("Asia/Seoul")
+        val millis = localDateTime.atZone(zoneId).toInstant().toEpochMilli()
         return millis
     }
 
@@ -65,5 +75,15 @@ object DateTimeUtils {
             Log.e("DateTimeUtils", "파싱 실패: $isoLocalTimestamp", e)
             "-"
         }
+    }
+    fun getMinutesBetweenMillis(startMillis: Long, endMillis: Long): Long {
+        val diffMillis = endMillis - startMillis
+        return diffMillis / 1000 / 60
+    }
+
+    fun millisToHourMinute(millis: Long): String {
+        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+            .withZone(ZoneId.of("Asia/Seoul"))
+        return formatter.format(Instant.ofEpochMilli(millis))
     }
 }

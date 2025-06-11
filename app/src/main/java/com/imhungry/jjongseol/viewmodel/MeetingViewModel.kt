@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
 import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
@@ -324,6 +325,9 @@ class MeetingViewModel @Inject constructor(
             when (val result = meetingRepository.updateMeetingStatus(meetingId, targetStatus)) {
                 is MeetingResult.Success -> {
                     loadMeetingDetail2(meetingId)
+                    val db = FirebaseFirestore.getInstance()
+                    val meetingRef = db.collection("meetings").document(meetingId.toString())
+                    meetingRef.update("started", true)
                 }
                 is MeetingResult.Error -> {
                     _errorMessage.value = result.errorResponse?.message ?: result.message

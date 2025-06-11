@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.firebase.firestore.FirebaseFirestore
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.data.network.config.AppPrefs
@@ -109,6 +110,16 @@ fun MeetingWaitingScreen(
     val showLoading = isMeetingLoading || (meetingDetail != null && isAgendaLoading)
 
     SetNavigationBarColor(primaryBackground)
+    val db = FirebaseFirestore.getInstance()
+    val meetingRef = db.collection("meetings").document(meetingId.toString())
+    meetingRef.addSnapshotListener { snapshot, error ->
+        if (error != null) return@addSnapshotListener
+
+        val started = snapshot?.getBoolean("started") ?: false
+        if (started) {
+            meetingViewModel.loadMeetingDetail2(meetingId)
+        }
+    }
 
     if (showLoading) {
         Box(

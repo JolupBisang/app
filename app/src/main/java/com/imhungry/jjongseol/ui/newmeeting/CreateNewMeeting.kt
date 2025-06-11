@@ -46,6 +46,7 @@ import androidx.navigation.NavController
 import android.util.Log
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
+import com.google.firebase.firestore.FirebaseFirestore
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.network.api.MeetingUserApi
 import com.imhungry.jjongseol.data.network.config.RetrofitModule
@@ -453,6 +454,13 @@ fun CreateNewMeetingScreen(navController: NavController){
                                         navController.navigate("CompleteNewMeeting")
                                     }
                                 )
+                                val db = FirebaseFirestore.getInstance()
+                                val meetingRef = db.collection("meetings").document(meetingId.toString())
+
+                                val meetingData = hashMapOf(
+                                    "started" to false
+                                )
+                                meetingRef.set(meetingData)
                             },
                             onError = { errorMessage ->
                                 Log.e("MeetingCreate", errorMessage)

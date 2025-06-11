@@ -71,7 +71,8 @@ fun CompletedMeetingSummaryScreen(
     meetingDetail: MeetingDetailRes,
     userParticipationRates: List<UserParticipationRate>,
     summaryViewModel: SummaryViewModel,
-    meetingId: Long
+    meetingId: Long,
+    endTime: String
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(true) }
     var isExpanded2 by rememberSaveable { mutableStateOf(true) }
@@ -81,6 +82,7 @@ fun CompletedMeetingSummaryScreen(
     val rateList = sortedRates.map { it.rate }
     val nicknameList = sortedRates.map { it.nickname }
     val isLoading by summaryViewModel.isLoading.collectAsState()
+    val endmillis = DateTimeUtils.koreanIsoToMillis(endTime)
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(primaryBackground)
@@ -107,16 +109,16 @@ fun CompletedMeetingSummaryScreen(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = "(실제시작)", style = MaterialTheme.typography.bodyLarge,
+                                Text(text = DateTimeUtils.millisToHourMinute(startMillis), style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(15.dp))
                                 Text(text = "~", style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(15.dp))
-                                Text(text = "(실제종료시각)", style = MaterialTheme.typography.bodyLarge,
+                                Text(text = DateTimeUtils.millisToHourMinute(endmillis), style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(32.dp))
-                                Text(text = "(실제진행시간)", style = MaterialTheme.typography.bodyLarge,
+                                Text(text = "${DateTimeUtils.getMinutesBetweenMillis(startMillis, endmillis)}분", style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                             }
                             Row(

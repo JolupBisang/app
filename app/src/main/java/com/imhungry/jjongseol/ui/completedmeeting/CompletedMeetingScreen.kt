@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
+import com.google.firebase.firestore.FirebaseFirestore
 import com.imhungry.jjongseol.data.model.feedback.response.FeedbackListRes
 import com.imhungry.jjongseol.data.model.segment.response.SegmentListRes
 import com.imhungry.jjongseol.data.model.summary.response.SummaryListRes
@@ -204,9 +205,19 @@ fun CompletedMeetingContent(
     val myAudioUrl = audioList.firstOrNull { it.userId == id }?.presignedUrl
 
     var playbackPosition by remember { mutableStateOf(0L) }
-
-    val startmillis = DateTimeUtils.isoToMillis("2025-06-10T12:00:00.000000")
-
+    var startTime by remember { mutableStateOf<String?>(null) }
+    var endTime by remember { mutableStateOf<String?>(null) }
+    var startmillis by remember { mutableStateOf<Long?>(null) }
+    val db = FirebaseFirestore.getInstance()
+    val meetingRef = db.collection("meetings").document(meetingId.toString())
+    startmillis = startTime?.let { DateTimeUtils.isoToMillis(it) }
+    meetingRef.get().addOnSuccessListener { document ->
+        if (document != null && document.exists()) {
+            startTime = document.getString("startTime")
+            endTime = document.getString("endTime")
+        } else {
+        }
+    }
     var currentPosition by remember { mutableStateOf(0f) }
     var isPlaying by remember { mutableStateOf(false) }
     var playbackSpeed by remember { mutableStateOf(1.0f) }
@@ -241,7 +252,7 @@ fun CompletedMeetingContent(
                         CompletedMeetingSummaryScreen(
                             summarys = recapSummaries,
                             fullSummary = summaries,
-                            startMillis = startmillis,
+                            startMillis = startmillis!!,
                             selectedTab = pagerState.currentPage,
                             onTabClick = { idx ->
                                 coroutineScope.launch { pagerState.animateScrollToPage(idx) }
@@ -253,7 +264,8 @@ fun CompletedMeetingContent(
                             meetingDetail = it,
                             userParticipationRates = participationRates,
                             summaryViewModel = summaryViewModel,
-                            meetingId = meetingId
+                            meetingId = meetingId,
+                            endTime = endTime!!
                         )
                     }
                     1 -> meetingDetail?.let {
@@ -261,7 +273,7 @@ fun CompletedMeetingContent(
                             meetingId = meetingId,
                             navController = navController,
                             segments = segments,
-                            startMillis = startmillis,
+                            startMillis = startmillis!!,
                             selectedTab = pagerState.currentPage,
                             onTabClick = { idx ->
                                 coroutineScope.launch { pagerState.animateScrollToPage(idx) }
@@ -278,7 +290,7 @@ fun CompletedMeetingContent(
                     }
                     2 -> CompletedMeetingFeedbackScreen(
                         feedbackList = feedbackList,
-                        startMillis = startmillis,
+                        startMillis = startmillis!!,
                         selectedTab = pagerState.currentPage,
                         onTabClick = { idx ->
                             coroutineScope.launch { pagerState.animateScrollToPage(idx) }

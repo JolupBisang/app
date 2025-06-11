@@ -106,4 +106,5 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.2.0")
     implementation(platform("com.google.firebase:firebase-bom:32.7.3"))
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-firestore-ktx")
 }
