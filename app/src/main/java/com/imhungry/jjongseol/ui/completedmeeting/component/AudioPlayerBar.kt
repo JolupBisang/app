@@ -31,6 +31,7 @@ fun AudioPlayerBar(
     onPositionChange: (Long) -> Unit,
     modifier: Modifier,
     onPlayingChanged: (Boolean) -> Unit,
+    onExternalSeek: (Long) -> Unit
 ) {
     val context = LocalContext.current
     // ExoPlayer 생성 및 관리
@@ -63,14 +64,21 @@ fun AudioPlayerBar(
         while (true) {
             playbackPosition = exoPlayer.currentPosition
             onPositionChange(playbackPosition)
-            delay(200L)
+            delay(500L)
         }
     }
+    LaunchedEffect(currentPosition) {
+        if (kotlin.math.abs(playbackPosition - currentPosition) > 300) {
+            exoPlayer.seekTo(currentPosition)
+            playbackPosition = currentPosition
+        }
+    }
+
     DisposableEffect(Unit) {
         val listener = object : androidx.media3.common.Player.Listener {
             override fun onIsPlayingChanged(isPlayingNow: Boolean) {
                 isPlayingState = isPlayingNow
-                isPlaying = isPlayingNow // 이 부분이 핵심입니다.
+                isPlaying = isPlayingNow
                 onPlayingChanged(isPlayingNow)  // 상태 전달
             }
 

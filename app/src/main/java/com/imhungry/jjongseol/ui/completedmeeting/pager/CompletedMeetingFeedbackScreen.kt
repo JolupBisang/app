@@ -38,6 +38,7 @@ fun CompletedMeetingFeedbackScreen(
     startMillis: Long,
     selectedTab: Int,
     onTabClick: (Int) -> Unit,
+    onTimeClick: (Long) -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -56,6 +57,7 @@ fun CompletedMeetingFeedbackScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(feedbackList) { index, feedback ->
+                val elapsedMillis = DateTimeUtils.isoToMillis(feedback.timestamp) - startMillis
                 val elapsed = DateTimeUtils.getElapsedString(startMillis, feedback.timestamp)
                 if (index == 0) {
                     Spacer(modifier = Modifier.height(12.dp))
@@ -64,7 +66,8 @@ fun CompletedMeetingFeedbackScreen(
                     visible = true,
                     message = feedback.comment,
                     time = elapsed,
-                    isRead = true
+                    isRead = true,
+                    onTimeClick = { onTimeClick(elapsedMillis.coerceAtLeast(0L)) }
                 )
                 if (index == feedbackList.lastIndex) {
                     Spacer(modifier = Modifier.height(48.dp))

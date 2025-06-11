@@ -3,6 +3,8 @@ package com.imhungry.jjongseol.ui.meeting.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,11 +44,25 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun ChatBubble(diarizedSegment: DiarizedSegment, nickname: String, isMe : Boolean, time: String, prevId: Long, nextId: Long, highlighted: Boolean = false) {
+fun ChatBubble(
+    diarizedSegment: DiarizedSegment,
+    nickname: String,
+    isMe : Boolean,
+    time: String,
+    prevId: Long,
+    nextId: Long,
+    highlighted: Boolean = false,
+    onSegmentClick: ((String) -> Unit)? = null
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = { onSegmentClick?.invoke(diarizedSegment.timestamp) }
+            ),
         horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
     ) {
         if (isMe) {

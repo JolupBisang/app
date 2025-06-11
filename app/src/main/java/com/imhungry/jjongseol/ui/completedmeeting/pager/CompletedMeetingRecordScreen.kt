@@ -74,7 +74,8 @@ fun CompletedMeetingRecordScreen(
     playbackPosition: Long,
     selectedTab: Int,
     onTabClick: (Int) -> Unit,
-    isPlaying: Boolean
+    isPlaying: Boolean,
+    onSeekToPosition: (Long) -> Unit,
 ) {
     val context = LocalContext.current
     val agendaLoading by agendaViewModel.isLoading.collectAsState()
@@ -90,11 +91,10 @@ fun CompletedMeetingRecordScreen(
     val location = meetingDetail?.location ?: ""
     val scheduledStartTime = meetingDetail?.scheduledStartTime ?: ""
     val listState = rememberLazyListState()
-    var isCollapsed by remember { mutableStateOf(false) }
+    var isCollapsed by rememberSaveable { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
-    val summary = "회의 요약이 없습니다."
     var isScrolling by remember { mutableStateOf(false) }
-    // 1. 재생 위치에 해당하는 segment index 찾기
+        // 1. 재생 위치에 해당하는 segment index 찾기
     val currentSegmentIndex = segments.indexOfLast { segment ->
         val elapsed = DateTimeUtils.isoToMillis(segment.timestamp) - startMillis
         elapsed <= playbackPosition
@@ -102,35 +102,54 @@ fun CompletedMeetingRecordScreen(
 
     // 2. 재생 위치 바뀔 때마다 해당 index로 scroll
     var lastScrolledIndex by rememberSaveable { mutableStateOf(-1) }
-
     LaunchedEffect(currentSegmentIndex) {
         val first = listState.firstVisibleItemIndex
-        val last = (first + listState.layoutInfo.visibleItemsInfo.size - 1).coerceAtLeast(first)
-        val needScroll = segments.isNotEmpty() &&
-                currentSegmentIndex != lastScrolledIndex &&
-                (currentSegmentIndex < first || currentSegmentIndex > last)
-        if (needScroll && !isScrolling) {
-            isScrolling = true
+        val last = (first + listState.layoutInfo.visibleItemsInfo.size - 3).coerceAtLeast(first)
+        if (
+            segments.isNotEmpty() &&
+            currentSegmentIndex != lastScrolledIndex &&
+            (currentSegmentIndex < first || currentSegmentIndex > last)
+        ) {
             listState.animateScrollToItem(currentSegmentIndex)
-            isScrolling = false
             lastScrolledIndex = currentSegmentIndex
         }
     }
+
+//    LaunchedEffect(currentSegmentIndex) {
+//        if (segments.isNotEmpty() && lastScrolledIndex != currentSegmentIndex) {
+//            listState.animateScrollToItem(currentSegmentIndex)
+//            lastScrolledIndex = currentSegmentIndex
+//        }
+//    }
+
+
     LaunchedEffect(meetingId) {
         agendaViewModel.loadAgendas(meetingId)
         meetingViewModel.loadMeetingDetail2(meetingId)
     }
 
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.firstVisibleItemScrollOffset }
-            .collectLatest { offset ->
-                isCollapsed = when {
-                    offset > 100 -> true
-                    offset == 0 -> false
-                    else -> isCollapsed
-                }
-            }
-    }
+//    LaunchedEffect(listState) {
+//        snapshotFlow { listState.firstVisibleItemScrollOffset }
+//            .collectLatest { offset ->
+//                isCollapsed = when {
+//                    offset > 100 -> true
+//                    offset == 0 -> false
+//                    else -> isCollapsed
+//                }
+//            }
+//    }
+
+//    LaunchedEffect(isPlaying, listState) {
+//        snapshotFlow { listState.firstVisibleItemScrollOffset }
+//            .collectLatest { offset ->
+//                isCollapsed = when {
+//                    isPlaying -> true
+//                    offset > 100 -> true
+//                    offset == 0 -> false
+//                    else -> isCollapsed
+//                }
+//            }
+//    }
 
     if (!isLoading) {
         Column(modifier = Modifier
@@ -146,7 +165,6 @@ fun CompletedMeetingRecordScreen(
                 title = title,
                 location = location,
                 scheduledStartTime = scheduledStartTime,
-                summary = summary,
                 agendaItems = agendas,
                 lastCheckedIndex = lastCheckedIndex,
                 navController = navController,
@@ -159,6 +177,7 @@ fun CompletedMeetingRecordScreen(
             LazyColumn(
                 state = listState,
                 modifier = Modifier
+                    .weight(1f)
                     .fillMaxSize()
             ) {
                 itemsIndexed(segments) { index, segment ->
@@ -180,7 +199,11 @@ fun CompletedMeetingRecordScreen(
                         time = DateTimeUtils.getElapsedString(startMillis, segment.timestamp),
                         prevId = prevId,
                         nextId = nextId,
-                        highlighted = (index == currentSegmentIndex) && isPlaying
+                        highlighted = (index == currentSegmentIndex) && isPlaying,
+                        onSegmentClick = { clickedTimestamp ->
+                            val seekMillis = DateTimeUtils.isoToMillis(clickedTimestamp) - startMillis
+                            onSeekToPosition(seekMillis.coerceAtLeast(0L))
+                        }
                     )
 
                     if (index == segments.lastIndex) {
@@ -200,7 +223,6 @@ fun HeaderSection(
     title: String,
     location: String,
     scheduledStartTime: String,
-    summary: String,
     agendaItems: List<AgendaItem>,
     lastCheckedIndex: MutableState<Int>,
     navController: NavController,
@@ -212,9 +234,119 @@ fun HeaderSection(
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
     ) {
+//        Column(modifier = Modifier.fillMaxWidth()) {
+//            //AnimatedVisibility(visible = !isCollapsed) {
+//                Column {
+//                    Row(
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .padding(top = 12.dp)
+//                            .clickable(
+//                                interactionSource = remember { MutableInteractionSource() },
+//                                indication = null
+//                            ) { onToggleCollapse() },
+//                        verticalAlignment = Alignment.Top
+//                    ) {
+//                        Box(
+//                            modifier = Modifier.weight(1f)
+//                        ) {
+//                            Column {
+//                                Text(
+//                                    text = DateTimeUtils.localIsoToDateString(scheduledStartTime) + ", $location",
+//                                    fontFamily = Pretend,
+//                                    fontWeight = FontWeight.Medium,
+//                                    color = tertiary,
+//                                    fontSize = 13.sp
+//                                )
+//                                Spacer(Modifier.height(8.dp))
+//                                Text(
+//                                    text = title,
+//                                    color = Color.Black,
+//                                    fontFamily = Pretend,
+//                                    fontWeight = FontWeight.Bold,
+//                                    fontSize = 21.sp,
+//                                )
+//                            }
+//                        }
+//                        Box(
+//                            modifier = Modifier
+//                                .wrapContentWidth()
+//                                .height(32.dp),
+//                            contentAlignment = Alignment.TopEnd
+//                        ) {
+//                            Image(
+//                                painter = painterResource(id = R.drawable.home),
+//                                contentDescription = "홈으로",
+//                                modifier = Modifier
+//                                    .size(26.dp)
+//                                    .clickable(
+//                                        interactionSource = remember { MutableInteractionSource() },
+//                                        indication = null
+//                                    ) {
+//                                        navController.navigate(SilRokNavigation.Home.route) {
+//                                            popUpTo(0)
+//                                        }
+//                                    }
+//                            )
+//                        }
+//                    }
+//                    Column(modifier = Modifier.fillMaxWidth()) {
+//                        Row(
+//                            modifier = Modifier
+//                                .fillMaxWidth()
+//                                .padding(top = 12.dp)
+//                                .clickable(
+//                                    interactionSource = remember { MutableInteractionSource() },
+//                                    indication = null
+//                                ) { onToggleAgenda() },
+//                            verticalAlignment = Alignment.CenterVertically
+//                        ) {
+//                            Image(
+//                                painter = painterResource(id = R.drawable.expand2),
+//                                contentDescription = "토글 화살표",
+//                                modifier = Modifier
+//                                    .size(24.dp)
+//                                    .rotate(if (isExpanded) 90f else 0f)
+//                            )
+//                            Spacer(modifier = Modifier.width(8.dp))
+//                            Text(
+//                                text = "아젠다",
+//                                fontFamily = Pretend,
+//                                fontSize = 16.sp,
+//                                fontWeight = FontWeight.Bold
+//                            )
+//                        }
+//                        if (isExpanded) {
+//                            Column(
+//                                modifier = Modifier
+//                                    .fillMaxWidth()
+//                                    .padding(horizontal = 32.dp)
+//                            ) {
+//                                agendaItems.forEachIndexed { i, item ->
+//                                    CheckItem(
+//                                        text = item.text,
+//                                        checked = item.isCompleted,
+//                                        isFocused = false,
+//                                        onToggle = {
+//                                            lastCheckedIndex.value = i
+//                                        },
+//                                        topPadding = 8.dp
+//                                    )
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            //}
+//
+//            MeetingTabRow(selectedTab = selectedTab, onTabClick = onTabClick)
+//        }
         Column(modifier = Modifier.fillMaxWidth()) {
-            AnimatedVisibility(visible = !isCollapsed) {
-                Column {
+            if (!isCollapsed) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -222,12 +354,10 @@ fun HeaderSection(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
-                            ) { onToggleCollapse() },
+                            ) { onToggleCollapse() }, // 클릭 시 접기
                         verticalAlignment = Alignment.Top
                     ) {
-                        Box(
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        Box(modifier = Modifier.weight(1f)) {
                             Column {
                                 Text(
                                     text = DateTimeUtils.localIsoToDateString(scheduledStartTime) + ", $location",
@@ -268,6 +398,8 @@ fun HeaderSection(
                             )
                         }
                     }
+
+                    // 아젠다
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier
@@ -315,10 +447,31 @@ fun HeaderSection(
                         }
                     }
                 }
+            } else {
+                // 접혀 있을 때도 클릭할 수 있도록 Row만 보여주기
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onToggleCollapse() }
+                        .padding(top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = title,
+                        fontFamily = Pretend,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Color.Black
+                    )
+                }
             }
 
             MeetingTabRow(selectedTab = selectedTab, onTabClick = onTabClick)
         }
+
     }
 }
 

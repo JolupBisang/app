@@ -31,7 +31,7 @@ fun MeetingTabRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 24.dp, bottom = 12.dp),
+            .padding(top = 16.dp, bottom = 12.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {

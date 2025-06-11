@@ -248,6 +248,10 @@ fun CompletedMeetingContent(
                         selectedTab = pagerState.currentPage,
                         onTabClick = { idx ->
                             coroutineScope.launch { pagerState.animateScrollToPage(idx) }
+                        },
+                        onTimeClick = { seekMillis ->
+                            playbackPosition = seekMillis
+                            coroutineScope.launch { pagerState.animateScrollToPage(1) }
                         }
                     )
                     1 -> CompletedMeetingRecordScreen(
@@ -260,7 +264,10 @@ fun CompletedMeetingContent(
                             coroutineScope.launch { pagerState.animateScrollToPage(idx) }
                         },
                         playbackPosition = playbackPosition,
-                        isPlaying = isPlaying
+                        isPlaying = isPlaying,
+                        onSeekToPosition = { newPosition ->
+                            playbackPosition = newPosition
+                        }
                     )
                     2 -> CompletedMeetingFeedbackScreen(
                         feedbackList = feedbackList,
@@ -268,6 +275,10 @@ fun CompletedMeetingContent(
                         selectedTab = pagerState.currentPage,
                         onTabClick = { idx ->
                             coroutineScope.launch { pagerState.animateScrollToPage(idx) }
+                        },
+                        onTimeClick = { seekMillis ->
+                            playbackPosition = seekMillis
+                            coroutineScope.launch { pagerState.animateScrollToPage(1) }
                         }
                     )
                 }
@@ -289,6 +300,10 @@ fun CompletedMeetingContent(
                     .fillMaxWidth()
                     .navigationBarsPadding(),
                 onPlayingChanged = { isPlaying = it },
+                onExternalSeek = { seekToMillis ->
+                    // AudioPlayerBar 외부에서 seekTo 요청이 왔을 때 처리
+                    // (이 경우 CompletedMeetingRecordScreen의 onSeekToPosition이 currentPlaybackPosition을 업데이트하면 AudioPlayerBar의 LaunchedEffect(currentPosition)에서 자동으로 seekTo가 호출됨)
+                }
             )
         }
     }

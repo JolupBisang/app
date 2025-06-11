@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "932599841827",
+    "project_id": "sillok-77748",
+    "storage_bucket": "sillok-77748.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:932599841827:android:d4602ec380161889495d96",
+        "android_client_info": {
+          "package_name": "com.imhungry.jjongseol"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTvTrPtGpw17cLWCs60BBunWtCfIgckjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

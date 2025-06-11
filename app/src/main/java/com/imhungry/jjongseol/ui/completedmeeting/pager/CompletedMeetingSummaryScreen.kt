@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,11 +59,12 @@ fun CompletedMeetingSummaryScreen(
     startMillis: Long,
     selectedTab: Int,
     onTabClick: (Int) -> Unit,
+    onTimeClick: (Long) -> Unit
 ) {
-    var isExpanded by remember { mutableStateOf(true) }
-    var isExpanded2 by remember { mutableStateOf(true) }
-    var isExpanded3 by remember { mutableStateOf(true) }
-    var isExpanded4 by remember { mutableStateOf(true) }
+    var isExpanded by rememberSaveable { mutableStateOf(true) }
+    var isExpanded2 by rememberSaveable { mutableStateOf(true) }
+    var isExpanded3 by rememberSaveable { mutableStateOf(true) }
+    var isExpanded4 by rememberSaveable { mutableStateOf(true) }
 
     val data = listOf(80.0, 20.0)
     val names = listOf("유진", "은경")
@@ -195,9 +197,14 @@ fun CompletedMeetingSummaryScreen(
                                 .fillMaxWidth()
                         ) {
                             summarys.forEachIndexed { index, summary ->
+                                val elapsedMillis = DateTimeUtils.isoToMillis(summary.timestamp) - startMillis
                                 val elapsed = DateTimeUtils.getElapsedString(startMillis, summary.timestamp)
-                                SummaryListItem(summary.content, elapsed)
-                                Spacer(Modifier.height(14.dp))
+                                SummaryListItem(
+                                    summary = summary.content,
+                                    timeText = elapsed,
+                                    onClick = { onTimeClick(elapsedMillis.coerceAtLeast(0L)) }
+                                )
+                                Spacer(Modifier.height(16.dp))
                                 if (index == summarys.lastIndex) {
                                     Spacer(Modifier.height(28.dp))
                                 }
