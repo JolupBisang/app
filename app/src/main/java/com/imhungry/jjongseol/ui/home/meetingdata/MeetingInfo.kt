@@ -6,5 +6,6 @@ data class MeetingInfo(
     val id: Long,
     val title: String,
     val startDateTime: LocalDateTime,
-    val endDateTime: LocalDateTime
+    val endDateTime: LocalDateTime,
+    val status: String
 )

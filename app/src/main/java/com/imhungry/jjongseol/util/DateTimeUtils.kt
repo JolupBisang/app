@@ -10,16 +10,25 @@ import java.util.Locale
 
 object DateTimeUtils {
     fun isoToMillis(isoTimestamp: String): Long {
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]")
-        val localDateTime = LocalDateTime.parse(isoTimestamp, formatter)
+        val patterns = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss"
+        )
 
-        val utcZoned = localDateTime.atZone(ZoneOffset.UTC)
+        for (pattern in patterns) {
+            try {
+                val formatter = DateTimeFormatter.ofPattern(pattern)
+                val localDateTime = LocalDateTime.parse(isoTimestamp, formatter)
+                val utcZoned = localDateTime.atZone(ZoneOffset.UTC)
+                val koreaZoned = utcZoned.withZoneSameInstant(ZoneId.of("Asia/Seoul"))
+                return koreaZoned.toInstant().toEpochMilli()
+            } catch (e: Exception) {
+                // 패턴 불일치 → 다음 패턴 시도
+            }
+        }
 
-        val koreaZoneId = ZoneId.of("Asia/Seoul")
-        val koreaZoned = utcZoned.withZoneSameInstant(koreaZoneId)
-
-        val millis = koreaZoned.toInstant().toEpochMilli()
-        return millis
+        throw IllegalArgumentException("지원되지 않는 ISO 포맷: $isoTimestamp")
     }
 
     fun koreanIsoToMillis(isoTimestamp: String): Long {

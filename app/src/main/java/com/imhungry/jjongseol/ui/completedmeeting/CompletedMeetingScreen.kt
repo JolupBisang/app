@@ -188,8 +188,23 @@ fun CompletedMeetingContent(
     // 중간 요약
     val recapSummaryViewModel: SummaryViewModel = hiltViewModel(key = "recap")
     val recapSummaries by recapSummaryViewModel.summaries.collectAsState()
-
+    var startTime by remember { mutableStateOf<String?>(null) }
+    var endTime by remember { mutableStateOf<String?>(null) }
+    var startMillis by remember { mutableStateOf<Long?>(null) }
+    var endMillis by remember { mutableStateOf<Long?>(null) }
     LaunchedEffect(meetingId) {
+        val db = FirebaseFirestore.getInstance()
+        val meetingRef = db.collection("meetings").document(meetingId.toString())
+        meetingRef.get().addOnSuccessListener { document ->
+            if (document != null && document.exists()) {
+                val start = document.getString("startTime")
+                val end = document.getString("endTime")
+                startTime = start
+                endTime = end
+                startMillis = start?.let { DateTimeUtils.isoToMillis(it) }
+                endMillis = endTime?.let { DateTimeUtils.isoToMillis(it) }
+            }
+        }
         meetingViewModel.loadMeetingDetail2(meetingId)
         segmentViewModel.loadSegments(meetingId, reset = true)
         audioViewModel.loadAudioList(meetingId)
@@ -205,19 +220,6 @@ fun CompletedMeetingContent(
     val myAudioUrl = audioList.firstOrNull { it.userId == id }?.presignedUrl
 
     var playbackPosition by remember { mutableStateOf(0L) }
-    var startTime by remember { mutableStateOf<String?>(null) }
-    var endTime by remember { mutableStateOf<String?>(null) }
-    var startmillis by remember { mutableStateOf<Long?>(null) }
-    val db = FirebaseFirestore.getInstance()
-    val meetingRef = db.collection("meetings").document(meetingId.toString())
-    startmillis = startTime?.let { DateTimeUtils.isoToMillis(it) }
-    meetingRef.get().addOnSuccessListener { document ->
-        if (document != null && document.exists()) {
-            startTime = document.getString("startTime")
-            endTime = document.getString("endTime")
-        } else {
-        }
-    }
     var currentPosition by remember { mutableStateOf(0f) }
     var isPlaying by remember { mutableStateOf(false) }
     var playbackSpeed by remember { mutableStateOf(1.0f) }
@@ -237,22 +239,62 @@ fun CompletedMeetingContent(
             .fillMaxSize()
             .background(primaryBackground)
     ) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-        ) {
-            HorizontalPager(
-                count = 3,
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) { page ->
-                when (page) {
-                    0 -> meetingDetail?.let {
-                        CompletedMeetingSummaryScreen(
-                            summarys = recapSummaries,
-                            fullSummary = summaries,
-                            startMillis = startmillis!!,
+
+        if (startMillis != null && endTime != null && meetingDetail != null) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                HorizontalPager(
+                    count = 3,
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    when (page) {
+                        0 -> meetingDetail?.let {
+                            CompletedMeetingSummaryScreen(
+                                summarys = recapSummaries,
+                                fullSummary = summaries,
+                                startMillis = startMillis!!,
+                                endMillis = endMillis!!,
+                                selectedTab = pagerState.currentPage,
+                                onTabClick = { idx ->
+                                    coroutineScope.launch { pagerState.animateScrollToPage(idx) }
+                                },
+                                onTimeClick = { seekMillis ->
+                                    playbackPosition = seekMillis
+                                    coroutineScope.launch { pagerState.animateScrollToPage(1) }
+                                },
+                                meetingDetail = it,
+                                userParticipationRates = participationRates,
+                                summaryViewModel = summaryViewModel,
+                                meetingId = meetingId
+                            )
+                        }
+                        1 -> meetingDetail?.let {
+                            CompletedMeetingRecordScreen(
+                                meetingId = meetingId,
+                                navController = navController,
+                                segments = segments,
+                                startMillis = startMillis!!,
+                                selectedTab = pagerState.currentPage,
+                                onTabClick = { idx ->
+                                    coroutineScope.launch { pagerState.animateScrollToPage(idx) }
+                                },
+                                playbackPosition = playbackPosition,
+                                isPlaying = isPlaying,
+                                onSeekToPosition = { newPosition ->
+                                    playbackPosition = newPosition
+                                },
+                                meetingDetail = it,
+                                currentUserId = id!!,
+                                segmentViewModel = segmentViewModel,
+                            )
+                        }
+                        2 -> CompletedMeetingFeedbackScreen(
+                            feedbackList = feedbackList,
+                            startMillis = startMillis!!,
                             selectedTab = pagerState.currentPage,
                             onTabClick = { idx ->
                                 coroutineScope.launch { pagerState.animateScrollToPage(idx) }
@@ -261,71 +303,33 @@ fun CompletedMeetingContent(
                                 playbackPosition = seekMillis
                                 coroutineScope.launch { pagerState.animateScrollToPage(1) }
                             },
-                            meetingDetail = it,
-                            userParticipationRates = participationRates,
-                            summaryViewModel = summaryViewModel,
-                            meetingId = meetingId,
-                            endTime = endTime!!
+                            feedbackViewModel = feedbackViewModel,
+                            meetingId = meetingId
                         )
                     }
-                    1 -> meetingDetail?.let {
-                        CompletedMeetingRecordScreen(
-                            meetingId = meetingId,
-                            navController = navController,
-                            segments = segments,
-                            startMillis = startmillis!!,
-                            selectedTab = pagerState.currentPage,
-                            onTabClick = { idx ->
-                                coroutineScope.launch { pagerState.animateScrollToPage(idx) }
-                            },
-                            playbackPosition = playbackPosition,
-                            isPlaying = isPlaying,
-                            onSeekToPosition = { newPosition ->
-                                playbackPosition = newPosition
-                            },
-                            meetingDetail = it,
-                            currentUserId = id!!,
-                            segmentViewModel = segmentViewModel,
-                        )
-                    }
-                    2 -> CompletedMeetingFeedbackScreen(
-                        feedbackList = feedbackList,
-                        startMillis = startmillis!!,
-                        selectedTab = pagerState.currentPage,
-                        onTabClick = { idx ->
-                            coroutineScope.launch { pagerState.animateScrollToPage(idx) }
-                        },
-                        onTimeClick = { seekMillis ->
-                            playbackPosition = seekMillis
-                            coroutineScope.launch { pagerState.animateScrollToPage(1) }
-                        },
-                        feedbackViewModel = feedbackViewModel,
-                        meetingId = meetingId
-                    )
                 }
+                CustomHorizontalPagerIndicator(
+                    pagerState = pagerState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 8.dp),
+                )
             }
-            CustomHorizontalPagerIndicator(
-                pagerState = pagerState,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 8.dp),
-            )
-        }
-
-        if (!myAudioUrl.isNullOrEmpty()) {
-            AudioPlayerBar(
-                audioUrl = myAudioUrl,
-                currentPosition = playbackPosition,
-                onPositionChange = { playbackPosition = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding(),
-                onPlayingChanged = { isPlaying = it },
-                onExternalSeek = { seekToMillis ->
-                    // AudioPlayerBar 외부에서 seekTo 요청이 왔을 때 처리
-                    // (이 경우 CompletedMeetingRecordScreen의 onSeekToPosition이 currentPlaybackPosition을 업데이트하면 AudioPlayerBar의 LaunchedEffect(currentPosition)에서 자동으로 seekTo가 호출됨)
-                }
-            )
+            if (!myAudioUrl.isNullOrEmpty()) {
+                AudioPlayerBar(
+                    audioUrl = myAudioUrl,
+                    currentPosition = playbackPosition,
+                    onPositionChange = { playbackPosition = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding(),
+                    onPlayingChanged = { isPlaying = it },
+                    onExternalSeek = { seekToMillis ->
+                        // AudioPlayerBar 외부에서 seekTo 요청이 왔을 때 처리
+                        // (이 경우 CompletedMeetingRecordScreen의 onSeekToPosition이 currentPlaybackPosition을 업데이트하면 AudioPlayerBar의 LaunchedEffect(currentPosition)에서 자동으로 seekTo가 호출됨)
+                    }
+                )
+            }
         }
     }
 }

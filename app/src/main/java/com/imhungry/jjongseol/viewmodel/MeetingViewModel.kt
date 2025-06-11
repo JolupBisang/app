@@ -431,8 +431,13 @@ class MeetingViewModel @Inject constructor(
     private fun splitAndSortMeetings(meetings: List<MeetingInfo>): Pair<List<MeetingInfo>, List<MeetingInfo>> {
         val now = LocalDateTime.now()
 
-        val (upcoming, past) = meetings.partition {
+        val upcoming = meetings.filter {
             it.startDateTime.toLocalDate() >= now.toLocalDate()
+                    && it.status != "COMPLETED"
+        }
+        val past = meetings.filter {
+            it.startDateTime.toLocalDate() < now.toLocalDate()
+                    || it.status == "COMPLETED"
         }
 
         val sortedUpcoming = upcoming.sortedWith(

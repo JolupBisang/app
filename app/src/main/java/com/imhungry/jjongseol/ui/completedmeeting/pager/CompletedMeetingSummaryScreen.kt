@@ -72,7 +72,7 @@ fun CompletedMeetingSummaryScreen(
     userParticipationRates: List<UserParticipationRate>,
     summaryViewModel: SummaryViewModel,
     meetingId: Long,
-    endTime: String
+    endMillis: Long
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(true) }
     var isExpanded2 by rememberSaveable { mutableStateOf(true) }
@@ -82,7 +82,6 @@ fun CompletedMeetingSummaryScreen(
     val rateList = sortedRates.map { it.rate }
     val nicknameList = sortedRates.map { it.nickname }
     val isLoading by summaryViewModel.isLoading.collectAsState()
-    val endmillis = DateTimeUtils.koreanIsoToMillis(endTime)
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(primaryBackground)
@@ -115,10 +114,10 @@ fun CompletedMeetingSummaryScreen(
                                 Text(text = "~", style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(15.dp))
-                                Text(text = DateTimeUtils.millisToHourMinute(endmillis), style = MaterialTheme.typography.bodyLarge,
+                                Text(text = DateTimeUtils.millisToHourMinute(endMillis), style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                                 Spacer(Modifier.width(32.dp))
-                                Text(text = "${DateTimeUtils.getMinutesBetweenMillis(startMillis, endmillis)}분", style = MaterialTheme.typography.bodyLarge,
+                                Text(text = "${DateTimeUtils.getMinutesBetweenMillis(startMillis, endMillis)}분", style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                             }
                             Row(
@@ -199,12 +198,14 @@ fun CompletedMeetingSummaryScreen(
                     onToggle = { isExpanded4 = !isExpanded4 },
                     showDivider = false,
                     content = {
-                        LazyColumn(
+                        Column(
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            itemsIndexed(summarys) { index, summary ->
-                                val elapsedMillis = DateTimeUtils.isoToMillis(summary.timestamp) - startMillis
-                                val elapsed = DateTimeUtils.getElapsedString(startMillis, summary.timestamp)
+                            summarys.forEachIndexed { index, summary ->
+                                val elapsedMillis =
+                                    DateTimeUtils.isoToMillis(summary.timestamp) - startMillis
+                                val elapsed =
+                                    DateTimeUtils.getElapsedString(startMillis, summary.timestamp)
                                 SummaryListItem(
                                     summary = summary.content,
                                     timeText = elapsed,

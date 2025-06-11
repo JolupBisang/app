@@ -14,5 +14,5 @@ data class MeetingResponse(
 fun MeetingResponse.toMeetingInfo(): MeetingInfo {
     val start = LocalDateTime.parse(scheduledStartTime)
     val end = start.plusMinutes(targetTime.toLong())
-    return MeetingInfo(id, title, start, end)
+    return MeetingInfo(id, title, start, end, status)
 }
