@@ -215,14 +215,14 @@ class AudioWebSocketClient(
             disconnect()
             return
         }
-       // tryReconnect()
+        tryReconnect()
     }
 
     override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
         Log.e("Audio", "WebSocket 실패: ${t.message}")
         stopRecording()
         //onError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
-       // tryReconnect()
+        tryReconnect()
     }
 
     private fun tryReconnect() {

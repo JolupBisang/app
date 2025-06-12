@@ -207,7 +207,7 @@ class MeetingSseService : Service() {
             override fun onClosed(source: EventSource) {
                 Log.d("Audio", "SSE 연결 종료, 재연결 시도")
                 isConnecting = false
-               // reconnectSse(meetingId)
+                reconnectSse(meetingId)
             }
             override fun onFailure(source: EventSource, t: Throwable?, response: Response?) {
                 Log.e(
@@ -217,7 +217,7 @@ class MeetingSseService : Service() {
                 isConnecting = false
                 //ErrorEventRepository.emitError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
 
-               // reconnectSse(meetingId)
+                reconnectSse(meetingId)
             }
         }
 
