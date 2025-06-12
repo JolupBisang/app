@@ -88,10 +88,10 @@ fun MeetingSummaryScreen(
     //val participantNames = sortedRates.map { nicknameMap[it.userId] ?: "알 수 없음" }
     var expanded by remember { mutableStateOf(true) }
 
-    LaunchedEffect(summaries) {
-        val summaryDtos = summaries.map { SummaryDto(it.timestamp, it.content) }
-        meetingViewModel.setSummaryList(summaryDtos)
-    }
+//    LaunchedEffect(summaries) {
+//        val summaryDtos = summaries.map { SummaryDto(it.timestamp, it.content) }
+//        meetingViewModel.setSummaryList(summaryDtos)
+//    }
 
     val (participantData, participantNames) = remember(usrParticipationRates, participationRates) {
         if (usrParticipationRates.isNotEmpty()) {

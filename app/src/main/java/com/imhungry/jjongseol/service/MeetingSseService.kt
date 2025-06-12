@@ -184,12 +184,10 @@ class MeetingSseService : Service() {
                             val list = mutableListOf<ParticipationRateDto>()
                             for (i in 0 until ratesArray.length()) {
                                 val obj = ratesArray.getJSONObject(i)
-                                val keys = obj.keys()
-                                while (keys.hasNext()) {
-                                    val key = keys.next()
-                                    val userId = key.toLongOrNull() ?: continue
+                                val userId = obj.optLong("userId", -1L)
+                                val rate = obj.optDouble("rate", 0.0)
+                                if (userId != -1L) {
                                     Log.d("SSE", "participation userId: $userId")
-                                    val rate = obj.optDouble(key, 0.0)
                                     Log.d("SSE", "participation rate: $rate")
                                     list.add(ParticipationRateDto(userId, rate))
                                 }
