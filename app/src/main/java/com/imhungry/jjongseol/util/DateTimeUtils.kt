@@ -45,7 +45,7 @@ object DateTimeUtils {
 
     fun getElapsedString(startMillis: Long?, isoTimestamp: String): String {
         if (startMillis == null) return "00:00:00"
-        val millis = koreanIsoToMillis(isoTimestamp)
+        val millis = isoToMillis(isoTimestamp)
         val elapsed = ((millis - startMillis) / 1000).coerceAtLeast(0)
         val h = elapsed / 3600
         val m = (elapsed % 3600) / 60
