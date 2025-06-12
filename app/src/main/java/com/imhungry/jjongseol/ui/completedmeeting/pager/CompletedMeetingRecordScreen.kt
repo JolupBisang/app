@@ -80,7 +80,7 @@ fun CompletedMeetingRecordScreen(
     var isScrolling by remember { mutableStateOf(false) }
         // 1. 재생 위치에 해당하는 segment index 찾기
     val currentSegmentIndex = segments.indexOfLast { segment ->
-        val elapsed = DateTimeUtils.isoToMillis(segment.timestamp) - startMillis
+        val elapsed = DateTimeUtils.koreanIsoToMillis(segment.timestamp) - startMillis
         elapsed <= playbackPosition
     }.coerceAtLeast(0)
 
@@ -94,10 +94,8 @@ fun CompletedMeetingRecordScreen(
             currentSegmentIndex != lastScrolledIndex &&
             (currentSegmentIndex < first || currentSegmentIndex > last)
         ) {
-            if (isPlaying) {
-                listState.animateScrollToItem(currentSegmentIndex)
-                lastScrolledIndex = currentSegmentIndex
-            }
+            listState.animateScrollToItem(currentSegmentIndex)
+            lastScrolledIndex = currentSegmentIndex
         }
     }
 

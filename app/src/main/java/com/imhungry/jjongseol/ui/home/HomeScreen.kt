@@ -71,6 +71,7 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
+import com.imhungry.jjongseol.ui.theme.whiteColor
 import kotlinx.coroutines.delay
 
 
@@ -93,7 +94,7 @@ fun HomeScreen(navController: NavController) {
         meetingId = appPrefs.getRunningMeetingId()
         Log.d("HomeScreen", "포그라운드 서비스 실행 중? $isRunning, 실행 중인 회의 ID: $meetingId")
     }
-    SetNavigationBarColor(BasicBackGround)
+    SetNavigationBarColor(Color(0x00FFFFFF))
 
     ModalNavigationDrawer(
         drawerState = drawerState,

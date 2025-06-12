@@ -96,6 +96,7 @@ fun MeetingDetailScreen(
         modifier = Modifier
             .background(Color.White)
             .fillMaxSize()
+            .padding(WindowInsets.navigationBars.asPaddingValues())
     ) {
         val scrollList = createRef()
 
@@ -379,9 +380,9 @@ fun MeetingDetailScreen(
                     )
                     {
                         Text(
-                            "쉬는 시간",
+                            "쉬는\n시간",
                             modifier = Modifier
-                                .height(20.dp)
+                                .height(40.dp)
                                 .weight(1f),
                             style = TextStyle(
                                 color = Color.Black,

@@ -114,7 +114,7 @@ fun MeetingCard(
                                     context.stopService(Intent(context, MeetingSseService::class.java))
                                 }
                                 onDismiss() }
-                            .padding(vertical = 8.dp, horizontal = 25.dp),
+                            .padding(vertical = 8.dp, horizontal = 15.dp),
                         color = Color.DarkGray,
                         fontSize = 15.sp
                     )
@@ -123,7 +123,7 @@ fun MeetingCard(
                         text = if (isConnectedMeeting) "다시 참여하기" else "바로 참여하기",
                         modifier = Modifier
                             .clickable { onJoin() }
-                            .padding(vertical = 8.dp, horizontal = 25.dp),
+                            .padding(vertical = 8.dp, horizontal = 15.dp),
                         color = UserGreen1,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp

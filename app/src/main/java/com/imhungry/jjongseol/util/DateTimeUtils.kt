@@ -12,6 +12,8 @@ object DateTimeUtils {
     fun isoToMillis(isoTimestamp: String): Long {
         val patterns = listOf(
             "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSS",
             "yyyy-MM-dd'T'HH:mm:ss.SSS",
             "yyyy-MM-dd'T'HH:mm:ss"
         )
@@ -42,7 +44,7 @@ object DateTimeUtils {
 
     fun getElapsedString(startMillis: Long?, isoTimestamp: String): String {
         if (startMillis == null) return "00:00:00"
-        val millis = isoToMillis(isoTimestamp)
+        val millis = koreanIsoToMillis(isoTimestamp)
         val elapsed = ((millis - startMillis) / 1000).coerceAtLeast(0)
         val h = elapsed / 3600
         val m = (elapsed % 3600) / 60

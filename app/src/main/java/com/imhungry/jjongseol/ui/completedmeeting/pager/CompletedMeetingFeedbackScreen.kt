@@ -48,7 +48,7 @@ fun CompletedMeetingFeedbackScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(feedbackList) { index, feedback ->
-                val elapsedMillis = DateTimeUtils.isoToMillis(feedback.timestamp) - startMillis
+                val elapsedMillis = DateTimeUtils.koreanIsoToMillis(feedback.timestamp) - startMillis
                 val elapsed = DateTimeUtils.getElapsedString(startMillis, feedback.timestamp)
                 if (index == 0) {
                     Spacer(modifier = Modifier.height(12.dp))

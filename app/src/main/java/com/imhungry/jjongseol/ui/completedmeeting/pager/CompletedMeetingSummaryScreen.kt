@@ -202,7 +202,7 @@ fun CompletedMeetingSummaryScreen(
                         ) {
                             summarys.forEachIndexed { index, summary ->
                                 val elapsedMillis =
-                                    DateTimeUtils.isoToMillis(summary.timestamp) - startMillis
+                                    DateTimeUtils.koreanIsoToMillis(summary.timestamp) - startMillis
                                 val elapsed =
                                     DateTimeUtils.getElapsedString(startMillis, summary.timestamp)
                                 SummaryListItem(
