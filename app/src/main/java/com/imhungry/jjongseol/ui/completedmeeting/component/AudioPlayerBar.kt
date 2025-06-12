@@ -180,7 +180,7 @@ fun AudioPlayerBar(
                                 playbackPosition = seek
                             }
                     )
-                    Spacer(Modifier.width(48.dp))
+                    Spacer(Modifier.width(40.dp))
                     Image(
                         painter = painterResource(
                             id = if (isPlaying) R.drawable.playfalse else R.drawable.playtrue
@@ -202,7 +202,7 @@ fun AudioPlayerBar(
                                 }
                             }
                     )
-                    Spacer(Modifier.width(48.dp))
+                    Spacer(Modifier.width(40.dp))
                     Image(
                         painter = painterResource(R.drawable.forward),
                         contentDescription = "5초 앞으로",

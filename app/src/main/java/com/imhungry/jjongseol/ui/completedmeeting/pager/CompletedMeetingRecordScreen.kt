@@ -152,7 +152,7 @@ fun CompletedMeetingRecordScreen(
                     nextId = nextId,
                     highlighted = (index == currentSegmentIndex) && isPlaying,
                     onSegmentClick = { clickedTimestamp ->
-                        val seekMillis = DateTimeUtils.isoToMillis(clickedTimestamp) - startMillis
+                        val seekMillis = DateTimeUtils.koreanIsoToMillis(clickedTimestamp) - startMillis
                         onSeekToPosition(seekMillis.coerceAtLeast(0L))
                     }
                 )

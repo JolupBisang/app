@@ -98,10 +98,13 @@ fun CompletedMeetingSummaryScreen(
                     onToggle = { isExpanded = !isExpanded },
                     content = {
                         Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(text = "실제 진행 시간", style = MaterialTheme.typography.labelSmall,
+                                fontFamily = Pretend, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(8.dp))
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 16.dp),
+                                    .padding(bottom = 4.dp),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -117,6 +120,10 @@ fun CompletedMeetingSummaryScreen(
                                 Text(text = "${DateTimeUtils.getMinutesBetweenMillis(startMillis, endMillis)}분", style = MaterialTheme.typography.bodyLarge,
                                     fontFamily = Pretend, fontWeight = FontWeight.Medium)
                             }
+                            Text(text = "목표 진행 시간",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontFamily = Pretend, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(8.dp))
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
