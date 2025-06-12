@@ -31,8 +31,15 @@ class ParticipationRateViewModel @Inject constructor(
                 is ParticipationRateResult.Success -> {
                     _participationRates.value = result.data.userParticipationRates
                 }
-                is ParticipationRateResult.Error -> _errorMessage.value = result.message
-                is ParticipationRateResult.Exception -> _errorMessage.value = result.throwable.message ?: "네트워크 오류"
+                is ParticipationRateResult.Error -> {
+                    _errorMessage.value = result.message
+                    _isLoading.value = false
+                }
+                is ParticipationRateResult.Exception -> {
+                    _errorMessage.value = result.throwable.message ?: "네트워크 오류"
+                    _isLoading.value = false
+                }
+                else -> {}
             }
             _isLoading.value = false
         }

@@ -1,5 +1,6 @@
 package com.imhungry.jjongseol.ui.home
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -16,7 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.google.firebase.firestore.FirebaseFirestore
 import com.imhungry.jjongseol.ui.home.meetingdata.ScheduledMeeting
+import com.imhungry.jjongseol.ui.login.LoginScreen
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 
 @Composable
@@ -33,7 +36,19 @@ fun ScheduledMeetingScreen(navController: NavController, viewModel: MeetingViewM
             viewModel.loadMeetings()
         }
     }
-
+    DisposableEffect(Unit) {
+        val db = FirebaseFirestore.getInstance()
+        val listener = db.collection("meetings")
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) return@addSnapshotListener
+                if (snapshots != null && !snapshots.isEmpty) {
+                    viewModel.refreshMeetings()
+                }
+            }
+        onDispose {
+            listener.remove()
+        }
+    }
 
     Column(
         modifier = Modifier

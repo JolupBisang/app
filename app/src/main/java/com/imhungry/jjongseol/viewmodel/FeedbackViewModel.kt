@@ -50,4 +50,35 @@ class FeedbackViewModel @Inject constructor(
             _isLoading.value = false
         }
     }
+
+    fun loadAllFeedbacks(meetingId: Long) {
+        _feedbacks.value = emptyList()
+        var page = 0
+        var hasNextPage = true
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            while (hasNextPage) {
+                when (val result = repository.getFeedbacks(meetingId, page)) {
+                    is FeedbackResult.Success -> {
+                        val slice = result.data
+                        _feedbacks.value = _feedbacks.value + slice.content
+                        hasNextPage = !slice.last
+                        page += 1
+                    }
+                    is FeedbackResult.Error -> {
+                        _errorMessage.value = result.message
+                        hasNextPage = false
+                        _isLoading.value = false
+                    }
+                    is FeedbackResult.Exception -> {
+                        _errorMessage.value = result.throwable.message ?: "네트워크 오류"
+                        hasNextPage = false
+                        _isLoading.value = false
+                    }
+                }
+            }
+            _isLoading.value = false
+        }
+    }
 }

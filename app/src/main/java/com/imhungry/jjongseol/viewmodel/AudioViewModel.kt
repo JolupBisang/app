@@ -46,6 +46,8 @@ class AudioViewModel @Inject constructor(
                 is AudioResult.Exception -> {
                     _errorMessage.value = result.throwable.message ?: "네트워크 오류"
                 }
+
+                else -> {}
             }
         }
     }

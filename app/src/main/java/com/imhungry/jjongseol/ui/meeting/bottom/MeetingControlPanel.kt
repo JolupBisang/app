@@ -83,7 +83,7 @@ fun MeetingControlPanel(
             .fillMaxWidth()
             .wrapContentHeight()
             .navigationBarsPadding()
-            .padding(top = 12.dp, bottom = 16.dp, start = 20.dp, end = 20.dp)
+            .padding(top = 12.dp, bottom = 24.dp, start = 20.dp, end = 20.dp)
     ) {
         Box(
             modifier = Modifier.fillMaxWidth()

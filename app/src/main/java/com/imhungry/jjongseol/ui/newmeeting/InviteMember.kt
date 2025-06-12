@@ -50,75 +50,77 @@ fun SearchScreen(
     val scope = rememberCoroutineScope()
 
     Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
-                .clip(RoundedCornerShape(10.dp))
-        ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = {
-                    query = it
-                    matchedEmail = null
-                    errorMessage = null
-                },
-                singleLine = true,
-                textStyle = TextStyle(fontSize = 16.sp),
-                placeholder = {
-                    Text("이름, 이메일, 팀으로 검색", color = Color.LightGray, fontSize = 13.sp)
-                },
+        if (enabled) {
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .padding(end = 0.dp),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    textColor = Color.Black,
-                    cursorColor = Color.Black,
-                    backgroundColor = Color.Transparent,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    disabledBorderColor = Color.Transparent,
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .border(1.dp, Color.Gray, RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(10.dp))
+            ) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = {
+                        query = it
+                        matchedEmail = null
+                        errorMessage = null
+                    },
+                    singleLine = true,
+                    textStyle = TextStyle(fontSize = 16.sp),
+                    placeholder = {
+                        Text("이름, 이메일, 팀으로 검색", color = Color.LightGray, fontSize = 13.sp)
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .padding(end = 0.dp),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        textColor = Color.Black,
+                        cursorColor = Color.Black,
+                        backgroundColor = Color.Transparent,
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        disabledBorderColor = Color.Transparent,
 
-                ),
-                enabled = enabled
-            )
+                        ),
+                    enabled = enabled
+                )
 
-            Box(
-                modifier = Modifier
-                    .width(50.dp)
-                    .fillMaxHeight()
-                    .clickable(enabled = enabled) {
-                        if (query.isNotBlank() && enabled) {
-                            scope.launch {
-                                try {
-                                    val response = userApi.getUserByEmail(query)
-                                    if (response.isSuccessful) {
-                                        matchedEmail = response.body()?.data?.email
-                                        errorMessage = null
-                                    } else if (response.code() == 404) {
-                                        matchedEmail = null
-                                        errorMessage = "사용자를 찾을 수 없습니다."
-                                    } else {
-                                        errorMessage = "오류가 발생했습니다: ${response.code()}"
+                Box(
+                    modifier = Modifier
+                        .width(50.dp)
+                        .fillMaxHeight()
+                        .clickable(enabled = enabled) {
+                            if (query.isNotBlank() && enabled) {
+                                scope.launch {
+                                    try {
+                                        val response = userApi.getUserByEmail(query)
+                                        if (response.isSuccessful) {
+                                            matchedEmail = response.body()?.data?.email
+                                            errorMessage = null
+                                        } else if (response.code() == 404) {
+                                            matchedEmail = null
+                                            errorMessage = "사용자를 찾을 수 없습니다."
+                                        } else {
+                                            errorMessage = "오류가 발생했습니다: ${response.code()}"
+                                        }
+                                    } catch (e: HttpException) {
+                                        errorMessage = "네트워크 오류: ${e.message}"
+                                    } catch (e: Exception) {
+                                        errorMessage = "예외 발생: ${e.message}"
                                     }
-                                } catch (e: HttpException) {
-                                    errorMessage = "네트워크 오류: ${e.message}"
-                                } catch (e: Exception) {
-                                    errorMessage = "예외 발생: ${e.message}"
                                 }
                             }
-                        }
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Search,
-                    contentDescription = "검색하기",
-                    modifier = Modifier.size(20.dp),
-                    tint = Color.Black
-                )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Search,
+                        contentDescription = "검색하기",
+                        modifier = Modifier.size(20.dp),
+                        tint = Color.Black
+                    )
+                }
             }
         }
 

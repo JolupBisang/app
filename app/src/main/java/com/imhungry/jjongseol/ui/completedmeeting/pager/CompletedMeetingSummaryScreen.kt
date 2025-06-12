@@ -70,8 +70,6 @@ fun CompletedMeetingSummaryScreen(
     onTimeClick: (Long) -> Unit,
     meetingDetail: MeetingDetailRes,
     userParticipationRates: List<UserParticipationRate>,
-    summaryViewModel: SummaryViewModel,
-    meetingId: Long,
     endMillis: Long
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(true) }
@@ -81,7 +79,6 @@ fun CompletedMeetingSummaryScreen(
     val sortedRates = userParticipationRates.sortedByDescending { it.rate }
     val rateList = sortedRates.map { it.rate }
     val nicknameList = sortedRates.map { it.nickname }
-    val isLoading by summaryViewModel.isLoading.collectAsState()
     Column(modifier = Modifier
         .fillMaxWidth()
         .background(primaryBackground)
@@ -158,10 +155,12 @@ fun CompletedMeetingSummaryScreen(
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp)
                         ) {
-                            ConversationSummaryBar(
-                                participantData = rateList,
-                                participantNames = nicknameList
-                            )
+                            if (rateList.isNotEmpty() && nicknameList.isNotEmpty()) {
+                                ConversationSummaryBar(
+                                    participantData = rateList,
+                                    participantNames = nicknameList
+                                )
+                            }
                         }
                     },
                     expanded = isExpanded2
@@ -214,18 +213,6 @@ fun CompletedMeetingSummaryScreen(
                                 Spacer(Modifier.height(16.dp))
                                 if (index == summarys.lastIndex) {
                                     Spacer(Modifier.height(28.dp))
-                                }
-                                if (
-                                    index == summarys.lastIndex &&
-                                    !isLoading
-                                ) {
-                                    LaunchedEffect(key1 = summarys.size) {
-                                        summaryViewModel.loadSummaries(
-                                            meetingId = meetingId,
-                                            isRecap = true,
-                                            reset = false
-                                        )
-                                    }
                                 }
                             }
                         }

@@ -167,7 +167,7 @@ private fun OthersMessage(
         } else {
             Row(
                 verticalAlignment = Alignment.Bottom,
-                modifier = Modifier.padding(start = 45.dp)
+                modifier = Modifier.padding(start = 43.dp)
             ) {
                 ChatBox(
                     text = diarizedSegment.text,

@@ -65,7 +65,7 @@ fun BreakFeedbackChecker(
                     val endTimeText = millisToKoreanTimeString(b.endMillis)
                     onAddFeedback(
                         FeedbackDto(
-                            timestamp = millisToIso(noticeTime),
+                            timestamp = millisToTimeString(noticeTime),
                             comment = "잠시 후 휴식 시간입니다.\n쉬는 시간: $startTimeText - $endTimeText"
                         )
                     )

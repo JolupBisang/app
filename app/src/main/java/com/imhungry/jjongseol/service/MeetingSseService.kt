@@ -14,6 +14,7 @@ import com.imhungry.jjongseol.BuildConfig
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.feedback.dto.FeedbackDto
 import com.imhungry.jjongseol.data.model.participationrate.dto.ParticipationRateDto
+import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.summary.dto.SummaryDto
 import com.imhungry.jjongseol.data.network.client.AudioWebSocketClient
 import com.imhungry.jjongseol.data.network.config.AppPrefs
@@ -29,6 +30,8 @@ import com.imhungry.jjongseol.data.repository.event.SummaryEventRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -204,7 +207,7 @@ class MeetingSseService : Service() {
             override fun onClosed(source: EventSource) {
                 Log.d("Audio", "SSE 연결 종료, 재연결 시도")
                 isConnecting = false
-                reconnectSse(meetingId)
+               // reconnectSse(meetingId)
             }
             override fun onFailure(source: EventSource, t: Throwable?, response: Response?) {
                 Log.e(
@@ -212,7 +215,9 @@ class MeetingSseService : Service() {
                     "SSE 연결 실패: ${t?.message}, response=${response?.code} / ${response?.message}", t
                 )
                 isConnecting = false
-                reconnectSse(meetingId)
+                //ErrorEventRepository.emitError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
+
+               // reconnectSse(meetingId)
             }
         }
 
@@ -250,6 +255,7 @@ class MeetingSseService : Service() {
         appPrefs = AppPrefs(applicationContext)
         currentMeetingId = intent?.getLongExtra("meetingId", -1L) ?: -1L
         isServiceStopped = false
+        startForeground(1, createNotification("회의 진행 중.."))
 
         if (intent?.action == ACTION_SET_MIC) {
             val micEnabled = intent.getBooleanExtra(EXTRA_MIC_ENABLED, true)
@@ -265,7 +271,6 @@ class MeetingSseService : Service() {
         }
         appPrefs.setMeetingForegroundServiceRunning(true)
         appPrefs.setRunningMeetingId(currentMeetingId)
-        startForeground(1, createNotification("회의 진행 중.."))
         connectSse(currentMeetingId)
         val token = loginRepository.getToken() ?: ""
         connectAudioWebSocket(currentMeetingId, token)

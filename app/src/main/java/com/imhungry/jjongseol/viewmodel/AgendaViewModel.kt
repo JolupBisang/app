@@ -58,6 +58,8 @@ class AgendaViewModel @Inject constructor(
                 is AgendaResult.Exception -> {
                     _errorMessage.value = result.throwable.message ?: "네트워크 오류"
                 }
+
+                else -> {}
             }
             _isLoading.value = false
         }
@@ -97,6 +99,8 @@ class AgendaViewModel @Inject constructor(
                         else -> "알 수 없는 오류"
                     }
                 }
+
+                else -> {}
             }
         }
     }
@@ -128,6 +132,8 @@ class AgendaViewModel @Inject constructor(
                         else -> "알 수 없는 오류"
                     }
                 }
+
+                else -> {}
             }
         }
     }
@@ -147,6 +153,8 @@ class AgendaViewModel @Inject constructor(
                         else -> "알 수 없는 오류"
                     }
                 }
+
+                else -> {}
             }
         }
     }
@@ -185,6 +193,8 @@ class AgendaViewModel @Inject constructor(
                                 else -> "알 수 없는 오류"
                             }
                         }
+
+                        else -> {}
                     }
                 }
             }

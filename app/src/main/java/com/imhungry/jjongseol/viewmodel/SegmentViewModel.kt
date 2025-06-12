@@ -50,4 +50,38 @@ class SegmentViewModel @Inject constructor(
             _isLoading.value = false
         }
     }
+
+    fun loadAllSegments(meetingId: Long) {
+        _segments.value = emptyList()
+        var page = 0
+        var hasNextPage = true
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            while (hasNextPage) {
+                when (val result = segmentRepository.getSegments(meetingId, page)) {
+                    is SegmentResult.Success -> {
+                        val slice = result.data
+                        _segments.value = _segments.value + slice.content
+                        hasNextPage = !slice.last
+                        page += 1
+                    }
+                    is SegmentResult.Error -> {
+                        _errorMessage.value = result.message
+                        hasNextPage = false
+                        _isLoading.value = false
+                    }
+                    is SegmentResult.Exception -> {
+                        _errorMessage.value = result.throwable.message ?: "네트워크 오류"
+                        hasNextPage = false
+                        _isLoading.value = false
+                    }
+                    else -> {
+                        hasNextPage = false
+                    }
+                }
+            }
+            _isLoading.value = false
+        }
+    }
 }

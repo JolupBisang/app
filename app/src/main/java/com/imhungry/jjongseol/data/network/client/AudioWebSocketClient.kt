@@ -116,6 +116,7 @@ class AudioWebSocketClient(
         val request = Request.Builder().url(url).build()
         val client = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).build()
         webSocket = client.newWebSocket(request, this)
+        //startDummyDiarizedSegmentTest()
     }
 
     override fun onOpen(ws: WebSocket, response: Response) {
@@ -202,7 +203,7 @@ class AudioWebSocketClient(
             }
         } catch (e: Exception) {
             Log.w("Audio", e)
-            onError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
+            //onError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
         }
     }
 
@@ -214,14 +215,14 @@ class AudioWebSocketClient(
             disconnect()
             return
         }
-        tryReconnect()
+       // tryReconnect()
     }
 
     override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
         Log.e("Audio", "WebSocket 실패: ${t.message}")
         stopRecording()
-        onError(t.message ?: "WebSocket 오류")
-        tryReconnect()
+        //onError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
+       // tryReconnect()
     }
 
     private fun tryReconnect() {
@@ -454,4 +455,24 @@ class AudioWebSocketClient(
             ) == PackageManager.PERMISSION_GRANTED
         } else true
     }
+
+
+    fun startDummyDiarizedSegmentTest() {
+        scope.launch {
+            var order = 1
+            while (isActive) {
+                val dummySegment = DiarizedSegment(
+                    userId = 1L,
+                    text = "이것은 테스트 대사 $order 입니다.",
+                    timestamp = "2025-06-12T15:03:12.000000",
+                    order = order,
+                )
+                onNewDiarizedSegment(dummySegment)
+                order++
+                delay(2000) // 2초
+            }
+        }
+    }
+
 }
+

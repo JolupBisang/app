@@ -179,13 +179,9 @@ fun CompletedMeetingContent(
     val segments by segmentViewModel.segments.collectAsState()
     val meetingDetail by meetingViewModel.meetingDetail.collectAsState()
     val audioList by audioViewModel.audioList.collectAsState()
-    val errorMessage by audioViewModel.errorMessage.collectAsState()
     val participationRates by participationRateViewModel.participationRates.collectAsState()
     val feedbackList by feedbackViewModel.feedbacks.collectAsState()
-    // 전체 요약
     val summaries by summaryViewModel.summaries.collectAsState()
-
-    // 중간 요약
     val recapSummaryViewModel: SummaryViewModel = hiltViewModel(key = "recap")
     val recapSummaries by recapSummaryViewModel.summaries.collectAsState()
     var startTime by remember { mutableStateOf<String?>(null) }
@@ -202,16 +198,16 @@ fun CompletedMeetingContent(
                 startTime = start
                 endTime = end
                 startMillis = start?.let { DateTimeUtils.isoToMillis(it) }
-                endMillis = endTime?.let { DateTimeUtils.isoToMillis(it) }
+                endMillis = endTime?.let { DateTimeUtils.koreanIsoToMillis(it) }
             }
         }
         meetingViewModel.loadMeetingDetail2(meetingId)
-        segmentViewModel.loadSegments(meetingId, reset = true)
+        segmentViewModel.loadAllSegments(meetingId)
         audioViewModel.loadAudioList(meetingId)
         participationRateViewModel.loadParticipationRates(meetingId)
+        summaryViewModel.loadAllSummaries(meetingId, isRecap = true)
         summaryViewModel.loadSummaries(meetingId, isRecap = false, reset = true)
-        recapSummaryViewModel.loadSummaries(meetingId, isRecap = true, reset = true)
-        feedbackViewModel.loadFeedbacks(meetingId, reset = true)
+        feedbackViewModel.loadAllFeedbacks(meetingId)
     }
 
     val appPrefs = remember { AppPrefs(context) }
@@ -268,8 +264,6 @@ fun CompletedMeetingContent(
                                 },
                                 meetingDetail = it,
                                 userParticipationRates = participationRates,
-                                summaryViewModel = summaryViewModel,
-                                meetingId = meetingId
                             )
                         }
                         1 -> meetingDetail?.let {
@@ -289,7 +283,6 @@ fun CompletedMeetingContent(
                                 },
                                 meetingDetail = it,
                                 currentUserId = id!!,
-                                segmentViewModel = segmentViewModel,
                             )
                         }
                         2 -> CompletedMeetingFeedbackScreen(
@@ -303,8 +296,6 @@ fun CompletedMeetingContent(
                                 playbackPosition = seekMillis
                                 coroutineScope.launch { pagerState.animateScrollToPage(1) }
                             },
-                            feedbackViewModel = feedbackViewModel,
-                            meetingId = meetingId
                         )
                     }
                 }
@@ -322,7 +313,8 @@ fun CompletedMeetingContent(
                     onPositionChange = { playbackPosition = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .navigationBarsPadding(),
+                        .navigationBarsPadding()
+                        .padding(bottom = 8.dp),
                     onPlayingChanged = { isPlaying = it },
                     onExternalSeek = { seekToMillis ->
                         // AudioPlayerBar 외부에서 seekTo 요청이 왔을 때 처리

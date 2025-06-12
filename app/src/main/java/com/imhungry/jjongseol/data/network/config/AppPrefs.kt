@@ -65,4 +65,12 @@ class AppPrefs(context: Context) {
         val millis = prefs.getLong("meeting_start_time_$meetingId", -1L)
         return if (millis == -1L) null else millis
     }
+
+    fun setLastReadIndex(meetingId: Long, index: Int) {
+        prefs.edit().putInt("last_read_index_$meetingId", index).apply()
+    }
+
+    fun getLastReadIndex(meetingId: Long): Int {
+        return prefs.getInt("last_read_index_$meetingId", 0)
+    }
 }

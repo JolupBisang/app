@@ -40,6 +40,8 @@ class UserViewModel @Inject constructor(
                 is UserResult.Exception -> {
                     _errorMessage.value = result.throwable.message ?: "네트워크 오류"
                 }
+
+                else -> {}
             }
             _isLoading.value = false
         }
@@ -59,6 +61,8 @@ class UserViewModel @Inject constructor(
                 is UserResult.Exception -> {
                     _errorMessage.value = result.throwable.message ?: "네트워크 오류"
                 }
+
+                else -> {}
             }
             _isLoading.value = false
         }

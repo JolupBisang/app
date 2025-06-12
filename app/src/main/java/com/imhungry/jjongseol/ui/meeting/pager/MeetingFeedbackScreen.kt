@@ -18,8 +18,11 @@ import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -28,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.imhungry.jjongseol.data.model.feedback.response.FeedbackListRes
 import com.imhungry.jjongseol.ui.component.feedback.Notification
 import com.imhungry.jjongseol.ui.theme.Pretend
 import com.imhungry.jjongseol.ui.theme.primaryBackground
@@ -37,12 +41,20 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 @Composable
 fun MeetingFeedbackScreen(
     meetingViewModel: MeetingViewModel,
-    meetingId: Long,
-    startTime: Long?
+    //feedbacks: List<FeedbackListRes>,
+    startTime: Long?,
+    meetingId: Long
 ) {
     val context = LocalContext.current
-
     val feedbackList by meetingViewModel.feedbackList.collectAsState()
+    val alreadyInitialized = remember { mutableStateOf(false) }
+
+//    LaunchedEffect(feedbacks, alreadyInitialized.value) {
+//        if (!alreadyInitialized.value && feedbacks.isNotEmpty()) {
+//            meetingViewModel.setFeedbackListFromRes(context, meetingId, feedbacks)
+//            alreadyInitialized.value = true
+//        }
+//    }
     DisposableEffect(Unit) {
         onDispose {
             meetingViewModel.markAllFeedbackAsRead()

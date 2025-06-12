@@ -44,8 +44,47 @@ class SummaryViewModel @Inject constructor(
                     hasNextPage = !slice.last
                     currentPage += 1
                 }
-                is SummaryResult.Error -> _errorMessage.value = result.message
-                is SummaryResult.Exception -> _errorMessage.value = result.throwable.message ?: "네트워크 오류"
+                is SummaryResult.Error -> {
+                    _errorMessage.value = result.message
+                }
+                is SummaryResult.Exception -> {
+                    _errorMessage.value = result.throwable.message ?: "네트워크 오류"
+                }
+                else -> {}
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun loadAllSummaries(meetingId: Long, isRecap: Boolean = false) {
+        _summaries.value = emptyList()
+        var page = 0
+        var hasNextPage = true
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            while (hasNextPage) {
+                when (val result = summaryRepository.getSummaries(meetingId, isRecap, page)) {
+                    is SummaryResult.Success -> {
+                        val slice = result.data
+                        _summaries.value = _summaries.value + slice.content
+                        hasNextPage = !slice.last
+                        page += 1
+                    }
+                    is SummaryResult.Error -> {
+                        _errorMessage.value = result.message
+                        hasNextPage = false
+                        _isLoading.value = false
+                    }
+                    is SummaryResult.Exception -> {
+                        _errorMessage.value = result.throwable.message ?: "네트워크 오류"
+                        hasNextPage = false
+                        _isLoading.value = false
+                    }
+                    else -> {
+                        hasNextPage = false
+                    }
+                }
             }
             _isLoading.value = false
         }

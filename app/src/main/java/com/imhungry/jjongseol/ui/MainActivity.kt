@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleIntent(intent: Intent?) {
         intent?.data?.getQueryParameter("token")?.let { token ->
+            Log.d("login", token)
             loginViewModel.onLoginSuccess(token)
             loadAndSaveMyProfile()
         }

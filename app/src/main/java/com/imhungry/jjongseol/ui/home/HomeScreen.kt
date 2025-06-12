@@ -37,6 +37,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -67,6 +68,9 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.launch
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.imhungry.jjongseol.ui.theme.SetNavigationBarColor
 import kotlinx.coroutines.delay
 
 
@@ -76,7 +80,7 @@ fun HomeScreen(navController: NavController) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val searchText = remember { mutableStateOf("") }
-
+    val viewModel: MeetingViewModel = hiltViewModel()
     val context = LocalContext.current
     val appPrefs = remember { AppPrefs(context) }
 
@@ -89,6 +93,7 @@ fun HomeScreen(navController: NavController) {
         meetingId = appPrefs.getRunningMeetingId()
         Log.d("HomeScreen", "포그라운드 서비스 실행 중? $isRunning, 실행 중인 회의 ID: $meetingId")
     }
+    SetNavigationBarColor(BasicBackGround)
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -204,8 +209,7 @@ fun MainHomeScreen(
             state = swipeRefreshState,
             onRefresh = {
                 scope.launch {
-                    viewModel.resetMonthOffsets()
-                    viewModel.loadMeetings()
+                    viewModel.refreshMeetings()
                     delay(600)
                 }
             },

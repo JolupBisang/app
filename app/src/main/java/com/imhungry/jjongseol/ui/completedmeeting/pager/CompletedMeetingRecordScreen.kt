@@ -55,7 +55,6 @@ import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.ui.theme.tertiary
 import com.imhungry.jjongseol.util.DateTimeUtils
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
-import com.imhungry.jjongseol.viewmodel.SegmentViewModel
 
 @Composable
 fun CompletedMeetingRecordScreen(
@@ -71,7 +70,6 @@ fun CompletedMeetingRecordScreen(
     onSeekToPosition: (Long) -> Unit,
     meetingDetail: MeetingDetailRes,
     currentUserId: Long,
-    segmentViewModel: SegmentViewModel,
 ) {
     val context = LocalContext.current
     val lastCheckedIndex = remember { mutableStateOf(0) }
@@ -80,7 +78,6 @@ fun CompletedMeetingRecordScreen(
     var isCollapsed by rememberSaveable { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
     var isScrolling by remember { mutableStateOf(false) }
-    val isLoading by segmentViewModel.isLoading.collectAsState()
         // 1. 재생 위치에 해당하는 segment index 찾기
     val currentSegmentIndex = segments.indexOfLast { segment ->
         val elapsed = DateTimeUtils.isoToMillis(segment.timestamp) - startMillis
@@ -97,45 +94,16 @@ fun CompletedMeetingRecordScreen(
             currentSegmentIndex != lastScrolledIndex &&
             (currentSegmentIndex < first || currentSegmentIndex > last)
         ) {
-            listState.animateScrollToItem(currentSegmentIndex)
-            lastScrolledIndex = currentSegmentIndex
+            if (isPlaying) {
+                listState.animateScrollToItem(currentSegmentIndex)
+                lastScrolledIndex = currentSegmentIndex
+            }
         }
     }
-
-//    LaunchedEffect(currentSegmentIndex) {
-//        if (segments.isNotEmpty() && lastScrolledIndex != currentSegmentIndex) {
-//            listState.animateScrollToItem(currentSegmentIndex)
-//            lastScrolledIndex = currentSegmentIndex
-//        }
-//    }
-
 
     LaunchedEffect(meetingId) {
         agendaViewModel.loadAgendas(meetingId)
     }
-
-//    LaunchedEffect(listState) {
-//        snapshotFlow { listState.firstVisibleItemScrollOffset }
-//            .collectLatest { offset ->
-//                isCollapsed = when {
-//                    offset > 100 -> true
-//                    offset == 0 -> false
-//                    else -> isCollapsed
-//                }
-//            }
-//    }
-
-//    LaunchedEffect(isPlaying, listState) {
-//        snapshotFlow { listState.firstVisibleItemScrollOffset }
-//            .collectLatest { offset ->
-//                isCollapsed = when {
-//                    isPlaying -> true
-//                    offset > 100 -> true
-//                    offset == 0 -> false
-//                    else -> isCollapsed
-//                }
-//            }
-//    }
 
     Column(modifier = Modifier
         .fillMaxSize()
@@ -190,11 +158,6 @@ fun CompletedMeetingRecordScreen(
                         onSeekToPosition(seekMillis.coerceAtLeast(0L))
                     }
                 )
-                if (index == segments.lastIndex && !isLoading) {
-                    LaunchedEffect(key1 = segments.size) {
-                        segmentViewModel.loadSegments(meetingId, reset = false)
-                    }
-                }
                 if (index == segments.lastIndex) {
                     Spacer(modifier = Modifier.padding(bottom = 30.dp))
                 }

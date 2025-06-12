@@ -15,9 +15,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -26,7 +23,6 @@ import com.imhungry.jjongseol.ui.completedmeeting.component.MeetingTabRow
 import com.imhungry.jjongseol.ui.component.feedback.Notification
 import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.util.DateTimeUtils
-import com.imhungry.jjongseol.viewmodel.FeedbackViewModel
 
 @Composable
 fun CompletedMeetingFeedbackScreen(
@@ -35,11 +31,8 @@ fun CompletedMeetingFeedbackScreen(
     selectedTab: Int,
     onTabClick: (Int) -> Unit,
     onTimeClick: (Long) -> Unit,
-    feedbackViewModel: FeedbackViewModel,
-    meetingId: Long
 ) {
     val context = LocalContext.current
-    val isLoading by feedbackViewModel.isLoading.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -69,11 +62,6 @@ fun CompletedMeetingFeedbackScreen(
                 )
                 if (index == feedbackList.lastIndex) {
                     Spacer(modifier = Modifier.height(48.dp))
-                    if (!isLoading) {
-                        LaunchedEffect(key1 = feedbackList.size) {
-                            feedbackViewModel.loadFeedbacks(meetingId, reset = false)
-                        }
-                    }
                 }
             }
         }

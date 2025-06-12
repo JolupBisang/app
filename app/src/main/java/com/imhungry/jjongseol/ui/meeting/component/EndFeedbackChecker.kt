@@ -30,7 +30,7 @@ fun EndFeedbackChecker(
                 val endTimeText = millisToKoreanTimeString(endMillis)
                 onAddFeedback(
                     FeedbackDto(
-                        timestamp = millisToIso(tenMinNoticeTime),
+                        timestamp = millisToTimeString(tenMinNoticeTime),
                         comment = "회의 종료까지 10분 남았습니다.\n예정 종료 시각: $endTimeText"
                     )
                 )

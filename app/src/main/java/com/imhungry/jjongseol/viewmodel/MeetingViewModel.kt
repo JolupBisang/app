@@ -13,6 +13,7 @@ import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.meeting.MeetingReq
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.data.model.feedback.dto.FeedbackDto
+import com.imhungry.jjongseol.data.model.feedback.response.FeedbackListRes
 import com.imhungry.jjongseol.data.model.summary.dto.SummaryDto
 import com.imhungry.jjongseol.data.model.home.MeetingResponse
 import com.imhungry.jjongseol.data.model.home.toMeetingInfo
@@ -241,6 +242,7 @@ class MeetingViewModel @Inject constructor(
                 when (event) {
                     is MeetingNoteEvent.Created -> _meetingNoteStatus.value = true to false
                     is MeetingNoteEvent.Completed -> _meetingNoteStatus.value = true to true
+                    else -> {}
                 }
             }
         }
@@ -313,6 +315,8 @@ class MeetingViewModel @Inject constructor(
                 is MeetingResult.Exception -> {
                     _errorMessage.value = result.throwable.message ?: "네트워크 오류"
                 }
+
+                else -> {}
             }
             _isLoading.value = false
             _isParticipantLoading.value = false
@@ -335,6 +339,8 @@ class MeetingViewModel @Inject constructor(
                 is MeetingResult.Exception -> {
                     _errorMessage.value = result.throwable.message ?: "네트워크 오류"
                 }
+
+                else -> {}
             }
             _isStatusUpdating.value = false
         }
@@ -347,7 +353,7 @@ class MeetingViewModel @Inject constructor(
 
 
     fun loadMeetings(force: Boolean = false) {
-        if (hasLoadedInitialMeetings && !force) return
+        //if (hasLoadedInitialMeetings && !force) return
 
         viewModelScope.launch {
             _isLoading.value = true
@@ -552,6 +558,21 @@ class MeetingViewModel @Inject constructor(
 
     fun addFeedback(feedback: FeedbackDto) {
         _feedbackList.update { old -> old + feedback }
+    }
+
+    fun setFeedbackListFromRes(
+        context: Context,
+        meetingId: Long,
+        feedbacks: List<FeedbackListRes>
+    ) {
+        val lastReadIndex = AppPrefs(context).getLastReadIndex(meetingId)
+        _feedbackList.value = feedbacks.mapIndexed { index, res ->
+            FeedbackDto(
+                timestamp = res.timestamp,
+                comment = res.comment,
+                isRead = index <= lastReadIndex
+            )
+        }
     }
 
     fun syncMicStateFromServiceOrPrefs(context: Context, meetingId: Long) {
