@@ -201,13 +201,14 @@ class MeetingSseService : Service() {
                     }
                 } catch (e: Exception) {
                     Log.e("Audio", "Exception: ${e.message}", e)
+                    ErrorEventRepository.emitError("Exception: ${e.message}")
                 }
             }
 
             override fun onClosed(source: EventSource) {
                 Log.d("Audio", "SSE 연결 종료, 재연결 시도")
                 isConnecting = false
-                reconnectSse(meetingId)
+                //reconnectSse(meetingId)
             }
             override fun onFailure(source: EventSource, t: Throwable?, response: Response?) {
                 Log.e(
@@ -215,9 +216,9 @@ class MeetingSseService : Service() {
                     "SSE 연결 실패: ${t?.message}, response=${response?.code} / ${response?.message}", t
                 )
                 isConnecting = false
-                //ErrorEventRepository.emitError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
+                ErrorEventRepository.emitError("response=${response?.code} / ${response?.message}")
 
-                reconnectSse(meetingId)
+                //reconnectSse(meetingId)
             }
         }
 

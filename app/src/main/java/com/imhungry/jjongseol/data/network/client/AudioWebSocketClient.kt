@@ -203,7 +203,7 @@ class AudioWebSocketClient(
             }
         } catch (e: Exception) {
             Log.w("Audio", e)
-            //onError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
+            onError("${e.message}")
         }
     }
 
