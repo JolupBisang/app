@@ -156,7 +156,6 @@ class AudioWebSocketClient(
                     val message = error.message
                     Log.w("Audio", "WebSocket 에러 메시지 수신: $message")
                     if (!message.equals("진행중인 회의가 아닙니다.")) {
-                        onError(message)
                     }
                 }
                 SocketResponseType.MEETING_COMPLETED -> {

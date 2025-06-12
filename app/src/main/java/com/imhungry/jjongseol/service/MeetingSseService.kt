@@ -179,21 +179,26 @@ class MeetingSseService : Service() {
                         "PARTICIPATION_RATE" -> {
                             val json = JSONObject(data)
                             val timestamp = json.optString("timestamp")
-                            val ratesObj = json.optJSONObject("participationRates") ?: JSONObject()
+                            val ratesArray = json.optJSONArray("participationRates") ?: return
+
                             val list = mutableListOf<ParticipationRateDto>()
-                            val keys = ratesObj.keys()
-                            while (keys.hasNext()) {
-                                val key = keys.next()
-                                val userId = key.toLongOrNull() ?: continue
-                                val rate = ratesObj.optDouble(key, 0.0)
-                                list.add(ParticipationRateDto(userId, rate))
+                            for (i in 0 until ratesArray.length()) {
+                                val obj = ratesArray.getJSONObject(i)
+                                val keys = obj.keys()
+                                while (keys.hasNext()) {
+                                    val key = keys.next()
+                                    val userId = key.toLongOrNull() ?: continue
+                                    val rate = obj.optDouble(key, 0.0)
+                                    list.add(ParticipationRateDto(userId, rate))
+                                }
                             }
+
                             CoroutineScope(Dispatchers.IO).launch {
                                 list.forEach {
                                     ParticipationRateEventRepository.emitParticipationRate(it)
                                 }
                             }
-                            Log.d("SSE", "participationRate : ${list}")
+                            Log.d("SSE", "participationRate : $list")
                         }
                         "CONNECT" -> {
                             reconnectAttempts = 0
@@ -241,7 +246,7 @@ class MeetingSseService : Service() {
         }
         reconnectAttempts++
         if (reconnectAttempts > maxReconnectAttempts) {
-            ErrorEventRepository.emitError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
+            // ErrorEventRepository.emitError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
             return
         }
         summaryEventSource?.cancel()

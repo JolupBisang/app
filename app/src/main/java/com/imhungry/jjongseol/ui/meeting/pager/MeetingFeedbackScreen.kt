@@ -49,8 +49,8 @@ fun MeetingFeedbackScreen(
     val context = LocalContext.current
     val feedbackList by meetingViewModel.feedbackList.collectAsState()
 
-    LaunchedEffect(feedbacks) {
-        if (feedbacks.isNotEmpty()) {
+    LaunchedEffect(Unit) {
+        if (feedbacks.isNotEmpty() && meetingViewModel.feedbackList.value.isEmpty()) {
             val dtoList = feedbacks.map {
                 FeedbackDto(
                     timestamp = it.timestamp,
@@ -61,6 +61,19 @@ fun MeetingFeedbackScreen(
             meetingViewModel.setFeedbackList(dtoList)
         }
     }
+
+//    LaunchedEffect(feedbacks) {
+//        if (feedbacks.isNotEmpty()) {
+//            val dtoList = feedbacks.map {
+//                FeedbackDto(
+//                    timestamp = it.timestamp,
+//                    comment = it.comment,
+//                    isRead = true
+//                )
+//            }
+//            meetingViewModel.setFeedbackList(dtoList)
+//        }
+//    }
     DisposableEffect(Unit) {
         onDispose {
             meetingViewModel.markAllFeedbackAsRead()
