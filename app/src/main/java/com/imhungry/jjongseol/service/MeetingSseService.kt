@@ -162,6 +162,7 @@ class MeetingSseService : Service() {
                             CoroutineScope(Dispatchers.IO).launch {
                                 summaryEventRepository.emitSummary(summary)
                             }
+                            Log.d("SSE", "summary : ${summary.summary}, timestamp: ${summary.timestamp}")
                         }
                         "FEEDBACK" -> {
                             val json = JSONObject(data)
@@ -172,6 +173,8 @@ class MeetingSseService : Service() {
                             CoroutineScope(Dispatchers.IO).launch {
                                 feedbackEventRepository.emitFeedback(feedback)
                             }
+                            Log.d("SSE", "feedback : ${feedback.comment}, timestamp: ${feedback.timestamp}")
+
                         }
                         "PARTICIPATION_RATE" -> {
                             val json = JSONObject(data)
@@ -190,10 +193,11 @@ class MeetingSseService : Service() {
                                     ParticipationRateEventRepository.emitParticipationRate(it)
                                 }
                             }
+                            Log.d("SSE", "participationRate : ${list}")
                         }
                         "CONNECT" -> {
                             reconnectAttempts = 0
-                            Log.d("Audio", "CONNECT: $data")
+                            Log.d("SSE", "SSE CONNECT: $data")
                         }
                         else -> {
                             Log.w("Audio", "SSE 응답 : $data")

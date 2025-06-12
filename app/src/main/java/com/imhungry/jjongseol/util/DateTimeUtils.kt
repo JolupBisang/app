@@ -35,8 +35,7 @@ object DateTimeUtils {
                 // 패턴 불일치 → 다음 패턴 시도
             }
         }
-
-        throw IllegalArgumentException("지원되지 않는 ISO 포맷: $isoTimestamp")
+        return 0
     }
 
 //    fun isoToMillis(isoTimestamp: String): Long {
@@ -67,7 +66,7 @@ object DateTimeUtils {
             } catch (e: Exception) {
             }
         }
-        throw IllegalArgumentException("지원되지 않는 ISO 포맷: $isoTimestamp")
+        return 0
     }
 
 
@@ -152,7 +151,7 @@ object DateTimeUtils {
                 // 패턴 안 맞으면 다음 시도
             }
         }
-        throw IllegalArgumentException("지원되지 않는 ISO 포맷: $koreaTime")
+        return ""
     }
 
 }

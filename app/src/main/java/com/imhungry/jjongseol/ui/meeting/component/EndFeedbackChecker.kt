@@ -17,21 +17,21 @@ fun EndFeedbackChecker(
 
     val endMillis = startTime + (meetingDetail.targetTime * 60_000L)
 
-    // 10분 전 알림
+    // **1분 전 알림**
     LaunchedEffect(meetingDetail, startTime, feedbackList) {
         while (true) {
             val now = System.currentTimeMillis()
-            val tenMinNoticeTime = endMillis - 10 * 60_000L
-            val alreadyAdded10m = feedbackList.any {
-                it.comment.startsWith("회의 종료까지 10분 남았습니다.") &&
-                        it.timestamp == millisToIso(tenMinNoticeTime)
+            val oneMinNoticeTime = endMillis - 1 * 60_000L // 1분(60,000ms) 전
+            val alreadyAdded1m = feedbackList.any {
+                it.comment.startsWith("회의 종료까지 1분 남았습니다.") &&
+                        it.timestamp == millisToIso(oneMinNoticeTime)
             }
-            if (now in (tenMinNoticeTime..tenMinNoticeTime + 1_000L) && !alreadyAdded10m) {
+            if (now in (oneMinNoticeTime..oneMinNoticeTime + 1_000L) && !alreadyAdded1m) {
                 val endTimeText = millisToKoreanTimeString(endMillis)
                 onAddFeedback(
                     FeedbackDto(
-                        timestamp = millisToTimeString(tenMinNoticeTime),
-                        comment = "회의 종료까지 10분 남았습니다.\n예정 종료 시각: $endTimeText"
+                        timestamp = millisToTimeString(oneMinNoticeTime),
+                        comment = "회의 종료까지 1분 남았습니다.\n예정 종료 시각: $endTimeText"
                     )
                 )
             }

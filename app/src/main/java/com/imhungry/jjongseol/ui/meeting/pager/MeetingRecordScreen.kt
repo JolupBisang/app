@@ -1,7 +1,5 @@
 package com.imhungry.jjongseol.ui.meeting.pager
 
-import android.content.Intent
-import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,7 +15,6 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,19 +40,15 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
-import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
 import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
 import com.imhungry.jjongseol.data.model.segment.response.SegmentListRes
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
-import com.imhungry.jjongseol.service.MeetingSseService
 import com.imhungry.jjongseol.ui.SilRokNavigation
-import com.imhungry.jjongseol.ui.meeting.component.ChatBubble
 import com.imhungry.jjongseol.ui.component.checklist.CheckItem
-import com.imhungry.jjongseol.ui.component.dialog.MeetingTerminationNotification
 import com.imhungry.jjongseol.ui.component.feedback.Notification
-import com.imhungry.jjongseol.ui.login.LoginScreen
 import com.imhungry.jjongseol.ui.meeting.component.BreakFeedbackChecker
+import com.imhungry.jjongseol.ui.meeting.component.ChatBubble
 import com.imhungry.jjongseol.ui.meeting.component.EndFeedbackChecker
 import com.imhungry.jjongseol.ui.meeting.component.TopSheet
 import com.imhungry.jjongseol.ui.theme.primaryBackground
@@ -65,8 +58,6 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun MeetingRecordScreen(
@@ -228,7 +219,7 @@ fun MeetingRecordScreen(
         }
         when {
             latestFeedback != null && feedbackVisible -> {
-                val elapsed = DateTimeUtils.getElapsedString(startTime, latestFeedback.timestamp)
+                //val elapsed = DateTimeUtils.getElapsedString(startTime, latestFeedback.timestamp)
 
                 Box(
                     modifier = Modifier
@@ -238,7 +229,7 @@ fun MeetingRecordScreen(
                 ) {
                     SwipeToDismissNotification(
                         message = latestFeedback.comment,
-                        time = elapsed,
+                        time = latestFeedback.timestamp,
                         onDismiss = { feedbackVisible = false }
                     )
                 }
