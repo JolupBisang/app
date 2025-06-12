@@ -167,6 +167,18 @@ class AudioWebSocketClient(
                     meetingRef.update("endTime", formatted)
                     Log.i("Socket", "MEETING_COMPLETED 메시지 수신, 오디오 연결 종료")
                     isAudioClosedByMeetingCompleted = true
+                    try {
+                        audioRecord?.let { record ->
+                            if (record.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                                record.stop()
+                            }
+                            record.release()
+                        }
+                    } catch (e: Exception) { }
+                    audioRecord = null
+
+                    recordJob?.cancel()
+                    recordJob = null
                     stopRecording()
                     onMessage("MEETING_COMPLETED")
                     scope.launch(Dispatchers.IO) {
@@ -181,6 +193,18 @@ class AudioWebSocketClient(
                 }
                 SocketResponseType.MEETING_NOTE_CREATED -> {
                     Log.i("Socket", "MEETING_NOTE_CREATED 회의록 완성")
+                    try {
+                        audioRecord?.let { record ->
+                            if (record.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                                record.stop()
+                            }
+                            record.release()
+                        }
+                    } catch (e: Exception) { }
+                    audioRecord = null
+
+                    recordJob?.cancel()
+                    recordJob = null
                     stop()
                     onMessage("MEETING_RECORD_MADED")
                     MeetingNoteEventBus.send(MeetingNoteEvent.Completed(meetingId))
