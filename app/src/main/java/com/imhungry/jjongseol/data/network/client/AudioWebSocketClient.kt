@@ -166,10 +166,9 @@ class AudioWebSocketClient(
                     val now = LocalDateTime.now()
                     val formatted = now.format(formatter)
                     meetingRef.update("endTime", formatted)
-                    Log.i("Audio", "MEETING_COMPLETED 메시지 수신, 오디오 연결 종료")
+                    Log.i("Socket", "MEETING_COMPLETED 메시지 수신, 오디오 연결 종료")
                     isAudioClosedByMeetingCompleted = true
                     stopRecording()
-                    Log.i("Audio", "회의록 생성 중 화면으로 이동")
                     onMessage("MEETING_COMPLETED")
                     scope.launch(Dispatchers.IO) {
                         delay(500)
@@ -182,13 +181,13 @@ class AudioWebSocketClient(
                     onNewDiarizedSegment(message)
                 }
                 SocketResponseType.MEETING_NOTE_CREATED -> {
-                    Log.i("Audio", "회의록 완성")
+                    Log.i("Socket", "MEETING_NOTE_CREATED 회의록 완성")
                     stop()
                     onMessage("MEETING_RECORD_MADED")
                     MeetingNoteEventBus.send(MeetingNoteEvent.Completed(meetingId))
                 }
                 SocketResponseType.MEETING_RECORD_MADED -> {
-                    Log.i("Audio", "MEETING_RECORD_MADED 메시지 수신, 모든 연결 종료")
+                    Log.i("Socket", "MEETING_RECORD_MADED 메시지 수신, 모든 연결 종료")
                 }
                 SocketResponseType.AGENDA_UPDATED -> {
                     val json = JSONObject(text)
@@ -198,19 +197,19 @@ class AudioWebSocketClient(
                     onAgendaUpdated?.invoke(updated)
                 }
                 else -> {
-                    Log.d("Audio", "Socket 응답 : ${response.type}")
+                    Log.d("Socket", "Socket 응답 : ${response.type}")
                 }
             }
         } catch (e: Exception) {
-            Log.w("Audio", e)
+            Log.w("Socket", e)
         }
     }
 
     override fun onClosed(ws: WebSocket, code: Int, reason: String) {
-        Log.i("Audio", "WebSocket 닫힘 $code/$reason")
+        Log.i("Socket", "WebSocket 닫힘 $code/$reason")
         disconnect()
         if (isServiceStopped()) {
-            Log.d("Audio", "서비스 중단됨: WebSocket 연결 시도 안 함")
+            Log.d("Socket", "서비스 중단됨: WebSocket 연결 시도 안 함")
             disconnect()
             return
         }
@@ -218,7 +217,7 @@ class AudioWebSocketClient(
     }
 
     override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
-        Log.e("Audio", "WebSocket 실패: ${t.message}")
+        Log.e("Socket", "WebSocket 실패: ${t.message}")
         stopRecording()
         //onError("서버 내부 오류입니다. 관리자에게 문의해주세요.")
         tryReconnect()
@@ -233,7 +232,7 @@ class AudioWebSocketClient(
         scope.launch {
             delay(2000)
             if (!isConnected && !isClosedByUser) {
-                Log.w("Audio", "WebSocket 재연결 시도...")
+                Log.w("Socket", "WebSocket 재연결 시도...")
                 tryConnect()
             }
         }
@@ -262,7 +261,7 @@ class AudioWebSocketClient(
 
     fun preloadLocalPacketsAndThenStart(lastServerChunkId: Int, scope: CoroutineScope) {
         if (isAudioClosedByMeetingCompleted) {
-            Log.d("Audio", "MEETING_COMPLETED 이후 재접속 시도 차단")
+            Log.d("Socket", "MEETING_COMPLETED 이후 재접속 시도 차단")
             return
         }
         setInitialChunkId(lastServerChunkId)
@@ -270,7 +269,7 @@ class AudioWebSocketClient(
             if (micEnabled) {
                 startRecording(scope)
             } else {
-                Log.d("Audio", "micEnabled=false 상태이므로 녹음 시작 안함")
+                Log.d("Socket", "micEnabled=false 상태이므로 녹음 시작 안함")
             }
         }
     }
@@ -278,21 +277,21 @@ class AudioWebSocketClient(
     private fun setInitialChunkId(lastServerChunkId: Int) {
         val localMax = findLastLocalChunkId()
         chunkId = (maxOf(lastServerChunkId.toLong(), localMax) + 1)
-        Log.d("Audio", "초기 chunkId 설정됨: $chunkId (server=$lastServerChunkId, local=$localMax)")
+        Log.d("Socket", "초기 chunkId 설정됨: $chunkId (server=$lastServerChunkId, local=$localMax)")
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun startRecording(scope: CoroutineScope) {
         if (!hasRecordPermission()) {
-            Log.e("Audio", "RECORD_AUDIO 권한 없음")
+            Log.e("Socket", "RECORD_AUDIO 권한 없음")
             return
         }
         if (isAudioClosedByMeetingCompleted) {
-            Log.d("Audio", "MEETING_COMPLETED 이후 재접속 시도 차단")
+            Log.d("Socket", "MEETING_COMPLETED 이후 재접속 시도 차단")
             return
         }
         if (audioRecord != null && audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
-            Log.w("Audio", "이미 녹음이 진행 중입니다. 중복 생성 방지")
+            Log.w("Socket", "이미 녹음이 진행 중입니다. 중복 생성 방지")
             return
         }
         try {
@@ -304,13 +303,13 @@ class AudioWebSocketClient(
                 bufferSize
             ).apply { startRecording() }
 
-            Log.d("Audio", "AudioRecord 생성 및 녹음 시작")
+            Log.d("Socket", "AudioRecord 생성 및 녹음 시작")
 
         } catch (e: SecurityException) {
-            Log.e("Audio", "RECORD_AUDIO 권한이 없어 AudioRecord 생성 실패", e)
+            Log.e("Socket", "RECORD_AUDIO 권한이 없어 AudioRecord 생성 실패", e)
             return
         } catch (e: Exception) {
-            Log.e("Audio", "AudioRecord 생성 실패", e)
+            Log.e("Socket", "AudioRecord 생성 실패", e)
             return
         }
 
