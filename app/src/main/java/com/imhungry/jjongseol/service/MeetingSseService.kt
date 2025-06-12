@@ -188,7 +188,9 @@ class MeetingSseService : Service() {
                                 while (keys.hasNext()) {
                                     val key = keys.next()
                                     val userId = key.toLongOrNull() ?: continue
+                                    Log.d("SSE", "participation userId: $userId")
                                     val rate = obj.optDouble(key, 0.0)
+                                    Log.d("SSE", "participation rate: $rate")
                                     list.add(ParticipationRateDto(userId, rate))
                                 }
                             }
@@ -198,7 +200,6 @@ class MeetingSseService : Service() {
                                     ParticipationRateEventRepository.emitParticipationRate(it)
                                 }
                             }
-                            Log.d("SSE", "participationRate : $list")
                         }
                         "CONNECT" -> {
                             reconnectAttempts = 0
