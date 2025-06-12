@@ -203,7 +203,6 @@ class AudioWebSocketClient(
             }
         } catch (e: Exception) {
             Log.w("Audio", e)
-            onError("${e.message}")
         }
     }
 

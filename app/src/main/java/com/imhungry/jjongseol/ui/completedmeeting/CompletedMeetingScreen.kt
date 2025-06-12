@@ -1,6 +1,7 @@
 package com.imhungry.jjongseol.ui.completedmeeting
 
 import CompletedMeetingRecordScreen
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -220,6 +221,12 @@ fun CompletedMeetingContent(
     var isPlaying by remember { mutableStateOf(false) }
     var playbackSpeed by remember { mutableStateOf(1.0f) }
     val duration = 180f
+
+    BackHandler {
+        navController.navigate("home") {
+            popUpTo(0)
+        }
+    }
 
     LaunchedEffect(isPlaying, playbackSpeed) {
         while (isPlaying && currentPosition < duration) {

@@ -201,7 +201,6 @@ class MeetingSseService : Service() {
                     }
                 } catch (e: Exception) {
                     Log.e("Audio", "Exception: ${e.message}", e)
-                    ErrorEventRepository.emitError("Exception: ${e.message}")
                 }
             }
 

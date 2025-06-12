@@ -493,6 +493,10 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.rememberPagerState
 import com.imhungry.jjongseol.R
+import com.imhungry.jjongseol.data.model.feedback.response.FeedbackListRes
+import com.imhungry.jjongseol.data.model.participationrate.response.ParticipationRateHistoryRes
+import com.imhungry.jjongseol.data.model.segment.response.SegmentListRes
+import com.imhungry.jjongseol.data.model.summary.response.SummaryListRes
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.service.MeetingSseService
@@ -509,8 +513,12 @@ import com.imhungry.jjongseol.ui.theme.orange100
 import com.imhungry.jjongseol.ui.theme.primaryBackground
 import com.imhungry.jjongseol.ui.theme.whiteColor
 import com.imhungry.jjongseol.viewmodel.AgendaViewModel
+import com.imhungry.jjongseol.viewmodel.FeedbackViewModel
 import com.imhungry.jjongseol.viewmodel.LoginViewModel
 import com.imhungry.jjongseol.viewmodel.MeetingViewModel
+import com.imhungry.jjongseol.viewmodel.ParticipationRateViewModel
+import com.imhungry.jjongseol.viewmodel.SegmentViewModel
+import com.imhungry.jjongseol.viewmodel.SummaryViewModel
 import com.imhungry.jjongseol.viewmodel.UserViewModel
 import kotlinx.coroutines.delay
 
@@ -519,7 +527,10 @@ fun MeetingScreen(
     loginViewModel: LoginViewModel = hiltViewModel(),
     meetingViewModel: MeetingViewModel,
     agendaViewModel: AgendaViewModel,
-    userViewModel: UserViewModel = hiltViewModel(),
+    segmentViewModel: SegmentViewModel = hiltViewModel(),
+    participationRateViewModel: ParticipationRateViewModel = hiltViewModel(),
+    summaryViewModel: SummaryViewModel = hiltViewModel(),
+    feedbackViewModel: FeedbackViewModel = hiltViewModel(),
     onFinish: (SilRokNavigation) -> Unit,
     navController: NavController,
     meetingId: Long
@@ -544,6 +555,10 @@ fun MeetingScreen(
     val participantInfos by meetingViewModel.participantInfos.collectAsState()
     val startTime by meetingViewModel.meetingStartTime.collectAsState()
     val meetingNoteCreated by meetingViewModel.meetingNoteCreated.collectAsState()
+    val segments by segmentViewModel.segments.collectAsState()
+    val participationRates by participationRateViewModel.participationRates.collectAsState()
+    val feedbackList by feedbackViewModel.feedbacks.collectAsState()
+    val summaries by summaryViewModel.summaries.collectAsState()
 
     // 1. 권한 체크
     val requiredPermissions = remember {
@@ -586,11 +601,13 @@ fun MeetingScreen(
         meetingViewModel.syncMicStateFromServiceOrPrefs(context, meetingId)
     }
 
-    // 3. 아젠다 불러오기
     LaunchedEffect(meetingDetail) {
         if (meetingDetail != null) {
             agendaViewModel.loadAgendas(meetingId)
-            Log.d("MeetingStart", "아젠다 정보 불러옴")
+            segmentViewModel.loadAllSegments(meetingId)
+            participationRateViewModel.loadParticipationRates(meetingId)
+            summaryViewModel.loadAllSummaries(meetingId, isRecap = true)
+            feedbackViewModel.loadAllFeedbacks(meetingId)
         }
     }
 
@@ -830,7 +847,7 @@ fun MeetingScreenContent(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 4.dp),
-                unreadFeedback = hasUnreadFeedback
+                unreadFeedback = hasUnreadFeedback,
             )
         }
         MeetingControlPanel(
@@ -863,7 +880,8 @@ fun CustomHorizontalPagerIndicator(
     paddingHorizontal: Int = 10,
     paddingVertical: Int = 7,
     unreadFeedback: Boolean = false,
-    unreadIndicatorColor: Color = orange100
+    unreadIndicatorColor: Color = orange100,
+
 ) {
     Box(
         modifier = modifier

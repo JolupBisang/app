@@ -93,7 +93,7 @@ private fun MyMessage(diarizedSegment: DiarizedSegment, time: String, nextId: Lo
             }
             ChatBox(
                 text = diarizedSegment.text,
-                backgroundColor = if (highlighted) brown200 else green500,
+                backgroundColor = if (highlighted) Color(0xFF228F64) else green500,
                 shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 12.dp, bottomEnd = 4.dp),
             )
         }

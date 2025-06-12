@@ -3,6 +3,7 @@ package com.imhungry.jjongseol.util
 import android.util.Log
 import java.time.Instant
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
@@ -12,11 +13,15 @@ import java.util.Locale
 object DateTimeUtils {
     fun isoToMillis(isoTimestamp: String): Long {
         val patterns = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSS",
             "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
             "yyyy-MM-dd'T'HH:mm:ss.SSSSS",
             "yyyy-MM-dd'T'HH:mm:ss.SSSS",
             "yyyy-MM-dd'T'HH:mm:ss.SSS",
-            "yyyy-MM-dd'T'HH:mm:ss"
+            "yyyy-MM-dd'T'HH:mm:ss.SS",
+            "yyyy-MM-dd'T'HH:mm:ss.S",
         )
 
         for (pattern in patterns) {
@@ -33,6 +38,13 @@ object DateTimeUtils {
 
         throw IllegalArgumentException("지원되지 않는 ISO 포맷: $isoTimestamp")
     }
+
+//    fun isoToMillis(isoTimestamp: String): Long {
+//        // ISO 형식 파싱 (마이크로초/나노초 자동 지원)
+//        val odt = OffsetDateTime.parse(isoTimestamp)
+//        // Asia/Seoul 기준 millis 반환
+//        return odt.atZoneSameInstant(ZoneId.of("Asia/Seoul")).toInstant().toEpochMilli()
+//    }
 
     fun koreanIsoToMillis(isoTimestamp: String): Long {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]")
