@@ -5,6 +5,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -96,5 +97,13 @@ object DateTimeUtils {
         val formatter = DateTimeFormatter.ofPattern("HH:mm")
             .withZone(ZoneId.of("Asia/Seoul"))
         return formatter.format(Instant.ofEpochMilli(millis))
+    }
+
+    fun koreaToUtcTime(koreaTime: String): String {
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
+        val localDateTime = LocalDateTime.parse(koreaTime, formatter)
+        val seoulZoned = ZonedDateTime.of(localDateTime, ZoneId.of("Asia/Seoul"))
+        val utcZoned = seoulZoned.withZoneSameInstant(ZoneId.of("UTC"))
+        return utcZoned.format(formatter)
     }
 }

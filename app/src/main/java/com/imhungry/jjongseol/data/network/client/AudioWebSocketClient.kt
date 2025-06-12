@@ -373,7 +373,7 @@ class AudioWebSocketClient(
             put("type", "audio")
             put("chunkId", chunkId)
             put("encoding", "opus")
-            put("timestamp", now.toString())
+            put("timestamp", DateTimeUtils.koreaToUtcTime(now.toString()))
         }
         val metaBytes = meta.toString().toByteArray(Charsets.UTF_8)
         val metaLen = metaBytes.size
