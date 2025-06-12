@@ -735,7 +735,11 @@ fun MeetingScreen(
         remainingTime = remainingTime,
         context = context,
         participantInfos = participantInfos,
-        startTime = savedStartTime
+        startTime = savedStartTime,
+        segments = segments,
+        summaries = summaries,
+        usrParticipationRates = participationRates,
+        feedbacks = feedbackList
     )
 }
 
@@ -782,7 +786,11 @@ fun MeetingScreenContent(
     remainingTime: String,
     context: Context,
     participantInfos: List<UserInfoResponse>,
-    startTime: Long?
+    startTime: Long?,
+    feedbacks: List<FeedbackListRes>,
+    segments: List<SegmentListRes>,
+    summaries: List<SummaryListRes>,
+    usrParticipationRates: List<ParticipationRateHistoryRes.UserParticipationRate>
 ) {
     val feedbackList by meetingViewModel.feedbackList.collectAsState()
     val pagerState = rememberPagerState(initialPage = 1)
@@ -825,7 +833,9 @@ fun MeetingScreenContent(
                         agendaViewModel = agendaViewModel,
                         meetingId = meetingId,
                         participantInfos = participantInfos,
-                        startTime = startTime
+                        startTime = startTime,
+                        summaries = summaries,
+                        usrParticipationRates = usrParticipationRates
                     )
                     1 -> MeetingRecordScreen(
                         meetingViewModel = meetingViewModel,
@@ -833,12 +843,14 @@ fun MeetingScreenContent(
                         meetingId = meetingId,
                         navController = navController,
                         participantInfos = participantInfos,
-                        startTime = startTime
+                        startTime = startTime,
+                        segments = segments
                     )
                     2 -> MeetingFeedbackScreen(
                         meetingViewModel = meetingViewModel,
                         meetingId = meetingId,
-                        startTime = startTime
+                        startTime = startTime,
+                        feedbacks = feedbacks
                     )
                 }
             }
@@ -881,7 +893,6 @@ fun CustomHorizontalPagerIndicator(
     paddingVertical: Int = 7,
     unreadFeedback: Boolean = false,
     unreadIndicatorColor: Color = orange100,
-
 ) {
     Box(
         modifier = modifier

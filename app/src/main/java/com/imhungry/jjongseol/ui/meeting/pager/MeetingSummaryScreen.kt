@@ -24,6 +24,7 @@ import androidx.compose.material.Text
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +50,9 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextLayoutResult
+import com.imhungry.jjongseol.data.model.participationrate.response.ParticipationRateHistoryRes
+import com.imhungry.jjongseol.data.model.summary.dto.SummaryDto
+import com.imhungry.jjongseol.data.model.summary.response.SummaryListRes
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.ui.theme.gray400
@@ -64,7 +68,9 @@ fun MeetingSummaryScreen(
     agendaViewModel: AgendaViewModel,
     meetingId: Long,
     participantInfos: List<UserInfoResponse>,
-    startTime: Long?
+    startTime: Long?,
+    summaries: List<SummaryListRes>,
+    usrParticipationRates: List<ParticipationRateHistoryRes.UserParticipationRate>
 ) {
     val context = LocalContext.current
 
@@ -78,9 +84,29 @@ fun MeetingSummaryScreen(
     }
     val participationRates by meetingViewModel.participationRates.collectAsState()
     val sortedRates = participationRates.sortedByDescending { it.rate }
-    val participantData = sortedRates.map { (it.rate * 100f) }
-    val participantNames = sortedRates.map { nicknameMap[it.userId] ?: "알 수 없음" }
+    //val participantData = sortedRates.map { (it.rate * 100f) }
+    //val participantNames = sortedRates.map { nicknameMap[it.userId] ?: "알 수 없음" }
     var expanded by remember { mutableStateOf(true) }
+
+    LaunchedEffect(summaries) {
+        val summaryDtos = summaries.map { SummaryDto(it.timestamp, it.content) }
+        meetingViewModel.setSummaryList(summaryDtos)
+    }
+
+    val (participantData, participantNames) = remember(usrParticipationRates, participationRates) {
+        if (usrParticipationRates.isNotEmpty()) {
+            val sortedRates = usrParticipationRates.sortedByDescending { it.rate }
+            val data = sortedRates.map { it.rate * 100f }
+            val names = sortedRates.map { it.nickname }
+            data to names
+        } else {
+            val sortedRates = participationRates.sortedByDescending { it.rate }
+            val data = sortedRates.map { it.rate * 100f }
+            val names = sortedRates.map { nicknameMap[it.userId] ?: "알 수 없음" }
+            data to names
+        }
+    }
+
 
     LazyColumn(
         modifier = Modifier

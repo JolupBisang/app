@@ -32,6 +32,7 @@ import com.imhungry.jjongseol.data.model.segment.response.SegmentListRes
 import com.imhungry.jjongseol.data.model.summary.response.SummaryListRes
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
+import com.imhungry.jjongseol.ui.SilRokNavigation
 import com.imhungry.jjongseol.ui.completedmeeting.component.AudioPlayerBar
 import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingFeedbackScreen
 import com.imhungry.jjongseol.ui.completedmeeting.pager.CompletedMeetingSummaryScreen
@@ -223,7 +224,7 @@ fun CompletedMeetingContent(
     val duration = 180f
 
     BackHandler {
-        navController.navigate("home") {
+        navController.navigate(SilRokNavigation.Home.route) {
             popUpTo(0)
         }
     }

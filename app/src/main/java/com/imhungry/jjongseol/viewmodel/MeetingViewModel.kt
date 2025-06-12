@@ -380,7 +380,9 @@ class MeetingViewModel @Inject constructor(
             }
         }
     }
-
+    fun setFeedbackList(list: List<FeedbackDto>) {
+        _feedbackList.value = list
+    }
 
     fun loadMorePastMeetings() {
         viewModelScope.launch {
@@ -406,7 +408,9 @@ class MeetingViewModel @Inject constructor(
             }
         }
     }
-
+    fun setSummaryList(list: List<SummaryDto>) {
+        _summaryList.value = list
+    }
 
     fun loadMoreScheduledMeetings() {
         viewModelScope.launch {
@@ -573,6 +577,10 @@ class MeetingViewModel @Inject constructor(
                 isRead = index <= lastReadIndex
             )
         }
+    }
+
+    fun setDiarizedSegments(list: List<DiarizedSegment>) {
+        _diarizedSegments.value = list
     }
 
     fun syncMicStateFromServiceOrPrefs(context: Context, meetingId: Long) {

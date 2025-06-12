@@ -47,13 +47,29 @@ object DateTimeUtils {
 //    }
 
     fun koreanIsoToMillis(isoTimestamp: String): Long {
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]")
-        val localDateTime = LocalDateTime.parse(isoTimestamp, formatter)
-
-        val zoneId = ZoneId.of("Asia/Seoul")
-        val millis = localDateTime.atZone(zoneId).toInstant().toEpochMilli()
-        return millis
+        val patterns = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SS",
+            "yyyy-MM-dd'T'HH:mm:ss.S",
+            "yyyy-MM-dd'T'HH:mm:ss"
+        )
+        for (pattern in patterns) {
+            try {
+                val formatter = DateTimeFormatter.ofPattern(pattern)
+                val localDateTime = LocalDateTime.parse(isoTimestamp, formatter)
+                return localDateTime.atZone(ZoneId.of("Asia/Seoul")).toInstant().toEpochMilli()
+            } catch (e: Exception) {
+            }
+        }
+        throw IllegalArgumentException("지원되지 않는 ISO 포맷: $isoTimestamp")
     }
+
 
     fun getElapsedString(startMillis: Long?, isoTimestamp: String): String {
         if (startMillis == null) return "00:00:00"
@@ -112,10 +128,31 @@ object DateTimeUtils {
     }
 
     fun koreaToUtcTime(koreaTime: String): String {
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
-        val localDateTime = LocalDateTime.parse(koreaTime, formatter)
-        val seoulZoned = ZonedDateTime.of(localDateTime, ZoneId.of("Asia/Seoul"))
-        val utcZoned = seoulZoned.withZoneSameInstant(ZoneId.of("UTC"))
-        return utcZoned.format(formatter)
+        val patterns = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SS",
+            "yyyy-MM-dd'T'HH:mm:ss.S",
+            "yyyy-MM-dd'T'HH:mm:ss"
+        )
+
+        for (pattern in patterns) {
+            try {
+                val formatter = DateTimeFormatter.ofPattern(pattern)
+                val localDateTime = LocalDateTime.parse(koreaTime, formatter)
+                val seoulZoned = ZonedDateTime.of(localDateTime, ZoneId.of("Asia/Seoul"))
+                val utcZoned = seoulZoned.withZoneSameInstant(ZoneId.of("UTC"))
+                return utcZoned.format(formatter)
+            } catch (e: Exception) {
+                // 패턴 안 맞으면 다음 시도
+            }
+        }
+        throw IllegalArgumentException("지원되지 않는 ISO 포맷: $koreaTime")
     }
+
 }

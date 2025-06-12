@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.imhungry.jjongseol.R
 import com.imhungry.jjongseol.data.model.meeting.MeetingStatus
+import com.imhungry.jjongseol.data.model.segment.DiarizedSegment
+import com.imhungry.jjongseol.data.model.segment.response.SegmentListRes
 import com.imhungry.jjongseol.data.model.user.response.UserInfoResponse
 import com.imhungry.jjongseol.data.network.config.AppPrefs
 import com.imhungry.jjongseol.service.MeetingSseService
@@ -73,7 +75,8 @@ fun MeetingRecordScreen(
     meetingId: Long,
     navController: NavController,
     participantInfos: List<UserInfoResponse>,
-    startTime: Long?
+    startTime: Long?,
+    segments: List<SegmentListRes>
 ) {
     val context = LocalContext.current
 
@@ -107,6 +110,21 @@ fun MeetingRecordScreen(
             feedbackVisible = false
         }
     }
+
+    LaunchedEffect(segments) {
+        if (segments.isNotEmpty()) {
+            val diarized = segments.map {
+                DiarizedSegment(
+                    timestamp = it.timestamp,
+                    userId = it.userId,
+                    order = it.segmentOrder,
+                    text = it.text
+                )
+            }
+            meetingViewModel.setDiarizedSegments(diarized)
+        }
+    }
+
     BreakFeedbackChecker(
         meetingId = meetingId,
         meetingDetail = meetingDetail,

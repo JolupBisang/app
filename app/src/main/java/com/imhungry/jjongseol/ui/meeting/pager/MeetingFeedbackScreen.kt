@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.imhungry.jjongseol.data.model.feedback.dto.FeedbackDto
 import com.imhungry.jjongseol.data.model.feedback.response.FeedbackListRes
 import com.imhungry.jjongseol.ui.component.feedback.Notification
 import com.imhungry.jjongseol.ui.theme.Pretend
@@ -41,20 +42,25 @@ import com.imhungry.jjongseol.viewmodel.MeetingViewModel
 @Composable
 fun MeetingFeedbackScreen(
     meetingViewModel: MeetingViewModel,
-    //feedbacks: List<FeedbackListRes>,
+    feedbacks: List<FeedbackListRes>,
     startTime: Long?,
     meetingId: Long
 ) {
     val context = LocalContext.current
     val feedbackList by meetingViewModel.feedbackList.collectAsState()
-    val alreadyInitialized = remember { mutableStateOf(false) }
 
-//    LaunchedEffect(feedbacks, alreadyInitialized.value) {
-//        if (!alreadyInitialized.value && feedbacks.isNotEmpty()) {
-//            meetingViewModel.setFeedbackListFromRes(context, meetingId, feedbacks)
-//            alreadyInitialized.value = true
-//        }
-//    }
+    LaunchedEffect(feedbacks) {
+        if (feedbacks.isNotEmpty()) {
+            val dtoList = feedbacks.map {
+                FeedbackDto(
+                    timestamp = it.timestamp,
+                    comment = it.comment,
+                    isRead = true
+                )
+            }
+            meetingViewModel.setFeedbackList(dtoList)
+        }
+    }
     DisposableEffect(Unit) {
         onDispose {
             meetingViewModel.markAllFeedbackAsRead()
