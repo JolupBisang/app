@@ -219,7 +219,7 @@ class MeetingSseService : Service() {
                     "SSE 연결 실패: ${t?.message}, response=${response?.code} / ${response?.message}", t
                 )
                 isConnecting = false
-                ErrorEventRepository.emitError("response=${response?.code} / ${response?.message}")
+                //ErrorEventRepository.emitError("response=${response?.code} / ${response?.message}")
 
                 //reconnectSse(meetingId)
             }

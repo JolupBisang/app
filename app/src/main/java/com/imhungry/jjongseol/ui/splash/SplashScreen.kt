@@ -70,7 +70,6 @@ fun SplashScreen(
                 }
             } else {
                 if (errorMessage == null) {
-                    loginViewModel.clearToken()
                     navController.navigate(SilRokNavigation.Login.route) {
                         popUpTo(0)
                     }
