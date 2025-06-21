@@ -219,7 +219,7 @@ fun MeetingRecordScreen(
         }
         when {
             latestFeedback != null && feedbackVisible -> {
-                //val elapsed = DateTimeUtils.getElapsedString(startTime, latestFeedback.timestamp)
+                val elapsed = DateTimeUtils.getElapsedString(startTime, latestFeedback.timestamp)
 
                 Box(
                     modifier = Modifier

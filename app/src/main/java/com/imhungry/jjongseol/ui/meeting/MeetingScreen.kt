@@ -632,22 +632,24 @@ fun MeetingScreen(
 
     // 4. MeetingSseService 시작
     LaunchedEffect(allReady) {
-        context.stopService(Intent(context, MeetingSseService::class.java))
-        context.startForegroundService(
-            Intent(context, MeetingSseService::class.java).apply {
-                putExtra("meetingId", meetingId)
+
+
+        sseStarted = true
+        val isRunning = appPrefs.isMeetingForegroundServiceRunning()
+        val runningMeetingId = appPrefs.getRunningMeetingId()
+        if (isRunning && runningMeetingId == meetingId) {
+        } else {
+            if (isRunning) {
+                context.stopService(Intent(context, MeetingSseService::class.java))
+            }
+            context.startForegroundService(
+                Intent(context, MeetingSseService::class.java).apply {
+                    putExtra("meetingId", meetingId)
             }
         )
-//        sseStarted = true
-//        val isRunning = appPrefs.isMeetingForegroundServiceRunning()
-//        val runningMeetingId = appPrefs.getRunningMeetingId()
-//        if (isRunning && runningMeetingId == meetingId) {
-//        } else {
-//            if (isRunning) {
-//            }
-//            Log.d("MeetingStart", "포그라운드 서비스 시작")
-//
-//        }
+            Log.d("MeetingStart", "포그라운드 서비스 시작")
+
+        }
     }
 
     // 5. 회의 시작 & 종료 시간 설정

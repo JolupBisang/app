@@ -154,7 +154,7 @@ class AudioWebSocketClient(
                 SocketResponseType.ERROR -> {
                     val error = Gson().fromJson(Gson().toJson(response.data), ErrorResponse::class.java)
                     val message = error.message
-                    Log.w("Audio", "WebSocket 에러 메시지 수신: $message")
+                    Log.w("Socket", "WebSocket 에러 메시지 수신: $message")
                     if (!message.equals("진행중인 회의가 아닙니다.")) {
                     }
                 }
@@ -317,6 +317,10 @@ class AudioWebSocketClient(
             Log.w("Socket", "이미 녹음이 진행 중입니다. 중복 생성 방지")
             return
         }
+        if (isAudioClosedByMeetingCompleted) {
+            Log.d("Socket", "MEETING_COMPLETED 이후 재접속 시도 차단")
+            return
+        }
         try {
             audioRecord = AudioRecord(
                 MediaRecorder.AudioSource.MIC,
@@ -410,9 +414,30 @@ class AudioWebSocketClient(
         if (!ok) Log.e("Audio", "WebSocket 바이너리 전송 실패")
     }
 
+//    fun stop() {
+//        isClosedByUser = true
+//        isStreaming = false
+//        try {
+//            audioRecord?.let { record ->
+//                if (record.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+//                    record.stop()
+//                }
+//                record.release()
+//            }
+//        } catch (e: IllegalStateException) {
+//            Log.e("Audio", "AudioRecord stop() 실패: ${e.message}", e)
+//        }
+//        audioRecord = null
+//
+//        webSocket?.close(1000, "Normal closure")
+//        webSocket = null
+//        isConnected = false
+//    }
+
     fun stop() {
         isClosedByUser = true
         isStreaming = false
+        isAudioClosedByMeetingCompleted = true
         try {
             audioRecord?.let { record ->
                 if (record.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
@@ -425,10 +450,14 @@ class AudioWebSocketClient(
         }
         audioRecord = null
 
+        recordJob?.cancel()
+        recordJob = null
+
         webSocket?.close(1000, "Normal closure")
         webSocket = null
         isConnected = false
     }
+
 
     fun deleteAllPackets() {
         scope.launch(Dispatchers.IO) {
