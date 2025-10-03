@@ -1,6 +1,5 @@
 package com.imhungry.jjongseol.data.network.api
 
-import com.imhungry.jjongseol.data.model.response.SliceResponse
 import com.imhungry.jjongseol.data.model.segment.response.SegmentListRes
 import retrofit2.Response
 import retrofit2.http.GET
@@ -8,11 +7,8 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface SegmentApi {
-    @GET("/api/segment/{meetingId}")
+    @GET("/api/v1/meeting/{meetingId}/segments")
     suspend fun getSegments(
-        @Path("meetingId") meetingId: Long,
-        @Query("page") page: Int = 0,
-        @Query("size") size: Int = 40,
-        @Query("sort") sort: String = "segmentOrder,ASC"
-    ): Response<SliceResponse<SegmentListRes>>
+        @Path("meetingId") meetingId: Long
+    ): Response<SegmentListRes>
 }

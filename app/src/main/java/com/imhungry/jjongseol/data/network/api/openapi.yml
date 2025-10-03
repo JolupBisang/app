@@ -1,0 +1,880 @@
+openapi: "3.1.0"
+info:
+  title: "silrok API"
+  description: "silrok API"
+  version: "1.0.0"
+servers:
+  - url: "https://silrok"
+tags:
+  - name: "사용자"
+    description: "사용자 관련 API"
+paths:
+  /api/auth/login/app/{platform}:
+    get:
+      summary: "GET api/auth/login/app/{platform}"
+      operationId: "loginThroughApp"
+      parameters:
+        - name: "platform"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            enum:
+              - "GOOGLE"
+        - name: "code"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RedirectView"
+  /api/auth/login/web/{platform}:
+    get:
+      summary: "GET api/auth/login/web/{platform}"
+      operationId: "loginThroughWeb"
+      parameters:
+        - name: "platform"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            enum:
+              - "GOOGLE"
+        - name: "code"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /env:
+    get:
+      summary: "GET env"
+      operationId: "healthCheck"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /api/v1/meetings/{meetingId}/feedbacks:
+    get:
+      summary: "GET api/v1/meetings/{meetingId}/feedbacks"
+      operationId: "getFeedbacks"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FeedbackListRes"
+  /api/users/my-profile:
+    get:
+      summary: "본인 정보 조회"
+      description: "본인 정보를 조회합니다."
+      operationId: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /api/users/{email}:
+    get:
+      summary: "GET api/users/{email}"
+      operationId: "getUserInfo"
+      parameters:
+        - name: "email"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /api/v1/meetings/{meetingId}:
+    get:
+      summary: "GET api/v1/meetings/{meetingId}"
+      operationId: "getMeetingDetail"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MeetingDetailRes"
+    put:
+      summary: "PUT api/v1/meetings/{meetingId}"
+      operationId: "updateMeetingDetail"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeetingUpdateReq"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MeetingDetailUpdateRes"
+  /api/v1/meetings:
+    post:
+      summary: "POST api/v1/meetings"
+      operationId: "createMeeting"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeetingCreationReq"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MeetingCreationRes"
+  /api/v1/meetings/{meetingId}/status:
+    put:
+      summary: "PUT api/v1/meetings/{meetingId}/status"
+      operationId: "updateMeetingStatusV1"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeetingStatusUpdateReq"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/MeetingStatusChangeRes"
+  /api/v1/meeting/{meetingId}/participants:
+    post:
+      summary: "POST api/v1/meeting/{meetingId}/participants"
+      operationId: "addParticipant"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParticipantAddReq"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ParticipantAdditionRes"
+  /api/v1/meetings/{meetingId}/participant/{participantId}:
+    delete:
+      summary: "DELETE api/v1/meetings/{meetingId}/participant/{participantId}"
+      operationId: "removeParticipant"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "participantId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ParticipantRemovalRes"
+  /api/v1/meetings/{meetingId}/summary:
+    get:
+      summary: "GET api/v1/meetings/{meetingId}/summary"
+      operationId: "getSummaries"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "isRecap"
+          in: "query"
+          required: false
+          schema:
+            type: "boolean"
+            default: "false"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SummaryListRes"
+  /api/v1/meetings/{meetingId}/agendas/{agendaId}/status:
+    patch:
+      summary: "PATCH api/v1/meetings/{meetingId}/agendas/{agendaId}/status"
+      operationId: "changeAgendaStatus"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "agendaId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgendaStatusReq"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AgendaStatusChangeRes"
+  /api/v1/meetings/{meetingId}/agendas:
+    post:
+      summary: "POST api/v1/meetings/{meetingId}/agendas"
+      operationId: "addAgenda"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgendaCreateReq"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AgendaCreationRes"
+    get:
+      summary: "GET api/v1/meetings/{meetingId}/agendas"
+      operationId: "getAgendas"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AgendaListRes"
+  /api/v1/meetings/{meetingId}/agendas/{agendaId}:
+    delete:
+      summary: "DELETE api/v1/meetings/{meetingId}/agendas/{agendaId}"
+      operationId: "deleteAgenda"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "agendaId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AgendaDeletionRes"
+    patch:
+      summary: "PATCH api/v1/meetings/{meetingId}/agendas/{agendaId}"
+      operationId: "updateContent"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "agendaId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgendaUpdateReq"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AgendaUpdateRes"
+  /api/v1/meetings/{meetingId}/events/subscribe:
+    get:
+      summary: "GET api/v1/meetings/{meetingId}/events/subscribe"
+      operationId: "subscribe"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SseEmitter"
+  /api/v1/meeting/{meetingId}/segments:
+    get:
+      summary: "GET api/v1/meeting/{meetingId}/segments"
+      operationId: "getSegments"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SegmentDetailRes"
+  /api/v1/audio/embedding:
+    post:
+      summary: "POST api/v1/audio/embedding"
+      operationId: "createEmbeddingAudio"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "object"
+              required:
+                - "audioFile"
+              properties:
+                audioFile:
+                  type: "string"
+                  format: "binary"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Void"
+  /api/v1/meeting/{meetingId}/fullAudio:
+    get:
+      summary: "GET api/v1/meeting/{meetingId}/fullAudio"
+      operationId: "getCompletedMeetingAudioList"
+      parameters:
+        - name: "meetingId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AudioListRes"
+components:
+  schemas:
+    ApplicationContext:
+      type: "object"
+      properties: { }
+    RedirectView:
+      type: "object"
+      properties:
+        hosts:
+          type: "array"
+          nullable: true
+          items:
+            type: "string"
+        url:
+          type: "string"
+          nullable: true
+        contentType:
+          type: "string"
+          nullable: true
+        requestContextAttribute:
+          type: "string"
+          nullable: true
+        staticAttributes:
+          type: "string"
+        exposePathVariables:
+          type: "boolean"
+          nullable: true
+        beanName:
+          type: "string"
+          nullable: true
+        applicationContext:
+          nullable: true
+          $ref: "#/components/schemas/ApplicationContext"
+      required:
+        - "staticAttributes"
+    FeedbackListRes:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        comment:
+          type: "string"
+          nullable: true
+        generatedDateTime:
+          type: "string"
+          format: "date-time"
+          nullable: true
+    ParticipantInfoRes:
+      type: "object"
+      properties:
+        userId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        email:
+          type: "string"
+          nullable: true
+        role:
+          type: "string"
+          nullable: true
+          enum:
+            - "HOST"
+            - "PARTICIPANT"
+            - "COHOST"
+    AgendaInfoRes:
+      type: "object"
+      properties:
+        agendaId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        content:
+          type: "string"
+          nullable: true
+        isCompleted:
+          type: "boolean"
+          nullable: true
+    MeetingDetailRes:
+      type: "object"
+      properties:
+        meetingId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        title:
+          type: "string"
+          nullable: true
+        location:
+          type: "string"
+          nullable: true
+        scheduledStartTime:
+          type: "string"
+          format: "date-time"
+          nullable: true
+        targetTime:
+          type: "integer"
+          format: "int32"
+          nullable: true
+        restInterval:
+          type: "integer"
+          format: "int32"
+          nullable: true
+        restDuration:
+          type: "integer"
+          format: "int32"
+          nullable: true
+        meetingStatus:
+          type: "string"
+          nullable: true
+        participants:
+          type: "array"
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ParticipantInfoRes"
+        agendas:
+          type: "array"
+          nullable: true
+          items:
+            $ref: "#/components/schemas/AgendaInfoRes"
+        isHost:
+          type: "boolean"
+          nullable: true
+    MeetingCreationReq:
+      type: "object"
+      properties:
+        title:
+          type: "string"
+          nullable: true
+        location:
+          type: "string"
+          nullable: true
+        scheduledStartTime:
+          type: "string"
+          format: "date-time"
+          nullable: true
+        targetTime:
+          type: "integer"
+          format: "int32"
+          nullable: true
+        restInterval:
+          type: "integer"
+          format: "int32"
+          nullable: true
+        restDuration:
+          type: "integer"
+          format: "int32"
+          nullable: true
+        participants:
+          type: "array"
+          nullable: true
+          items:
+            type: "string"
+        agendas:
+          type: "array"
+          nullable: true
+          items:
+            type: "string"
+    MeetingCreationRes:
+      type: "object"
+      properties:
+        meetingId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+    MeetingStatusUpdateReq:
+      type: "object"
+      properties:
+        targetStatus:
+          type: "string"
+          nullable: true
+          enum:
+            - "IN_PROGRESSING"
+            - "COMPLETED"
+            - "CANCELLED"
+    MeetingStatusChangeRes:
+      type: "object"
+      properties:
+        meetingId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        finalStatus:
+          type: "string"
+          nullable: true
+    MeetingUpdateReq:
+      type: "object"
+      properties:
+        title:
+          type: "string"
+          nullable: true
+        location:
+          type: "string"
+          nullable: true
+        scheduledStartTime:
+          type: "string"
+          format: "date-time"
+          nullable: true
+        targetTime:
+          type: "integer"
+          format: "int32"
+          nullable: true
+        restInterval:
+          type: "integer"
+          format: "int32"
+          nullable: true
+        restDuration:
+          type: "integer"
+          format: "int32"
+          nullable: true
+    MeetingDetailUpdateRes:
+      type: "object"
+      properties:
+        meetingId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+    ParticipantAddReq:
+      type: "object"
+      properties:
+        emails:
+          type: "array"
+          nullable: true
+          items:
+            type: "string"
+    ParticipantAdditionRes:
+      type: "object"
+      properties:
+        meetingId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+    ParticipantRemovalRes:
+      type: "object"
+      properties:
+        meetingId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        participantId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+    SummaryListRes:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        content:
+          type: "string"
+          nullable: true
+        isRecap:
+          type: "boolean"
+          nullable: true
+        generatedDateTime:
+          type: "string"
+          format: "date-time"
+          nullable: true
+    AgendaStatusReq:
+      type: "object"
+      properties:
+        isCompleted:
+          type: "boolean"
+          nullable: true
+    AgendaStatusChangeRes:
+      type: "object"
+      properties:
+        meetingId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        agendaId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        isCompleted:
+          type: "boolean"
+          nullable: true
+    AgendaCreateReq:
+      type: "object"
+      properties:
+        contents:
+          type: "array"
+          nullable: true
+          items:
+            type: "string"
+    AgendaDetailRes:
+      type: "object"
+      properties:
+        agendaId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        content:
+          type: "string"
+          nullable: true
+    AgendaCreationRes:
+      type: "object"
+      properties:
+        meetingId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        agendaDetails:
+          type: "array"
+          nullable: true
+          items:
+            $ref: "#/components/schemas/AgendaDetailRes"
+    AgendaDeletionRes:
+      type: "object"
+      properties:
+        meetingId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        agendaId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+    AgendaUpdateReq:
+      type: "object"
+      properties:
+        content:
+          type: "string"
+          nullable: true
+    AgendaUpdateRes:
+      type: "object"
+      properties:
+        agendaId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+    SseEmitter:
+      type: "object"
+      properties:
+        timeout:
+          type: "integer"
+          format: "int64"
+          nullable: true
+    SegmentDetailRes:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        userId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        segmentOrder:
+          type: "integer"
+          format: "int32"
+          nullable: true
+        timestamp:
+          type: "string"
+          format: "date-time"
+          nullable: true
+        text:
+          type: "string"
+          nullable: true
+        lang:
+          type: "string"
+          nullable: true
+    Void:
+      type: "object"
+      properties: { }
+    AudioInfo:
+      type: "object"
+      properties:
+        userId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        presignedUrl:
+          type: "string"
+          nullable: true
+    AudioListRes:
+      type: "object"
+      properties:
+        audioList:
+          type: "array"
+          nullable: true
+          items:
+            $ref: "#/components/schemas/AudioInfo"
+    AgendaListInfoRes:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        content:
+          type: "string"
+          nullable: true
+        isCompleted:
+          type: "boolean"
+          nullable: true
+    AgendaListRes:
+      type: "object"
+      properties:
+        agendas:
+          type: "array"
+          nullable: true
+          items:
+            $ref: "#/components/schemas/AgendaListInfoRes"
