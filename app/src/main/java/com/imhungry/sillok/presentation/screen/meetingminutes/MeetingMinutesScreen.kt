@@ -5,9 +5,11 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
@@ -89,6 +91,7 @@ fun MeetingMinutesScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
+                        .padding(bottom = 6.dp)
                 ) {
                     HorizontalPager(
                         count = 3,
@@ -153,6 +156,7 @@ fun MeetingMinutesScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
+                    .padding(bottom = 8.dp)
                     .onGloballyPositioned { coordinates ->
                         audioBarHeightPx = coordinates.size.height
                     },
