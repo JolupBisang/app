@@ -1,0 +1,39 @@
+package com.imhungry.sillok.data.repository.segment
+
+import com.imhungry.sillok.data.mapper.segment.SegmentMapper
+import com.imhungry.sillok.data.remote.segment.SegmentApi
+import com.imhungry.sillok.data.util.ApiResult
+import com.imhungry.sillok.domain.repository.segment.SegmentRepository
+import com.imhungry.sillok.domain.model.segment.Segment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
+
+class SegmentRepositoryImpl @Inject constructor(
+    private val api: SegmentApi,
+    private val mapper: SegmentMapper
+) : SegmentRepository {
+
+    override suspend fun getSegments(
+        meetingId: Long,
+        page: Int,
+        size: Int
+    ): ApiResult<List<Segment>> = withContext(Dispatchers.IO) {
+        try {
+            val res = api.getSegments(meetingId)
+            if (res.isSuccessful) {
+                val dto = res.body()
+                if (dto != null) {
+                    val segment = mapper.toDomain(dto)
+                    ApiResult.Success(listOf(segment))
+                } else {
+                    ApiResult.Failure("응답 파싱 오류")
+                }
+            } else {
+                ApiResult.Failure(res.message())
+            }
+        } catch (e: Exception) {
+            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
+        }
+    }
+}

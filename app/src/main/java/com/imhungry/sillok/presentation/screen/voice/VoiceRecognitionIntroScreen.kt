@@ -1,0 +1,101 @@
+package com.imhungry.sillok.presentation.screen.voice
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
+import coil.decode.GifDecoder
+import coil.request.ImageRequest
+import com.imhungry.sillok.R
+import com.imhungry.sillok.ui.components.BasicBox
+import com.imhungry.sillok.ui.components.ExitAppBackHandler
+import com.imhungry.sillok.ui.components.SillokButton
+import com.imhungry.sillok.ui.theme.blackBackGround
+import com.imhungry.sillok.ui.theme.gradientBrush
+import com.imhungry.sillok.ui.theme.inverse
+
+@Composable
+fun VoiceRecognitionIntroScreen(
+    onStartRecognition: () -> Unit
+) {
+    ExitAppBackHandler()
+
+    BasicBox(
+        statusBarColor = blackBackGround,
+        navigationBarColor = blackBackGround,
+        backgroundColor = blackBackGround
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(110.dp))
+                Image(
+                    painter = rememberAsyncImagePainter(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(R.drawable.bubble)
+                            .decoderFactory(GifDecoder.Factory())
+                            .build()
+                    ),
+                    contentDescription = "말풍선 gif",
+                    modifier = Modifier.size(140.dp)
+                )
+                Text(
+                    buildAnnotatedString {
+                        withStyle(
+                            style = SpanStyle(
+                                brush = gradientBrush
+                            ),
+                        ) {
+                            append("당신의 목소리")
+                        }
+                        append("를\n알려주세요")
+                    },
+                    style = MaterialTheme.typography.titleLarge,
+                    color = inverse,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    "이 설정을 통해 회의 중 발화자를 구분할 수 있습니다.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = inverse,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    "조용한 환경에서 천천히 말해주시길 바랍니다.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = inverse,
+                    textAlign = TextAlign.Center
+                )
+            }
+            SillokButton(
+                text = "다음",
+                onClick = onStartRecognition,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+    }
+} 

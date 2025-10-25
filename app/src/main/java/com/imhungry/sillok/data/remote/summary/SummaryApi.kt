@@ -1,0 +1,15 @@
+package com.imhungry.sillok.data.remote.summary
+
+import com.imhungry.sillok.data.model.summary.SummaryListResDto
+import retrofit2.Response
+import retrofit2.http.GET
+import retrofit2.http.Path
+import retrofit2.http.Query
+
+interface SummaryApi {
+    @GET("/api/v1/meetings/{meetingId}/summary")
+    suspend fun getSummaries(
+        @Path("meetingId") meetingId: Long,
+        @Query("isRecap") isRecap: Boolean = false
+    ): Response<SummaryListResDto>
+}
