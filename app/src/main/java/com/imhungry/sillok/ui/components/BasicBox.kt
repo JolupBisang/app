@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.imhungry.sillok.ui.theme.gradientBrush2
 
 @Composable
 fun BasicBox(
@@ -51,6 +52,30 @@ fun MeetingBasicBox(
             .fillMaxSize()
             .background(backgroundColor)
             .windowInsetsPadding(WindowInsets.navigationBars)
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun HomeBasicBox(
+    statusBarColor: Color,
+    navigationBarColor: Color,
+    backgroundColor: Color,
+    content: @Composable () -> Unit
+){
+    SystemBars(
+        statusBarColor = statusBarColor,
+        navigationBarColor = navigationBarColor,
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+            .background(gradientBrush2)
+            .windowInsetsPadding(WindowInsets.systemBars)
+            .padding(start = 20.dp, end = 20.dp, bottom = 20.dp, top = 12.dp)
     ) {
         content()
     }

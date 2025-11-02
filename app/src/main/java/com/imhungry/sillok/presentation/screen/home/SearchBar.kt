@@ -2,6 +2,7 @@ package com.imhungry.sillok.presentation.screen.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -27,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,6 +36,8 @@ import androidx.compose.ui.unit.sp
 import com.imhungry.sillok.R
 import com.imhungry.sillok.ui.theme.beige
 import com.imhungry.sillok.ui.theme.gray200
+import com.imhungry.sillok.ui.theme.gray400
+import com.imhungry.sillok.ui.theme.primaryBackground
 
 @Composable
 fun SearchBar(
@@ -49,7 +53,8 @@ fun SearchBar(
         modifier = modifier
             .height(42.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(beige)
+            .background(primaryBackground)
+            .border(width = 1.dp, color = gray400, shape = RoundedCornerShape(8.dp))
             .padding(start = 16.dp, end = 12.dp),
         contentAlignment = Alignment.CenterStart
     ) {
@@ -57,16 +62,10 @@ fun SearchBar(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 메뉴 아이콘(사이드바 열기)
             Image(
-                painter = painterResource(id = R.drawable.menu),
-                contentDescription = "메뉴",
-                modifier = Modifier
-                    .size(20.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onMenuClick() }
+                painter = painterResource(id = R.drawable.search),
+                contentDescription = "검색",
+                modifier = Modifier.size(20.dp)
             )
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -86,20 +85,13 @@ fun SearchBar(
                             text = "제목, 참석자로 검색",
                             style = MaterialTheme.typography.bodyLarge,
                             color = gray200,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Normal
                         )
                     }
                     innerTextField()
                 }
             )
-
             Spacer(modifier = Modifier.width(12.dp))
-
-            Image(
-                painter = painterResource(id = R.drawable.search),
-                contentDescription = "검색",
-                modifier = Modifier.size(20.dp)
-            )
         }
     }
 }

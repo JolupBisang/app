@@ -88,7 +88,7 @@ fun SillokNavigation(
     BackPressHandler(navController = navController) {
         NavHost(
             navController = navController,
-            startDestination = Screen.Splash.route
+            startDestination = Screen.Home.route
         ) {
         // 스플래시 화면
         composable(Screen.Splash.route) {

@@ -18,22 +18,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -42,12 +35,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.sillok.R
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.presentation.viewmodel.home.HomeViewModel
-import com.imhungry.sillok.ui.components.BasicBox
+import com.imhungry.sillok.ui.components.CustomDrawer
+import com.imhungry.sillok.ui.components.HomeBasicBox
 import com.imhungry.sillok.ui.components.SillokButton
-import com.imhungry.sillok.ui.theme.gradientBrush2
+import com.imhungry.sillok.ui.components.rememberDrawerState
 import com.imhungry.sillok.ui.theme.primaryBackground
+import com.imhungry.sillok.ui.theme.primaryTextColor
 import com.imhungry.sillok.ui.theme.sideBar
-import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -65,9 +60,7 @@ fun HomeScreen(
     var isSearchFocused by remember { mutableStateOf(false) }
     var showOngoingMeeting by remember { mutableStateOf(true) }
     var ongoingIndex by remember { mutableStateOf(0) }
-
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
+    val drawerState = rememberDrawerState()
 
     if (homeState.searchText.isNotBlank()) {
         BackHandler {
@@ -77,42 +70,49 @@ fun HomeScreen(
             viewModel.onSearchTextChange("")
         }
     }
+    
+    if (drawerState.isOpen) {
+        BackHandler {
+            drawerState.close()
+        }
+    }
 
-    ModalNavigationDrawer(
+    CustomDrawer(
         drawerState = drawerState,
+        drawerWidth = 280.dp,
+        edgeThreshold = 50.dp,
+        swipeThreshold = 0.1f,
         drawerContent = {
-            ModalDrawerSheet(
-                drawerContainerColor = sideBar,
-                drawerShape = RectangleShape
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(sideBar)
             ) {
                 Sidebar(
                     userName = homeState.userName,
+                    profileImage = homeState.profileImage,
                     onNewMeeting = {
-                        scope.launch { drawerState.close() }
+                        drawerState.close()
                         viewModel.onCleared()
                         onNavigateToCreateMeeting()
                     },
                     onTeamManagement = {
-                        scope.launch { drawerState.close() }
+                        drawerState.close()
                         // TODO: 팀 관리 화면으로 이동
                     },
                     onFeedbackHistory = {
-                        scope.launch { drawerState.close() }
+                        drawerState.close()
                         // TODO: 피드백 기록 화면으로 이동
                     },
                     onMeetingFolder = {
-                        scope.launch { drawerState.close() }
+                        drawerState.close()
                         // TODO: 회의록 폴더 화면으로 이동
-                    },
-                    onSettings = {
-                        scope.launch { drawerState.close() }
-                        // TODO: 설정 화면으로 이동
                     }
                 )
             }
         }
     ) {
-        BasicBox(
+        HomeBasicBox(
             statusBarColor = primaryBackground,
             navigationBarColor = primaryBackground,
             backgroundColor = primaryBackground
@@ -132,39 +132,68 @@ fun HomeScreen(
                         }
                     }
             ) {
-                // 상단 영역 (검색창과 회의 일정)
+                // 상단 영역
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    // 검색창과 알림 아이콘을 포함하는 Row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 검색창
-                        SearchBar(
-                            modifier = Modifier.weight(1f),
-                            onFocusChange = { focused ->
-                                isSearchFocused = focused
-                            },
-                            focusRequester = focusRequester,
-                            onMenuClick = {
-                                scope.launch { drawerState.open() }
-                            },
-                            text = homeState.searchText,
-                            onTextChange = { viewModel.onSearchTextChange(it) }
+                        Image(
+                            painter = painterResource(id = R.drawable.menu),
+                            contentDescription = "메뉴",
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) { drawerState.open() }
                         )
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        // 알림 아이콘
+                        Spacer(Modifier.weight(1f))
                         Image(
                             painter = painterResource(id = R.drawable.alarm),
                             contentDescription = "알림",
                             modifier = Modifier.size(20.dp)
                         )
                     }
+                    val ongoingList = homeState.ongoingMeetings
+                    if (ongoingList.isNotEmpty() && showOngoingMeeting) {
+                        val current = ongoingList.getOrNull(ongoingIndex)
+                        if (current != null) {
+                            OngoingMeetingNotification(
+                                meeting = current,
+                                onJoinMeeting = {
+                                    onNavigagteToMeetingInProgress(current.id)
+                                },
+                                onDeclineMeeting = {},
+                                onDismiss = {
+                                    if (ongoingIndex < ongoingList.lastIndex) {
+                                        ongoingIndex += 1
+                                    } else {
+                                        showOngoingMeeting = false
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
 
+                    SearchBar(
+                        modifier = Modifier.fillMaxWidth(),
+                        onFocusChange = { focused ->
+                            isSearchFocused = focused
+                        },
+                        focusRequester = focusRequester,
+                        onMenuClick = {
+                            drawerState.open()
+                        },
+                        text = homeState.searchText,
+                        onTextChange = { viewModel.onSearchTextChange(it) }
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
                     if (homeState.searchText.isNotBlank()) {
                         Spacer(modifier = Modifier.height(24.dp))
                         SearchResultList(
@@ -181,28 +210,45 @@ fun HomeScreen(
                             }
                         )
                     } else {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        MeetingScheduleView(
-                            onMeetingItemClick = { meeting ->
-                                viewModel.onCleared()
-                                when (meeting.status) {
-                                    "WAITING" -> onNavigateToMeetingDetail(meeting.id)
-                                    "IN_PROGRESS" -> onNavigagteToMeetingInProgress(meeting.id)
-                                    "COMPLETED" -> onNavigateToMeetingMinutes(meeting.id)
-                                    else -> onNavigateToMeetingDetail(meeting.id)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            scheduledMeetings = homeState.scheduledMeetings,
-                            pastMeetings = homeState.pastMeetings
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                        SillokButton(
-                            text = "더보기",
-                            onClick = { viewModel.loadPreviousMonth() },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Column {
+//                            CalendarView(
+//                                selectedDate = selectedDate,
+//                                onDateSelected = { date ->
+//                                    selectedDate = date
+//                                },
+//                                onTodayClick = {
+//                                    selectedDate = LocalDate.now()
+//                                },
+//                                scheduledMeetings = scheduledMeetings,
+//                                pastMeetings = pastMeetings,
+//                                modifier = Modifier.fillMaxWidth()
+//                            )
+//
+//                            Spacer(modifier = Modifier.height(16.dp))
+//
+//                            SelectedDateMeetingList(
+//                                selectedDate = selectedDate,
+//                                scheduledMeetings = scheduledMeetings,
+//                                pastMeetings = pastMeetings,
+//                                onMeetingItemClick = onMeetingItemClick,
+//                                modifier = Modifier.fillMaxSize()
+//                            )
+//                        }
+                            MeetingScheduleView(
+                                onMeetingItemClick = { meeting ->
+                                    viewModel.onCleared()
+                                    when (meeting.status) {
+                                        "WAITING" -> onNavigateToMeetingDetail(meeting.id)
+                                        "IN_PROGRESS" -> onNavigagteToMeetingInProgress(meeting.id)
+                                        "COMPLETED" -> onNavigateToMeetingMinutes(meeting.id)
+                                        else -> onNavigateToMeetingDetail(meeting.id)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                scheduledMeetings = homeState.scheduledMeetings,
+                                pastMeetings = homeState.pastMeetings
+                            )
+                        }
                     }
                 }
 
@@ -210,32 +256,28 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     val ongoingList = homeState.ongoingMeetings
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     if (ongoingList.isNotEmpty() && showOngoingMeeting) {
                         val current = ongoingList.getOrNull(ongoingIndex)
                         if (current != null) {
-                            OngoingMeetingNotification(
-                                meetingTitle = current.title,
-                                meetingTime = current.formattedTime,
-                                onJoinMeeting = {
-                                    onNavigagteToMeetingInProgress(current.id)
-                                },
-                                onDeclineMeeting = {},
-                                onDismiss = {
-                                    if (ongoingIndex < ongoingList.lastIndex) {
-                                        ongoingIndex += 1
-                                    } else {
-                                        showOngoingMeeting = false
-                                    }
+                            SillokButton(
+                                text = "현재 진행 중인 회의 참여하기",
+                                onClick = {
+                                    viewModel.onCleared()
+                                    onNavigateToCreateMeeting()
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     SillokButton(
-                        text = "새 회의",
+                        text = "새 회의 만들기",
+                        backgroundColor = primaryTextColor,
                         onClick = {
                             viewModel.onCleared()
                             onNavigateToCreateMeeting()

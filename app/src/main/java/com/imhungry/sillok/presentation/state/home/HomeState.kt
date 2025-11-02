@@ -19,6 +19,7 @@ data class OngoingMeeting(
 
 data class HomeState(
     val userName: String = "",
+    val profileImage: String = "",
     val scheduledMeetings: List<MeetingDetailSummary> = emptyList(),
     val pastMeetings: List<MeetingDetailSummary> = emptyList(),
     val ongoingMeetings: List<OngoingMeeting> = emptyList(),

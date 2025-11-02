@@ -1,131 +1,151 @@
 package com.imhungry.sillok.presentation.screen.home
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.imhungry.sillok.ui.components.SillokTextButton
+import com.imhungry.sillok.presentation.state.home.OngoingMeeting
+import com.imhungry.sillok.ui.components.SmallSillokButton
 import com.imhungry.sillok.ui.theme.gray200
-import com.imhungry.sillok.ui.theme.green500
-import com.imhungry.sillok.ui.theme.primarySurface
-import com.imhungry.sillok.ui.theme.tertiary
-import kotlin.math.abs
+import com.imhungry.sillok.ui.theme.green200
+import com.imhungry.sillok.ui.theme.green300
+import kotlinx.coroutines.delay
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
+@RequiresApi(Build.VERSION_CODES.O)
+private fun calculateTimeAgo(scheduledStartTime: String): String {
+    return try {
+        val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+        val startTime = LocalDateTime.parse(scheduledStartTime, formatter)
+        val now = LocalDateTime.now()
+        
+        val minutesAgo = ChronoUnit.MINUTES.between(startTime, now)
+        val hoursAgo = ChronoUnit.HOURS.between(startTime, now)
+        val daysAgo = ChronoUnit.DAYS.between(startTime, now)
+        
+        when {
+            minutesAgo < 1 -> "just now"
+            minutesAgo < 60 -> "$minutesAgo min${if (minutesAgo > 1) "s" else ""} ago"
+            hoursAgo < 24 -> "$hoursAgo hour${if (hoursAgo > 1) "s" else ""} ago"
+            else -> "$daysAgo day${if (daysAgo > 1) "s" else ""} ago"
+        }
+    } catch (e: Exception) {
+        "recently"
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun OngoingMeetingNotification(
-    meetingTitle: String,
-    meetingTime: String,
+    meeting: OngoingMeeting,
     onJoinMeeting: () -> Unit,
     onDeclineMeeting: () -> Unit,
     onDismiss: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var offsetX by remember { mutableStateOf(0f) }
     var isVisible by remember { mutableStateOf(true) }
+    var timeAgoText by remember { mutableStateOf(calculateTimeAgo(meeting.scheduledStartTime)) }
     
-    val animatedOffsetX by animateFloatAsState(
-        targetValue = if (isVisible) offsetX else 1000f,
-        animationSpec = tween(durationMillis = 20),
-        label = "offsetX"
-    )
+    // 매 분마다 시간 업데이트
+    LaunchedEffect(meeting.scheduledStartTime) {
+        while (true) {
+            timeAgoText = calculateTimeAgo(meeting.scheduledStartTime)
+            delay(60000L) // 1분마다 업데이트
+        }
+    }
     
     if (isVisible) {
-        Card(
-            modifier = modifier
-                .fillMaxWidth()
-                .graphicsLayer(
-                    translationX = animatedOffsetX
-                )
-                .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragEnd = {
-                            if (abs(offsetX) > 500f) {
-                                isVisible = false
-                                onDismiss()
-                            } else {
-                                offsetX = 0f
-                            }
-                        }
-                    ) { _, dragAmount ->
-                        offsetX += dragAmount.x
-                    }
-                }
-                .shadow(
-                    elevation = 4.dp,
-                    shape = RoundedCornerShape(16.dp)
-                ),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = green500
-            )
+        Box(
+            modifier = modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp)
+                    .padding(top = 20.dp)
             ) {
-                Text(
-                    text = "📍 진행 중인 회의가 있습니다",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontSize = 15.sp,
-                )
+                Row {
+                    Text(
+                        text = "진행 중인 회의",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 22.sp,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = timeAgoText,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp,
+                        color = green300,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+
                 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 
                 // 회의 제목
                 Text(
-                    text = meetingTitle,
+                    text = meeting.title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     color = gray200,
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 
                 // 회의 시간
                 Text(
-                    text = meetingTime,
+                    text = meeting.formattedTime,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Normal,
+                    fontWeight = FontWeight.Light,
                     fontSize = 14.sp,
                     color = gray200,
                 )
                 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    SillokTextButton(
+                    SmallSillokButton(
+                        text = "입장하기",
+                        backgroundColor = green300,
+                        onClick = onJoinMeeting
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    SmallSillokButton(
                         text = "참여하지 않기",
+                        backgroundColor = Color.White,
+                        textColor = green200,
                         onClick = {
                             isVisible = false
                             onDeclineMeeting()
                         },
-                        textColor = tertiary,
-                        fontWeight = FontWeight.Bold,
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    SillokTextButton(
-                        text = "바로 참여하기",
-                        onClick = onJoinMeeting,
-                        textColor = primarySurface,
-                        fontWeight = FontWeight.Bold,
+                        borderColor = green300
                     )
                 }
             }

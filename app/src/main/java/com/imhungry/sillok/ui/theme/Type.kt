@@ -38,7 +38,7 @@ val Typography = Typography(
     ),
     labelMedium = TextStyle(
         fontFamily = Pretend,
-        fontWeight = FontWeight.ExtraBold,
+        fontWeight = FontWeight.Bold,
         color = primaryTextColor,
         fontSize = 15.sp
     ),
@@ -68,12 +68,12 @@ val Typography = Typography(
     ),
     titleSmall = TextStyle(
         fontFamily = Pretend,
-        fontWeight = FontWeight.ExtraBold,
+        fontWeight = FontWeight.Bold,
         color = primaryTextColor
     ),
     titleMedium = TextStyle(
         fontFamily = Pretend,
-        fontWeight = FontWeight.ExtraBold,
+        fontWeight = FontWeight.Bold,
         color = primaryTextColor,
         fontSize = 16.sp
     ),
@@ -85,7 +85,7 @@ val Typography = Typography(
     ),
     headlineMedium = TextStyle(
         fontFamily = Pretend,
-        fontWeight = FontWeight.ExtraBold,
+        fontWeight = FontWeight.Bold,
         color = primaryTextColor,
         fontSize = 18.sp
     ),
