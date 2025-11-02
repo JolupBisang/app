@@ -1,9 +1,10 @@
 package com.imhungry.sillok.presentation.screen.home
 
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
-import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -29,9 +32,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -41,10 +43,10 @@ import com.imhungry.sillok.R
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.presentation.viewmodel.home.HomeViewModel
 import com.imhungry.sillok.ui.components.BasicBox
-import com.imhungry.sillok.ui.components.ExitAppBackHandler
 import com.imhungry.sillok.ui.components.SillokButton
-import com.imhungry.sillok.ui.theme.beige
+import com.imhungry.sillok.ui.theme.gradientBrush2
 import com.imhungry.sillok.ui.theme.primaryBackground
+import com.imhungry.sillok.ui.theme.sideBar
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -74,15 +76,13 @@ fun HomeScreen(
             isSearchFocused = false
             viewModel.onSearchTextChange("")
         }
-    } else {
-        ExitAppBackHandler()
     }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                drawerContainerColor = beige,
+                drawerContainerColor = sideBar,
                 drawerShape = RectangleShape
             ) {
                 Sidebar(

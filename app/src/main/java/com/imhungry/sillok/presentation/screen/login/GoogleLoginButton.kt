@@ -85,7 +85,7 @@ fun GoogleLoginButton(
             Spacer(modifier = Modifier.width(12.dp))
             
             Text(
-                text = if (isLoading) "로그인 중..." else "Continue with Google",
+                text = "Continue with Google",
                 color = googleButtonText,
                 fontSize = 16.sp,
                 fontFamily = FontFamily(Roboto),

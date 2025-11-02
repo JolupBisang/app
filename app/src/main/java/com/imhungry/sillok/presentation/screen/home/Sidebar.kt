@@ -28,6 +28,7 @@ import com.imhungry.sillok.ui.components.Divider
 import com.imhungry.sillok.ui.components.SillokTextButton
 import com.imhungry.sillok.ui.theme.beige
 import com.imhungry.sillok.ui.theme.primaryTextColor
+import com.imhungry.sillok.ui.theme.sideBar
 
 @Composable
 fun Sidebar(
@@ -42,32 +43,14 @@ fun Sidebar(
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .background(beige)
+            .background(sideBar)
             .width(280.dp)
             .padding(24.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = if (userName.isNotEmpty()) userName else "사용자",
-                style = MaterialTheme.typography.titleMedium,
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Image(
-                painter = painterResource(id = R.drawable.setting),
-                contentDescription = "설정",
-                modifier = Modifier
-                    .size(20.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onSettings() }
-            )
-        }
+        Text(
+            text = if (userName.isNotEmpty()) userName else "사용자",
+            style = MaterialTheme.typography.titleMedium,
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
         Divider()

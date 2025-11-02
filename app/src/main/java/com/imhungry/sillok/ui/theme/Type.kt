@@ -22,6 +22,13 @@ val Pretend = FontFamily(
 
 val Roboto = Font(R.font.roboto_medium, FontWeight.Medium)
 
+val Alegreya = FontFamily(Font(R.font.alegreya_regular, FontWeight.Normal))
+
+val Sunbatang = FontFamily(
+    Font(R.font.sunbatang_light, FontWeight.Light),
+    Font(R.font.sunbatang_bold, FontWeight.Bold)
+)
+
 val Typography = Typography(
     labelSmall = TextStyle(
         fontFamily = Pretend,
@@ -81,5 +88,10 @@ val Typography = Typography(
         fontWeight = FontWeight.ExtraBold,
         color = primaryTextColor,
         fontSize = 18.sp
-    )
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = Alegreya,
+        color = primaryTextColor,
+        fontSize = 28.sp
+    ),
 )

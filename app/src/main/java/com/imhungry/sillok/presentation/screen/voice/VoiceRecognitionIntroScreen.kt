@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,9 +28,8 @@ import coil.decode.GifDecoder
 import coil.request.ImageRequest
 import com.imhungry.sillok.R
 import com.imhungry.sillok.ui.components.BasicBox
-import com.imhungry.sillok.ui.components.ExitAppBackHandler
 import com.imhungry.sillok.ui.components.SillokButton
-import com.imhungry.sillok.ui.theme.blackBackGround
+import com.imhungry.sillok.ui.theme.brown400
 import com.imhungry.sillok.ui.theme.gradientBrush
 import com.imhungry.sillok.ui.theme.inverse
 
@@ -34,12 +37,10 @@ import com.imhungry.sillok.ui.theme.inverse
 fun VoiceRecognitionIntroScreen(
     onStartRecognition: () -> Unit
 ) {
-    ExitAppBackHandler()
-
     BasicBox(
-        statusBarColor = blackBackGround,
-        navigationBarColor = blackBackGround,
-        backgroundColor = blackBackGround
+        statusBarColor = brown400,
+        navigationBarColor = brown400,
+        backgroundColor = brown400
     ) {
         Box(
             modifier = Modifier.fillMaxSize()

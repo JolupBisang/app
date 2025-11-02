@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewModel
-import com.imhungry.sillok.ui.components.SillokDialog
 import com.imhungry.sillok.ui.theme.primaryTextColor
 import com.imhungry.sillok.ui.theme.shadow
 import com.imhungry.sillok.ui.theme.tertiary
@@ -47,8 +46,6 @@ fun MeetingControlPanel(
     meetingInProgressViewModel: MeetingInProgressViewModel,
 ) {
     val micEnabled by meetingInProgressViewModel.micEnabled.collectAsState()
-    var showDialog by remember { mutableStateOf(false) }
-    var showLeaveDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -98,7 +95,7 @@ fun MeetingControlPanel(
             ControlIcon(
                 resId = R.drawable.power,
                 description = "종료",
-                onClick = { showDialog = true },
+                onClick = onComplete,
                 size = 24.dp
             )
 
@@ -125,39 +122,10 @@ fun MeetingControlPanel(
             ControlIcon(
                 resId = R.drawable.out,
                 description = "나가기",
-                onClick = { showLeaveDialog = true },
+                onClick = onBack,
                 size = 24.dp
             )
         }
-    }
-
-    if (showDialog) {
-        SillokDialog(
-            message = "회의를 종료하시겠습니까?",
-            confirmText = "예",
-            cancelText = "취소",
-            onConfirm = {
-                onComplete()
-                showDialog = false
-            },
-            onDismiss = {
-                showDialog = false
-            }
-        )
-    }
-
-    if (showLeaveDialog) {
-        SillokDialog(
-            message = "회의를 떠나시겠습니까?",
-            confirmText = "예",
-            cancelText = "취소",
-            onConfirm = {
-                onBack()
-            },
-            onDismiss = {
-                showLeaveDialog = false
-            }
-        )
     }
 }
 

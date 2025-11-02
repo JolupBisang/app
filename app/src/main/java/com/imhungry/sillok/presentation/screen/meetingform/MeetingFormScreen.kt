@@ -131,12 +131,13 @@ fun MeetingFormScreen(
         }
     }
 
-    BasicBox(
-        statusBarColor = primaryBackground,
-        navigationBarColor = primaryBackground,
-        backgroundColor = primaryBackground
-    ) {
-        Column(
+    Box(modifier = Modifier.fillMaxSize()) {
+        BasicBox(
+            statusBarColor = primaryBackground,
+            navigationBarColor = primaryBackground,
+            backgroundColor = primaryBackground
+        ) {
+            Column(
             modifier = Modifier
                 .fillMaxSize()
                 .clickable(
@@ -507,13 +508,14 @@ fun MeetingFormScreen(
                 }
             }
         }
-        
-        // 시스템 뒤로가기 → 취소 동작과 동일하게 처리
-        BackHandler {
-            viewModel.onEvent(MeetingFormEvent.CancelClicked)
+            
+            // 시스템 뒤로가기 → 취소 동작과 동일하게 처리
+            BackHandler {
+                viewModel.onEvent(MeetingFormEvent.CancelClicked)
+            }
         }
 
-        // 취소 확인 다이얼로그 (모드별 문구 분기)
+        // 취소 확인 다이얼로그 (모드별 문구 분기) - 오버레이로 표시
         if (state.showCancelDialog) {
             val dialogMessage = if (isEditMode) {
                 "수정된 내용이 저장되지 않습니다.\n정말로 나가시겠습니까?"

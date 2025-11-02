@@ -23,21 +23,18 @@ import coil.decode.GifDecoder
 import coil.request.ImageRequest
 import com.imhungry.sillok.R
 import com.imhungry.sillok.ui.components.BasicBox
-import com.imhungry.sillok.ui.components.ExitAppBackHandler
 import com.imhungry.sillok.ui.components.SillokButton
-import com.imhungry.sillok.ui.theme.blackBackGround
+import com.imhungry.sillok.ui.theme.brown400
 import com.imhungry.sillok.ui.theme.inverse
 
 @Composable
 fun VoiceRecognitionCompleteScreen(
     onProcessingComplete: () -> Unit
 ) {
-    ExitAppBackHandler()
-
     BasicBox(
-        statusBarColor = blackBackGround,
-        navigationBarColor = blackBackGround,
-        backgroundColor = blackBackGround
+        statusBarColor = brown400,
+        navigationBarColor = brown400,
+        backgroundColor = brown400
     ) {
         Box(
             modifier = Modifier.fillMaxSize()

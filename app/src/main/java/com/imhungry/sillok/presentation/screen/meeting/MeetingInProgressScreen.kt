@@ -1,6 +1,7 @@
 package com.imhungry.sillok.presentation.screen.meeting
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -28,13 +29,14 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.PagerState
 import com.google.accompanist.pager.rememberPagerState
-import com.imhungry.sillok.presentation.permission.HandleVoicePermissions
+import com.imhungry.sillok.presentation.permission.PermissionHandler
 import com.imhungry.sillok.presentation.screen.meeting.component.MeetingControlPanel
 import com.imhungry.sillok.presentation.screen.meeting.pager.MeetingFeedbackScreen
 import com.imhungry.sillok.presentation.screen.meeting.pager.MeetingRecordScreen
 import com.imhungry.sillok.presentation.screen.meeting.pager.MeetingSummaryScreen
 import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewModel
 import com.imhungry.sillok.ui.components.MeetingBasicBox
+import com.imhungry.sillok.ui.components.SillokDialog
 import com.imhungry.sillok.ui.theme.green200
 import com.imhungry.sillok.ui.theme.orange100
 import com.imhungry.sillok.ui.theme.pagerIndicatorBackground
@@ -50,7 +52,21 @@ fun MeetingInProgressScreen(
     onCompleteMeeting: () -> Unit,
     meetingInProgressViewModel: MeetingInProgressViewModel = hiltViewModel()
 ) {
-    HandleVoicePermissions()
+    var showPermissionRequest by remember { mutableStateOf(true) }
+
+    if (showPermissionRequest) {
+        PermissionHandler(
+            onPermissionsGranted = {
+                showPermissionRequest = false
+                // 권한 획득 후 로직
+            },
+            onPermissionsDenied = { deniedPermissions ->
+                // 권한 거부 처리
+                Log.w("Permission", "거부된 권한: $deniedPermissions")
+            }
+        )
+    }
+
     LaunchedEffect(Unit) {
         meetingInProgressViewModel.initialize(meetingId)
     }
@@ -58,46 +74,79 @@ fun MeetingInProgressScreen(
     val pagerState = rememberPagerState(initialPage = 1)
     var hasUnreadFeedback by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    var showCompleteDialog by remember { mutableStateOf(false) }
+    var showLeaveDialog by remember { mutableStateOf(false) }
 
-    MeetingBasicBox(
-        navigationBarColor = whiteBackground,
-        backgroundColor = primaryBackground
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-                .padding(bottom = 20.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        MeetingBasicBox(
+            navigationBarColor = whiteBackground,
+            backgroundColor = primaryBackground
         ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
+            Column(
+                modifier = Modifier.fillMaxSize()
+                    .padding(bottom = 20.dp)
             ) {
-                HorizontalPager(
-                    count = 3,
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-                    when (page) {
-                        0 -> MeetingSummaryScreen(meetingInProgressViewModel = meetingInProgressViewModel)
-                        1 -> MeetingRecordScreen(meetingInProgressViewModel = meetingInProgressViewModel)
-                        2 -> MeetingFeedbackScreen(meetingInProgressViewModel = meetingInProgressViewModel)
-                    }
-                }
-                CustomHorizontalPagerIndicator(
-                    pagerState = pagerState,
+                Box(
                     modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 4.dp),
-                    unreadFeedback = hasUnreadFeedback,
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    HorizontalPager(
+                        count = 3,
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        when (page) {
+                            0 -> MeetingSummaryScreen(meetingInProgressViewModel = meetingInProgressViewModel)
+                            1 -> MeetingRecordScreen(meetingInProgressViewModel = meetingInProgressViewModel)
+                            2 -> MeetingFeedbackScreen(meetingInProgressViewModel = meetingInProgressViewModel)
+                        }
+                    }
+                    CustomHorizontalPagerIndicator(
+                        pagerState = pagerState,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 4.dp),
+                        unreadFeedback = hasUnreadFeedback,
+                    )
+                }
+
+                MeetingControlPanel(
+                    timeText = "00:00:00",
+                    remainingTimeText = "01:10:00",
+                    onBack = { showLeaveDialog = true },
+                    onComplete = { showCompleteDialog = true },
+                    meetingInProgressViewModel = meetingInProgressViewModel
                 )
             }
+        }
 
-            MeetingControlPanel(
-                timeText = "00:00:00",
-                remainingTimeText = "01:10:00",
-                onBack = onStopMeeting,
-                onComplete = onCompleteMeeting,
-                meetingInProgressViewModel = meetingInProgressViewModel
+        if (showCompleteDialog) {
+            SillokDialog(
+                message = "회의를 종료하시겠습니까?",
+                confirmText = "예",
+                cancelText = "취소",
+                onConfirm = {
+                    onCompleteMeeting()
+                    showCompleteDialog = false
+                },
+                onDismiss = {
+                    showCompleteDialog = false
+                }
+            )
+        }
+
+        if (showLeaveDialog) {
+            SillokDialog(
+                message = "회의를 떠나시겠습니까?",
+                confirmText = "예",
+                cancelText = "취소",
+                onConfirm = {
+                    onStopMeeting()
+                },
+                onDismiss = {
+                    showLeaveDialog = false
+                }
             )
         }
     }

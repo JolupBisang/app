@@ -12,7 +12,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.imhungry.sillok.data.local.TokenExpirationManager
-import com.imhungry.sillok.data.local.VoiceRecognitionStore
 import com.imhungry.sillok.presentation.screen.home.HomeScreen
 import com.imhungry.sillok.presentation.screen.login.LoginScreen
 import com.imhungry.sillok.presentation.screen.meetingdetail.MeetingDetailScreen
@@ -25,11 +24,13 @@ import com.imhungry.sillok.presentation.screen.waitingroom.WaitingRoomScreen
 import com.imhungry.sillok.presentation.screen.meeting.MeetingInProgressScreen
 import com.imhungry.sillok.presentation.screen.meetingform.MeetingFormScreen
 import com.imhungry.sillok.presentation.screen.meetingminutes.MeetingMinutesScreen
-import com.imhungry.sillok.presentation.viewmodel.shared.SharedViewModel
+import com.imhungry.sillok.ui.components.BackPressHandler
 
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
-    object Login : Screen("login")
+    object Login : Screen("login?token={token}") {
+        fun createRoute(token: String? = null) = if (token != null) "login?token=$token" else "login"
+    }
     object VoiceRecognitionIntro : Screen("voice_recognition_intro")
     object VoiceRecognition : Screen("voice_recognition")
     object VoiceRecognitionComplete : Screen("voice_recognition_complete")
@@ -60,25 +61,35 @@ sealed class Screen(val route: String) {
 @Composable
 fun SillokNavigation(
     navController: NavHostController = rememberNavController(),
-    sharedViewModel: SharedViewModel? = null,
-    tokenExpirationManager: TokenExpirationManager? = null,
-    voiceRecognitionStore: VoiceRecognitionStore? = null
+    loginToken: String? = null,
+    tokenExpirationManager: TokenExpirationManager? = null
 ) {
-//    LaunchedEffect(Unit) {
-//        tokenExpirationManager?.shouldNavigateToLogin?.collect { shouldNavigate ->
-//            if (shouldNavigate) {
-//                navController.navigate(Screen.Login.route) {
-//                    popUpTo(0) { inclusive = true }
-//                }
-//                tokenExpirationManager.clearNavigationEvent()
-//            }
-//        }
-//    }
-
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Splash.route
-    ) {
+    // 딥링크로 받은 토큰이 있으면 로그인 화면으로 이동
+    LaunchedEffect(loginToken) {
+        if (loginToken != null) {
+            navController.navigate(Screen.Login.createRoute(loginToken)) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+    
+    // 토큰 만료 처리
+    LaunchedEffect(Unit) {
+        tokenExpirationManager?.shouldNavigateToLogin?.collect { shouldNavigate ->
+            if (shouldNavigate) {
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(0) { inclusive = true }
+                }
+                tokenExpirationManager.clearNavigationEvent()
+            }
+        }
+    }
+    
+    BackPressHandler(navController = navController) {
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Splash.route
+        ) {
         // 스플래시 화면
         composable(Screen.Splash.route) {
             SplashScreen(
@@ -101,10 +112,17 @@ fun SillokNavigation(
         }
         
         // 로그인 화면
-        composable(Screen.Login.route) {
+        composable(
+            route = Screen.Login.route,
+            arguments = listOf(navArgument("token") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val token = backStackEntry.arguments?.getString("token")
             LoginScreen(
-                sharedViewModel = sharedViewModel,
-                voiceRecognitionStore = voiceRecognitionStore,
+                token = token,
                 onNavigateToVoiceRecognitionIntro = {
                     navController.navigate(Screen.VoiceRecognitionIntro.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
@@ -284,5 +302,6 @@ fun SillokNavigation(
                 }
             )
         }
+    }
     }
 } 
