@@ -106,8 +106,8 @@ class VoiceRecognitionViewModel @Inject constructor(
                 _state.update { it.copy(isProcessing = true, error = null) }
 
                 // 오디오 파일 업로드
-                val uploadSuccess = uploadAudioFile()
-                if (!uploadSuccess) return@launch
+                //val uploadSuccess = uploadAudioFile()
+                //if (!uploadSuccess) return@launch
 
                 // 진행 상태 업데이트
                 handleProgressUpdate()

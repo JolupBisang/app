@@ -79,7 +79,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             GoogleLoginButton(
-                onClick = { loginViewModel.launchGoogleOAuth(context) },
+                onClick = { onNavigateToVoiceRecognitionIntro() },
                 isLoading = state.isLoading
             )
         }
