@@ -1,13 +1,11 @@
 package com.imhungry.sillok.presentation.viewmodel.login
 
 import android.content.Context
-import android.util.Log
-import androidx.browser.customtabs.CustomTabsIntent
-import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.imhungry.sillok.BuildConfig
 import com.imhungry.sillok.data.util.ApiResult
+import com.imhungry.sillok.domain.usecase.voice.CheckVoiceRecognitionCompletionUseCase
+import com.imhungry.sillok.domain.usecase.user.LaunchGoogleOAuthUseCase
 import com.imhungry.sillok.domain.usecase.user.LoginUseCase
 import com.imhungry.sillok.presentation.state.login.LoginState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +17,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val loginUseCase: LoginUseCase
+    private val launchGoogleOAuthUseCase: LaunchGoogleOAuthUseCase,
+    private val loginUseCase: LoginUseCase,
+    private val checkVoiceRecognitionCompletionUseCase: CheckVoiceRecognitionCompletionUseCase
 ) : ViewModel() {
     private val _state = MutableStateFlow(LoginState())
     val state: StateFlow<LoginState> = _state.asStateFlow()
@@ -29,14 +29,7 @@ class LoginViewModel @Inject constructor(
     }
     
     fun launchGoogleOAuth(context: Context) {
-        val authUrl = ("https://accounts.google.com/o/oauth2/v2/auth/oauthchooseaccount" +
-                "?client_id=${BuildConfig.OAUTH_CLIENT_ID}" +
-                "&redirect_uri=${BuildConfig.OAUTH_REDIRECT_URI}" +
-                "&response_type=code" +
-                "&scope=email profile").toUri()
-
-        val intent = CustomTabsIntent.Builder().build()
-        intent.launchUrl(context, authUrl)
+        launchGoogleOAuthUseCase(context)
     }
     
     fun handleLogin(token: String) {
@@ -47,10 +40,11 @@ class LoginViewModel @Inject constructor(
             
             _state.value = when (result) {
                 is ApiResult.Success -> {
+                    val isVoiceRecognitionCompleted = checkVoiceRecognitionCompletionUseCase()
                     _state.value.copy(
                         isLoading = false,
                         isLoginSuccess = true,
-                        user = result.data
+                        isVoiceRecognitionCompleted = isVoiceRecognitionCompleted
                     )
                 }
                 is ApiResult.Failure -> {
@@ -71,3 +65,4 @@ class LoginViewModel @Inject constructor(
         _state.value = _state.value.copy(isLoginSuccess = false)
     }
 }
+

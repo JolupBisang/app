@@ -21,41 +21,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.sillok.R
-import com.imhungry.sillok.data.local.VoiceRecognitionStore
 import com.imhungry.sillok.presentation.viewmodel.login.LoginViewModel
-import com.imhungry.sillok.presentation.viewmodel.shared.SharedViewModel
 import com.imhungry.sillok.ui.components.BasicBox
-import com.imhungry.sillok.ui.components.ExitAppBackHandler
 import com.imhungry.sillok.ui.theme.beige
-import android.util.Log
-import kotlinx.coroutines.flow.first
-import javax.inject.Inject
 
 @Composable
 fun LoginScreen(
+    token: String? = null,
     loginViewModel: LoginViewModel = hiltViewModel(),
-    sharedViewModel: SharedViewModel? = null,
-    voiceRecognitionStore: VoiceRecognitionStore? = null,
     onNavigateToVoiceRecognitionIntro: () -> Unit = {},
     onNavigateToHome: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val loginState by loginViewModel.state.collectAsState()
-    
-    ExitAppBackHandler()
+    val state by loginViewModel.state.collectAsState()
 
-    LaunchedEffect(sharedViewModel) {
-        sharedViewModel?.loginToken?.collect { token ->
-            if (token != null && !loginState.isLoading) {
-                loginViewModel.handleLogin(token)
-            }
+    LaunchedEffect(token) {
+        if (token != null && !state.isLoading) {
+            loginViewModel.handleLogin(token)
         }
     }
 
-    LaunchedEffect(loginState.isLoginSuccess) {
-        if (loginState.isLoginSuccess && voiceRecognitionStore != null) {
-            val voiceState = voiceRecognitionStore.voiceRecognitionState.first()
-            if (voiceState.isCompleted) {
+    LaunchedEffect(state.isLoginSuccess) {
+        if (state.isLoginSuccess) {
+            if (state.isVoiceRecognitionCompleted) {
                 onNavigateToHome()
             } else {
                 onNavigateToVoiceRecognitionIntro()
@@ -72,17 +60,15 @@ fun LoginScreen(
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.height(220.dp))
-            
             Image(
                 painter = painterResource(id = R.drawable.logo),
                 contentDescription = "Logo",
                 modifier = Modifier.size(100.dp)
             )
 
-            Spacer(modifier = Modifier.height(120.dp))
+            Spacer(modifier = Modifier.height(60.dp))
 
             Text(
                 text = "로그인하고 바로 시작하세요",
@@ -93,8 +79,8 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             GoogleLoginButton(
-                onClick = { /*loginViewModel.launchGoogleOAuth()*/ onNavigateToHome() }, // onNavigateHome() 또는 onNavigateToVoiceRecognitionIntro()
-                isLoading = loginState.isLoading
+                onClick = { onNavigateToVoiceRecognitionIntro() },
+                isLoading = state.isLoading
             )
         }
     }

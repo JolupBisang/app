@@ -22,7 +22,7 @@ class LoginUseCase @Inject constructor(
     
     suspend operator fun invoke(token: String): ApiResult<User> {
         return try {
-            // 1. 토큰 저장 (리프레시 토큰 미사용)
+            // 1. 토큰 저장
             tokenStore.saveTokens(token)
             val userResult = userRepository.getMyProfile()
             
@@ -47,15 +47,11 @@ class LoginUseCase @Inject constructor(
                             val data = hashMapOf(
                                 "email" to email,
                                 "createdAt" to System.currentTimeMillis(),
-                                "hasMeeting" to false,
-                                // 회의 시작 여부 및 시작된 회의 ID 초기값
-                                "hasMeetingStarted" to false,
-                                "startedMeetingId" to 0L
+                                "addMeeting" to false, // meeting이 추가되었으면 홈 새로고침
+                                "meetingStarted" to false, // meeting 시작되면 바로 회의 중 화면으로 이동
+                                "startedMeetingId" to 0L // 시작된 회의 ID
                             )
-                            db.collection("users").document(uid)
-                                .set(data)
-                                .addOnSuccessListener { Log.d(TAG, "파이어베이스 저장 성공: $email") }
-                                .addOnFailureListener { e -> Log.e(TAG, "파이어베이스 저장 실패: ${e.message}") }
+                            db.collection("users").document(uid).set(data)
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "파이어베이스 저장 중 예외: ${e.message}")

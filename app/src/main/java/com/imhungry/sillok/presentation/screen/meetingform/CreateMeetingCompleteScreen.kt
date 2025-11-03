@@ -22,7 +22,6 @@ import coil.decode.GifDecoder
 import coil.request.ImageRequest
 import com.imhungry.sillok.R
 import com.imhungry.sillok.ui.components.BasicBox
-import com.imhungry.sillok.ui.components.ExitAppBackHandler
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.theme.primaryBackground
 
@@ -30,8 +29,6 @@ import com.imhungry.sillok.ui.theme.primaryBackground
 fun CreateMeetingCompleteScreen(
     onComplete: () -> Unit
 ) {
-    ExitAppBackHandler()
-
     BasicBox(
         statusBarColor = primaryBackground,
         navigationBarColor = primaryBackground,

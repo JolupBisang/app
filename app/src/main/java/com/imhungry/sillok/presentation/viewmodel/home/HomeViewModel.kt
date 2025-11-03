@@ -41,11 +41,14 @@ class HomeViewModel @Inject constructor(
     private var hasMeetingListener: ListenerRegistration? = null
 
     init {
-        // 사용자 닉네임 반영 및 hasMeeting 리스너 연결
+        // 사용자 닉네임 및 프로필 이미지 반영 및 hasMeeting 리스너 연결
         viewModelScope.launch {
             userStore.user.collect { user ->
                 _state.update { current ->
-                    current.copy(userName = user?.nickname ?: current.userName)
+                    current.copy(
+                        userName = user?.nickname ?: current.userName,
+                        profileImage = user?.profileImage ?: current.profileImage
+                    )
                 }
 
                 // 파이어베이스 users/{uid}의 hasMeeting 리스너 연결
@@ -505,6 +508,13 @@ class HomeViewModel @Inject constructor(
                     scheduledStartTime = "2025-10-22T13:00:00",
                     targetTime = 50,
                     status = "IN_PROGRESS"
+                ),
+                MeetingDetailSummary(
+                    id = 1101L,
+                    title = "기술 공유 세션2",
+                    scheduledStartTime = "2025-10-22T13:00:00",
+                    targetTime = 50,
+                    status = "IN_PROGRESS"
                 )
             )
 
@@ -519,7 +529,7 @@ class HomeViewModel @Inject constructor(
 
             _state.update {
                 it.copy(
-                    userName = if (it.userName.isBlank()) "홍길동" else it.userName,
+                    userName = it.userName,
                     isLoading = false,
                     error = null,
                     scheduledMeetings = scheduled,

@@ -10,16 +10,21 @@ val outline = Color(0xFF747775)
 val googleButtonText = Color(0xFF1F1F1F)
 val primaryBackground = Color(0xFFFAFAF9)
 val blackBackGround = Color(0xFF121212)
+val dialogBackGround = Color(0x4DE0E0E0)
+val placeHolder = Color(0xFFD9D9D9)
 val inverse = Color(0xFFFAFAF9)
 val tertiary = Color(0xFF888888)
 val whiteBackground = Color(0xFFFAFAF9)
 val primaryButton = Color(0xFF228F64)
 val secondaryButton = Color(0xFFD0E7DE)
+val sideBar = Color(0xD4F4F4F4)
 val lightGrayButton = Color(0xFFE0E0E0)
 val danger = Color(0xFFFB3939)
 val orange100 = Color(0xFFFF7043)
 val green100 = Color(0xFF144330)
 val green200 = Color(0xFF186848)
+val green300 = Color(0xFF00975B)
+val meetingOutline = Color(0x2C00603B)
 val green500 = Color(0xFFD0E7DE)
 val gray200 = Color(0xFF555555)
 val gray300 = Color(0xFF888888)
@@ -33,6 +38,7 @@ val shadow = Color(0x33A1A1A1)
 val pagerIndicatorBackground = Color(0xFFD9D9D9)
 val highlight = Color(0x40186848)
 val brown200 = Color(0xFF857658)
+val brown400 = Color(0xFFE7E1D5)
 val brown500 = Color(0xFFF2EEE5)
 
 val gradientColors = listOf(
@@ -41,8 +47,19 @@ val gradientColors = listOf(
     Color(0xFFEDEB82)
 )
 
+val gradientColors2 = listOf(
+    Color(0xFFD4F4D9),
+    Color(0xFFFAFAF9)
+)
+
 val gradientBrush = Brush.linearGradient(
     colors = gradientColors,
     start = Offset(0f, 0f),
     end = Offset(400f, 0f)
+)
+
+val gradientBrush2 = Brush.verticalGradient(
+    colors = gradientColors2,
+    startY = 0f,
+    endY = 400f
 )

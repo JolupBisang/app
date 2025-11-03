@@ -8,33 +8,38 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavHostController
 
 @Composable
-fun ExitAppBackHandler(
+fun BackPressHandler(
+    navController: NavHostController,
     message: String = "앱을 종료하시겠습니까?",
     confirmText: String = "예",
-    cancelText: String = "취소"
+    cancelText: String = "취소",
+    screenContent: @Composable () -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val activity = context as? ComponentActivity
 
     BackHandler {
-        showDialog = true
+        if (!navController.popBackStack()) {
+            showDialog = true
+        }
     }
 
-    if (showDialog) {
-        SillokDialog(
-            message = message,
-            confirmText = confirmText,
-            cancelText = cancelText,
-            onConfirm = {
-                showDialog = false
-                activity?.finish()
-            },
-            onDismiss = {
-                showDialog = false
-            }
-        )
-    }
+    SillokDialogHost(
+        showDialog = showDialog,
+        onDismiss = {
+            showDialog = false
+        },
+        onConfirm = {
+            showDialog = false
+            activity?.finish()
+        },
+        message = message,
+        confirmText = confirmText,
+        cancelText = cancelText,
+        screenContent = screenContent
+    )
 }

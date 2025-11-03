@@ -78,7 +78,7 @@ fun CalendarView(
                 }
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             CalendarWeekHeader()
 
@@ -91,15 +91,6 @@ fun CalendarView(
                 pastMeetings = pastMeetings,
                 onDateSelected = onDateSelected
             )
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 318.dp)
-                .align(Alignment.TopCenter)
-        ) {
-            Divider()
         }
     }
 }
@@ -118,7 +109,7 @@ private fun CalendarNavigationBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 42.dp),
+                .padding(start = 56.dp, end = 56.dp, top = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -159,7 +150,8 @@ private fun CalendarNavigationBar(
             SillokTextButton(
                 text = "오늘",
                 onClick = onTodayClick,
-                textColor = gray300
+                textColor = gray300,
+                fontWeight = FontWeight.Normal
             )
         }
     }
@@ -170,7 +162,7 @@ private fun CalendarWeekHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 42.dp),
+            .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         val weekDays = listOf("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT")
@@ -222,7 +214,7 @@ private fun CalendarDateGrid(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 42.dp),
+            .padding(horizontal = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         rows.forEach { weekDays ->

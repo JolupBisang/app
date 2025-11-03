@@ -1,5 +1,6 @@
 package com.imhungry.sillok.presentation.screen.voice
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,9 +17,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -27,13 +32,14 @@ import coil.compose.rememberAsyncImagePainter
 import coil.decode.GifDecoder
 import coil.request.ImageRequest
 import com.imhungry.sillok.R
-import com.imhungry.sillok.presentation.permission.HandleVoicePermissions
+import com.imhungry.sillok.presentation.permission.PermissionHandler
 import com.imhungry.sillok.presentation.state.voice.RecordState
 import com.imhungry.sillok.presentation.state.voice.VoiceRecognitionConstants
 import com.imhungry.sillok.presentation.viewmodel.voice.VoiceRecognitionViewModel
 import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.SillokButton
-import com.imhungry.sillok.ui.theme.blackBackGround
+import com.imhungry.sillok.ui.theme.Sunbatang
+import com.imhungry.sillok.ui.theme.brown400
 import com.imhungry.sillok.ui.theme.danger
 import com.imhungry.sillok.ui.theme.inverse
 import com.imhungry.sillok.ui.theme.lightGrayButton
@@ -46,8 +52,20 @@ fun VoiceRecognitionScreen(
 ) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
-    HandleVoicePermissions()
-    
+    var showPermissionRequest by remember { mutableStateOf(true) }
+
+    if (showPermissionRequest) {
+        PermissionHandler(
+            onPermissionsGranted = {
+                showPermissionRequest = false
+            },
+            onPermissionsDenied = { deniedPermissions ->
+                Log.w("Permission", "거부된 권한: $deniedPermissions")
+                showPermissionRequest = false
+            }
+        )
+    }
+
     LaunchedEffect(state.currentStep, state.isProcessing) {
         if (state.currentStep > VoiceRecognitionConstants.TOTAL_STEPS && !state.isProcessing) {
             onStopRecognition()
@@ -55,9 +73,9 @@ fun VoiceRecognitionScreen(
     }
     
     BasicBox(
-        statusBarColor = blackBackGround,
-        navigationBarColor = blackBackGround,
-        backgroundColor = blackBackGround
+        statusBarColor = brown400,
+        navigationBarColor = brown400,
+        backgroundColor = brown400
     ) {
         Box(
             modifier = Modifier.fillMaxSize()
@@ -72,6 +90,8 @@ fun VoiceRecognitionScreen(
                 Text(
                     text = "${state.currentStep}/${VoiceRecognitionConstants.TOTAL_STEPS}",
                     color = inverse,
+                    fontFamily = Sunbatang,
+                    fontWeight = FontWeight.Light,
                     style = MaterialTheme.typography.labelLarge
                 )
 
@@ -112,6 +132,8 @@ fun VoiceRecognitionScreen(
                         else -> ""
                     },
                     color = inverse,
+                    fontFamily = Sunbatang,
+                    fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleLarge,
                     textAlign = TextAlign.Center
                 )

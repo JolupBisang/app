@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -20,7 +22,6 @@ import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.viewmodel.splash.SplashViewModel
 import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.theme.beige
-import android.util.Log
 
 @Composable
 fun SplashScreen(
@@ -51,14 +52,19 @@ fun SplashScreen(
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.height(220.dp))
-
             Image(
                 painter = painterResource(id = R.drawable.logo),
                 contentDescription = "Logo",
                 modifier = Modifier.size(100.dp)
+            )
+
+            Spacer(modifier = Modifier.height(36.dp))
+
+            Text(
+                text = "seal-log",
+                style = MaterialTheme.typography.headlineLarge
             )
         }
     }
