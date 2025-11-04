@@ -1,4 +1,4 @@
-package com.imhungry.sillok.presentation.screen.voice
+   package com.imhungry.sillok.presentation.screen.voice
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -29,8 +29,11 @@ import coil.request.ImageRequest
 import com.imhungry.sillok.R
 import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.SillokButton
+import com.imhungry.sillok.ui.theme.brown100
 import com.imhungry.sillok.ui.theme.brown400
 import com.imhungry.sillok.ui.theme.gradientBrush
+import com.imhungry.sillok.ui.theme.green400
+import com.imhungry.sillok.ui.theme.green600
 import com.imhungry.sillok.ui.theme.inverse
 
 @Composable
@@ -66,34 +69,34 @@ fun VoiceRecognitionIntroScreen(
                     buildAnnotatedString {
                         withStyle(
                             style = SpanStyle(
-                                brush = gradientBrush
+                                color = green400
                             ),
                         ) {
                             append("당신의 목소리")
                         }
-                        append("를\n알려주세요")
+                        append("를\n학습시키세요")
                     },
                     style = MaterialTheme.typography.titleLarge,
-                    color = inverse,
+                    color = brown100,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(
                     "이 설정을 통해 회의 중 발화자를 구분할 수 있습니다.",
                     style = MaterialTheme.typography.labelSmall,
-                    color = inverse,
+                    color = green600,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    "조용한 환경에서 천천히 말해주시길 바랍니다.",
+                    "조용한 환경에서 평소처럼 말해주시길 바랍니다.",
                     style = MaterialTheme.typography.labelSmall,
-                    color = inverse,
+                    color = green600,
                     textAlign = TextAlign.Center
                 )
             }
             SillokButton(
-                text = "다음",
+                text = "학습 시작하기",
                 onClick = onStartRecognition,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
