@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,15 +40,16 @@ import com.imhungry.sillok.presentation.viewmodel.voice.VoiceRecognitionViewMode
 import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.theme.Sunbatang
+import com.imhungry.sillok.ui.theme.brown100
 import com.imhungry.sillok.ui.theme.brown400
 import com.imhungry.sillok.ui.theme.danger
-import com.imhungry.sillok.ui.theme.inverse
-import com.imhungry.sillok.ui.theme.lightGrayButton
+import com.imhungry.sillok.ui.theme.green600
 import com.imhungry.sillok.ui.theme.primaryTextColor
 
 @Composable
 fun VoiceRecognitionScreen(
     onStopRecognition: () -> Unit,
+    onComplete: () -> Unit,
     viewModel: VoiceRecognitionViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -68,10 +70,10 @@ fun VoiceRecognitionScreen(
 
     LaunchedEffect(state.currentStep, state.isProcessing) {
         if (state.currentStep > VoiceRecognitionConstants.TOTAL_STEPS && !state.isProcessing) {
-            onStopRecognition()
+            onComplete()
         }
     }
-    
+
     BasicBox(
         statusBarColor = brown400,
         navigationBarColor = brown400,
@@ -89,13 +91,13 @@ fun VoiceRecognitionScreen(
 
                 Text(
                     text = "${state.currentStep}/${VoiceRecognitionConstants.TOTAL_STEPS}",
-                    color = inverse,
+                    color = brown100,
                     fontFamily = Sunbatang,
                     fontWeight = FontWeight.Light,
                     style = MaterialTheme.typography.labelLarge
                 )
 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(64.dp))
 
                 Image(
                     painter = rememberAsyncImagePainter(
@@ -113,16 +115,15 @@ fun VoiceRecognitionScreen(
                     modifier = Modifier.size(140.dp)
                 )
 
-                Spacer(modifier = Modifier.height(48.dp))
-
                 Text(
                     text = "휴대폰 마이크에 대고 다음과 같이 말씀해주세요.",
-                    color = inverse,
+                    color = green600,
                     style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Normal,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(48.dp))
 
                 Text(
                     text = when (state.currentStep) {
@@ -131,7 +132,7 @@ fun VoiceRecognitionScreen(
                         3 -> "그대만큼 사랑스러운\n사람을 본 일 없다"
                         else -> ""
                     },
-                    color = inverse,
+                    color = brown100,
                     fontFamily = Sunbatang,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleLarge,
@@ -151,11 +152,12 @@ fun VoiceRecognitionScreen(
                             text = "녹음 시간이 너무 짧습니다.\n다시 녹음해주시길 바랍니다.",
                             color = danger,
                             style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Normal,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         SillokButton(
-                            text = "재녹음",
+                            text = "다시 녹음하기",
                             onClick = { viewModel.retryRecording() },
                             modifier = Modifier
                         )
@@ -163,7 +165,7 @@ fun VoiceRecognitionScreen(
 
                     is RecordState.Idle -> {
                         SillokButton(
-                            text = "시작",
+                            text = "녹음 시작",
                             onClick = { viewModel.startRecording(context) },
                             modifier = Modifier
                         )
@@ -171,9 +173,11 @@ fun VoiceRecognitionScreen(
 
                     is RecordState.Recording -> {
                         SillokButton(
-                            text = "중지",
+                            text = "녹음 중지하기",
                             onClick = { viewModel.stopRecording() },
-                            modifier = Modifier
+                            modifier = Modifier,
+                            backgroundColor = Color.White,
+                            textColor = primaryTextColor
                         )
                     }
 
@@ -183,10 +187,10 @@ fun VoiceRecognitionScreen(
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             SillokButton(
-                                text = "재녹음",
+                                text = "다시 녹음하기",
                                 onClick = { viewModel.retryRecording() },
                                 modifier = Modifier.weight(1f),
-                                backgroundColor = lightGrayButton,
+                                backgroundColor = Color.White,
                                 textColor = primaryTextColor
                             )
                             Spacer(modifier = Modifier.width(16.dp))

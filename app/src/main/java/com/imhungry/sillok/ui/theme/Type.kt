@@ -81,7 +81,7 @@ val Typography = Typography(
         fontFamily = Pretend,
         fontWeight = FontWeight.SemiBold,
         color = primaryTextColor,
-        fontSize = 28.sp
+        fontSize = 26.sp
     ),
     headlineMedium = TextStyle(
         fontFamily = Pretend,
@@ -92,6 +92,6 @@ val Typography = Typography(
     headlineLarge = TextStyle(
         fontFamily = Alegreya,
         color = primaryTextColor,
-        fontSize = 28.sp
+        fontSize = 34.sp
     ),
 )

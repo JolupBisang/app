@@ -516,23 +516,22 @@ fun MeetingFormScreen(
         }
 
         // 취소 확인 다이얼로그 (모드별 문구 분기) - 오버레이로 표시
-        if (state.showCancelDialog) {
-            val dialogMessage = if (isEditMode) {
-                "수정된 내용이 저장되지 않습니다.\n정말로 나가시겠습니까?"
-            } else {
-                "작성 중인 내용이 있습니다.\n정말로 취소하시겠습니까?"
-            }
-            SillokDialog(
-                message = dialogMessage,
-                confirmText = "예",
-                cancelText = "아니요",
-                onConfirm = {
-                    viewModel.onEvent(MeetingFormEvent.CancelConfirmed)
-                },
-                onDismiss = {
-                    viewModel.onEvent(MeetingFormEvent.CancelDismissed)
-                }
-            )
+        val dialogMessage = if (isEditMode) {
+            "수정된 내용이 저장되지 않습니다.\n정말로 나가시겠습니까?"
+        } else {
+            "작성 중인 내용이 있습니다.\n정말로 취소하시겠습니까?"
         }
+        SillokDialog(
+            visible = state.showCancelDialog,
+            message = dialogMessage,
+            confirmText = "예",
+            cancelText = "아니요",
+            onConfirm = {
+                viewModel.onEvent(MeetingFormEvent.CancelConfirmed)
+            },
+            onDismiss = {
+                viewModel.onEvent(MeetingFormEvent.CancelDismissed)
+            }
+        )
     }
 }

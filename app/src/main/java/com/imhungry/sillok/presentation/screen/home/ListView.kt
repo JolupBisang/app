@@ -30,62 +30,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.R
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
+import com.imhungry.sillok.presentation.state.home.MeetingUi
 import com.imhungry.sillok.ui.components.Divider
 import com.imhungry.sillok.ui.components.SillokTextButton
 import com.imhungry.sillok.ui.theme.tertiary
 
 @Composable
-fun ListView(
-    onMeetingItemClick: (MeetingDetailSummary) -> Unit = {},
-    modifier: Modifier = Modifier,
-    scheduledMeetings: List<MeetingDetailSummary> = emptyList(),
-    pastMeetings: List<MeetingDetailSummary> = emptyList()
-) {
-    // 섹션 확장 상태
-    var isScheduledExpanded by remember { mutableStateOf(true) }
-    var isPastExpanded by remember { mutableStateOf(true) }
-    
-    LazyColumn(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        // 예정된 회의 섹션
-        item {
-            MeetingSection(
-                title = "예정된 회의",
-                meetings = scheduledMeetings,
-                isExpanded = isScheduledExpanded,
-                onToggle = { isScheduledExpanded = !isScheduledExpanded },
-                onMeetingItemClick = onMeetingItemClick
-            )
-        }
-
-
-        // 구분선
-        item {
-            Divider()
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // 지난 회의 섹션
-        item {
-            MeetingSection(
-                title = "지난 회의",
-                meetings = pastMeetings,
-                isExpanded = isPastExpanded,
-                onToggle = { isPastExpanded = !isPastExpanded },
-                onMeetingItemClick = onMeetingItemClick
-            )
-        }
-    }
-}
-
-@Composable
 fun MeetingSection(
     title: String,
-    meetings: List<MeetingDetailSummary>,
+    meetings: List<MeetingUi>,
     isExpanded: Boolean,
     onToggle: () -> Unit,
-    onMeetingItemClick: (MeetingDetailSummary) -> Unit
+    onMeetingItemClick: (MeetingUi) -> Unit
 ) {
     // 처음에 보여줄 항목 수
     var displayedCount by remember { mutableStateOf(8) }
@@ -173,7 +129,7 @@ fun MeetingSection(
 
 @Composable
 fun MeetingItem(
-    meeting: MeetingDetailSummary,
+    meeting: MeetingUi,
     onClick: () -> Unit
 ) {
     Row(
@@ -195,10 +151,9 @@ fun MeetingItem(
         Spacer(modifier = Modifier.weight(1f))
         
         // 날짜
-        val date = meeting.scheduledStartTime.split("T", " ")[0].replace("-", ".")
         Text(
             modifier = Modifier.width(80.dp),
-            text = date,
+            text = meeting.timeRange,
             style = MaterialTheme.typography.bodySmall,
             color = tertiary
         )

@@ -4,5 +4,6 @@ data class LoginState(
     val isLoading: Boolean = false,
     val isLoginSuccess: Boolean = false,
     val isVoiceRecognitionCompleted: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val showExitDialog: Boolean = false
 )

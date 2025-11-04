@@ -92,7 +92,7 @@ fun CustomDrawer(
     drawerState: DrawerState,
     drawerWidth: Dp = 280.dp,
     edgeThreshold: Dp = 50.dp,
-    swipeThreshold: Float = 0.1f,
+    swipeThreshold: Float = 0.01f,
     drawerContent: @Composable () -> Unit,
     content: @Composable () -> Unit
 ) {

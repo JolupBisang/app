@@ -38,10 +38,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
+import com.imhungry.sillok.presentation.state.home.MeetingUi
 import com.imhungry.sillok.ui.components.Divider
 import com.imhungry.sillok.ui.components.SillokTextButton
 import com.imhungry.sillok.ui.theme.border
 import com.imhungry.sillok.ui.theme.green300
+import com.imhungry.sillok.ui.theme.lightMeetingOutline
 import com.imhungry.sillok.ui.theme.meetingOutline
 import com.imhungry.sillok.ui.theme.primaryButton
 import com.imhungry.sillok.ui.theme.primarySurface
@@ -55,35 +57,18 @@ import java.time.LocalDateTime
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MeetingScheduleView(
-    onMeetingItemClick: (MeetingDetailSummary) -> Unit = {},
+    onMeetingItemClick: (MeetingUi) -> Unit = {},
+    onMonthChanged: (Int, Int) -> Unit = { _, _ -> }, // year, month
+    meetings: List<MeetingUi> = emptyList(),
     modifier: Modifier = Modifier,
-    scheduledMeetings: List<MeetingDetailSummary> = emptyList(),
-    pastMeetings: List<MeetingDetailSummary> = emptyList()
 ) {
     var isCalendarView by remember { mutableStateOf(false) }
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
     
     Column(
         modifier = modifier
             .fillMaxSize()
     ) {
-//        Row(
-//            modifier = Modifier.fillMaxWidth(),
-//            horizontalArrangement = Arrangement.End,
-//        ) {
-//            SillokTextButton(
-//                text = if (isCalendarView) "리스트" else "캘린더",
-//                onClick = { isCalendarView = !isCalendarView },
-//                textColor = primarySurface
-//            )
-//        }
-//
-//        Spacer(modifier = Modifier.height(8.dp))
-//
-//        Divider()
-//
-//        Spacer(modifier = Modifier.height(16.dp))
-
         Column {
             CalendarView(
                 selectedDate = selectedDate,
@@ -93,8 +78,11 @@ fun MeetingScheduleView(
                 onTodayClick = {
                     selectedDate = LocalDate.now()
                 },
-                scheduledMeetings = scheduledMeetings,
-                pastMeetings = pastMeetings,
+                onMonthChanged = { yearMonth ->
+                    selectedDate = null // 달이 변경되면 선택된 날짜 초기화
+                    onMonthChanged(yearMonth.year, yearMonth.monthValue)
+                },
+                meetings = meetings,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -102,8 +90,7 @@ fun MeetingScheduleView(
 
             SelectedDateMeetingList(
                 selectedDate = selectedDate,
-                scheduledMeetings = scheduledMeetings,
-                pastMeetings = pastMeetings,
+                meetings = meetings,
                 onMeetingItemClick = onMeetingItemClick,
                 modifier = Modifier.fillMaxSize()
             )
@@ -148,34 +135,15 @@ fun MeetingScheduleView(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun SelectedDateMeetingList(
-    selectedDate: LocalDate,
-    scheduledMeetings: List<MeetingDetailSummary>,
-    pastMeetings: List<MeetingDetailSummary>,
-    onMeetingItemClick: (MeetingDetailSummary) -> Unit,
+    selectedDate: LocalDate?,
+    meetings: List<MeetingUi>,
+    onMeetingItemClick: (MeetingUi) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-    val selectedDateString = selectedDate.format(dateFormatter)
-    
-    val meetingsOnSelectedDate = (scheduledMeetings + pastMeetings).filter { meeting ->
-        meeting.scheduledStartTime.startsWith(selectedDateString)
-    }
-
     Column(
         modifier = modifier.padding(top = 8.dp)
     ) {
-        if (meetingsOnSelectedDate.isNotEmpty()) {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                items(meetingsOnSelectedDate) { meeting ->
-                    MeetingListItem(
-                        meeting = meeting,
-                        onClick = { onMeetingItemClick(meeting) }
-                    )
-                }
-            }
-        } else {
+        if (selectedDate == null) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -186,6 +154,75 @@ private fun SelectedDateMeetingList(
                     fontWeight = FontWeight.Normal
                 )
             }
+        } else {
+            val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val selectedDateString = selectedDate.format(dateFormatter)
+            
+            val meetingsOnSelectedDate = meetings.filter { meeting ->
+                meeting.scheduledStartTime.startsWith(selectedDateString)
+            }
+
+            if (meetingsOnSelectedDate.isNotEmpty()) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(meetingsOnSelectedDate) { meeting ->
+                        val backgroundColor: Color
+                        val borderColor: Color
+                        val borderWith: Dp
+                        val titleColor: Color
+                        val timeColor: Color
+                        
+                        when (meeting.status) {
+                            "IN_PROGRESS" -> {
+                                // 진행 중인 회의
+                                backgroundColor = Color.White
+                                borderColor = green300
+                                borderWith = 2.dp
+                                titleColor = primaryTextColor
+                                timeColor = primaryTextColor
+                            }
+                            "WAITING" -> {
+                                // 예정된 회의
+                                backgroundColor = Color.White
+                                borderColor = meetingOutline
+                                borderWith = 1.dp
+                                titleColor = primaryTextColor
+                                timeColor = tertiary
+                            }
+                            else -> {
+                                // 그 외 (COMPLETED 등)
+                                backgroundColor = Color.Transparent
+                                borderColor = lightMeetingOutline
+                                borderWith = 1.dp
+                                titleColor = tertiary
+                                timeColor = tertiary
+                            }
+                        }
+                        
+                        MeetingListItem(
+                            meeting = meeting,
+                            onClick = { onMeetingItemClick(meeting) },
+                            backgroundColor = backgroundColor,
+                            borderColor = borderColor,
+                            borderWith = borderWith,
+                            titleColor = titleColor,
+                            timeColor = timeColor
+                        )
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "예정된 회의가 없습니다!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+            }
         }
     }
 }
@@ -193,27 +230,15 @@ private fun SelectedDateMeetingList(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun MeetingListItem(
-    meeting: MeetingDetailSummary,
+    meeting: MeetingUi,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     backgroundColor: Color = Color.White,
     borderColor: Color = meetingOutline,
-    borderWith: Dp = 1.dp
+    borderWith: Dp = 1.dp,
+    titleColor: Color = primaryTextColor,
+    timeColor: Color = primaryTextColor,
 ) {
-    // 회의 시간
-    val startTimeText = meeting.scheduledStartTime.split("T", " ").getOrNull(1)?.substring(0, 5) ?: ""
-    val timeRangeText = if (meeting.targetTime > 0 && meeting.scheduledStartTime.isNotBlank()) {
-        val end = try {
-            val ldt = LocalDateTime.parse(meeting.scheduledStartTime, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            ldt.plusMinutes(meeting.targetTime.toLong()).format(DateTimeFormatter.ofPattern("HH:mm"))
-        } catch (e: Exception) {
-            ""
-        }
-        if (end.isNotEmpty() && startTimeText.isNotEmpty()) "$startTimeText - $end" else startTimeText
-    } else {
-        startTimeText
-    }
-
     Button(
         onClick = onClick,
         modifier = modifier
@@ -222,21 +247,22 @@ private fun MeetingListItem(
         colors = ButtonDefaults.buttonColors(containerColor = backgroundColor),
         border = BorderStroke(borderWith, borderColor),
         shape = MaterialTheme.shapes.small,
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
     ) {
         Text(
             text = meeting.title,
             style = MaterialTheme.typography.bodyMedium,
             fontSize = 14.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = titleColor
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(
-            text = timeRangeText,
+            text = meeting.timeRange,
             style = MaterialTheme.typography.bodySmall,
             fontSize = 12.sp,
             fontWeight = FontWeight.Light,
-            color = tertiary
+            color = timeColor
         )
     }
 }

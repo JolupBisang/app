@@ -1,29 +1,30 @@
 package com.imhungry.sillok.presentation.viewmodel.home
 
+import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.messaging.FirebaseMessaging
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.domain.model.meeting.MeetingStatus
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingSummaryListUseCase
-import com.imhungry.sillok.domain.usecase.user.GetMyProfileUseCase
 import com.imhungry.sillok.presentation.state.home.HomeState
-import com.imhungry.sillok.presentation.state.home.OngoingMeeting
-import com.imhungry.sillok.presentation.util.DateTimeUtils.calcEndTimeIsoLocal
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
-import com.google.firebase.firestore.ListenerRegistration
+import com.imhungry.sillok.presentation.state.home.MeetingUi
+import com.imhungry.sillok.presentation.util.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 import javax.inject.Inject
 
@@ -31,222 +32,270 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getMeetingSummaryListUseCase: GetMeetingSummaryListUseCase,
-    private val userStore: UserStore
+    private val userStore: UserStore,
+    private val notificationHistoryStore: com.imhungry.sillok.data.local.NotificationHistoryStore,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
-    private val TAG = "HomeViewModel"
+    
+    companion object {
+        private const val TAG = "HomeViewModel"
+        private const val SEARCH_LIMIT = 25L
+        private const val DEFAULT_MEETING_TITLE = "회의"
+        private const val COLLECTION_USERS = "users"
+        private const val COLLECTION_MEETINGS = "meetings"
+    }
 
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
+    
     private var currentYearMonth: Pair<Int, Int>? = null
-    private var hasMeetingListener: ListenerRegistration? = null
+    private var hasNewMeetingListener: ListenerRegistration? = null
+    private var meetingStartedListener: ListenerRegistration? = null
+    private var previousUpcomingMeetingIds: Set<Long> = emptySet()
 
     init {
-        // 사용자 닉네임 및 프로필 이미지 반영 및 hasMeeting 리스너 연결
+        initializeNotificationHelper()
+        observeUserChanges()
+        loadInitialData()
+        observeUpcomingMeetingsForNotification()
+    }
+
+    private fun initializeNotificationHelper() {
+        NotificationHelper.createNotificationChannel(context)
+        NotificationHelper.setHistoryStore(notificationHistoryStore)
+    }
+
+    private fun observeUserChanges() {
         viewModelScope.launch {
             userStore.user.collect { user ->
-                _state.update { current ->
-                    current.copy(
-                        userName = user?.nickname ?: current.userName,
-                        profileImage = user?.profileImage ?: current.profileImage
-                    )
-                }
-
-                // 파이어베이스 users/{uid}의 hasMeeting 리스너 연결
-                val uid = user?.id?.toString()
-                if (!uid.isNullOrBlank()) {
-                    attachHasMeetingListener(uid)
-                }
+                updateUserInfo(user)
+                handleUserAuthState(user)
             }
         }
+    }
 
-        // 홈 데이터 초기 로드
-        //loadHomeData()
+    private fun updateUserInfo(user: com.imhungry.sillok.domain.model.user.User?) {
+        _state.update { current ->
+            current.copy(
+                userName = user?.nickname ?: current.userName,
+                profileImage = user?.profileImage ?: current.profileImage
+            )
+        }
+    }
+
+    private fun handleUserAuthState(user: com.imhungry.sillok.domain.model.user.User?) {
+        val uid = user?.id?.toString()
+        if (!uid.isNullOrBlank()) {
+            attachFirestoreListeners(uid)
+            getFCMToken(uid)
+        } else {
+            detachAllListeners()
+        }
+    }
+
+    private fun attachFirestoreListeners(uid: String) {
+        attachHasNewMeetingListener(uid)
+        attachMeetingStartedListener(uid)
+    }
+
+    private fun detachAllListeners() {
+        detachHasNewMeetingListener()
+        detachMeetingStartedListener()
+    }
+
+    private fun loadInitialData() {
+        // loadHomeData()
         loadDummyHomeState()
-        // hasMeeting 플래그 모니터링: true면 로드 후 false로 리셋
+    }
+
+    private fun observeUpcomingMeetingsForNotification() {
         viewModelScope.launch {
             state.collect { s ->
-                if (s.hasMeeting) {
-                    loadHomeData()
-                    _state.update { it.copy(hasMeeting = false) }
+                if (s.upcomingMeetings.isNotEmpty() && previousUpcomingMeetingIds.isEmpty()) {
+                    previousUpcomingMeetingIds = s.upcomingMeetings.map { it.id }.toSet()
                 }
             }
         }
     }
 
-    private fun attachHasMeetingListener(uid: String) {
-        hasMeetingListener?.remove()
+    // ========================================
+    // Firestore 리스너 관리
+    // ========================================
+
+    private fun attachHasNewMeetingListener(uid: String) {
+        hasNewMeetingListener?.remove()
         val db = FirebaseFirestore.getInstance()
-        hasMeetingListener = db.collection("users").document(uid)
+        hasNewMeetingListener = db.collection(COLLECTION_USERS).document(uid)
             .addSnapshotListener { snapshot, _ ->
-                val hasMeeting = snapshot?.getBoolean("hasMeeting") ?: false
-                if (hasMeeting) {
-                    loadHomeData()
-                    db.collection("users").document(uid)
-                        .update(mapOf("hasMeeting" to false, "updatedAt" to System.currentTimeMillis()))
+                val hasNewMeeting = snapshot?.getBoolean("hasNewMeeting") ?: false
+                if (hasNewMeeting) {
+                    handleNewMeetingDetected(db, uid)
                 }
-                _state.update { it.copy(hasMeeting = hasMeeting) }
             }
     }
+
+    private fun handleNewMeetingDetected(db: FirebaseFirestore, uid: String) {
+        loadHomeDataWithNotification()
+        resetHasNewMeetingFlag(db, uid)
+        _state.update { it.copy(hasNewMeeting = false) }
+    }
+
+    private fun resetHasNewMeetingFlag(db: FirebaseFirestore, uid: String) {
+        db.collection(COLLECTION_USERS).document(uid)
+            .update(mapOf("hasNewMeeting" to false, "updatedAt" to System.currentTimeMillis()))
+    }
+
+    private fun detachHasNewMeetingListener() {
+        hasNewMeetingListener?.remove()
+        hasNewMeetingListener = null
+    }
+
+    private fun attachMeetingStartedListener(uid: String) {
+        meetingStartedListener?.remove()
+        val db = FirebaseFirestore.getInstance()
+        meetingStartedListener = db.collection(COLLECTION_USERS).document(uid)
+            .addSnapshotListener { snapshot, _ ->
+                val meetingStarted = snapshot?.getBoolean("meetingStarted") ?: false
+                if (meetingStarted) {
+                    handleMeetingStarted(db, uid, snapshot)
+                }
+            }
+    }
+
+    private fun handleMeetingStarted(
+        db: FirebaseFirestore,
+        uid: String,
+        snapshot: com.google.firebase.firestore.DocumentSnapshot
+    ) {
+        val startedMeetingId = snapshot.getLong("startedMeetingId") ?: 0L
+        if (startedMeetingId > 0L) {
+            Log.d(TAG, "회의 시작 감지: meetingId=$startedMeetingId")
+            viewModelScope.launch {
+                fetchMeetingTitleAndShowDialog(db, uid, startedMeetingId)
+                resetMeetingStartedFlag(db, uid)
+            }
+        }
+    }
+
+    private suspend fun fetchMeetingTitleAndShowDialog(
+        db: FirebaseFirestore,
+        uid: String,
+        startedMeetingId: Long
+    ) {
+        val meetingTitle = try {
+            val meetingDoc = db.collection(COLLECTION_MEETINGS)
+                .document(startedMeetingId.toString())
+                .get()
+                .await()
+            meetingDoc.getString("title") ?: DEFAULT_MEETING_TITLE
+        } catch (e: Exception) {
+            Log.e(TAG, "회의 정보 조회 실패", e)
+            null
+        }
+
+        showMeetingStartedDialog(startedMeetingId, meetingTitle)
+    }
+
+    private fun showMeetingStartedDialog(meetingId: Long, title: String?) {
+        _state.update {
+            it.copy(
+                showMeetingStartedDialog = true,
+                pendingMeetingId = meetingId,
+                pendingMeetingTitle = title
+            )
+        }
+    }
+
+    private fun resetMeetingStartedFlag(db: FirebaseFirestore, uid: String) {
+        db.collection(COLLECTION_USERS).document(uid)
+            .update(mapOf("meetingStarted" to false, "updatedAt" to System.currentTimeMillis()))
+    }
+
+    private fun detachMeetingStartedListener() {
+        meetingStartedListener?.remove()
+        meetingStartedListener = null
+    }
+
+    // ========================================
+    // Dialog 관리
+    // ========================================
+
+    fun dismissMeetingStartedDialog() {
+        _state.update {
+            it.copy(
+                showMeetingStartedDialog = false,
+                pendingMeetingId = null,
+                pendingMeetingTitle = null
+            )
+        }
+    }
+
+    fun showExitDialog() {
+        Log.d(TAG, "종료 다이얼로그 표시 요청")
+        _state.update { it.copy(showExitDialog = true) }
+        Log.d(TAG, "종료 다이얼로그 상태: ${_state.value.showExitDialog}")
+    }
+
+    fun dismissExitDialog() {
+        _state.update { it.copy(showExitDialog = false) }
+    }
+
+    // ========================================
+    // FCM 토큰 관리
+    // ========================================
+
+    private fun getFCMToken(uid: String) {
+        viewModelScope.launch {
+            try {
+                val token = FirebaseMessaging.getInstance().token.await()
+                if (token.isNotEmpty()) {
+                    saveFCMTokenToFirestore(uid, token)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "FCM 토큰 가져오기 실패", e)
+            }
+        }
+    }
+
+    private fun saveFCMTokenToFirestore(uid: String, token: String) {
+        val db = FirebaseFirestore.getInstance()
+        db.collection(COLLECTION_USERS).document(uid)
+            .update("fcmToken", token)
+            .addOnSuccessListener {
+                Log.d(TAG, "FCM 토큰 저장 성공: $token")
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "FCM 토큰 저장 실패", e)
+            }
+    }
+
+    // ========================================
+    // 생명주기 관리
+    // ========================================
 
     public override fun onCleared() {
         super.onCleared()
-        hasMeetingListener?.remove()
-        hasMeetingListener = null
+        detachAllListeners()
     }
+
+    // ========================================
+    // 공개 메서드
+    // ========================================
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun loadHomeData() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val calendar = Calendar.getInstance()
-                val year = calendar.get(Calendar.YEAR)
-                val month = calendar.get(Calendar.MONTH) + 1 // Calendar.MONTH는 0부터 시작
-                currentYearMonth = year to month
-
-                var aggScheduled = emptyList<MeetingDetailSummary>()
-                var aggPast = emptyList<MeetingDetailSummary>()
-                var aggOngoingUi = emptyList<OngoingMeeting>()
-
-                var curY = year
-                var curM = month
-                var monthsTried = 0
-                val maxMonths = 12
-
-                while ((aggScheduled.size + aggPast.size) < 8 && monthsTried < maxMonths) {
-                    when (val result = getMeetingSummaryListUseCase(curY, curM)) {
-                        is ApiResult.Success -> {
-                            val summaries: List<MeetingDetailSummary> = result.data
-                            val scheduled = summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.WAITING }
-                            val past = summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.COMPLETED }
-                            val ongoing = summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.IN_PROGRESS }
-
-                            Log.d(
-                                TAG,
-                                "월별 로드 성공: ${curY}-${curM} 전체=${summaries.size}, 예정=${scheduled.size}, 진행=${ongoing.size}, 종료=${past.size}\n"
-                            )
-
-                            val ongoingUi = ongoing.map {
-                                OngoingMeeting(
-                                    id = it.id,
-                                    title = it.title,
-                                    scheduledStartTime = it.scheduledStartTime,
-                                    scheduledEndTime = calcEndTimeIsoLocal(it.scheduledStartTime, it.targetTime)
-                                )
-                            }
-
-                            aggScheduled = aggScheduled + scheduled
-                            aggPast = aggPast + past
-                            aggOngoingUi = aggOngoingUi + ongoingUi
-                        }
-                        is ApiResult.Failure -> {
-                        }
-                    }
-
-                    if (curM == 1) {
-                        curY -= 1
-                        curM = 12
-                    } else {
-                        curM -= 1
-                    }
-                    monthsTried += 1
-                }
-
-                currentYearMonth = curY to curM
-
-                Log.d(
-                    TAG,
-                    "누적 결과: 예정=${aggScheduled.size}, 진행=${aggOngoingUi.size}, 종료=${aggPast.size}; 다음 기준=${curY}-${curM}"
-                )
-
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        scheduledMeetings = aggScheduled,
-                        pastMeetings = aggPast,
-                        ongoingMeetings = aggOngoingUi,
-                        error = null
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.localizedMessage ?: "오류가 발생했습니다."
-                    )
-                }
-            }
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun loadPreviousMonth() {
-        viewModelScope.launch {
-            try {
-                val (cy, cm) = currentYearMonth ?: run {
-                    val cal = Calendar.getInstance()
-                    cal.get(Calendar.YEAR) to (cal.get(Calendar.MONTH) + 1)
-                }
-
-                val prevYear: Int
-                val prevMonth: Int
-                if (cm == 1) {
-                    prevYear = cy - 1
-                    prevMonth = 12
-                } else {
-                    prevYear = cy
-                    prevMonth = cm - 1
-                }
-
-                when (val result = getMeetingSummaryListUseCase(prevYear, prevMonth)) {
-                    is ApiResult.Success -> {
-                        val summaries: List<MeetingDetailSummary> = result.data
-                        val scheduledNew = summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.WAITING }
-                        val pastNew = summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.COMPLETED }
-                        val ongoingNew = summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.IN_PROGRESS }
-
-                        // UI용 모델로 변환
-                        val ongoingUiNew = ongoingNew.map {
-                            OngoingMeeting(
-                                id = it.id,
-                                title = it.title,
-                                scheduledStartTime = it.scheduledStartTime,
-                                scheduledEndTime = calcEndTimeIsoLocal(it.scheduledStartTime, it.targetTime)
-                            )
-                        }
-
-                        _state.update { current ->
-                            current.copy(
-                                scheduledMeetings = current.scheduledMeetings + scheduledNew,
-                                pastMeetings = current.pastMeetings + pastNew,
-                                ongoingMeetings = current.ongoingMeetings + ongoingUiNew
-                            )
-                        }
-
-                        currentYearMonth = prevYear to prevMonth
-                    }
-                    is ApiResult.Failure -> {
-                        _state.update {
-                            it.copy(error = result.message ?: "이전 달 데이터를 불러오지 못했습니다.")
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "이전 달 로드 중 예외 발생: ${e.localizedMessage}", e)
-                _state.update { it.copy(error = e.localizedMessage ?: "오류가 발생했습니다.") }
-            }
-        }
-    }
-
     fun refreshData() {
         loadHomeData()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun loadHomeDataForMonth(year: Int, month: Int) {
+        loadHomeDataForMonth(year, month, showNotification = false)
     }
 
     fun clearError() {
         _state.update { it.copy(error = null) }
     }
 
-    // 검색 텍스트 변경 처리 및 Firestore 쿼리 실행
     fun onSearchTextChange(text: String) {
         _state.update { it.copy(searchText = text) }
         if (text.isBlank()) {
@@ -256,7 +305,226 @@ class HomeViewModel @Inject constructor(
         performSearch(text)
     }
 
-    private fun normalize(s: String): String = s.trim().lowercase()
+    // ========================================
+    // 회의 데이터 로딩
+    // ========================================
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun loadHomeData() {
+        loadHomeDataWithNotification(showNotification = false)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun loadHomeDataWithNotification(showNotification: Boolean = true) {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH) + 1
+        loadHomeDataForMonth(year, month, showNotification)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun loadHomeDataForMonth(year: Int, month: Int, showNotification: Boolean) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            try {
+                currentYearMonth = year to month
+                when (val result = getMeetingSummaryListUseCase(year, month)) {
+                    is ApiResult.Success -> {
+                        handleSuccessResult(result.data, year, month, showNotification)
+                    }
+                    is ApiResult.Failure -> {
+                        handleFailureResult(result.message)
+                    }
+                }
+            } catch (e: Exception) {
+                handleException(e)
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun handleSuccessResult(
+        summaries: List<MeetingDetailSummary>,
+        year: Int,
+        month: Int,
+        showNotification: Boolean
+    ) {
+        val (ongoing, upcoming, meetings) = categorizeMeetings(summaries)
+        
+        logMeetingLoadResult(year, month, summaries.size, ongoing.size, upcoming.size)
+        
+        val meetingUis = convertToMeetingUis(ongoing, upcoming, meetings)
+        
+        if (showNotification) {
+            checkAndNotifyNewMeetings(meetingUis.upcoming)
+        }
+        
+        updateStateWithMeetings(meetingUis)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun categorizeMeetings(summaries: List<MeetingDetailSummary>): Triple<List<MeetingDetailSummary>, List<MeetingDetailSummary>, List<MeetingDetailSummary>> {
+        val ongoing = summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.IN_PROGRESS }
+        val upcoming = summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.WAITING }
+        val meetings = summaries
+        return Triple(ongoing, upcoming, meetings)
+    }
+
+    private fun convertToMeetingUis(
+        ongoing: List<MeetingDetailSummary>,
+        upcoming: List<MeetingDetailSummary>,
+        meetings: List<MeetingDetailSummary>
+    ): MeetingUis {
+        return MeetingUis(
+            ongoing = ongoing.map { MeetingUi.from(it) },
+            upcoming = upcoming.map { MeetingUi.from(it) },
+            all = meetings.map { MeetingUi.from(it) }
+        )
+    }
+
+    private data class MeetingUis(
+        val ongoing: List<MeetingUi>,
+        val upcoming: List<MeetingUi>,
+        val all: List<MeetingUi>
+    )
+
+    private fun logMeetingLoadResult(year: Int, month: Int, total: Int, ongoing: Int, upcoming: Int) {
+        val past = total - ongoing - upcoming
+        Log.d(TAG, "${year}-${month} 달 로드 성공: 전체=$total, 예정=$upcoming, 진행=$ongoing, 종료=$past")
+    }
+
+    private fun checkAndNotifyNewMeetings(currentUpcoming: List<MeetingUi>) {
+        if (previousUpcomingMeetingIds.isEmpty()) {
+            previousUpcomingMeetingIds = currentUpcoming.map { it.id }.toSet()
+            return
+        }
+
+        val currentIds = currentUpcoming.map { it.id }.toSet()
+        val newMeetings = currentUpcoming.filter { it.id !in previousUpcomingMeetingIds }
+
+        if (newMeetings.isNotEmpty()) {
+            val latestMeeting = newMeetings.first()
+            NotificationHelper.showNewMeetingNotification(
+                context = context,
+                meetingId = latestMeeting.id,
+                meetingTitle = latestMeeting.title
+            )
+            Log.d(TAG, "새로운 회의 알림 표시: ${latestMeeting.title} (ID: ${latestMeeting.id})")
+        }
+
+        previousUpcomingMeetingIds = currentIds
+    }
+
+    private fun updateStateWithMeetings(meetingUis: MeetingUis) {
+        _state.update {
+            it.copy(
+                isLoading = false,
+                meetings = meetingUis.all,
+                ongoingMeetings = meetingUis.ongoing,
+                upcomingMeetings = meetingUis.upcoming,
+                error = null
+            )
+        }
+    }
+
+    private fun handleFailureResult(message: String?) {
+        _state.update {
+            it.copy(
+                isLoading = false,
+                error = message ?: "데이터를 불러오지 못했습니다."
+            )
+        }
+    }
+
+    private fun handleException(e: Exception) {
+        _state.update {
+            it.copy(
+                isLoading = false,
+                error = e.localizedMessage ?: "오류가 발생했습니다."
+            )
+        }
+    }
+
+    // ========================================
+    // 검색 기능
+    // ========================================
+
+    private fun performSearch(rawText: String) {
+        viewModelScope.launch {
+            val normalizedText = normalize(rawText)
+            _state.update { it.copy(isSearching = true) }
+            try {
+                val searchResults = searchMeetings(normalizedText)
+                _state.update { it.copy(searchResults = searchResults, isSearching = false) }
+            } catch (e: Exception) {
+                _state.update { it.copy(isSearching = false, error = e.localizedMessage) }
+            }
+        }
+    }
+
+    private suspend fun searchMeetings(query: String): List<MeetingUi> {
+        val db = FirebaseFirestore.getInstance()
+        val (start, end) = buildPrefixRange(query)
+
+        val titleResults = searchByTitle(db, start, end)
+        val participantResults = searchByParticipants(db, query)
+
+        val merged = (titleResults + participantResults).distinctBy { it.id }
+        return merged.map { MeetingUi.from(it) }
+    }
+
+    private suspend fun searchByTitle(
+        db: FirebaseFirestore,
+        start: String,
+        end: String
+    ): List<MeetingDetailSummary> {
+        val snapshot = db.collection(COLLECTION_MEETINGS)
+            .orderBy("title")
+            .startAt(start)
+            .endAt(end)
+            .limit(SEARCH_LIMIT)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { mapMeetingDoc(it.data ?: emptyMap()) }
+    }
+
+    private suspend fun searchByParticipants(
+        db: FirebaseFirestore,
+        query: String
+    ): List<MeetingDetailSummary> {
+        val (start, end) = buildPrefixRange(query)
+        
+        val userSnapshot = db.collection(COLLECTION_USERS)
+            .orderBy("email")
+            .startAt(start)
+            .endAt(end)
+            .limit(SEARCH_LIMIT)
+            .get()
+            .await()
+
+        val candidateEmails = userSnapshot.documents.mapNotNull { it.getString("email") }.toSet()
+
+        val participantResults = mutableListOf<MeetingDetailSummary>()
+        for (email in candidateEmails) {
+            val meetingSnapshot = db.collection(COLLECTION_MEETINGS)
+                .whereArrayContains("participants", email)
+                .limit(SEARCH_LIMIT)
+                .get()
+                .await()
+            participantResults += meetingSnapshot.documents.mapNotNull { 
+                mapMeetingDoc(it.data ?: emptyMap()) 
+            }
+        }
+
+        return participantResults
+    }
+
+    private fun normalize(text: String): String = text.trim().lowercase()
+
+    private fun buildPrefixRange(query: String): Pair<String, String> {
+        return query to (query + "\uf8ff")
+    }
 
     private fun mapMeetingDoc(data: Map<String, Any?>): MeetingDetailSummary? {
         val id = (data["meetingId"] as? Number)?.toLong() ?: return null
@@ -264,6 +532,7 @@ class HomeViewModel @Inject constructor(
         val scheduledStartTime = data["scheduledStartTime"] as? String ?: ""
         val targetTime = (data["targetTime"] as? Number)?.toInt() ?: 0
         val status = data["meetingStatus"] as? String ?: "WAITING"
+        
         return MeetingDetailSummary(
             id = id,
             title = title,
@@ -273,270 +542,50 @@ class HomeViewModel @Inject constructor(
         )
     }
 
-    private fun buildPrefixRange(query: String): Pair<String, String> {
-        val start = query
-        val end = query + "\uf8ff"
-        return start to end
-    }
-
-    private fun performSearch(rawText: String) {
-        viewModelScope.launch {
-            val text = normalize(rawText)
-            _state.update { it.copy(isSearching = true) }
-            try {
-                val db = FirebaseFirestore.getInstance()
-
-                val (start, end) = buildPrefixRange(text)
-
-                val titleSnap = db.collection("meetings")
-                    .orderBy("title")
-                    .startAt(start)
-                    .endAt(end)
-                    .limit(25)
-                    .get()
-                    .await()
-
-                val titleResults = titleSnap.documents.mapNotNull { mapMeetingDoc(it.data ?: emptyMap()) }
-
-                // users 에서 이메일 prefix 찾기
-                val userSnap = db.collection("users")
-                    .orderBy("email")
-                    .startAt(start)
-                    .endAt(end)
-                    .limit(25)
-                    .get()
-                    .await()
-
-                val candidateEmails = userSnap.documents.mapNotNull { it.getString("email") }.toSet()
-
-                val participantResults = mutableListOf<MeetingDetailSummary>()
-                // meetings 에서 participants 배열에 후보 이메일이 포함된 회의 조회 (전체 일치)
-                for (email in candidateEmails) {
-                    val pSnap = db.collection("meetings")
-                        .whereArrayContains("participants", email)
-                        .limit(25)
-                        .get()
-                        .await()
-                    participantResults += pSnap.documents.mapNotNull { mapMeetingDoc(it.data ?: emptyMap()) }
-                }
-
-                // 통합 및 중복 제거
-                val merged = (titleResults + participantResults).distinctBy { it.id }
-
-                _state.update { it.copy(searchResults = merged, isSearching = false) }
-            } catch (e: Exception) {
-                _state.update { it.copy(isSearching = false, error = e.localizedMessage) }
-            }
-        }
-    }
+    // ========================================
+    // 더미 데이터 (개발용)
+    // ========================================
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun loadDummyHomeState() {
         viewModelScope.launch {
-            // 더미 회의 데이터 생성
-            val scheduled = listOf(
-                MeetingDetailSummary(
-                    id = 1001L,
-                    title = "프로덕트 킥오프 회의",
-                    scheduledStartTime = "2025-10-25T10:00:00",
-                    targetTime = 60,
-                    status = "WAITING"
-                ),
-                MeetingDetailSummary(
-                    id = 1002L,
-                    title = "디자인 리뷰",
-                    scheduledStartTime = "2025-10-27T15:30:00",
-                    targetTime = 45,
-                    status = "WAITING"
-                ),
-                MeetingDetailSummary(
-                    id = 1001L,
-                    title = "프로덕트 킥오프 회의",
-                    scheduledStartTime = "2025-10-25T10:00:00",
-                    targetTime = 60,
-                    status = "WAITING"
-                ),
-                MeetingDetailSummary(
-                    id = 1002L,
-                    title = "디자인 리뷰",
-                    scheduledStartTime = "2025-10-27T15:30:00",
-                    targetTime = 45,
-                    status = "WAITING"
-                ),
-                MeetingDetailSummary(
-                    id = 1001L,
-                    title = "프로덕트 킥오프 회의",
-                    scheduledStartTime = "2025-10-25T10:00:00",
-                    targetTime = 60,
-                    status = "WAITING"
-                ),
-                MeetingDetailSummary(
-                    id = 1002L,
-                    title = "디자인 리뷰",
-                    scheduledStartTime = "2025-10-27T15:30:00",
-                    targetTime = 45,
-                    status = "WAITING"
-                ),
-                MeetingDetailSummary(
-                    id = 1001L,
-                    title = "프로덕트 킥오프 회의",
-                    scheduledStartTime = "2025-10-25T10:00:00",
-                    targetTime = 60,
-                    status = "WAITING"
-                ),
-                MeetingDetailSummary(
-                    id = 1002L,
-                    title = "디자인 리뷰",
-                    scheduledStartTime = "2025-10-27T15:30:00",
-                    targetTime = 45,
-                    status = "WAITING"
-                ),
-                MeetingDetailSummary(
-                    id = 1001L,
-                    title = "프로덕트 킥오프 회의",
-                    scheduledStartTime = "2025-10-25T10:00:00",
-                    targetTime = 60,
-                    status = "WAITING"
-                ),
-                MeetingDetailSummary(
-                    id = 1002L,
-                    title = "디자인 리뷰",
-                    scheduledStartTime = "2025-10-27T15:30:00",
-                    targetTime = 45,
-                    status = "WAITING"
-                ),
-                MeetingDetailSummary(
-                    id = 1001L,
-                    title = "프로덕트 킥오프 회의",
-                    scheduledStartTime = "2025-10-25T10:00:00",
-                    targetTime = 60,
-                    status = "WAITING"
-                ),
-                MeetingDetailSummary(
-                    id = 1002L,
-                    title = "디자인 리뷰",
-                    scheduledStartTime = "2025-10-27T15:30:00",
-                    targetTime = 45,
-                    status = "WAITING"
-                )
-            )
+            val meetings = createDummyMeetings()
+            val ongoingSummaries = createDummyOngoingMeetings()
 
-            val past = listOf(
-                MeetingDetailSummary(
-                    id = 9001L,
-                    title = "분기 회고",
-                    scheduledStartTime = "2025-09-30T14:00:00",
-                    targetTime = 90,
-                    status = "COMPLETED"
-                ),
-                MeetingDetailSummary(
-                    id = 9001L,
-                    title = "분기 회고",
-                    scheduledStartTime = "2025-09-30T14:00:00",
-                    targetTime = 90,
-                    status = "COMPLETED"
-                ),
-                MeetingDetailSummary(
-                    id = 9001L,
-                    title = "분기 회고",
-                    scheduledStartTime = "2025-09-30T14:00:00",
-                    targetTime = 90,
-                    status = "COMPLETED"
-                ),
-                MeetingDetailSummary(
-                    id = 9001L,
-                    title = "분기 회고",
-                    scheduledStartTime = "2025-09-30T14:00:00",
-                    targetTime = 90,
-                    status = "COMPLETED"
-                ),
-                MeetingDetailSummary(
-                    id = 9001L,
-                    title = "분기 회고",
-                    scheduledStartTime = "2025-09-30T14:00:00",
-                    targetTime = 90,
-                    status = "COMPLETED"
-                ),
-                MeetingDetailSummary(
-                    id = 9001L,
-                    title = "분기 회고",
-                    scheduledStartTime = "2025-09-30T14:00:00",
-                    targetTime = 90,
-                    status = "COMPLETED"
-                ),
-                MeetingDetailSummary(
-                    id = 9001L,
-                    title = "분기 회고",
-                    scheduledStartTime = "2025-09-30T14:00:00",
-                    targetTime = 90,
-                    status = "COMPLETED"
-                ),
-                MeetingDetailSummary(
-                    id = 9001L,
-                    title = "분기 회고",
-                    scheduledStartTime = "2025-09-30T14:00:00",
-                    targetTime = 90,
-                    status = "COMPLETED"
-                ),
-                MeetingDetailSummary(
-                    id = 9001L,
-                    title = "분기 회고",
-                    scheduledStartTime = "2025-09-30T14:00:00",
-                    targetTime = 90,
-                    status = "COMPLETED"
-                ),
-                MeetingDetailSummary(
-                    id = 9001L,
-                    title = "분기 회고",
-                    scheduledStartTime = "2025-09-30T14:00:00",
-                    targetTime = 90,
-                    status = "COMPLETED"
-                ),
-                MeetingDetailSummary(
-                    id = 9001L,
-                    title = "분기 회고",
-                    scheduledStartTime = "2025-09-30T14:00:00",
-                    targetTime = 90,
-                    status = "COMPLETED"
-                )
-            )
-
-            val ongoingSummaries = listOf(
-                MeetingDetailSummary(
-                    id = 1101L,
-                    title = "기술 공유 세션",
-                    scheduledStartTime = "2025-10-22T13:00:00",
-                    targetTime = 50,
-                    status = "IN_PROGRESS"
-                ),
-                MeetingDetailSummary(
-                    id = 1101L,
-                    title = "기술 공유 세션2",
-                    scheduledStartTime = "2025-10-22T13:00:00",
-                    targetTime = 50,
-                    status = "IN_PROGRESS"
-                )
-            )
-
-            val ongoingUi = ongoingSummaries.map {
-                OngoingMeeting(
-                    id = it.id,
-                    title = it.title,
-                    scheduledStartTime = it.scheduledStartTime,
-                    scheduledEndTime = calcEndTimeIsoLocal(it.scheduledStartTime, it.targetTime)
-                )
-            }
+            val ongoingUi = ongoingSummaries.map { MeetingUi.from(it) }
+            val upcomingUi = meetings.map { MeetingUi.from(it) }
 
             _state.update {
                 it.copy(
                     userName = it.userName,
                     isLoading = false,
                     error = null,
-                    scheduledMeetings = scheduled,
-                    pastMeetings = past,
-                    ongoingMeetings = ongoingUi
+                    meetings = upcomingUi,
+                    ongoingMeetings = ongoingUi,
+                    upcomingMeetings = upcomingUi
                 )
             }
         }
+    }
+
+    private fun createDummyMeetings(): List<MeetingDetailSummary> {
+        return listOf(
+            MeetingDetailSummary(1001L, "프로덕트 킥오프 회의", "2025-11-01T10:00:00", 60, "WAITING"),
+            MeetingDetailSummary(1002L, "디자인 리뷰", "2025-11-027T15:30:00", 45, "COMPLETED"),
+            MeetingDetailSummary(1001L, "프로덕트 킥오프 회의", "2025-11-03T10:00:00", 60, "CANCELED"),
+            MeetingDetailSummary(1002L, "디자인 리뷰", "2025-11-04T15:30:00", 45, "IN_PROGRESS"),
+            MeetingDetailSummary(1001L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "IN_PROGRESS"),
+            MeetingDetailSummary(1002L, "디자인 리뷰", "2025-10-27T15:30:00", 45, "IN_PROGRESS"),
+            MeetingDetailSummary(1001L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "IN_PROGRESS"),
+            MeetingDetailSummary(1002L, "디자인 리뷰", "2025-10-27T15:30:00", 45, "WAITING"),
+            MeetingDetailSummary(1001L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "WAITING")
+        )
+    }
+
+    private fun createDummyOngoingMeetings(): List<MeetingDetailSummary> {
+        return listOf(
+            MeetingDetailSummary(1101L, "기술 공유 세션", "2025-10-22T13:00:00", 50, "IN_PROGRESS"),
+            MeetingDetailSummary(1102L, "기술 공유 세션2", "2025-10-22T13:00:00", 50, "IN_PROGRESS")
+        )
     }
 }

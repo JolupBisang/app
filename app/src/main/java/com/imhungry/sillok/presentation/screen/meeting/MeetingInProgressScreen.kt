@@ -121,34 +121,32 @@ fun MeetingInProgressScreen(
             }
         }
 
-        if (showCompleteDialog) {
-            SillokDialog(
-                message = "회의를 종료하시겠습니까?",
-                confirmText = "예",
-                cancelText = "취소",
-                onConfirm = {
-                    onCompleteMeeting()
-                    showCompleteDialog = false
-                },
-                onDismiss = {
-                    showCompleteDialog = false
-                }
-            )
-        }
+        SillokDialog(
+            visible = showCompleteDialog,
+            message = "회의를 종료하시겠습니까?",
+            confirmText = "예",
+            cancelText = "취소",
+            onConfirm = {
+                onCompleteMeeting()
+                showCompleteDialog = false
+            },
+            onDismiss = {
+                showCompleteDialog = false
+            }
+        )
 
-        if (showLeaveDialog) {
-            SillokDialog(
-                message = "회의를 떠나시겠습니까?",
-                confirmText = "예",
-                cancelText = "취소",
-                onConfirm = {
-                    onStopMeeting()
-                },
-                onDismiss = {
-                    showLeaveDialog = false
-                }
-            )
-        }
+        SillokDialog(
+            visible = showLeaveDialog,
+            message = "회의를 떠나시겠습니까?",
+            confirmText = "예",
+            cancelText = "취소",
+            onConfirm = {
+                onStopMeeting()
+            },
+            onDismiss = {
+                showLeaveDialog = false
+            }
+        )
     }
 }
 

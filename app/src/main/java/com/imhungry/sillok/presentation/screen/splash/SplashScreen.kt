@@ -60,7 +60,7 @@ fun SplashScreen(
                 modifier = Modifier.size(100.dp)
             )
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
                 text = "seal-log",

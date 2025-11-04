@@ -44,11 +44,9 @@ fun SearchBar(
     modifier: Modifier = Modifier,
     onFocusChange: (Boolean) -> Unit = {},
     focusRequester: FocusRequester = remember { FocusRequester() },
-    onMenuClick: () -> Unit = {},
     text: String = "",
     onTextChange: (String) -> Unit = {}
 ) {
-
     Box(
         modifier = modifier
             .height(42.dp)
@@ -73,6 +71,7 @@ fun SearchBar(
             BasicTextField(
                 value = text,
                 onValueChange = onTextChange,
+                singleLine = true,
                 modifier = Modifier
                     .weight(1f)
                     .focusRequester(focusRequester)

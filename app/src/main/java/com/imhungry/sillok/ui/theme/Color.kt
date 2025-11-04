@@ -24,8 +24,12 @@ val orange100 = Color(0xFFFF7043)
 val green100 = Color(0xFF144330)
 val green200 = Color(0xFF186848)
 val green300 = Color(0xFF00975B)
-val meetingOutline = Color(0x2C00603B)
+val green400 = Color(0xFF00492C)
 val green500 = Color(0xFFD0E7DE)
+val green600 = Color(0xFF00693F)
+val meetingOutline = Color(0x56006B41)
+val lightMeetingOutline = Color(0x3CDCDCDC)
+val selectedDate = Color(0xFFDCE9E3)
 val gray200 = Color(0xFF555555)
 val gray300 = Color(0xFF888888)
 val gray400 = Color(0xFFBBBBBB)
@@ -37,9 +41,14 @@ val disabled = Color(0xFFBBBBBB)
 val shadow = Color(0x33A1A1A1)
 val pagerIndicatorBackground = Color(0xFFD9D9D9)
 val highlight = Color(0x40186848)
+val brown100 = Color(0xFF443A25)
 val brown200 = Color(0xFF857658)
 val brown400 = Color(0xFFE7E1D5)
 val brown500 = Color(0xFFF2EEE5)
+val cancledMeeting = Color(0XFFC85000)
+val inProgressMeeting = Color(0xFF00975B)
+val completedMeeting = Color(0xFF888888)
+val waitingMeeting = Color(0xFFE4CD00)
 
 val gradientColors = listOf(
     green100,
@@ -52,6 +61,11 @@ val gradientColors2 = listOf(
     Color(0xFFFAFAF9)
 )
 
+val gradientColors3 = listOf(
+    Color(0xFFFFF6E1),
+    Color(0xFFFAFAF9)
+)
+
 val gradientBrush = Brush.linearGradient(
     colors = gradientColors,
     start = Offset(0f, 0f),
@@ -60,6 +74,12 @@ val gradientBrush = Brush.linearGradient(
 
 val gradientBrush2 = Brush.verticalGradient(
     colors = gradientColors2,
+    startY = 0f,
+    endY = 400f
+)
+
+val gradientBrush3 = Brush.verticalGradient(
+    colors = gradientColors3,
     startY = 0f,
     endY = 400f
 )

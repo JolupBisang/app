@@ -64,5 +64,13 @@ class LoginViewModel @Inject constructor(
     fun resetLoginSuccess() {
         _state.value = _state.value.copy(isLoginSuccess = false)
     }
+    
+    fun showExitDialog() {
+        _state.value = _state.value.copy(showExitDialog = true)
+    }
+    
+    fun dismissExitDialog() {
+        _state.value = _state.value.copy(showExitDialog = false)
+    }
 }
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.ui.theme.gradientBrush2
@@ -62,6 +63,7 @@ fun HomeBasicBox(
     statusBarColor: Color,
     navigationBarColor: Color,
     backgroundColor: Color,
+    gradientBrush: Brush = gradientBrush2,
     content: @Composable () -> Unit
 ){
     SystemBars(
@@ -73,7 +75,7 @@ fun HomeBasicBox(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
-            .background(gradientBrush2)
+            .background(gradientBrush)
             .windowInsetsPadding(WindowInsets.systemBars)
             .padding(start = 20.dp, end = 20.dp, bottom = 20.dp, top = 12.dp)
     ) {

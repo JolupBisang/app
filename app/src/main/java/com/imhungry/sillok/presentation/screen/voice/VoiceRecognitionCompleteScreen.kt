@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -24,8 +25,10 @@ import coil.request.ImageRequest
 import com.imhungry.sillok.R
 import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.SillokButton
+import com.imhungry.sillok.ui.theme.brown100
 import com.imhungry.sillok.ui.theme.brown400
 import com.imhungry.sillok.ui.theme.inverse
+import com.imhungry.sillok.ui.theme.primarySurface
 
 @Composable
 fun VoiceRecognitionCompleteScreen(
@@ -58,23 +61,25 @@ fun VoiceRecognitionCompleteScreen(
                 )
                 Text(
                     text = "목소리 학습 완료",
-                    color = Color.White,
+                    color = brown100,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     "회의실록이 당신의 목소리를 기억합니다.",
                     style = MaterialTheme.typography.labelSmall,
-                    color = inverse,
+                    fontWeight = FontWeight.Normal,
+                    color = primarySurface,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     "이제 서비스를 사용할 준비가 끝났어요!",
                     style = MaterialTheme.typography.labelSmall,
-                    color = inverse,
+                    fontWeight = FontWeight.Normal,
+                    color = primarySurface,
                     textAlign = TextAlign.Center
                 )
             }

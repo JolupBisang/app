@@ -34,30 +34,31 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 @RequiresApi(Build.VERSION_CODES.O)
-private fun calculateTimeAgo(scheduledStartTime: String): String {
+private fun calculateTimeUntil(scheduledStartTime: String): String {
     return try {
         val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
         val startTime = LocalDateTime.parse(scheduledStartTime, formatter)
         val now = LocalDateTime.now()
         
-        val minutesAgo = ChronoUnit.MINUTES.between(startTime, now)
-        val hoursAgo = ChronoUnit.HOURS.between(startTime, now)
-        val daysAgo = ChronoUnit.DAYS.between(startTime, now)
+        val minutesUntil = ChronoUnit.MINUTES.between(now, startTime)
+        val hoursUntil = ChronoUnit.HOURS.between(now, startTime)
+        val daysUntil = ChronoUnit.DAYS.between(now, startTime)
         
         when {
-            minutesAgo < 1 -> "just now"
-            minutesAgo < 60 -> "$minutesAgo min${if (minutesAgo > 1) "s" else ""} ago"
-            hoursAgo < 24 -> "$hoursAgo hour${if (hoursAgo > 1) "s" else ""} ago"
-            else -> "$daysAgo day${if (daysAgo > 1) "s" else ""} ago"
+            minutesUntil < 0 -> "started"
+            minutesUntil < 1 -> "starting soon"
+            minutesUntil < 60 -> "$minutesUntil min${if (minutesUntil > 1) "s" else ""} left"
+            hoursUntil < 24 -> "$hoursUntil hour${if (hoursUntil > 1) "s" else ""} left"
+            else -> "$daysUntil day${if (daysUntil > 1) "s" else ""} left"
         }
     } catch (e: Exception) {
-        "recently"
+        "upcoming"
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun OngoingMeetingNotification(
+fun ScheduledMeetingNotification(
     meeting: MeetingUi,
     onJoinMeeting: () -> Unit,
     onDeclineMeeting: () -> Unit,
@@ -65,21 +66,21 @@ fun OngoingMeetingNotification(
     modifier: Modifier = Modifier
 ) {
     var isVisible by remember { mutableStateOf(true) }
-    var timeAgoText by remember { mutableStateOf(calculateTimeAgo(meeting.scheduledStartTime)) }
-    
+    var timeUntilText by remember { mutableStateOf(calculateTimeUntil(meeting.scheduledStartTime)) }
+
     // meeting이 변경되면 isVisible을 true로 리셋
     LaunchedEffect(meeting.id) {
         isVisible = true
     }
-    
+
     // 매 분마다 시간 업데이트
     LaunchedEffect(meeting.scheduledStartTime) {
         while (true) {
-            timeAgoText = calculateTimeAgo(meeting.scheduledStartTime)
+            timeUntilText = calculateTimeUntil(meeting.scheduledStartTime)
             delay(60000L) // 1분마다 업데이트
         }
     }
-    
+
     if (isVisible) {
         Box(
             modifier = modifier.fillMaxWidth()
@@ -91,13 +92,13 @@ fun OngoingMeetingNotification(
             ) {
                 Row {
                     Text(
-                        text = "진행 중인 회의",
+                        text = "예정된 회의",
                         style = MaterialTheme.typography.titleMedium,
                         fontSize = 22.sp,
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = timeAgoText,
+                        text = timeUntilText,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 12.sp,
@@ -106,9 +107,9 @@ fun OngoingMeetingNotification(
                     )
                 }
 
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // 회의 제목
                 Text(
                     text = meeting.title,
@@ -119,7 +120,7 @@ fun OngoingMeetingNotification(
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
-                
+
                 // 회의 시간
                 Text(
                     text = meeting.formattedTime,
@@ -128,9 +129,9 @@ fun OngoingMeetingNotification(
                     fontSize = 14.sp,
                     color = gray200,
                 )
-                
+
                 Spacer(modifier = Modifier.height(6.dp))
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth()
                 ) {

@@ -24,6 +24,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private var loginToken by mutableStateOf<String?>(null)
+    private var notificationMeetingId by mutableStateOf<Long?>(null)
     
     @Inject
     lateinit var tokenExpirationManager: TokenExpirationManager
@@ -41,7 +42,9 @@ class MainActivity : ComponentActivity() {
                 ) {
                     SillokNavigation(
                         loginToken = loginToken,
-                        tokenExpirationManager = tokenExpirationManager
+                        tokenExpirationManager = tokenExpirationManager,
+                        notificationMeetingId = notificationMeetingId,
+                        onNotificationHandled = { notificationMeetingId = null }
                     )
                 }
             }
@@ -56,6 +59,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
+        // 알림 클릭 시 회의 상세 화면으로 이동
+        intent?.getLongExtra("meetingId", -1L)?.takeIf { it != -1L }?.let { meetingId ->
+            notificationMeetingId = meetingId
+        }
+        
+        // 기존 토큰 처리
         intent?.data?.getQueryParameter("token")?.let { token ->
             loginToken = token
         }

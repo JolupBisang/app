@@ -1,30 +1,29 @@
 package com.imhungry.sillok.presentation.navigation
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.imhungry.sillok.data.local.TokenExpirationManager
 import com.imhungry.sillok.presentation.screen.home.HomeScreen
 import com.imhungry.sillok.presentation.screen.login.LoginScreen
+import com.imhungry.sillok.presentation.screen.meeting.MeetingInProgressScreen
 import com.imhungry.sillok.presentation.screen.meetingdetail.MeetingDetailScreen
+import com.imhungry.sillok.presentation.screen.meetingform.MeetingFormScreen
+import com.imhungry.sillok.presentation.screen.meetingminutes.MeetingMinutesScreen
+import com.imhungry.sillok.presentation.screen.notification.NotificationHistoryScreen
 import com.imhungry.sillok.presentation.screen.splash.SplashScreen
 import com.imhungry.sillok.presentation.screen.voice.CreateMeetingCompleteScreen
 import com.imhungry.sillok.presentation.screen.voice.VoiceRecognitionCompleteScreen
 import com.imhungry.sillok.presentation.screen.voice.VoiceRecognitionIntroScreen
 import com.imhungry.sillok.presentation.screen.voice.VoiceRecognitionScreen
 import com.imhungry.sillok.presentation.screen.waitingroom.WaitingRoomScreen
-import com.imhungry.sillok.presentation.screen.meeting.MeetingInProgressScreen
-import com.imhungry.sillok.presentation.screen.meetingform.MeetingFormScreen
-import com.imhungry.sillok.presentation.screen.meetingminutes.MeetingMinutesScreen
-import com.imhungry.sillok.ui.components.BackPressHandler
 
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
@@ -55,6 +54,7 @@ sealed class Screen(val route: String) {
     object MeetingMinutes : Screen("meeting_minutes/{meetingId}") {
         fun createRoute(meetingId: Long) = "meeting_minutes/$meetingId"
     }
+    object NotificationHistory : Screen("notification_history")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -62,7 +62,9 @@ sealed class Screen(val route: String) {
 fun SillokNavigation(
     navController: NavHostController = rememberNavController(),
     loginToken: String? = null,
-    tokenExpirationManager: TokenExpirationManager? = null
+    tokenExpirationManager: TokenExpirationManager? = null,
+    notificationMeetingId: Long? = null,
+    onNotificationHandled: () -> Unit = {}
 ) {
     // 딥링크로 받은 토큰이 있으면 로그인 화면으로 이동
     LaunchedEffect(loginToken) {
@@ -72,7 +74,17 @@ fun SillokNavigation(
             }
         }
     }
-    
+
+    // 알림 클릭 시 회의 상세 화면으로 이동
+    LaunchedEffect(notificationMeetingId) {
+        notificationMeetingId?.let { meetingId ->
+            navController.navigate(Screen.MeetingDetail.createRoute(meetingId)) {
+                popUpTo(Screen.Home.route) { inclusive = false }
+            }
+            onNotificationHandled()
+        }
+    }
+
     // 토큰 만료 처리
     LaunchedEffect(Unit) {
         tokenExpirationManager?.shouldNavigateToLogin?.collect { shouldNavigate ->
@@ -84,12 +96,11 @@ fun SillokNavigation(
             }
         }
     }
-    
-    BackPressHandler(navController = navController) {
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Splash.route
-        ) {
+
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Splash.route
+    ) {
         // 스플래시 화면
         composable(Screen.Splash.route) {
             SplashScreen(
@@ -110,7 +121,7 @@ fun SillokNavigation(
                 }
             )
         }
-        
+
         // 로그인 화면
         composable(
             route = Screen.Login.route,
@@ -135,7 +146,7 @@ fun SillokNavigation(
                 }
             )
         }
-        
+
         // 음성 인식 시작 안내 화면
         composable(Screen.VoiceRecognitionIntro.route) {
             VoiceRecognitionIntroScreen(
@@ -144,7 +155,7 @@ fun SillokNavigation(
                 }
             )
         }
-        
+
         // 음성 인식 화면
         composable(Screen.VoiceRecognition.route) {
             VoiceRecognitionScreen(
@@ -152,10 +163,15 @@ fun SillokNavigation(
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.VoiceRecognitionIntro.route) { inclusive = true }
                     }
+                },
+                onComplete = {
+                    navController.navigate(Screen.VoiceRecognitionComplete.route) {
+                        popUpTo(Screen.VoiceRecognition.route) { inclusive = true }
+                    }
                 }
             )
         }
-        
+
         // 음성 인식 완료 안내 화면
         composable(Screen.VoiceRecognitionComplete.route) {
             VoiceRecognitionCompleteScreen(
@@ -166,7 +182,7 @@ fun SillokNavigation(
                 }
             )
         }
-        
+
         // 홈 화면
         composable(Screen.Home.route) {
             HomeScreen(
@@ -183,10 +199,13 @@ fun SillokNavigation(
                 },
                 onNavigateToMeetingMinutes = { meetingId ->
                     navController.navigate(Screen.MeetingMinutes.createRoute(meetingId))
+                },
+                onNavigateToNotificationHistory = {
+                    navController.navigate(Screen.NotificationHistory.route)
                 }
             )
         }
-        
+
         // 회의 생성 화면
         composable(Screen.MeetingForm.route) {
             MeetingFormScreen(
@@ -198,7 +217,7 @@ fun SillokNavigation(
                 }
             )
         }
-        
+
         // 회의 생성 완료 안내 화면
         composable(Screen.CreateMeetingComplete.route) {
             CreateMeetingCompleteScreen(
@@ -209,7 +228,7 @@ fun SillokNavigation(
                 }
             )
         }
-        
+
         // 회의 정보 조회 화면
         composable(
             route = Screen.MeetingDetail.route,
@@ -229,7 +248,7 @@ fun SillokNavigation(
                 }
             )
         }
-        
+
         // 회의 정보 수정 화면
         composable(
             route = Screen.EditMeetingForm.route,
@@ -249,7 +268,7 @@ fun SillokNavigation(
                 meetingId = meetingId
             )
         }
-        
+
         // 대기실 화면
         composable(
             route = Screen.WaitingRoom.route,
@@ -265,7 +284,7 @@ fun SillokNavigation(
                 }
             )
         }
-        
+
         // 회의 중 화면
         composable(
             route = Screen.MeetingInProgress.route,
@@ -286,7 +305,7 @@ fun SillokNavigation(
                 }
             )
         }
-        
+
         // 회의록 화면
         composable(
             route = Screen.MeetingMinutes.route,
@@ -302,6 +321,17 @@ fun SillokNavigation(
                 }
             )
         }
-    }
+
+        // 알림 기록 화면
+        composable(Screen.NotificationHistory.route) {
+            NotificationHistoryScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onNotificationClick = { meetingId ->
+                    navController.navigate(Screen.MeetingDetail.createRoute(meetingId))
+                }
+            )
+        }
     }
 } 

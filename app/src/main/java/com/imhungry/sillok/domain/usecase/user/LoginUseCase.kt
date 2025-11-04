@@ -47,7 +47,7 @@ class LoginUseCase @Inject constructor(
                             val data = hashMapOf(
                                 "email" to email,
                                 "createdAt" to System.currentTimeMillis(),
-                                "addMeeting" to false, // meeting이 추가되었으면 홈 새로고침
+                                "hasNewMeeting" to false, // meeting이 추가되었으면 홈 새로고침
                                 "meetingStarted" to false, // meeting 시작되면 바로 회의 중 화면으로 이동
                                 "startedMeetingId" to 0L // 시작된 회의 ID
                             )
