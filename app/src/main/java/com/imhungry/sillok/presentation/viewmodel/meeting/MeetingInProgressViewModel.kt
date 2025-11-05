@@ -210,7 +210,7 @@ class MeetingInProgressViewModel @Inject constructor(
                                 timestamp = DateTimeUtils.getElapsedString(startMillis, seg.timestamp),
                                 text = seg.text,
                                 nickname = seg.userName,
-                                profileImage = ProfileUtils.getProfileDrawableForUser(seg.userId),
+                                profileImage = "",
                                 isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
                                 isSameAsPrevious = isSameAsPrevious,
                                 isSameAsNext = isSameAsNext
@@ -1237,39 +1237,39 @@ class MeetingInProgressViewModel @Inject constructor(
 		)
 
 		val dummySegments = listOf(
-			SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
-			SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
-			SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = ProfileUtils.getProfileDrawableForUser(2), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
-			SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = ProfileUtils.getProfileDrawableForUser(3), isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
-            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
-            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = ProfileUtils.getProfileDrawableForUser(2), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = ProfileUtils.getProfileDrawableForUser(3), isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
-            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
-            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = ProfileUtils.getProfileDrawableForUser(2), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = ProfileUtils.getProfileDrawableForUser(3), isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
-            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
-            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = ProfileUtils.getProfileDrawableForUser(2), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = ProfileUtils.getProfileDrawableForUser(3), isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
-            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
-            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = ProfileUtils.getProfileDrawableForUser(2), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = ProfileUtils.getProfileDrawableForUser(3), isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
-            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
-            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = ProfileUtils.getProfileDrawableForUser(2), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = ProfileUtils.getProfileDrawableForUser(3), isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
-            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = ProfileUtils.getProfileDrawableForUser(1), isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
-            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = ProfileUtils.getProfileDrawableForUser(2), isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
-            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = ProfileUtils.getProfileDrawableForUser(3), isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false)
+			SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
+			SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
+			SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
+			SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = "", isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
+            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
+            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = "", isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
+            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
+            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = "", isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
+            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
+            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = "", isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
+            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
+            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = "", isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
+            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
+            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = "", isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:01:10", text = "안녕하세요, 오늘 아젠다는...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = true),
+            SegmentUi(timestamp = "00:01:35", text = "첫 번째로 목표 범위를 정하면...", nickname = "홍길동", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = true, isSameAsNext = false),
+            SegmentUi(timestamp = "00:02:10", text = "디자인 관점에서 보면...", nickname = "김디자", profileImage = "", isFromCurrentUser = false, isSameAsPrevious = false, isSameAsNext = false),
+            SegmentUi(timestamp = "00:03:45", text = "백엔드 API는...", nickname = "이개발", profileImage = "", isFromCurrentUser = true, isSameAsPrevious = false, isSameAsNext = false)
 		)
 
 		val dummySummaries = listOf(
 			SummaryUi(content = "회의 목적과 범위를 합의함", timestamp = "00:10:00"),
-			SummaryUi(content = "핵심 액션 아이템 3개 도출", timestamp = "00:12:30"),
+			SummaryUi(content = "핵심 액션 아이템 3개 도출했고 길게 작성했을 때는 이런 모습이고, 가로 너비는 고정되어 있으니 아래로 길어짐.", timestamp = "00:12:30"),
             SummaryUi(content = "회의 목적과 범위를 합의함", timestamp = "00:10:00"),
             SummaryUi(content = "핵심 액션 아이템 3개 도출", timestamp = "00:12:30"),
             SummaryUi(content = "회의 목적과 범위를 합의함", timestamp = "00:10:00"),
@@ -1291,9 +1291,11 @@ class MeetingInProgressViewModel @Inject constructor(
 		)
 
 		val dummyParticipation = listOf(
-			UserParticipationRate(userId = 1L, nickname = "홍길동", rate = 0.45),
-			UserParticipationRate(userId = 2L, nickname = "김디자", rate = 0.35),
-			UserParticipationRate(userId = 3L, nickname = "이개발", rate = 0.20)
+			UserParticipationRate(userId = 1L, nickname = "김부장", rate = 0.45),
+			UserParticipationRate(userId = 2L, nickname = "조사원", rate = 0.35),
+			UserParticipationRate(userId = 3L, nickname = "정대리", rate = 0.15),
+            UserParticipationRate(userId = 4L, nickname = "김상병", rate = 0.08),
+            UserParticipationRate(userId = 5L, nickname = "정과장", rate = 0.07)
 		)
 
 		val dummyFeedbacks = listOf(

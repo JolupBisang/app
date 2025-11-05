@@ -276,7 +276,7 @@ class HomeViewModel @Inject constructor(
 
     public override fun onCleared() {
         super.onCleared()
-        detachAllListeners()
+        //detachAllListeners()
     }
 
     // ========================================

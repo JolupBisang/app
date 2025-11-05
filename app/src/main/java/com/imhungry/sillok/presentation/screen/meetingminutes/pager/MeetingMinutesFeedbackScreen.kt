@@ -50,7 +50,8 @@ fun MeetingMinutesFeedbackScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
                 Notification(
-                    feedback = feedback
+                    feedback = feedback,
+                    isRead = true
                 )
                 if (index == feedbacks.lastIndex) {
                     Spacer(modifier = Modifier.height(48.dp))

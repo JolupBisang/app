@@ -21,6 +21,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -261,12 +264,16 @@ fun HeaderSection(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "아젠다",
+                                text = "주제",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                         }
-                        if (isExpanded) {
+                        AnimatedVisibility(
+                            visible = isExpanded,
+                            enter = expandVertically(),
+                            exit = shrinkVertically()
+                        ) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()

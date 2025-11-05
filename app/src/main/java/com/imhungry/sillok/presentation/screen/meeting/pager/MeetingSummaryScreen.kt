@@ -105,7 +105,10 @@ fun MeetingSummaryScreen(
             )
         }
         itemsIndexed(summaries) { index, summary ->
-            SummaryListItem(summary = summary)
+            SummaryListItem(
+                summary = summary,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
             Spacer(Modifier.height(14.dp))
             if (index == summaries.lastIndex) {
                 Spacer(Modifier.height(14.dp))

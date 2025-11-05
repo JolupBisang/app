@@ -47,7 +47,7 @@ fun MeetingFeedbackScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(feedbacks) { index, feedback ->
-                Notification(feedback = feedback)
+                Notification(feedback = feedback, isRead = feedback.isRead)
                 if (index == feedbacks.lastIndex) {
                     Spacer(modifier = Modifier.height(48.dp))
                 }

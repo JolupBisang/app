@@ -3,14 +3,17 @@ package com.imhungry.sillok.presentation.screen.meeting.pager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -18,6 +21,8 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,8 +35,10 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.sillok.presentation.screen.meeting.component.ChatBubble
 import com.imhungry.sillok.presentation.screen.meeting.component.CheckItem
@@ -41,6 +48,7 @@ import com.imhungry.sillok.presentation.state.meeting.FeedbackUi
 import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.presentation.viewmodel.meeting.AgendaViewModel
 import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewModel
+import com.imhungry.sillok.ui.theme.gray400
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -167,46 +175,79 @@ fun SwipeToDismissNotification(
                     detectHorizontalDragGestures(
                         onHorizontalDrag = { _, dragAmount ->
                             launch {
+                                // 드래그 중 위치 이동
                                 val newOffset = offsetX.value + dragAmount
                                 offsetX.snapTo(newOffset.coerceIn(-1000f, 1000f))
                             }
-                        }
-                    )
-                }
-            }
-            .pointerInput(Unit) {
-                coroutineScope {
-                    detectDragEnd {
-                        if (abs(offsetX.value) > threshold) {
-                            onDismiss()
-                        } else {
+                        },
+                        onDragEnd = {
                             launch {
-                                offsetX.animateTo(0f)
+                                if (abs(offsetX.value) > threshold) {
+                                    val target = if (offsetX.value > 0) 2000f else -2000f
+
+                                    offsetX.animateTo(
+                                        target,
+                                        animationSpec = androidx.compose.animation.core.tween(durationMillis = 300)
+                                    )
+
+                                    onDismiss()
+                                } else {
+                                    offsetX.animateTo(
+                                        0f,
+                                        animationSpec = androidx.compose.animation.core.spring(
+                                            dampingRatio = 0.7f,
+                                            stiffness = 300f
+                                        )
+                                    )
+                                }
                             }
                         }
-                    }
+                    )
                 }
             }
             .offset { IntOffset(offsetX.value.toInt(), 0) }
     ) {
         Notification(
             feedback = feedback,
-            blur = true
+            blur = true,
+            isRead = true
         )
     }
 }
 
-suspend fun PointerInputScope.detectDragEnd(onDragEnd: () -> Unit) {
-    coroutineScope {
-        awaitPointerEventScope {
-            do {
-                val event = awaitPointerEvent()
-                val change = event.changes.firstOrNull()
-                if (change?.changedToUpIgnoreConsumed() == true) {
-                    onDragEnd()
-                    break
-                }
-            } while (true)
-        }
+@Composable
+fun DividerWithText(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 왼쪽 선
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(gray400)
+        )
+
+        // 가운데 텍스트
+        Text(
+            text = text,
+            color = gray400,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Light,
+            fontSize = 11.sp,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+
+        // 오른쪽 선
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(gray400)
+        )
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,13 +31,17 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.imhungry.sillok.presentation.state.meeting.SegmentUi
 import com.imhungry.sillok.ui.theme.blackBackGround
 import com.imhungry.sillok.ui.theme.brown200
 import com.imhungry.sillok.ui.theme.brown500
+import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.green500
+import com.imhungry.sillok.ui.theme.placeHolder
 import com.imhungry.sillok.ui.theme.tertiary
+import kotlin.text.ifEmpty
 
 @Composable
 fun ChatBubble(
@@ -47,7 +52,7 @@ fun ChatBubble(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = 16.dp, vertical = 3.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -71,7 +76,7 @@ private fun MyMessage(segment: SegmentUi, highlighted: Boolean) {
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.Bottom
         ) {
-            if (! segment.isSameAsNext) {
+            if (!segment.isSameAsNext) {
                 TimestampText(
                     time = segment.timestamp,
                     modifier = Modifier
@@ -82,8 +87,8 @@ private fun MyMessage(segment: SegmentUi, highlighted: Boolean) {
             }
             ChatBox(
                 text = segment.text,
-                backgroundColor = if (highlighted) Color(0xFF228F64) else green500,
-                shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 12.dp, bottomEnd = 4.dp),
+                backgroundColor = if (highlighted) green300 else green500,
+                shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 10.dp, bottomEnd = 4.dp),
             )
         }
     }
@@ -96,40 +101,44 @@ private fun OthersMessage(
 ) {
     Row(verticalAlignment = Alignment.Top) {
         if (!segment.isSameAsPrevious) {
-            Image(
-                painter = rememberAsyncImagePainter(segment.profileImage),
-                contentDescription = "profile",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .border(0.5.dp, blackBackGround, CircleShape)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-
-            Column {
-                Text(
-                    text = segment.nickname,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 2.dp, bottom = 1.dp)
+            Row(
+                modifier = Modifier.padding(top = 6.dp)
+            ) {
+                AsyncImage(
+                    model = segment.profileImage.ifEmpty { null },
+                    contentDescription = "프로필 이미지",
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(placeHolder),
+                    contentScale = ContentScale.Crop
                 )
+                Spacer(modifier = Modifier.width(6.dp))
 
-                Row(verticalAlignment = Alignment.Bottom) {
-                    ChatBox(
-                        text = segment.text,
-                        backgroundColor = if (highlighted) brown200 else brown500,
-                        shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 4.dp, bottomEnd = 14.dp),
+                Column {
+                    Text(
+                        text = segment.nickname,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 6.dp)
                     )
-                    if (!segment.isSameAsNext) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        TimestampText(
-                            time = segment.timestamp,
-                            modifier = Modifier
-                                .align(Alignment.Bottom)
-                                .padding(bottom = 2.dp)
+
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        ChatBox(
+                            text = segment.text,
+                            backgroundColor = if (highlighted) brown200 else brown500,
+                            shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 4.dp, bottomEnd = 10.dp),
                         )
+                        if (!segment.isSameAsNext) {
+                            Spacer(modifier = Modifier.width(2.dp))
+                            TimestampText(
+                                time = segment.timestamp,
+                                modifier = Modifier
+                                    .align(Alignment.Bottom)
+                                    .padding(bottom = 2.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -173,7 +182,8 @@ private fun ChatBox(
         Text(
             text = text,
             fontSize = 14.sp,
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Normal
         )
     }
 }

@@ -48,7 +48,7 @@ fun SillokDialog(
         ) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                shadowElevation = 12.dp,
+                shadowElevation = 16.dp,
             ) {
                 Column(
                     modifier = Modifier

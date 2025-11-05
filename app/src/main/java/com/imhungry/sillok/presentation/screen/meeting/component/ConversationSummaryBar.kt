@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.domain.model.participation.UserParticipationRate
 import com.imhungry.sillok.ui.theme.generateParticipantColors
+import com.imhungry.sillok.ui.theme.green500
 
 @Composable
 fun ConversationSummaryBar(
@@ -59,10 +60,10 @@ fun ConversationSummaryBar(
                 Column(
                     modifier = Modifier.wrapContentWidth(),
                     horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     range.forEach { i ->
-                        LegendItem(name = participationRates[i].nickname, color = colors.getOrElse(i) { Color.Gray })
+                        LegendItem(name = participationRates[i].nickname, color = colors.getOrElse(i) { green500 })
                     }
                 }
             }
@@ -87,7 +88,7 @@ fun LegendItem(name: String, color: Color) {
         Text(
             text = name,
             style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.Normal,
             textAlign = TextAlign.Start
         )
     }

@@ -18,7 +18,7 @@ data class SegmentUi(
     val timestamp: String,
     val text: String,
     val nickname: String,
-    val profileImage: Int?,
+    val profileImage: String,
     val isFromCurrentUser: Boolean,
     val isSameAsPrevious: Boolean,
     val isSameAsNext: Boolean

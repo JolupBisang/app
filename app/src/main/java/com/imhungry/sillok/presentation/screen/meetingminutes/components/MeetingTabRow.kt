@@ -24,9 +24,9 @@ fun MeetingTabRow(
     onTabClick: (Int) -> Unit
 ) {
     val items = listOf(
-        Triple("회의 분석", if (selectedTab == 0) primaryButton else tertiary, if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium),
-        Triple("전체 기록", if (selectedTab == 1) primaryButton else tertiary, if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium),
-        Triple("피드백 기록", if (selectedTab == 2) primaryButton else tertiary, if (selectedTab == 2) FontWeight.Bold else FontWeight.Medium)
+        Triple("회의 분석", if (selectedTab == 0) primaryButton else tertiary, if (selectedTab == 0) FontWeight.Medium else FontWeight.Normal),
+        Triple("전체 기록", if (selectedTab == 1) primaryButton else tertiary, if (selectedTab == 1) FontWeight.Medium else FontWeight.Normal),
+        Triple("피드백 기록", if (selectedTab == 2) primaryButton else tertiary, if (selectedTab == 2) FontWeight.Medium else FontWeight.Normal)
     )
     Row(
         modifier = Modifier

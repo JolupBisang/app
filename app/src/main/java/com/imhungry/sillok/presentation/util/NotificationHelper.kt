@@ -78,10 +78,10 @@ object NotificationHelper {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground) // 앱 아이콘 사용
             .setContentTitle("새로운 회의 초대")
-            .setContentText("${meetingTitle}에 초대되었습니다")
+            .setContentText("${meetingTitle}에 초대되었습니다.")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("${meetingTitle}에 초대되었습니다.")
+                    .bigText("${meetingTitle}에 초대되었습니다")
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)

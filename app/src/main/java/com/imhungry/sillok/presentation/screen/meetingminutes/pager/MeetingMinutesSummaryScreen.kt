@@ -79,16 +79,10 @@ fun MeetingMinutesSummaryScreen(
                     onToggle = { isExpanded = !isExpanded },
                     content = {
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                text = "실제 진행 시간",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(Modifier.height(8.dp))
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 8.dp),
+                                    .padding(bottom = 16.dp),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -117,43 +111,6 @@ fun MeetingMinutesSummaryScreen(
                                     text = "${state.actualDurationMinutes}분",
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            Text(
-                                text = "목표 진행 시간",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 16.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = state.scheduledStartTime,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(Modifier.width(15.dp))
-                                Text(
-                                    text = "~",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(Modifier.width(15.dp))
-                                Text(
-                                    text = state.scheduledEndTime,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(Modifier.width(32.dp))
-                                Text(
-                                    text = "${state.targetTime}분",
-                                    style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -195,7 +152,7 @@ fun MeetingMinutesSummaryScreen(
                             Text(
                                 text = recapSummary,
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Normal
                             )
                         }
                     },
