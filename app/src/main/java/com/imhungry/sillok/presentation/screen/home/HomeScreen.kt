@@ -128,18 +128,15 @@ fun HomeScreen(
                 profileImage = homeState.profileImage,
                 onNewMeeting = {
                     drawerState.close()
-                    viewModel.onCleared()
                     onNavigateToCreateMeeting()
                 },
                 onTeamManagement = {
                     drawerState.close()
-                    viewModel.onCleared()
                     onNavigateToTeamList()
                 },
                 onFeedbackHistory = { drawerState.close() },
                 onMeetingFolder = {
                     drawerState.close()
-                    viewModel.onCleared()
                     onNavigateToMeetingMinutesFolder()
                 }
             )
@@ -152,7 +149,6 @@ fun HomeScreen(
             onSearchFocusChange = { isSearchFocused = it },
             onSearchTextChange = { viewModel.onSearchTextChange(it) },
             onMeetingItemClick = { meeting ->
-                viewModel.onCleared()
                 navigationHandlers.navigateToMeeting(meeting)
             },
             onMonthChanged = { year, month ->
@@ -163,11 +159,9 @@ fun HomeScreen(
                 onNavigagteToMeetingInProgress(meeting.id)
             },
             onJoinScheduledMeeting = { meeting ->
-                viewModel.onCleared()
                 navigationHandlers.navigateToMeeting(meeting)
             },
             onCreateMeeting = {
-                viewModel.onCleared()
                 onNavigateToCreateMeeting()
             },
             onMenuClick = { drawerState.open() },

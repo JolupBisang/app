@@ -1,6 +1,7 @@
 package com.imhungry.sillok.presentation.screen.meetingminutes.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -17,10 +18,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.imhungry.sillok.ui.theme.green300
+import com.imhungry.sillok.ui.theme.pagerIndicatorBackground
 import com.imhungry.sillok.ui.theme.primarySurface
+import com.imhungry.sillok.ui.theme.shadow
 
 @Composable
 fun CustomSeekBar(
@@ -49,6 +55,19 @@ fun CustomSeekBar(
                     }
                 }
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(7.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                shadow
+                            )
+                        )
+                    )
+            )
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -63,7 +82,7 @@ fun CustomSeekBar(
                 barWidth = size.width
 
                 drawRoundRect(
-                    color = primarySurface,
+                    color = pagerIndicatorBackground,
                     topLeft = Offset(0f, size.height / 2 - trackHeightPx / 2),
                     size = Size(size.width, trackHeightPx),
                     cornerRadius = CornerRadius(trackHeightPx / 2, trackHeightPx / 2)
@@ -71,14 +90,14 @@ fun CustomSeekBar(
 
                 val progressWidth = (currentPosition / duration) * size.width
                 drawRoundRect(
-                    color = primarySurface,
+                    color = green300,
                     topLeft = Offset(0f, size.height / 2 - trackHeightPx / 2),
                     size = Size(progressWidth, trackHeightPx),
                     cornerRadius = CornerRadius(trackHeightPx / 2, trackHeightPx / 2)
                 )
 
                 drawCircle(
-                    color = primarySurface,
+                    color = green300,
                     radius = thumbRadiusPx,
                     center = Offset(progressWidth, size.height / 2)
                 )

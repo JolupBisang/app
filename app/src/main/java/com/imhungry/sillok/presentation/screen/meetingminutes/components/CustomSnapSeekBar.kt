@@ -21,6 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.imhungry.sillok.ui.theme.green300
+import com.imhungry.sillok.ui.theme.pagerIndicatorBackground
 import com.imhungry.sillok.ui.theme.primarySurface
 import kotlin.math.abs
 
@@ -67,7 +69,7 @@ fun CustomSnapSeekBar(
                 barWidth = size.width
 
                 drawRoundRect(
-                    color = Color.LightGray,
+                    color = pagerIndicatorBackground,
                     topLeft = Offset(0f, size.height / 2 - trackHeightPx / 2),
                     size = Size(size.width, trackHeightPx),
                     cornerRadius = CornerRadius(trackHeightPx / 2, trackHeightPx / 2)
@@ -76,14 +78,14 @@ fun CustomSnapSeekBar(
                 val progressRatio = (value - snapPoints.first()) / (snapPoints.last() - snapPoints.first())
                 val progressWidth = progressRatio * size.width
                 drawRoundRect(
-                    color = primarySurface,
+                    color = green300,
                     topLeft = Offset(0f, size.height / 2 - trackHeightPx / 2),
                     size = Size(progressWidth, trackHeightPx),
                     cornerRadius = CornerRadius(trackHeightPx / 2, trackHeightPx / 2)
                 )
 
                 drawCircle(
-                    color = primarySurface,
+                    color = green300,
                     radius = thumbRadiusPx,
                     center = Offset(progressWidth, size.height / 2)
                 )

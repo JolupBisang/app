@@ -149,7 +149,7 @@ fun WaitingRoomScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(10.dp)
+                    .height(7.dp)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
@@ -179,24 +179,31 @@ fun WaitingRoomScreen(
                         text = state.targetTimeDisplay,
                         style = MaterialTheme.typography.bodySmall,
                         color = disabled,
-                        modifier = Modifier.align(Alignment.CenterEnd)
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 4.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(28.dp),
+                        .padding(start = 20.dp, end = 20.dp)
+                        .height(42.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.power),
-                        contentDescription = "종료",
-                        modifier = Modifier.size(24.dp),
-                        colorFilter = ColorFilter.tint(disabled)
-                    )
+                    Box(
+                        modifier = Modifier.padding(top = 6.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.power),
+                            contentDescription = "종료",
+                            modifier = Modifier.size(20.dp),
+                            colorFilter = ColorFilter.tint(disabled)
+                        )
+                    }
 
                     Box(
                         modifier = Modifier
@@ -207,7 +214,7 @@ fun WaitingRoomScreen(
                         Image(
                             painter = painterResource(id = R.drawable.mic),
                             contentDescription = "마이크",
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(42.dp),
                             colorFilter = ColorFilter.tint(disabled)
                         )
                     }
@@ -215,7 +222,7 @@ fun WaitingRoomScreen(
                     Image(
                         painter = painterResource(id = R.drawable.out),
                         contentDescription = "나가기",
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(26.dp),
                         colorFilter = ColorFilter.tint(disabled)
                     )
                 }

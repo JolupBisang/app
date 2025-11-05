@@ -93,6 +93,13 @@ class MeetingInProgressViewModel @Inject constructor(
     private val gson = Gson()
     private var webSocket: WebSocket? = null
     private var eventSource: EventSource? = null
+    
+    // SSE 재연결 관련
+    private var sseReconnectJob: Job? = null
+    private var sseServerUrl: String? = null
+    private var sseMeetingId: Long? = null
+    private var sseJwtToken: String? = null
+    private val sseReconnectInterval = 8 * 60 * 1000L // 8분 (밀리초)
 
     // AudioRecord 관련
     private var audioRecord: AudioRecord? = null
@@ -141,7 +148,8 @@ class MeetingInProgressViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun initialize(meetingId: Long) {
         _state.update { it.copy(meetingId = meetingId) }
-        refreshAll()
+        //refreshAll()
+        loadDummyMeetingInProgressState()
         testWebSocketConnection(
             "ws://192.168.68.103:8080",
             1L,
@@ -269,10 +277,13 @@ class MeetingInProgressViewModel @Inject constructor(
 
     fun setMicEnabled(enabled: Boolean) {
         _micEnabled.value = enabled
+        Log.d(TAG, "🎤 마이크 상태 변경: ${if (enabled) "켜짐" else "꺼짐"}")
     }
 
     fun toggleMic() {
-        _micEnabled.value = !_micEnabled.value
+        val newState = !_micEnabled.value
+        _micEnabled.value = newState
+        Log.d(TAG, "🎤 마이크 토글: ${if (newState) "켜짐" else "꺼짐"}")
     }
 
     fun changeAgendaStatus(agendaId: Long, isCompleted: Boolean) {
@@ -559,14 +570,22 @@ class MeetingInProgressViewModel @Inject constructor(
                         // 읽은 데이터를 복사 (버퍼 재사용을 위해)
                         val audioChunk = buffer.copyOf(bytesRead)
 
-                        // WebSocket으로 전송
-                        sendAudioChunk(webSocket, audioChunk)
-
-                        Log.v(TAG, "📤 청크 #$chunkCount 읽음: $bytesRead bytes (총: $totalBytesRead bytes)")
+                        // WebSocket으로 전송 (마이크가 켜져있을 때만)
+                        if (_micEnabled.value) {
+                            sendAudioChunk(webSocket, audioChunk)
+                            Log.v(TAG, "📤 청크 #$chunkCount 읽음: $bytesRead bytes (총: $totalBytesRead bytes)")
+                        } else {
+                            Log.d(TAG, "🔇 마이크가 꺼져있어 전송 건너뜀 (청크 #$chunkCount)")
+                        }
 
                         // UI 업데이트
                         withContext(Dispatchers.Main) {
-                            _recordingStatus.postValue("녹음 중... (청크 #$chunkCount)")
+                            val status = if (_micEnabled.value) {
+                                "녹음 중... (청크 #$chunkCount)"
+                            } else {
+                                "녹음 일시정지 (마이크 꺼짐)"
+                            }
+                            _recordingStatus.postValue(status)
                         }
                     }
                     bytesRead == AudioRecord.ERROR_INVALID_OPERATION -> {
@@ -948,10 +967,33 @@ class MeetingInProgressViewModel @Inject constructor(
         meetingId: Long,
         jwtToken: String
     ) {
+        // 연결 정보 저장 (재연결용)
+        sseServerUrl = serverUrl
+        sseMeetingId = meetingId
+        sseJwtToken = jwtToken
+        
+        // 기존 재연결 Job 취소
+        sseReconnectJob?.cancel()
+        
+        // SSE 연결 시작
+        connectSse(serverUrl, meetingId, jwtToken)
+        
+        // 재연결 Job 시작
+        startSseReconnectJob()
+    }
+    
+    /**
+     * SSE 연결 실행
+     */
+    private fun connectSse(
+        serverUrl: String,
+        meetingId: Long,
+        jwtToken: String
+    ) {
         viewModelScope.launch {
             try {
                 Log.d(TAG, "========================================")
-                Log.d(TAG, "SSE 연결 테스트 시작")
+                Log.d(TAG, "SSE 연결 시작")
                 Log.d(TAG, "========================================")
                 Log.d(TAG, "서버 URL: $serverUrl")
                 Log.d(TAG, "회의 ID: $meetingId")
@@ -998,6 +1040,46 @@ class MeetingInProgressViewModel @Inject constructor(
 
             } catch (e: Exception) {
                 Log.e(TAG, "❌ [SSE] 예외: ${e.message}", e)
+            }
+        }
+    }
+    
+    /**
+     * SSE 재연결 Job 시작 (8분마다 재연결)
+     */
+    private fun startSseReconnectJob() {
+        sseReconnectJob?.cancel()
+        sseReconnectJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                while (isActive) {
+                    delay(sseReconnectInterval) // 8분 대기
+                    
+                    // 연결 정보가 있으면 재연결
+                    val serverUrl = sseServerUrl
+                    val meetingId = sseMeetingId
+                    val jwtToken = sseJwtToken
+                    
+                    if (serverUrl != null && meetingId != null && jwtToken != null) {
+                        Log.d(TAG, "========================================")
+                        Log.d(TAG, "🔄 SSE 재연결 시작 (8분 주기)")
+                        Log.d(TAG, "========================================")
+                        
+                        // 기존 연결 해제
+                        eventSource?.cancel()
+                        eventSource = null
+                        
+                        // 새 연결 시작
+                        connectSse(serverUrl, meetingId, jwtToken)
+                    } else {
+                        Log.w(TAG, "⚠️ SSE 재연결 정보가 없어 재연결을 건너뜁니다")
+                        break
+                    }
+                }
+            } catch (e: CancellationException) {
+                Log.d(TAG, "SSE 재연결 Job 취소됨")
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ SSE 재연결 Job 에러: ${e.message}", e)
             }
         }
     }
@@ -1079,8 +1161,19 @@ class MeetingInProgressViewModel @Inject constructor(
     }
 
     fun disconnectSse() {
+        // 재연결 Job 취소
+        sseReconnectJob?.cancel()
+        sseReconnectJob = null
+        
+        // SSE 연결 해제
         eventSource?.cancel()
         eventSource = null
+        
+        // 연결 정보 초기화
+        sseServerUrl = null
+        sseMeetingId = null
+        sseJwtToken = null
+        
         Log.d(TAG, "SSE 연결 해제 완료")
     }
 

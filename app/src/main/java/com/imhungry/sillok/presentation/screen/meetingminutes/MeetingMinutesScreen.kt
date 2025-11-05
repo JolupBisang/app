@@ -142,7 +142,7 @@ fun MeetingMinutesScreen(
                         pagerState = pagerState,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = 8.dp),
+                            .padding(bottom = 4.dp),
                     )
                 }
             }

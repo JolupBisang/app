@@ -27,10 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewModel
+import com.imhungry.sillok.ui.theme.primaryBackground
 import com.imhungry.sillok.ui.theme.primaryTextColor
 import com.imhungry.sillok.ui.theme.shadow
 import com.imhungry.sillok.ui.theme.tertiary
@@ -50,7 +53,7 @@ fun MeetingControlPanel(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(10.dp)
+            .height(7.dp)
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
@@ -64,7 +67,7 @@ fun MeetingControlPanel(
         modifier = modifier
             .fillMaxWidth()
             .wrapContentHeight()
-            .background(whiteBackground)
+            .background(primaryBackground)
             .padding(start = 20.dp, end = 20.dp, top = 12.dp)
     ) {
         Box(
@@ -73,31 +76,40 @@ fun MeetingControlPanel(
             Text(
                 text = timeText,
                 style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
                 color = primaryTextColor,
                 modifier = Modifier.align(Alignment.Center)
             )
             Text(
-                text = "- $remainingTimeText",
+                text = remainingTimeText,
                 style = MaterialTheme.typography.bodySmall,
+                fontSize = 13.sp,
                 color = tertiary,
-                modifier = Modifier.align(Alignment.CenterEnd)
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 4.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(28.dp),
+                .padding(start = 20.dp, end = 20.dp)
+                .height(42.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ControlIcon(
-                resId = R.drawable.power,
-                description = "종료",
-                onClick = onComplete,
-                size = 24.dp
-            )
+            Box(
+                modifier = Modifier.padding(top = 6.dp)
+            ) {
+                ControlIcon(
+                    resId = R.drawable.power,
+                    description = "종료",
+                    onClick = onComplete,
+                    size = 20.dp
+                )
+            }
 
             Box(
                 modifier = Modifier
@@ -105,17 +117,11 @@ fun MeetingControlPanel(
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
-//                ControlIcon(
-//                    resId = if (micEnabled) R.drawable.mic else R.drawable.micoff,
-//                    description = "마이크",
-//                    onClick = {},
-//                    size = 28.dp
-//                )
                 ControlIcon(
                     resId = if (micEnabled) R.drawable.mic else R.drawable.micoff,
                     description = "마이크",
                     onClick = { meetingInProgressViewModel.toggleMic() },
-                    size = 28.dp
+                    size = 42.dp
                 )
             }
 
@@ -123,7 +129,7 @@ fun MeetingControlPanel(
                 resId = R.drawable.out,
                 description = "나가기",
                 onClick = onBack,
-                size = 24.dp
+                size = 26.dp
             )
         }
     }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +39,7 @@ import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewM
 import com.imhungry.sillok.ui.components.MeetingBasicBox
 import com.imhungry.sillok.ui.components.SillokDialog
 import com.imhungry.sillok.ui.theme.green200
+import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.orange100
 import com.imhungry.sillok.ui.theme.pagerIndicatorBackground
 import com.imhungry.sillok.ui.theme.primaryBackground
@@ -76,6 +78,11 @@ fun MeetingInProgressScreen(
     val context = LocalContext.current
     var showCompleteDialog by remember { mutableStateOf(false) }
     var showLeaveDialog by remember { mutableStateOf(false) }
+
+    // 시스템 뒤로 가기 버튼 처리
+    BackHandler(enabled = true) {
+        showLeaveDialog = true
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         MeetingBasicBox(
@@ -156,8 +163,8 @@ fun CustomHorizontalPagerIndicator(
     pagerState: PagerState,
     modifier: Modifier = Modifier,
     pageCount: Int = pagerState.pageCount,
-    activeColor: Color = green200,
-    inactiveColor: Color = primaryBackground,
+    activeColor: Color = green300,
+    inactiveColor: Color = whiteBackground,
     backgroundColor: Color = pagerIndicatorBackground,
     indicatorSize: Int = 8,
     indicatorSpacing: Int = 7,

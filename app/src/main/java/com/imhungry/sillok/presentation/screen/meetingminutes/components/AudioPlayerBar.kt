@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
@@ -22,6 +23,8 @@ import com.imhungry.sillok.ui.theme.whiteBackground
 import kotlin.math.abs
 import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.viewmodel.meetingminutes.MeetingMinutesViewModel
+import com.imhungry.sillok.ui.theme.primaryBackground
+import com.imhungry.sillok.ui.theme.primaryButton
 
 @Composable
 fun AudioPlayerBar(
@@ -121,21 +124,22 @@ fun AudioPlayerBar(
             Text(
                 formatTime(playbackPosition),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Normal,
+                fontSize = 13.sp
             )
             Text(
                 formatTime(duration),
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Normal,
+                fontSize = 13.sp
             )
         }
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             Box(
                 Modifier
                     .weight(1f),
@@ -148,8 +152,10 @@ fun AudioPlayerBar(
                     Text(
                         text = "X ${playbackSpeed}",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = tertiary,
-                        modifier = Modifier.padding(start = 20.dp)
+                        fontWeight = FontWeight.SemiBold,
+                        color = primaryButton,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(start = 24.dp)
                     )
                 }
             }
@@ -167,7 +173,7 @@ fun AudioPlayerBar(
                         painter = painterResource(R.drawable.backward),
                         contentDescription = "5초 뒤로",
                         modifier = Modifier
-                            .size(24.dp)
+                            .size(34.dp)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
@@ -184,7 +190,7 @@ fun AudioPlayerBar(
                         ),
                         contentDescription = if (isPlaying) "pause" else "play",
                         modifier = Modifier
-                            .size(28.dp)
+                            .size(34.dp)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
@@ -199,12 +205,12 @@ fun AudioPlayerBar(
                                 }
                             }
                     )
-                    Spacer(Modifier.width(40.dp))
+                    Spacer(Modifier.width(37.dp))
                     Image(
                         painter = painterResource(R.drawable.forward),
                         contentDescription = "5초 앞으로",
                         modifier = Modifier
-                            .size(28.dp)
+                            .size(37.dp)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null

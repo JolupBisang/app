@@ -151,7 +151,8 @@ private fun SelectedDateMeetingList(
                 Text(
                     text = "예정된 회의가 없습니다!",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Normal
+                    fontWeight = FontWeight.Normal,
+                    fontSize = 14.sp
                 )
             }
         } else {
