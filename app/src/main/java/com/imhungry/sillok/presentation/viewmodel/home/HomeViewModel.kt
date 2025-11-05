@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.messaging.FirebaseMessaging
+import com.imhungry.sillok.data.local.NotificationHistoryStore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
@@ -33,7 +34,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val getMeetingSummaryListUseCase: GetMeetingSummaryListUseCase,
     private val userStore: UserStore,
-    private val notificationHistoryStore: com.imhungry.sillok.data.local.NotificationHistoryStore,
+    private val notificationHistoryStore: NotificationHistoryStore,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     
@@ -104,7 +105,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun loadInitialData() {
-        // loadHomeData()
+        //loadHomeData()
         loadDummyHomeState()
     }
 

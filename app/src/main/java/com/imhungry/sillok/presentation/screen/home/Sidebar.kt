@@ -83,12 +83,12 @@ fun Sidebar(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        MenuItem(
-            text = "피드백 기록",
-            onClick = onFeedbackHistory
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
+//        MenuItem(
+//            text = "피드백 기록",
+//            onClick = onFeedbackHistory
+//        )
+//
+//        Spacer(modifier = Modifier.height(24.dp))
 
         MenuItem(
             text = "회의록 폴더",

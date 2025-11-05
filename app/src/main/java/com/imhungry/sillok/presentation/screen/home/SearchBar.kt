@@ -30,9 +30,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.imhungry.sillok.R
 import com.imhungry.sillok.ui.theme.beige
 import com.imhungry.sillok.ui.theme.gray200
@@ -45,7 +47,9 @@ fun SearchBar(
     onFocusChange: (Boolean) -> Unit = {},
     focusRequester: FocusRequester = remember { FocusRequester() },
     text: String = "",
-    onTextChange: (String) -> Unit = {}
+    innerText: String = "제목, 참석자로 검색",
+    onTextChange: (String) -> Unit = {},
+    onImeAction: () -> Unit = {}
 ) {
     Box(
         modifier = modifier
@@ -72,6 +76,10 @@ fun SearchBar(
                 value = text,
                 onValueChange = onTextChange,
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = { onImeAction() }
+                ),
                 modifier = Modifier
                     .weight(1f)
                     .focusRequester(focusRequester)
@@ -81,7 +89,7 @@ fun SearchBar(
                 decorationBox = { innerTextField ->
                     if (text.isEmpty()) {
                         Text(
-                            text = "제목, 참석자로 검색",
+                            text = innerText,
                             style = MaterialTheme.typography.bodyLarge,
                             color = gray200,
                             fontWeight = FontWeight.Normal

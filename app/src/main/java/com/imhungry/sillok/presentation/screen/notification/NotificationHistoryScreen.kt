@@ -73,6 +73,7 @@ fun NotificationHistoryScreen(
                         Text(
                             text = "알림 기록이 없습니다",
                             style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Normal,
                             color = tertiary
                         )
                     }
@@ -115,9 +116,9 @@ private fun NotificationHistoryItem(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = "${item.meetingTitle} 회의에 초대되었습니다.",
+                text = "${item.meetingTitle}에 초대되었습니다.",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 fontSize = 16.sp,
                 color = primaryTextColor
             )

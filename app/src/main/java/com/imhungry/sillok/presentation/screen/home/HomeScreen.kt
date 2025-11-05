@@ -65,6 +65,8 @@ fun HomeScreen(
     onNavigagteToMeetingInProgress: (Long) -> Unit = {},
     onNavigateToMeetingMinutes: (Long) -> Unit = {},
     onNavigateToNotificationHistory: () -> Unit = {},
+    onNavigateToTeamList: () -> Unit = {},
+    onNavigateToMeetingMinutesFolder: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val homeState by viewModel.state.collectAsState()
@@ -129,9 +131,17 @@ fun HomeScreen(
                     viewModel.onCleared()
                     onNavigateToCreateMeeting()
                 },
-                onTeamManagement = { drawerState.close() },
+                onTeamManagement = {
+                    drawerState.close()
+                    viewModel.onCleared()
+                    onNavigateToTeamList()
+                },
                 onFeedbackHistory = { drawerState.close() },
-                onMeetingFolder = { drawerState.close() }
+                onMeetingFolder = {
+                    drawerState.close()
+                    viewModel.onCleared()
+                    onNavigateToMeetingMinutesFolder()
+                }
             )
         }
     ) {

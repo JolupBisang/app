@@ -64,7 +64,7 @@ fun CreateMeetingCompleteScreen(
                 Text(
                     "회의 일정이 성공적으로 생성되었습니다.",
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Normal,
                     textAlign = TextAlign.Center
                 )
             }

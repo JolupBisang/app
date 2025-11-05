@@ -17,8 +17,10 @@ import com.imhungry.sillok.presentation.screen.meeting.MeetingInProgressScreen
 import com.imhungry.sillok.presentation.screen.meetingdetail.MeetingDetailScreen
 import com.imhungry.sillok.presentation.screen.meetingform.MeetingFormScreen
 import com.imhungry.sillok.presentation.screen.meetingminutes.MeetingMinutesScreen
+import com.imhungry.sillok.presentation.screen.meetingminutesfolder.MeetingMinutesFolderScreen
 import com.imhungry.sillok.presentation.screen.notification.NotificationHistoryScreen
 import com.imhungry.sillok.presentation.screen.splash.SplashScreen
+import com.imhungry.sillok.presentation.screen.team.TeamListScreen
 import com.imhungry.sillok.presentation.screen.voice.CreateMeetingCompleteScreen
 import com.imhungry.sillok.presentation.screen.voice.VoiceRecognitionCompleteScreen
 import com.imhungry.sillok.presentation.screen.voice.VoiceRecognitionIntroScreen
@@ -55,6 +57,8 @@ sealed class Screen(val route: String) {
         fun createRoute(meetingId: Long) = "meeting_minutes/$meetingId"
     }
     object NotificationHistory : Screen("notification_history")
+    object TeamList : Screen("team_list")
+    object MeetingMinutesFolder : Screen("meeting_minutes_folder")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -99,7 +103,7 @@ fun SillokNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Splash.route
+        startDestination = Screen.Home.route
     ) {
         // 스플래시 화면
         composable(Screen.Splash.route) {
@@ -202,6 +206,12 @@ fun SillokNavigation(
                 },
                 onNavigateToNotificationHistory = {
                     navController.navigate(Screen.NotificationHistory.route)
+                },
+                onNavigateToTeamList = {
+                    navController.navigate(Screen.TeamList.route)
+                },
+                onNavigateToMeetingMinutesFolder = {
+                    navController.navigate(Screen.MeetingMinutesFolder.route)
                 }
             )
         }
@@ -330,6 +340,42 @@ fun SillokNavigation(
                 },
                 onNotificationClick = { meetingId ->
                     navController.navigate(Screen.MeetingDetail.createRoute(meetingId))
+                }
+            )
+        }
+
+        // 팀 목록 화면
+        composable(Screen.TeamList.route) {
+            TeamListScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onNavigateToCreateTeam = {
+                    //navController.navigate(Screen.TeamForm.route)
+                },
+                onNavigateToTeamDetail = { teamId ->
+                    //navController.navigate(Screen.TeamDetail.createRoute(teamId))
+                },
+                onNavigateToNotificationHistory = {
+                    navController.navigate(Screen.NotificationHistory.route)
+                }
+            )
+        }
+
+        // 회의록 폴더 화면
+        composable(Screen.MeetingMinutesFolder.route) {
+            MeetingMinutesFolderScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onNavigateToCreateFolder = {
+                    //navController.navigate(Screen.TeamForm.route)
+                },
+                onNavigateToFolderDetail = { folderId ->
+                    //navController.navigate(Screen.TeamDetail.createRoute(teamId))
+                },
+                onNavigateToNotificationHistory = {
+                    navController.navigate(Screen.NotificationHistory.route)
                 }
             )
         }

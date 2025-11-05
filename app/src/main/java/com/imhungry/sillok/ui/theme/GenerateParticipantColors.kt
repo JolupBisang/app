@@ -4,11 +4,11 @@ import androidx.compose.ui.graphics.Color
 
 fun generateParticipantColors(count: Int): List<Color> {
     val baseColors = listOf(
-        Color(0xFF144330),
-        Color(0xFF186848),
-        Color(0xFF228F64),
-        Color(0xFF61B896),
-        Color(0xFFD0E7DE),
+        Color(0xFF00492C),
+        Color(0xFF00693F),
+        Color(0xFF00975B),
+        Color(0xFFB4E66E),
+        Color(0xFFF4F4F4),
         Color(0xFFE74C3C),
         Color(0xFFF39C12),
         Color(0xFFF1C40F),

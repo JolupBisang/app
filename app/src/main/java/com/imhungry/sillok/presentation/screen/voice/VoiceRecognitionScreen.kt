@@ -127,9 +127,23 @@ fun VoiceRecognitionScreen(
 
                 Text(
                     text = when (state.currentStep) {
-                        1 -> "많고 많은 사람 중에\n그대 한 사람"
-                        2 -> "너무 맑고 초롱한\n그 중 하나 별이여"
-                        3 -> "그대만큼 사랑스러운\n사람을 본 일 없다"
+                        1 -> "많고 많은 사람 중에"
+                        2 -> "너무 맑고 초롱한"
+                        3 -> "그대만큼 사랑스러운"
+                        else -> ""
+                    },
+                    color = brown100,
+                    fontFamily = Sunbatang,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = when (state.currentStep) {
+                        1 -> "그대 한 사람"
+                        2 -> "그 중 하나 별이여"
+                        3 -> "사람을 본 일 없다"
                         else -> ""
                     },
                     color = brown100,
