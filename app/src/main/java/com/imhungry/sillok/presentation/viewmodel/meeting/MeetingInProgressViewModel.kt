@@ -1,83 +1,77 @@
 package com.imhungry.sillok.presentation.viewmodel.meeting
 
 import android.app.Application
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.MediaRecorder
+import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.gson.Gson
-import com.google.gson.JsonParser
-import com.google.gson.reflect.TypeToken
+import com.imhungry.sillok.BuildConfig
+import com.imhungry.sillok.data.local.FeedbackReadStore
+import com.imhungry.sillok.data.local.TokenStore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.model.realtime.ErrorResponse
 import com.imhungry.sillok.data.model.realtime.LiveFeedbackDto
 import com.imhungry.sillok.data.model.realtime.LiveSummaryDto
 import com.imhungry.sillok.data.model.realtime.RealtimeSegmentDto
-import com.imhungry.sillok.data.model.realtime.SocketResponse
-import com.imhungry.sillok.data.model.realtime.SocketResponseType
-import com.imhungry.sillok.data.model.realtime.SseResponseType
 import com.imhungry.sillok.data.util.ApiResult
+import com.imhungry.sillok.domain.model.meeting.MeetingStatus
 import com.imhungry.sillok.domain.model.participation.UserParticipationRate
+import com.imhungry.sillok.domain.usecase.agenda.ChangeAgendaStatusUseCase
 import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
 import com.imhungry.sillok.domain.usecase.feedback.GetFeedbacksUseCase
+import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
+import com.imhungry.sillok.domain.usecase.meeting.UpdateMeetingStatusUseCase
 import com.imhungry.sillok.domain.usecase.participation.GetParticipationRateHistoryUseCase
 import com.imhungry.sillok.domain.usecase.segment.GetSegmentsUseCase
 import com.imhungry.sillok.domain.usecase.summary.GetSummariesUseCase
+import com.imhungry.sillok.domain.usecase.user.GetUserInfoUseCase
+import com.imhungry.sillok.presentation.service.MeetingInProgressService
 import com.imhungry.sillok.presentation.state.meeting.FeedbackUi
+import com.imhungry.sillok.presentation.state.meeting.MeetingInProgressEvent
 import com.imhungry.sillok.presentation.state.meeting.MeetingInProgressState
 import com.imhungry.sillok.presentation.state.meeting.SegmentUi
 import com.imhungry.sillok.presentation.state.meeting.SummaryUi
 import com.imhungry.sillok.presentation.util.DateTimeUtils
-import com.imhungry.sillok.presentation.util.ProfileUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable.isActive
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
-import okhttp3.sse.EventSource
-import okhttp3.sse.EventSourceListener
-import okhttp3.sse.EventSources
-import okio.ByteString.Companion.toByteString
-import org.json.JSONObject
-import java.io.File
-import java.io.FileOutputStream
-import java.nio.ByteBuffer
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 
 @HiltViewModel
 class MeetingInProgressViewModel @Inject constructor(
     private val getAgendasUseCase: GetAgendasUseCase,
+    private val changeAgendaStatusUseCase: ChangeAgendaStatusUseCase,
     private val getSegmentsUseCase: GetSegmentsUseCase,
     private val getSummariesUseCase: GetSummariesUseCase,
     private val getParticipationRateHistoryUseCase: GetParticipationRateHistoryUseCase,
     private val getFeedbacksUseCase: GetFeedbacksUseCase,
+    private val getMeetingDetailUseCase: GetMeetingDetailUseCase,
+    private val getUserInfoUseCase: GetUserInfoUseCase,
+    private val updateMeetingStatusUseCase: UpdateMeetingStatusUseCase,
     private val userStore: UserStore,
+    private val tokenStore: TokenStore,
+    private val feedbackReadStore: FeedbackReadStore,
     private val app: Application,
 ) : AndroidViewModel(app) {
     companion object {
@@ -90,83 +84,202 @@ class MeetingInProgressViewModel @Inject constructor(
     private val _micEnabled = MutableStateFlow(true)
     val micEnabled: StateFlow<Boolean> = _micEnabled.asStateFlow()
 
-    private val gson = Gson()
-    private var webSocket: WebSocket? = null
-    private var eventSource: EventSource? = null
+    private val _events = MutableSharedFlow<MeetingInProgressEvent>()
+    val events: SharedFlow<MeetingInProgressEvent> = _events.asSharedFlow()
+
+    // 스케줄링된 피드백 (휴식 시간, 종료 시간 알림용)
+    private val _scheduledFeedback = MutableStateFlow<FeedbackUi?>(null)
+    val scheduledFeedback: StateFlow<FeedbackUi?> = _scheduledFeedback.asStateFlow()
+
+    // 쉬는 시간 범위 리스트 (시작 시간, 종료 시간을 경과 시간 문자열로 저장)
+    private val _restBreakPeriods = MutableStateFlow<List<Pair<String, String>>>(emptyList())
+    val restBreakPeriods: StateFlow<List<Pair<String, String>>> = _restBreakPeriods.asStateFlow()
+
+    // 사용자 정보 캐시 (userId -> nickname)
+    private val userNicknameCache = mutableMapOf<Long, String>()
     
-    // SSE 재연결 관련
-    private var sseReconnectJob: Job? = null
-    private var sseServerUrl: String? = null
-    private var sseMeetingId: Long? = null
-    private var sseJwtToken: String? = null
-    private val sseReconnectInterval = 8 * 60 * 1000L // 8분 (밀리초)
-
-    // AudioRecord 관련
-    private var audioRecord: AudioRecord? = null
-    private var recordingJob: Job? = null
-    private var isRecording = false
-
-    private val sampleRate = 16000
-    private val frameSize = 16000
-    private val bufferSize = AudioRecord.getMinBufferSize(
-        sampleRate,
-        AudioFormat.CHANNEL_IN_MONO,
-        AudioFormat.ENCODING_PCM_16BIT
-    ).coerceAtLeast(frameSize)
-
-    // 청크 ID 카운터
-    private val chunkIdCounter = AtomicLong(0)
-
-    // ✅ 회의 ID 저장
-    private var currentMeetingId: Long = 1L
-
-    // ✅ 오디오 패킷 저장 디렉토리 (lazy 초기화)
-    private val packetDir: File by lazy {
-        File(getApplication<Application>().cacheDir, "audio_packets/$currentMeetingId").apply {
-            if (!exists()) {
-                mkdirs()
-                Log.d(TAG, "📁 오디오 패킷 디렉토리 생성: ${absolutePath}")
-            } else {
-                Log.d(TAG, "📁 오디오 패킷 디렉토리 존재: ${absolutePath}")
-            }
-        }
-    }
-
-    // LiveData
-    private val _recordingStatus = MutableLiveData<String>()
-    val recordingStatus: LiveData<String> = _recordingStatus
-
-    private val _connectionStatus = MutableLiveData<String>()
-    val connectionStatus: LiveData<String> = _connectionStatus
-
-    private val okHttpClient = OkHttpClient.Builder()
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .build()
+    // 스케줄링 Job 추적 (중복 실행 방지)
+    private var restBreakSchedulingJob: Job? = null
+    private var meetingEndSchedulingJob: Job? = null
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun initialize(meetingId: Long) {
         _state.update { it.copy(meetingId = meetingId) }
-        //refreshAll()
-        loadDummyMeetingInProgressState()
-        testWebSocketConnection(
-            "ws://192.168.68.103:8080",
-            1L,
-            "eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2V1bmd5ZW9uZzIzQGdtYWlsLmNvbSIsIm5pY2tuYW1lIjoi7KGw7J2A6rK9IiwidXNlcklkIjoxLCJpc3MiOiJTaWxyb2siLCJpYXQiOjE3NjE2NTk4MzgsImV4cCI6MTc3MDI5OTgzOH0.X2uiwGM6JhlU1BFsA-VZUSbJ4e191lLKxIdp97_0Z4SeqzNGXnlLpyvbmgb5SsWu"
-        )
-        testSseConnection(
-            "http://192.168.68.103:8080",
-            1L,
-            "eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJqb2V1bmd5ZW9uZzIzQGdtYWlsLmNvbSIsIm5pY2tuYW1lIjoi7KGw7J2A6rK9IiwidXNlcklkIjoxLCJpc3MiOiJTaWxyb2siLCJpYXQiOjE3NjE2NTk4MzgsImV4cCI6MTc3MDI5OTgzOH0.X2uiwGM6JhlU1BFsA-VZUSbJ4e191lLKxIdp97_0Z4SeqzNGXnlLpyvbmgb5SsWu"
-        )
+        viewModelScope.launch {
+            // refreshAll() 완료 후 Service 시작
+            refreshAll()
+            
+            // TokenStore에서 토큰 가져오기
+            val jwtToken = tokenStore.accessToken.first()
+            if (jwtToken == null) {
+                return@launch
+            }
+            
+            // Service 시작
+            startService(
+                serverUrl = BuildConfig.BASE_URL,
+                meetingId = meetingId,
+                jwtToken = jwtToken
+            )
+            
+            // Service 이벤트 구독
+            observeServiceEvents()
+        }
+    }
+    
+    /**
+     * Service 시작
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun startService(serverUrl: String, meetingId: Long, jwtToken: String) {
+        val intent = Intent(app, MeetingInProgressService::class.java).apply {
+            action = MeetingInProgressService.ACTION_START
+            putExtra(MeetingInProgressService.EXTRA_SERVER_URL, serverUrl)
+            putExtra(MeetingInProgressService.EXTRA_MEETING_ID, meetingId)
+            putExtra(MeetingInProgressService.EXTRA_JWT_TOKEN, jwtToken)
+        }
+        ContextCompat.startForegroundService(app, intent)
+        Log.d(TAG, "Service 시작 요청: meetingId=$meetingId")
+    }
+    
+    /**
+     * Service 이벤트 구독
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun observeServiceEvents() {
+        viewModelScope.launch {
+            MeetingInProgressService.serviceEvents.collectLatest { event ->
+                when (event) {
+                    is MeetingInProgressService.ServiceEvent.ConnectionEstablished -> {
+                        _state.update { it.copy(isLoading = false) }
+                        handleConnectionEstablishedFromService(event.lastProcessedChunkId)
+                    }
+                    is MeetingInProgressService.ServiceEvent.DiarizedSegment -> {
+                        handleDiarizedSegment(event.segment)
+                    }
+                    is MeetingInProgressService.ServiceEvent.MeetingCompleted -> {
+                        handleMeetingCompleted()
+                    }
+                    is MeetingInProgressService.ServiceEvent.MeetingNoteCreated -> {
+                        handleMeetingNoteCreated(event.message)
+                    }
+                    is MeetingInProgressService.ServiceEvent.ParticipationRate -> {
+                        handleParticipationRate(event.rates)
+                    }
+                    is MeetingInProgressService.ServiceEvent.Feedback -> {
+                        handleFeedback(event.feedback)
+                    }
+                    is MeetingInProgressService.ServiceEvent.Summary -> {
+                        handleSummary(event.summary)
+                    }
+                    is MeetingInProgressService.ServiceEvent.Error -> {
+                        handleError(event.error)
+                    }
+                }
+            }
+        }
+    }
+    
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun handleConnectionEstablishedFromService(lastProcessedChunkId: Long?) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val meetingId = state.value.meetingId
+                val currentTimeMillis = System.currentTimeMillis()
+                
+                // Firebase에 startMillis 업데이트
+                try {
+                    FirebaseFirestore.getInstance()
+                        .collection("meetings")
+                        .document(meetingId.toString())
+                        .update("startMillis", currentTimeMillis)
+                        .await()
+                    
+                    // state 업데이트
+                    withContext(Dispatchers.Main) {
+                        _state.update { it.copy(startTime = currentTimeMillis) }
+                        
+                        // 휴식 시간 피드백 스케줄링
+                        val currentState = state.value
+                        if (currentState.targetTime > 0 && currentState.restInterval > 0 && currentState.restDuration > 0) {
+                            scheduleRestBreakFeedbacks(
+                                currentTimeMillis,
+                                currentState.targetTime,
+                                currentState.restInterval,
+                                currentState.restDuration
+                            )
+                        }
+                        
+                        // 회의 종료 10분 전 피드백 스케줄링
+                        if (currentState.targetTime > 0) {
+                            scheduleMeetingEndFeedback(currentTimeMillis, currentState.targetTime)
+                        }
+                    }
+                    Log.d(TAG, "Firebase startMillis 업데이트 완료: $currentTimeMillis")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Firebase startMillis 업데이트 실패: ${e.message}", e)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "연결 확립 처리 중 오류", e)
+            }
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun refreshAll() {
-		viewModelScope.launch {
-			_state.update { it.copy(isLoading = true) }
-            val meetingId = state.value.meetingId
+    suspend fun refreshAll() {
+        _state.update { it.copy(isLoading = true) }
+        val meetingId = state.value.meetingId
+
+        coroutineScope {
+            // 1. Meeting Detail 가져오기 (participants 정보 포함)
+            when (val meetingDetailResult = getMeetingDetailUseCase(meetingId)) {
+                is ApiResult.Success -> {
+                    val meeting = meetingDetailResult.data
+                    // targetTime, restInterval, restDuration 저장
+                    _state.update {
+                        it.copy(
+                            targetTime = meeting.targetTime,
+                            restInterval = meeting.restInterval,
+                            restDuration = meeting.restDuration
+                        )
+                    }
+
+                    // participants의 email로 사용자 정보 미리 로드 (병렬 처리)
+                    meeting.participants.forEach { participant ->
+                        launch(Dispatchers.IO) {
+                            try {
+                                when (val userResult = getUserInfoUseCase(participant.email)) {
+                                    is ApiResult.Success -> {
+                                        userNicknameCache[participant.userId] =
+                                            userResult.data.nickname
+                                        Log.d(
+                                            TAG,
+                                            "사용자 정보 캐시 저장: userId=${participant.userId}, nickname=${userResult.data.nickname}"
+                                        )
+                                    }
+
+                                    is ApiResult.Failure -> {
+                                        Log.w(
+                                            TAG,
+                                            "사용자 정보 조회 실패 (userId: ${participant.userId}, email: ${participant.email}): ${userResult.message}"
+                                        )
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.e(
+                                    TAG,
+                                    "사용자 정보 조회 예외 (userId: ${participant.userId}, email: ${participant.email}): ${e.message}",
+                                    e
+                                )
+                            }
+                        }
+                    }
+                }
+
+                is ApiResult.Failure -> {
+                    Log.e(TAG, "Meeting Detail 로드 실패: ${meetingDetailResult.message}")
+                }
+            }
 
             val agendasDeferred = async { getAgendasUseCase(meetingId) }
 
@@ -181,6 +294,22 @@ class MeetingInProgressViewModel @Inject constructor(
                 startMillis = snapshot.getLong("startMillis")
                 if (startMillis != null) {
                     _state.update { it.copy(startTime = startMillis) }
+                    
+                    // 휴식 시간 피드백 스케줄링
+                    val currentState = state.value
+                    if (currentState.targetTime > 0 && currentState.restInterval > 0 && currentState.restDuration > 0) {
+                        scheduleRestBreakFeedbacks(
+                            startMillis,
+                            currentState.targetTime,
+                            currentState.restInterval,
+                            currentState.restDuration
+                        )
+                    }
+                    
+                    // 회의 종료 10분 전 피드백 스케줄링
+                    if (currentState.targetTime > 0) {
+                        scheduleMeetingEndFeedback(startMillis, currentState.targetTime)
+                    }
                 }
             } catch (e: Exception) {
 				Log.e(TAG, "startMillis 조회 실패: ${e.message}", e)
@@ -251,16 +380,30 @@ class MeetingInProgressViewModel @Inject constructor(
                                 isRead = false
                             )
                         }
-                        _state.update { it.copy(feedbacks = ui) }
+                        
+                        // 저장된 마지막 읽은 피드백 인덱스 조회
+                        val lastReadIndex = feedbackReadStore.getLastReadFeedbackIndex(meetingId)
+                        
+                        // 저장된 인덱스까지는 읽음 처리
+                        val finalUi = if (lastReadIndex != null && lastReadIndex >= 0) {
+                            ui.mapIndexed { index, feedback ->
+                                if (index <= lastReadIndex) {
+                                    feedback.copy(isRead = true)
+                                } else {
+                                    feedback
+                                }
+                            }
+                        } else {
+                            ui
+                        }
+                        
+                        _state.update { it.copy(feedbacks = finalUi) }
                     }
 					is ApiResult.Failure -> Log.e(TAG, "피드백 로드 실패: ${result.message}")
                 }
             }
-
-			_state.update { it.copy(isLoading = false) }
-			//startRealtimeService(meetingId)
-		}
-	}
+        }
+    }
 
     fun markFeedbackReadAt(index: Int) {
         // 특정 인덱스의 피드백을 읽음 처리합니다.
@@ -269,682 +412,211 @@ class MeetingInProgressViewModel @Inject constructor(
         val updated = current.toMutableList()
         updated[index] = updated[index].copy(isRead = true)
         _state.update { it.copy(feedbacks = updated) }
+        
+        // 로컬 저장소에 읽은 피드백 인덱스 저장
+        viewModelScope.launch {
+            val meetingId = state.value.meetingId
+            feedbackReadStore.markFeedbackAsRead(meetingId, index)
+            Log.d(TAG, "읽은 피드백 저장: meetingId=$meetingId, index=$index")
+        }
+    }
+
+    fun markAllFeedbacksAsRead() {
+        // 모든 피드백을 읽음 처리합니다.
+        val current = state.value.feedbacks
+        val updated = current.map { it.copy(isRead = true) }
+        _state.update { it.copy(feedbacks = updated) }
+        
+        // 로컬 저장소에 모든 읽은 피드백 인덱스 저장
+        viewModelScope.launch {
+            val meetingId = state.value.meetingId
+            feedbackReadStore.markAllFeedbacksAsRead(meetingId, current.size)
+            Log.d(TAG, "모든 피드백 읽음 처리 저장: meetingId=$meetingId, count=${current.size}")
+        }
     }
 
     fun clearError() {
         _state.update { it.copy(error = null) }
     }
 
-    fun setMicEnabled(enabled: Boolean) {
-        _micEnabled.value = enabled
-        Log.d(TAG, "🎤 마이크 상태 변경: ${if (enabled) "켜짐" else "꺼짐"}")
+    /**
+     * 회의를 완료 상태로 변경
+     */
+    fun completeMeeting() {
+        viewModelScope.launch {
+            val meetingId = state.value.meetingId
+            when (val result = updateMeetingStatusUseCase(meetingId, MeetingStatus.COMPLETED.name)) {
+                is ApiResult.Success -> {
+                    Log.d(TAG, "회의 완료 처리 성공: meetingId=$meetingId")
+
+                    // Firebase에 endMillis 업데이트
+                    try {
+                        val endMillis = System.currentTimeMillis()
+                        FirebaseFirestore.getInstance()
+                            .collection("meetings")
+                            .document(meetingId.toString())
+                            .update("endMillis", endMillis)
+                            .await()
+                        Log.d(TAG, "Firebase endMillis 업데이트 완료: $endMillis")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Firebase endMillis 업데이트 실패: ${e.message}", e)
+                    }
+                }
+                is ApiResult.Failure -> {
+                    Log.e(TAG, "회의 완료 처리 실패: ${result.message}")
+                    _state.update { it.copy(error = result.message) }
+                }
+            }
+        }
     }
 
+    /**
+     * 마이크 토글 (Service에 전달)
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
     fun toggleMic() {
+        val intent = Intent(app, MeetingInProgressService::class.java).apply {
+            action = MeetingInProgressService.ACTION_TOGGLE_MIC
+        }
+        app.startService(intent)
         val newState = !_micEnabled.value
         _micEnabled.value = newState
-        Log.d(TAG, "🎤 마이크 토글: ${if (newState) "켜짐" else "꺼짐"}")
+        Log.d(TAG, "마이크 토글: ${if (newState) "켜짐" else "꺼짐"}")
     }
 
-    fun changeAgendaStatus(agendaId: Long, isCompleted: Boolean) {
+    fun changeAgendaStatus(meetingId: Long, agendaId: Long, isCompleted: Boolean) {
         val previous = state.value.agendas
         val updated = previous.map { agenda ->
             if (agenda.agendaId == agendaId) agenda.copy(isCompleted = isCompleted) else agenda
         }
         _state.update { it.copy(agendas = updated) }
 
-//        viewModelScope.launch {
-//            when (val result = changeAgendaStatusUseCase(meetingId, agendaId, isCompleted)) {
-//                is ApiResult.Success -> {}
-//                is ApiResult.Failure -> {
-//                    _state.update { it.copy(agendas = previous, error = result.message) }
-//                }
-//            }
-//        }
-    }
 
-    // ========================================
-    // WebSocket 연결 테스트
-    // ========================================
-
-    /**
-     * WebSocket 연결 테스트
-     * @param serverUrl 서버 URL (예: "ws://10.0.2.2:8080")
-     * @param meetingId 회의 ID
-     * @param jwtToken JWT 인증 토큰
-     */
-    fun testWebSocketConnection(
-        serverUrl: String,
-        meetingId: Long,
-        jwtToken: String
-    ) {
         viewModelScope.launch {
-            try {
-                Log.d(TAG, "========================================")
-                Log.d(TAG, "WebSocket 연결 테스트 시작")
-                Log.d(TAG, "========================================")
-
-                val wsUrl = "$serverUrl/ws/v1/meeting/$meetingId/audio"
-
-                val request = Request.Builder()
-                    .url(wsUrl)
-                    .addHeader("Authorization", "Bearer $jwtToken")
-                    .build()
-
-                webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
-                    override fun onOpen(webSocket: WebSocket, response: Response) {
-                        Log.d(TAG, "✅ WebSocket 연결 성공!")
-                        Log.d(TAG, "응답 코드: ${response.code}")
-                    }
-
-                    @RequiresApi(Build.VERSION_CODES.O)
-                    override fun onMessage(webSocket: WebSocket, text: String) {
-                        Log.d(TAG, "========================================")
-                        Log.d(TAG, "📨 [WebSocket] 텍스트 메시지 수신")
-                        Log.d(TAG, "원본: $text")
-                        parseWebSocketMessage(text, webSocket)
-                        Log.d(TAG, "========================================")
-                    }
-
-                    override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                        Log.e(TAG, "❌ [WebSocket] 연결 실패: ${t.message}", t)
-                    }
-                })
-
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ [WebSocket] 연결 예외: ${e.message}", e)
+            when (val result = changeAgendaStatusUseCase(meetingId, agendaId, isCompleted)) {
+                is ApiResult.Success -> {
+                    _state.update { it.copy(agendas = updated) }
+                }
+                is ApiResult.Failure -> {
+                    _state.update { it.copy(agendas = previous, error = result.message) }
+                }
             }
         }
     }
 
-    /**
-     * WebSocket 메시지 파싱
-     */
+
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun parseWebSocketMessage(jsonString: String, webSocket: WebSocket) {
-        try {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            val typeString = jsonObject.get("type")?.asString
-
-            val socketType = typeString.toSocketResponseType()
-            when (socketType) {
-                // 1. 연결 확립 (최초 1회)
-                SocketResponseType.CONNECTION_ESTABLISHED -> {
-                    val response = gson.fromJson<SocketResponse<Long>>(
-                        jsonString,
-                        object : TypeToken<SocketResponse<Long>>() {}.type
-                    )
-                    handleConnectionEstablished(response.data, webSocket)
-                }
-
-                // 2. 실시간 음성→텍스트 (가장 자주 발생)
-                SocketResponseType.DIARIZED_SEGMENT -> {
-                    val response = gson.fromJson<SocketResponse<RealtimeSegmentDto>>(
-                        jsonString,
-                        object : TypeToken<SocketResponse<RealtimeSegmentDto>>() {}.type
-                    )
-                    handleDiarizedSegment(response.data)
-                }
-
-                // 3. 회의록 생성 완료
-                SocketResponseType.MEETING_NOTE_CREATED -> {
-                    val response = gson.fromJson<SocketResponse<String>>(
-                        jsonString,
-                        object : TypeToken<SocketResponse<String>>() {}.type
-                    )
-                    handleMeetingNoteCreated(response.data)
-                }
-
-                // 4. 에러
-                SocketResponseType.ERROR -> {
-                    val response = gson.fromJson<SocketResponse<ErrorResponse>>(
-                        jsonString,
-                        object : TypeToken<SocketResponse<ErrorResponse>>() {}.type
-                    )
-                    handleError(response.data)
-                }
-
-                else -> {
-                    Log.w(TAG, "⚠️ 알 수 없는 메시지 타입: $typeString")
-                }
-            }
-
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ 메시지 파싱 실패: ${e.message}", e)
-            Log.e(TAG, "원본 메시지: $jsonString")
-        }
-    }
-
-    /**
-     * CONNECTION_ESTABLISHED 수신 시 처리
-     * 1. 로컬 저장 청크와 서버 청크 비교
-     * 2. 누락된 청크 재전송
-     * 3. 실시간 녹음 시작
-     */
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun handleConnectionEstablished(lastProcessedChunkId: Long?, webSocket: WebSocket) {
-        Log.d(TAG, "========================================")
-        Log.d(TAG, "✅ 연결 확립됨")
-        Log.d(TAG, "서버 마지막 처리 청크 ID: ${lastProcessedChunkId ?: "없음 (첫 연결)"}")
-        Log.d(TAG, "========================================")
-
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                // 1️⃣ 로컬에 저장된 청크 확인
-                val savedChunks = getSavedChunksForRetransmission(lastProcessedChunkId)
-
-                if (savedChunks.isNotEmpty()) {
-                    Log.d(TAG, "📦 재전송 필요한 청크: ${savedChunks.size}개")
-
-                    // 2️⃣ 누락된 청크 재전송
-                    retransmitMissingChunks(webSocket, savedChunks, lastProcessedChunkId)
-
-                    // 청크 ID 카운터를 재전송한 마지막 청크 다음으로 설정
-                    val lastRetransmittedId = savedChunks.maxOfOrNull { it.chunkId } ?: -1
-                    chunkIdCounter.set(lastRetransmittedId + 1)
-                    Log.d(TAG, "청크 ID 카운터를 ${lastRetransmittedId + 1}로 설정")
-                } else {
-                    Log.d(TAG, "✅ 재전송 필요한 청크 없음")
-
-                    // 청크 ID 카운터 초기화
-                    if (lastProcessedChunkId != null) {
-                        chunkIdCounter.set(lastProcessedChunkId + 1)
-                        Log.d(TAG, "청크 ID를 ${lastProcessedChunkId + 1}부터 시작합니다")
-                    } else {
-                        chunkIdCounter.set(0)
-                        Log.d(TAG, "청크 ID를 0부터 시작합니다")
-                    }
-                }
-
-                // 3️⃣ 실시간 녹음 시작
-                withContext(Dispatchers.Main) {
-                    Log.d(TAG, "========================================")
-                    Log.d(TAG, "🎙️ 실시간 녹음 시작")
-                    Log.d(TAG, "========================================")
-                    startRecording(webSocket)
-                }
-
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ 연결 확립 처리 중 오류", e)
-                withContext(Dispatchers.Main) {
-                    // 오류가 있어도 녹음은 시작
-                    startRecording(webSocket)
-                }
-            }
-        }
-    }
-
-    // ========================================
-    // AudioRecord 직접 사용한 녹음
-    // ========================================
-
-    /**
-     * AudioRecord를 사용하여 녹음 시작
-     */
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun startRecording(webSocket: WebSocket) {
-        if (isRecording) {
-            Log.w(TAG, "⚠️ 이미 녹음 중입니다")
-            return
-        }
-
-        try {
-            Log.d(TAG, "========================================")
-            Log.d(TAG, "🎙️ 오디오 녹음 준비 중...")
-            Log.d(TAG, "========================================")
-            Log.d(TAG, "샘플레이트: $sampleRate Hz")
-            Log.d(TAG, "프레임 크기: $frameSize samples")
-            Log.d(TAG, "버퍼 크기: $bufferSize bytes")
-
-            // AudioRecord 생성
-            audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.MIC,
-                sampleRate,
-                AudioFormat.CHANNEL_IN_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                bufferSize
-            )
-
-            if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
-                val errorMsg = "AudioRecord 초기화 실패. State: ${audioRecord?.state}"
-                Log.e(TAG, errorMsg)
-                _recordingStatus.postValue("녹음 초기화 실패")
-                audioRecord?.release()
-                audioRecord = null
-                return
-            }
-
-            // 녹음 시작
-            audioRecord?.startRecording()
-            isRecording = true
-
-            Log.d(TAG, "✅ 녹음 시작됨")
-            Log.d(TAG, "- 샘플레이트: $sampleRate Hz")
-            Log.d(TAG, "- 채널: MONO")
-            Log.d(TAG, "- 포맷: PCM 16bit")
-            Log.d(TAG, "- 청크 크기: ${frameSize * 2} bytes (~${frameSize / sampleRate}초)")
-            Log.d(TAG, "========================================")
-
-            _recordingStatus.postValue("녹음 중...")
-
-            // 코루틴으로 오디오 데이터 읽기
-            recordingJob = viewModelScope.launch(Dispatchers.IO) {
-                readAndSendAudioData(webSocket)
-            }
-
-        } catch (e: SecurityException) {
-            val errorMsg = "오디오 녹음 권한이 필요합니다"
-            Log.e(TAG, "❌ $errorMsg", e)
-            _recordingStatus.postValue(errorMsg)
-        } catch (e: Exception) {
-            val errorMsg = "녹음 시작 실패: ${e.message}"
-            Log.e(TAG, "❌ $errorMsg", e)
-            _recordingStatus.postValue(errorMsg)
-        }
-    }
-    /**
-     * 오디오 데이터를 읽고 WebSocket으로 전송
-     */
-    @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun readAndSendAudioData(webSocket: WebSocket) {
-        val chunkSizeInBytes = frameSize * 2
-        val buffer = ByteArray(chunkSizeInBytes)
-        var totalBytesRead = 0L
-        var chunkCount = 0
-
-        Log.d(TAG, "📖 오디오 데이터 읽기 시작...")
-
-        try {
-            while (isRecording &&
-                audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING &&
-                isActive) {  // 코루틴이 취소되지 않았는지 확인
-
-                // 오디오 데이터 읽기
-                val bytesRead = audioRecord?.read(buffer, 0, buffer.size) ?: 0
-
-                when {
-                    bytesRead > 0 -> {
-                        totalBytesRead += bytesRead
-                        chunkCount++
-
-                        // 읽은 데이터를 복사 (버퍼 재사용을 위해)
-                        val audioChunk = buffer.copyOf(bytesRead)
-
-                        // WebSocket으로 전송 (마이크가 켜져있을 때만)
-                        if (_micEnabled.value) {
-                            sendAudioChunk(webSocket, audioChunk)
-                            Log.v(TAG, "📤 청크 #$chunkCount 읽음: $bytesRead bytes (총: $totalBytesRead bytes)")
-                        } else {
-                            Log.d(TAG, "🔇 마이크가 꺼져있어 전송 건너뜀 (청크 #$chunkCount)")
-                        }
-
-                        // UI 업데이트
-                        withContext(Dispatchers.Main) {
-                            val status = if (_micEnabled.value) {
-                                "녹음 중... (청크 #$chunkCount)"
-                            } else {
-                                "녹음 일시정지 (마이크 꺼짐)"
-                            }
-                            _recordingStatus.postValue(status)
-                        }
-                    }
-                    bytesRead == AudioRecord.ERROR_INVALID_OPERATION -> {
-                        Log.e(TAG, "❌ AudioRecord가 제대로 초기화되지 않았습니다")
-                        break
-                    }
-
-                    bytesRead == AudioRecord.ERROR_BAD_VALUE -> {
-                        Log.e(TAG, "❌ 잘못된 파라미터")
-                        break
-                    }
-
-                    else -> {
-                        Log.w(TAG, "⚠️ 예상치 못한 읽기 결과: $bytesRead")
-                    }
-                }
-            }
-        } catch (e: CancellationException) {
-            Log.d(TAG, "오디오 읽기 취소됨")
-            throw e  // 코루틴 취소는 다시 throw
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ 오디오 읽기 에러", e)
-            withContext(Dispatchers.Main) {
-                _recordingStatus.postValue("녹음 에러: ${e.message}")
-            }
-        } finally {
-            Log.d(TAG, "📖 오디오 읽기 종료")
-            Log.d(TAG, "총 읽은 데이터: $totalBytesRead bytes ($chunkCount 청크)")
-        }
-    }
-
-    /**
-     * ✅ 재전송이 필요한 청크 파일 목록 조회
-     */
-    private fun getSavedChunksForRetransmission(lastProcessedChunkId: Long?): List<SavedChunkInfo> {
-        return try {
-            if (!packetDir.exists()) {
-                Log.d(TAG, "📁 저장된 청크 디렉토리가 없습니다")
-                return emptyList()
-            }
-
-            // PCM 파일 목록 조회
-            val pcmFiles = packetDir.listFiles { file ->
-                file.extension == "pcm" && file.name.startsWith("chunk_")
-            } ?: emptyArray()
-
-            if (pcmFiles.isEmpty()) {
-                Log.d(TAG, "📁 저장된 청크 파일이 없습니다")
-                return emptyList()
-            }
-
-            Log.d(TAG, "📁 로컬에 저장된 총 청크 파일: ${pcmFiles.size}개")
-
-            // 청크 파일명에서 ID 추출하여 리스트 생성
-            val savedChunks = pcmFiles.mapNotNull { file ->
-                try {
-                    // "chunk_123.pcm" → 123
-                    val chunkId = file.nameWithoutExtension.substringAfter("chunk_").toLongOrNull()
-                    if (chunkId != null) {
-                        SavedChunkInfo(chunkId, file)
-                    } else {
-                        Log.w(TAG, "⚠️ 청크 ID 파싱 실패: ${file.name}")
-                        null
-                    }
-                } catch (e: Exception) {
-                    Log.w(TAG, "⚠️ 청크 파일 처리 실패: ${file.name}", e)
-                    null
-                }
-            }.sortedBy { it.chunkId }
-
-            // 서버가 받지 못한 청크만 필터링
-            val missingChunks = if (lastProcessedChunkId == null) {
-                // 서버가 아무것도 받지 못한 경우 → 모든 청크 재전송
-                savedChunks
-            } else {
-                // lastProcessedChunkId보다 큰 청크만 재전송
-                savedChunks.filter { it.chunkId > lastProcessedChunkId }
-            }
-
-            if (missingChunks.isNotEmpty()) {
-                Log.d(TAG, "📦 재전송 대상 청크:")
-                missingChunks.forEach { chunk ->
-                    Log.d(TAG, "  - 청크 ID: ${chunk.chunkId}, 파일: ${chunk.file.name}, 크기: ${chunk.file.length()} bytes")
-                }
-            }
-
-            missingChunks
-
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ 재전송 청크 조회 실패", e)
-            emptyList()
-        }
-    }
-
-    /**
-     * ✅ 누락된 청크 재전송
-     */
-    @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun retransmitMissingChunks(
-        webSocket: WebSocket,
-        chunks: List<SavedChunkInfo>,
-        lastProcessedChunkId: Long?
-    ) {
-        Log.d(TAG, "========================================")
-        Log.d(TAG, "📤 청크 재전송 시작")
-        Log.d(TAG, "총 ${chunks.size}개 청크 재전송 예정")
-        Log.d(TAG, "========================================")
-
-        var successCount = 0
-        var failCount = 0
-
-        chunks.forEach { chunkInfo ->
-            try {
-                // 파일에서 오디오 데이터 읽기
-                val audioData = chunkInfo.file.readBytes()
-
-                // 메타데이터 파일도 읽기 (있으면)
-                val metaFile = File(packetDir, "chunk_${chunkInfo.chunkId}.json")
-                val timestamp = if (metaFile.exists()) {
-                    try {
-                        val metaJson = JSONObject(metaFile.readText())
-                        metaJson.optString("timestamp", getCurrentTimestamp())
-                    } catch (e: Exception) {
-                        getCurrentTimestamp()
-                    }
-                } else {
-                    getCurrentTimestamp()
-                }
-
-                // 메타데이터 생성
-                val metaJson = JSONObject().apply {
-                    put("type", "AUDIO_CHUNK")
-                    put("chunkId", chunkInfo.chunkId)
-                    put("encoding", "audio/pcm")
-                    put("timestamp", timestamp)
-                }
-
-                val metaBytes = metaJson.toString().toByteArray(Charsets.UTF_8)
-                val metaLength = metaBytes.size
-
-                // 바이너리 메시지 조립
-                val buffer = ByteBuffer.allocate(4 + metaLength + audioData.size)
-                buffer.putInt(metaLength)
-                buffer.put(metaBytes)
-                buffer.put(audioData)
-
-                val totalSize = buffer.position()
-                val binaryMessage = buffer.array().toByteString(0, totalSize)
-
-                // WebSocket으로 전송
-                val success = webSocket.send(binaryMessage)
-
-                if (success) {
-                    successCount++
-                    Log.d(TAG, "✅ 재전송 성공 - ID: ${chunkInfo.chunkId}, 크기: ${audioData.size} bytes (${successCount}/${chunks.size})")
-                } else {
-                    failCount++
-                    Log.w(TAG, "⚠️ 재전송 실패 (큐 가득 참) - ID: ${chunkInfo.chunkId}")
-                    // 큐가 가득 찬 경우 잠시 대기
-                    delay(100)
-                }
-
-                // 전송 간 짧은 딜레이 (서버 부하 방지)
-                delay(10)
-
-            } catch (e: Exception) {
-                failCount++
-                Log.e(TAG, "❌ 청크 재전송 실패 - ID: ${chunkInfo.chunkId}", e)
-            }
-        }
-
-        Log.d(TAG, "========================================")
-        Log.d(TAG, "📤 청크 재전송 완료")
-        Log.d(TAG, "성공: ${successCount}개, 실패: ${failCount}개")
-        Log.d(TAG, "========================================")
-    }
-
-    /**
-     * ✅ 저장된 청크 정보를 담는 데이터 클래스
-     */
-    private data class SavedChunkInfo(
-        val chunkId: Long,
-        val file: File
-    )
-
-    /**
-     * 오디오 청크를 WebSocket으로 전송
-     */
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun sendAudioChunk(webSocket: WebSocket, audioData: ByteArray) {
-        try {
-            val chunkId = chunkIdCounter.getAndIncrement()
-
-            // 메타데이터 JSON 생성
-            val metaJson = JSONObject().apply {
-                put("type", "AUDIO_CHUNK")
-                put("chunkId", chunkId)
-                put("encoding", "audio/pcm")  // PCM 16bit
-                put("timestamp", getCurrentTimestamp())
-            }
-
-            val metaBytes = metaJson.toString().toByteArray(Charsets.UTF_8)
-            val metaLength = metaBytes.size
-
-            // 바이너리 메시지 조립
-            // 프로토콜: [4 bytes: 메타 길이][N bytes: JSON 메타데이터][M bytes: 오디오 데이터]
-            val buffer = ByteBuffer.allocate(4 + metaLength + audioData.size)
-            buffer.putInt(metaLength)          // 메타데이터 길이
-            buffer.put(metaBytes)              // JSON 메타데이터
-            buffer.put(audioData)              // 오디오 데이터
-
-            val totalSize = buffer.position()
-            val binaryMessage = buffer.array().toByteString(0, totalSize)
-
-            // ✅ 1. WebSocket으로 전송
-            val success = webSocket.send(binaryMessage)
-
-            if (success) {
-                Log.d(TAG, "✅ 청크 전송 성공 - ID: $chunkId, 크기: ${audioData.size} bytes (총: $totalSize bytes)")
-            } else {
-                Log.w(TAG, "⚠️ 청크 전송 실패 (큐가 가득 찼을 수 있음) - ID: $chunkId")
-            }
-
-            // ✅ 2. 로컬 파일로 저장
-            saveAudioChunkToFile(chunkId, audioData, metaJson)
-
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ 청크 전송 예외: ${e.message}", e)
-        }
-    }
-
-    /**
-     * 오디오 청크를 로컬 파일로 저장
-     */
-    private fun saveAudioChunkToFile(chunkId: Long, audioData: ByteArray, metaJson: JSONObject) {
-        try {
-            // PCM 파일 저장
-            val audioFile = File(packetDir, "chunk_${chunkId}.pcm")
-            FileOutputStream(audioFile).use { fos ->
-                fos.write(audioData)
-            }
-
-            Log.v(TAG, "💾 청크 파일 저장 성공 - ${audioFile.name} (${audioData.size} bytes)")
-
-            // 메타데이터 저장
-            val metaFile = File(packetDir, "chunk_${chunkId}.json")
-            FileOutputStream(metaFile).use { fos ->
-                fos.write(metaJson.toString(2).toByteArray())
-            }
-
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ 청크 파일 저장 실패 - ID: $chunkId", e)
-        }
-    }
-
-    /**
-     * ✅ 저장된 청크 파일 목록 확인
-     */
-    fun listSavedChunks(): List<File> {
-        return try {
-            packetDir.listFiles { file ->
-                file.extension == "pcm"
-            }?.sortedBy { it.name } ?: emptyList()
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ 청크 파일 목록 조회 실패", e)
-            emptyList()
-        }
-    }
-
-    fun clearSavedChunks() {
-        try {
-            val deletedCount = packetDir.listFiles()?.count { it.delete() } ?: 0
-            Log.d(TAG, "🗑️ 청크 파일 삭제 완료: $deletedCount 개")
-
-            // 디렉토리도 삭제
-            if (packetDir.listFiles()?.isEmpty() == true) {
-                packetDir.delete()
-                Log.d(TAG, "🗑️ 디렉토리 삭제 완료: ${packetDir.absolutePath}")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ 청크 파일 삭제 실패", e)
-        }
-    }
-
-    fun getSavedChunksInfo(): String {
-        return try {
-            val files = listSavedChunks()
-            val totalSize = files.sumOf { it.length() }
-            val count = files.size
-
-            """
-            저장된 청크 정보:
-            - 총 개수: $count 개
-            - 총 크기: ${totalSize / 1024} KB (${totalSize / 1024 / 1024} MB)
-            - 저장 경로: ${packetDir.absolutePath}
-            """.trimIndent()
-        } catch (e: Exception) {
-            "청크 정보 조회 실패: ${e.message}"
-        }
-    }
-
-    /**
-     * 녹음 중지
-     */
-    fun stopRecording() {
-        if (!isRecording) {
-            Log.d(TAG, "녹음이 이미 중지되어 있습니다")
-            return
-        }
-
-        Log.d(TAG, "========================================")
-        Log.d(TAG, "🛑 녹음 중지 요청")
-        Log.d(TAG, "========================================")
-
-        isRecording = false
-
-        // 녹음 Job 취소
-        recordingJob?.cancel()
-        recordingJob = null
-
-        try {
-            // AudioRecord 중지 및 해제
-            audioRecord?.apply {
-                if (recordingState == AudioRecord.RECORDSTATE_RECORDING) {
-                    stop()
-                    Log.d(TAG, "AudioRecord 중지됨")
-                }
-                release()
-                Log.d(TAG, "AudioRecord 리소스 해제됨")
-            }
-            audioRecord = null
-
-            _recordingStatus.postValue("녹음 중지됨")
-            Log.d(TAG, "✅ 녹음 중지 완료")
-
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ 녹음 중지 중 에러 발생", e)
-        }
-    }
-
-    /**
-     * 현재 녹음 중인지 확인
-     */
-    fun isRecording(): Boolean = isRecording
-
     private fun handleDiarizedSegment(data: RealtimeSegmentDto?) {
         if (data == null) return
 
         Log.d(TAG, """
-            🗣️ 실시간 음성→텍스트:
+            실시간 음성→텍스트:
             - 시간: ${data.timestamp}
             - 사용자: ${data.userId}
             - 순서: ${data.order}
             - 내용: ${data.text}
         """.trimIndent())
+        
+        // state에 세그먼트 추가
+        viewModelScope.launch {
+            val currentState = state.value
+            val startMillis = currentState.startTime
+            val currentUserId = userStore.user.first()?.id
+            
+            if (startMillis > 0) {
+                val currentSegments = currentState.segments.toMutableList()
+                val lastSegment = currentSegments.lastOrNull()
+                
+                // 캐시에서 nickname 가져오기 (없으면 기본값 사용)
+                val nickname = userNicknameCache[data.userId] ?: "사용자 ${data.userId}"
+                val isSameAsPrevious = lastSegment != null && lastSegment.nickname == nickname
+                
+                val segmentUi = SegmentUi(
+                    timestamp = DateTimeUtils.getElapsedString(startMillis, data.timestamp),
+                    text = data.text,
+                    nickname = nickname,
+                    profileImage = "",
+                    isFromCurrentUser = currentUserId != null && data.userId == currentUserId,
+                    isSameAsPrevious = isSameAsPrevious,
+                    isSameAsNext = false // 다음 세그먼트는 아직 없으므로 false
+                )
+                
+                // 이전 세그먼트의 isSameAsNext 업데이트
+                if (lastSegment != null && isSameAsPrevious) {
+                    val lastIndex = currentSegments.lastIndex
+                    currentSegments[lastIndex] = lastSegment.copy(isSameAsNext = true)
+                }
+                
+                currentSegments.add(segmentUi)
+                
+                _state.update { it.copy(segments = currentSegments) }
+            }
+        }
     }
 
+    /**
+     * MEETING_NOTE_CREATED 수신 시 처리
+     * Firebase에 회의록 생성 완료 상태 업데이트 및 연결 해제
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun handleMeetingNoteCreated(message: String?) {
-        Log.d(TAG, "📄 회의록 생성 완료: $message")
+        Log.d(TAG, "========================================")
+        Log.d(TAG, "회의록 생성 완료: $message")
+        Log.d(TAG, "========================================")
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val meetingId = state.value.meetingId
+                
+                // Firebase에 회의록 생성 완료 상태 업데이트 (generatingMeetingNoteId 제거)
+                FirebaseFirestore.getInstance()
+                    .collection("meetings")
+                    .document(meetingId.toString())
+                    .update("generatingMeetingNoteId", null)
+                    .await()
+                
+                Log.d(TAG, "Firebase generatingMeetingNoteId 제거 완료: meetingId=$meetingId")
+                
+                // 웹소켓과 SSE 연결 해제
+                disconnectAll()
+                Log.d(TAG, "회의록 생성 완료 후 연결 해제 완료")
+            } catch (e: Exception) {
+                Log.e(TAG, "Firebase generatingMeetingNoteId 제거 실패: ${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * MEETING_COMPLETED 수신 시 처리
+     * Firebase에 회의록 생성 중인 회의 id 저장, 음성 녹음 및 SSE 연결 해제, 홈으로 이동 이벤트 발생
+     */
+    private fun handleMeetingCompleted() {
+        Log.d(TAG, "========================================")
+        Log.d(TAG, "회의 완료 (회의록 생성 시작)")
+        Log.d(TAG, "========================================")
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val meetingId = state.value.meetingId
+                
+                // Firebase에 회의록 생성 중인 회의 id 저장
+                FirebaseFirestore.getInstance()
+                    .collection("meetings")
+                    .document(meetingId.toString())
+                    .update("generatingMeetingNoteId", meetingId)
+                    .await()
+                
+                Log.d(TAG, "Firebase generatingMeetingNoteId 업데이트 완료: meetingId=$meetingId")
+                
+                // Service에서 녹음과 SSE 연결은 이미 해제되었으므로, Service는 회의록 생성 완료를 기다리도록 유지
+                // (MEETING_NOTE_CREATED를 받으면 disconnectAll() 호출)
+                
+                // 홈으로 이동 이벤트 발생
+                _events.emit(MeetingInProgressEvent.NavigateToHome)
+            } catch (e: Exception) {
+                Log.e(TAG, "Firebase generatingMeetingNoteId 업데이트 실패: ${e.message}", e)
+            }
+        }
     }
 
     private fun handleError(error: ErrorResponse?) {
@@ -952,247 +624,242 @@ class MeetingInProgressViewModel @Inject constructor(
         Log.e(TAG, "❌ 에러: ${error.errorMessage} (${error.errorCode})")
     }
 
-    // ========================================
-    // SSE 연결 테스트
-    // ========================================
-
-    /**
-     * SSE 연결 테스트
-     * @param serverUrl 서버 URL (예: "http://10.0.2.2:8080")
-     * @param meetingId 회의 ID
-     * @param jwtToken JWT 인증 토큰
-     */
-    fun testSseConnection(
-        serverUrl: String,
-        meetingId: Long,
-        jwtToken: String
-    ) {
-        // 연결 정보 저장 (재연결용)
-        sseServerUrl = serverUrl
-        sseMeetingId = meetingId
-        sseJwtToken = jwtToken
-        
-        // 기존 재연결 Job 취소
-        sseReconnectJob?.cancel()
-        
-        // SSE 연결 시작
-        connectSse(serverUrl, meetingId, jwtToken)
-        
-        // 재연결 Job 시작
-        startSseReconnectJob()
-    }
-    
-    /**
-     * SSE 연결 실행
-     */
-    private fun connectSse(
-        serverUrl: String,
-        meetingId: Long,
-        jwtToken: String
-    ) {
-        viewModelScope.launch {
-            try {
-                Log.d(TAG, "========================================")
-                Log.d(TAG, "SSE 연결 시작")
-                Log.d(TAG, "========================================")
-                Log.d(TAG, "서버 URL: $serverUrl")
-                Log.d(TAG, "회의 ID: $meetingId")
-                Log.d(TAG, "JWT 토큰 (앞 20자): ${jwtToken.take(20)}...")
-
-                val sseUrl = "$serverUrl/api/v1/meetings/$meetingId/events/subscribe"
-                Log.d(TAG, "SSE 전체 URL: $sseUrl")
-
-                val request = Request.Builder()
-                    .url(sseUrl)
-                    .addHeader("Authorization", "Bearer $jwtToken")
-                    .addHeader("Accept", "text/event-stream")
-                    .build()
-
-                val sseClient = OkHttpClient.Builder()
-                    .readTimeout(0, TimeUnit.SECONDS)
-                    .connectTimeout(30, TimeUnit.SECONDS)
-                    .build()
-
-                eventSource = EventSources.createFactory(sseClient)
-                    .newEventSource(request, object : EventSourceListener() {
-                        override fun onOpen(eventSource: EventSource, response: Response) {
-                            Log.d(TAG, "✅ [SSE] 연결 성공!")
-                        }
-
-                        override fun onEvent(
-                            eventSource: EventSource,
-                            id: String?,
-                            type: String?,
-                            data: String
-                        ) {
-                            Log.d(TAG, "========================================")
-                            Log.d(TAG, "📨 [SSE] 이벤트 수신")
-                            Log.d(TAG, "타입: $type")
-                            Log.d(TAG, "데이터: $data")
-                            parseSseEvent(type, data)
-                            Log.d(TAG, "========================================")
-                        }
-
-                        override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
-                            Log.e(TAG, "❌ [SSE] 실패: ${t?.message}", t)
-                        }
-                    })
-
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ [SSE] 예외: ${e.message}", e)
-            }
-        }
-    }
-    
-    /**
-     * SSE 재연결 Job 시작 (8분마다 재연결)
-     */
-    private fun startSseReconnectJob() {
-        sseReconnectJob?.cancel()
-        sseReconnectJob = viewModelScope.launch(Dispatchers.IO) {
-            try {
-                while (isActive) {
-                    delay(sseReconnectInterval) // 8분 대기
-                    
-                    // 연결 정보가 있으면 재연결
-                    val serverUrl = sseServerUrl
-                    val meetingId = sseMeetingId
-                    val jwtToken = sseJwtToken
-                    
-                    if (serverUrl != null && meetingId != null && jwtToken != null) {
-                        Log.d(TAG, "========================================")
-                        Log.d(TAG, "🔄 SSE 재연결 시작 (8분 주기)")
-                        Log.d(TAG, "========================================")
-                        
-                        // 기존 연결 해제
-                        eventSource?.cancel()
-                        eventSource = null
-                        
-                        // 새 연결 시작
-                        connectSse(serverUrl, meetingId, jwtToken)
-                    } else {
-                        Log.w(TAG, "⚠️ SSE 재연결 정보가 없어 재연결을 건너뜁니다")
-                        break
-                    }
-                }
-            } catch (e: CancellationException) {
-                Log.d(TAG, "SSE 재연결 Job 취소됨")
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ SSE 재연결 Job 에러: ${e.message}", e)
-            }
-        }
-    }
-
-    /**
-     * SSE 이벤트 파싱 (실제 전송되는 4가지 타입만)
-     */
-    private fun parseSseEvent(type: String?, data: String) {
-        val sseType = type.toSseResponseType()
-        when (sseType) {
-            // 1. 연결 확인
-            SseResponseType.CONNECTED -> {
-                Log.d(TAG, "✅ SSE 연결 확인: $data")
-            }
-
-            // 2. 참여율 (주기적으로 전송)
-            SseResponseType.PARTICIPATION_RATE -> {
-                try {
-                    val participationRates = gson.fromJson<Map<Long, Double>>(
-                        data,
-                        object : TypeToken<Map<Long, Double>>() {}.type
-                    )
-                    handleParticipationRate(participationRates)
-                } catch (e: Exception) {
-                    Log.e(TAG, "참여율 파싱 실패", e)
-                }
-            }
-
-            // 3. 피드백
-            SseResponseType.FEEDBACK -> {
-                try {
-                    val feedback = gson.fromJson(data, LiveFeedbackDto::class.java)
-                    handleFeedback(feedback)
-                } catch (e: Exception) {
-                    Log.e(TAG, "피드백 파싱 실패", e)
-                }
-            }
-
-            // 4. 요약
-            SseResponseType.SUMMARY -> {
-                try {
-                    val summary = gson.fromJson(data, LiveSummaryDto::class.java)
-                    handleSummary(summary)
-                } catch (e: Exception) {
-                    Log.e(TAG, "요약 파싱 실패", e)
-                }
-            }
-
-            else -> {
-                Log.w(TAG, "⚠️ 알 수 없는 SSE 타입: $type")
-            }
-        }
-    }
 
     private fun handleParticipationRate(rates: Map<Long, Double>) {
-        Log.d(TAG, "📊 참여율 업데이트:")
+        Log.d(TAG, "참여율 업데이트:")
         rates.forEach { (userId, rate) ->
             Log.d(TAG, "  - 사용자 $userId: ${(rate * 100).toInt()}%")
         }
+        
+        // state에 참여율 업데이트
+        viewModelScope.launch {
+            val currentState = state.value
+            val existingRatesMap = currentState.participationRates.associateBy { it.userId }
+            
+            // 새로운 참여율로 업데이트 (nickname 조회)
+            val updatedRates = rates.map { (userId, rate) ->
+                existingRatesMap[userId]?.let { existing ->
+                    existing.copy(rate = rate)
+                } ?: UserParticipationRate(
+                    userId = userId,
+                    nickname = userNicknameCache[userId] ?: "사용자 $userId",
+                    rate = rate
+                )
+            }
+            
+            // 기존에 있던 사용자 중 업데이트되지 않은 사용자는 유지
+            val userIdsInUpdate = rates.keys
+            val remainingRates = existingRatesMap.values.filter { it.userId !in userIdsInUpdate }
+            
+            val allRates = (updatedRates + remainingRates).sortedByDescending { it.rate }
+            
+            _state.update { it.copy(participationRates = allRates) }
+        }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun handleFeedback(feedback: LiveFeedbackDto) {
-        Log.d(TAG, "💬 피드백: ${feedback.comment}")
+        Log.d(TAG, "피드백: ${feedback.comment}")
+        
+        // state에 피드백 추가
+        viewModelScope.launch {
+            val currentState = state.value
+            val startMillis = currentState.startTime
+            val currentFeedbacks = currentState.feedbacks.toMutableList()
+            
+            if (startMillis > 0) {
+                val currentIsoTimestamp = getCurrentTimestamp()
+                
+                val feedbackUi = FeedbackUi(
+                    comment = feedback.comment,
+                    timestamp = DateTimeUtils.getElapsedString(startMillis, currentIsoTimestamp),
+                    isRead = false
+                )
+                
+                currentFeedbacks.add(feedbackUi)
+                
+                _state.update { it.copy(feedbacks = currentFeedbacks) }
+            }
+        }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun handleSummary(summary: LiveSummaryDto) {
-        Log.d(TAG, "📝 요약: ${summary.summary}")
+        Log.d(TAG, "요약: ${summary.summary}")
+        
+        // state에 요약 추가
+        viewModelScope.launch {
+            val currentState = state.value
+            val startMillis = currentState.startTime
+            val currentSummaries = currentState.summaries.toMutableList()
+            
+            if (startMillis > 0) {
+                val currentIsoTimestamp = getCurrentTimestamp()
+                
+                val summaryUi = SummaryUi(
+                    content = summary.summary,
+                    timestamp = DateTimeUtils.getElapsedString(startMillis, currentIsoTimestamp)
+                )
+                
+                currentSummaries.add(summaryUi)
+                
+                _state.update { it.copy(summaries = currentSummaries) }
+            }
+        }
     }
 
     // ========================================
     // 연결 해제
     // ========================================
 
-    fun disconnectWebSocket() {
-        stopRecording()
-        webSocket?.close(1000, "테스트 종료")
-        webSocket = null
-        Log.d(TAG, "WebSocket 연결 해제 완료")
-    }
-
-    fun disconnectSse() {
-        // 재연결 Job 취소
-        sseReconnectJob?.cancel()
-        sseReconnectJob = null
-        
-        // SSE 연결 해제
-        eventSource?.cancel()
-        eventSource = null
-        
-        // 연결 정보 초기화
-        sseServerUrl = null
-        sseMeetingId = null
-        sseJwtToken = null
-        
-        Log.d(TAG, "SSE 연결 해제 완료")
-    }
-
+    @RequiresApi(Build.VERSION_CODES.O)
     fun disconnectAll() {
-        stopRecording()
-        disconnectWebSocket()
-        disconnectSse()
+        // Service 중지
+        stopService()
         Log.d(TAG, "모든 연결 해제 완료")
     }
+    
+    /**
+     * Service 중지
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun stopService() {
+        val intent = Intent(app, MeetingInProgressService::class.java).apply {
+            action = MeetingInProgressService.ACTION_STOP
+        }
+        app.startService(intent)
+        Log.d(TAG, "Service 중지 요청")
+    }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCleared() {
         super.onCleared()
-        audioRecord?.release()
         disconnectAll()
     }
 
     // ========================================
     // 유틸리티
     // ========================================
+
+    /**
+     * 휴식 시간 피드백 생성 및 스케줄링
+     * startMillis 기준으로 restInterval마다 휴식 시간이 있고, 각 휴식 시간 시작 1분 전에 피드백 알림 표시
+     * 쉬는 시간 범위도 계산하여 StateFlow에 저장
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun scheduleRestBreakFeedbacks(startMillis: Long, targetTime: Int, restInterval: Int, restDuration: Int) {
+        if (restInterval <= 0 || restDuration <= 0) return
+        
+        // 기존 스케줄링 Job 취소 (중복 방지)
+        restBreakSchedulingJob?.cancel()
+        
+        // 쉬는 시간 범위 계산 및 저장
+        viewModelScope.launch {
+            val targetMillis = targetTime * 60 * 1000L
+            var restStartMillis = startMillis + restInterval * 60 * 1000L // 첫 번째 휴식 시작 시간
+            val restBreakPeriodsList = mutableListOf<Pair<String, String>>()
+            
+            while (restStartMillis < startMillis + targetMillis) {
+                val restEndMillis = restStartMillis + restDuration * 60 * 1000L // 휴식 종료 시간
+                
+                // 쉬는 시간 범위를 경과 시간 문자열로 변환
+                val restStartElapsed = DateTimeUtils.getElapsedStringFromMillis(startMillis, restStartMillis)
+                val restEndElapsed = DateTimeUtils.getElapsedStringFromMillis(startMillis, restEndMillis)
+                
+                restBreakPeriodsList.add(Pair(restStartElapsed, restEndElapsed))
+                
+                // 다음 휴식 시간으로 이동
+                restStartMillis += restInterval * 60 * 1000L
+            }
+            
+            _restBreakPeriods.value = restBreakPeriodsList
+        }
+        
+        // 쉬는 시간 1분 전 알림 스케줄링
+        restBreakSchedulingJob = viewModelScope.launch(Dispatchers.IO) {
+            val targetMillis = targetTime * 60 * 1000L
+            var restStartMillis = startMillis + restInterval * 60 * 1000L // 첫 번째 휴식 시작 시간
+            
+            while (restStartMillis < startMillis + targetMillis) {
+                val restEndMillis = restStartMillis + restDuration * 60 * 1000L // 휴식 종료 시간
+                val feedbackTimeMillis = restStartMillis - 60 * 1000L // 휴식 시작 1분 전
+                
+                // 현재 시간 이후의 휴식 시간만 처리
+                val delayMillis = feedbackTimeMillis - System.currentTimeMillis()
+                if (delayMillis > 0) {
+                    delay(delayMillis)
+                    
+                    // 휴식 시간 포맷팅 (HH:MM 형식)
+                    val restStartTime = DateTimeUtils.millisToHourMinute(restStartMillis)
+                    val restEndTime = DateTimeUtils.millisToHourMinute(restEndMillis)
+                    
+                    val feedbackMessage = "잠시 후 휴식 시간입니다.\n쉬는 시간: $restStartTime ~ $restEndTime"
+                    val feedbackTimestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, feedbackTimeMillis)
+                    
+                    val feedbackUi = FeedbackUi(
+                        comment = feedbackMessage,
+                        timestamp = feedbackTimestamp,
+                        isRead = false
+                    )
+                    
+                    // 스케줄링된 피드백 StateFlow에 업데이트
+                    _scheduledFeedback.value = feedbackUi
+                    Log.d(TAG, "휴식 시간 피드백 알림: $feedbackMessage (시간: $restStartTime ~ $restEndTime)")
+                }
+                
+                // 다음 휴식 시간으로 이동
+                restStartMillis += restInterval * 60 * 1000L
+            }
+        }
+    }
+    
+    /**
+     * 회의 종료 10분 전 피드백 생성 및 스케줄링
+     * startMillis 기준으로 targetTime이 끝나기 10분 전에 피드백 알림 표시
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun scheduleMeetingEndFeedback(startMillis: Long, targetTime: Int) {
+        if (targetTime <= 0) return
+        
+        // 기존 스케줄링 Job 취소 (중복 방지)
+        meetingEndSchedulingJob?.cancel()
+        
+        meetingEndSchedulingJob = viewModelScope.launch(Dispatchers.IO) {
+            // 회의 종료 시간 계산
+            val endMillis = startMillis + targetTime * 60 * 1000L
+            val feedbackTimeMillis = endMillis - 10 * 60 * 1000L // 종료 10분 전
+            
+            // 현재 시간 이후의 피드백만 처리
+            val delayMillis = feedbackTimeMillis - System.currentTimeMillis()
+            if (delayMillis > 0) {
+                delay(delayMillis)
+                
+                // 종료 예정 시각 포맷팅 (HH:MM 형식)
+                val endTime = DateTimeUtils.millisToHourMinute(endMillis)
+                
+                val feedbackMessage = "회의 종료까지 10분 남았습니다.\n예정 종료 시각: $endTime"
+                val feedbackTimestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, feedbackTimeMillis)
+                
+                val feedbackUi = FeedbackUi(
+                    comment = feedbackMessage,
+                    timestamp = feedbackTimestamp,
+                    isRead = false
+                )
+                
+                // 스케줄링된 피드백 StateFlow에 업데이트
+                _scheduledFeedback.value = feedbackUi
+                Log.d(TAG, "회의 종료 피드백 알림: $feedbackMessage (종료 시각: $endTime)")
+            }
+        }
+    }
+    
+    /**
+     * 스케줄링된 피드백 알림 해제
+     */
+    fun dismissScheduledFeedback() {
+        _scheduledFeedback.value = null
+    }
+    
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun getCurrentTimestamp(): String {
@@ -1205,27 +872,6 @@ class MeetingInProgressViewModel @Inject constructor(
         }
     }
 
-    /**
-     * String을 SseResponseType으로 안전하게 변환
-     */
-    fun String?.toSseResponseType(): SseResponseType? {
-        return try {
-            SseResponseType.valueOf(this ?: "")
-        } catch (e: IllegalArgumentException) {
-            null
-        }
-    }
-
-    /**
-     * String을 SocketResponseType으로 안전하게 변환
-     */
-    fun String?.toSocketResponseType(): SocketResponseType? {
-        return try {
-            SocketResponseType.valueOf(this ?: "")
-        } catch (e: IllegalArgumentException) {
-            null
-        }
-    }
 
 	// 디버깅/시연을 위한 더미 데이터 주입
 	fun loadDummyMeetingInProgressState() {

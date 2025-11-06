@@ -50,9 +50,6 @@ sealed class Screen(val route: String) {
     object MeetingInProgress : Screen("meeting_in_progress/{meetingId}") {
         fun createRoute(meetingId: Long) = "meeting_in_progress/$meetingId"
     }
-    object MeetingMinutesGeneration : Screen("meeting_minutes_generation/{meetingId}") {
-        fun createRoute(meetingId: Long) = "meeting_minutes_generation/$meetingId"
-    }
     object MeetingMinutes : Screen("meeting_minutes/{meetingId}") {
         fun createRoute(meetingId: Long) = "meeting_minutes/$meetingId"
     }
@@ -309,7 +306,7 @@ fun SillokNavigation(
                     }
                 },
                 onCompleteMeeting = {
-                    navController.navigate(Screen.MeetingMinutesGeneration.createRoute(meetingId)) {
+                    navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.MeetingInProgress.route) { inclusive = true }
                     }
                 }

@@ -18,16 +18,19 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -48,30 +51,107 @@ import com.imhungry.sillok.presentation.state.meeting.FeedbackUi
 import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.presentation.viewmodel.meeting.AgendaViewModel
 import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewModel
+import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.theme.gray400
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MeetingRecordScreen(
+    meetingId: Long,
     meetingInProgressViewModel: MeetingInProgressViewModel,
+    onBackClick: () -> Unit,
     agendaViewModel: AgendaViewModel = hiltViewModel()
 ) {
     val state by meetingInProgressViewModel.state.collectAsState()
 
     val agendas = state.agendas
     val segments = state.segments
+    val feedbacks = state.feedbacks
+    val scheduledFeedback by meetingInProgressViewModel.scheduledFeedback.collectAsState()
+    val restBreakPeriods by meetingInProgressViewModel.restBreakPeriods.collectAsState()
     val isTopSheetExpanded by agendaViewModel.isTopSheetExpanded
     val firstUncheckedIndex = agendas.indexOfFirst { !it.isCompleted }
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
     val listState = rememberLazyListState()
     val topSheetHeightPx = remember { mutableStateOf(0) }
+    
+    // 표시할 피드백 추적
+    var displayedFeedback by remember { mutableStateOf<FeedbackUi?>(null) }
+    var showNotification by remember { mutableStateOf(false) }
+    
+    // 새로운 피드백이 올 때마다 알림 표시
+    LaunchedEffect(feedbacks) {
+        if (feedbacks.isNotEmpty()) {
+            // 가장 최신 피드백 찾기 (읽지 않은 것)
+            val latestUnreadFeedback = feedbacks.lastOrNull { !it.isRead }
+            
+            if (latestUnreadFeedback != null) {
+                // 새로운 피드백이거나 아직 표시하지 않은 피드백인 경우
+                val isNewFeedback = displayedFeedback == null || 
+                    (latestUnreadFeedback.comment != displayedFeedback!!.comment || 
+                     latestUnreadFeedback.timestamp != displayedFeedback!!.timestamp)
+                
+                if (isNewFeedback) {
+                    displayedFeedback = latestUnreadFeedback
+                    showNotification = true
+                }
+            }
+        }
+    }
+    
+    // 스케줄링된 피드백 (휴식 시간, 종료 시간 알림) 감시
+    LaunchedEffect(scheduledFeedback) {
+        if (scheduledFeedback != null) {
+            // 새로운 스케줄링된 피드백이 오면 알림 표시
+            val isNewScheduledFeedback = displayedFeedback == null || 
+                (scheduledFeedback!!.comment != displayedFeedback!!.comment || 
+                 scheduledFeedback!!.timestamp != displayedFeedback!!.timestamp)
+            
+            if (isNewScheduledFeedback) {
+                displayedFeedback = scheduledFeedback
+                showNotification = true
+            }
+        }
+    }
+    
+    // 알림이 표시되면 4초 후 자동으로 닫기
+    LaunchedEffect(showNotification, displayedFeedback) {
+        if (showNotification && displayedFeedback != null) {
+            delay(4000) // 4초 대기
+            
+            // 피드백 읽음 처리
+            val feedbackIndex = feedbacks.indexOfLast { 
+                it.comment == displayedFeedback!!.comment && 
+                it.timestamp == displayedFeedback!!.timestamp 
+            }
+            if (feedbackIndex >= 0) {
+                meetingInProgressViewModel.markFeedbackReadAt(feedbackIndex)
+            }
+            
+            // 스케줄링된 피드백인 경우 해제
+            if (displayedFeedback == scheduledFeedback) {
+                meetingInProgressViewModel.dismissScheduledFeedback()
+            }
+            
+            showNotification = false
+            displayedFeedback = null
+        }
+    }
 
-    Box(modifier = Modifier.fillMaxSize()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
+            ScreenHeader(
+                title = "회의중",
+                onBackClick = onBackClick,
+                modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(top = 20.dp, start = 20.dp, end = 20.dp)
+            )
+
             if (agendas.isNotEmpty() && peekIndex in agendas.indices) {
                 TopSheet(
                     expanded = isTopSheetExpanded,
@@ -81,7 +161,7 @@ fun MeetingRecordScreen(
                             text = agendas[peekIndex].content,
                             checked = agendas[peekIndex].isCompleted,
                             isFocused = !agendas[peekIndex].isCompleted,
-                            onToggle = { meetingInProgressViewModel.changeAgendaStatus(agendas[peekIndex].agendaId, !agendas[peekIndex].isCompleted) }
+                            onToggle = { meetingInProgressViewModel.changeAgendaStatus(meetingId, agendas[peekIndex].agendaId, !agendas[peekIndex].isCompleted) }
                         )
                     },
                     content = {
@@ -93,7 +173,7 @@ fun MeetingRecordScreen(
                                     text = item.content,
                                     checked = item.isCompleted,
                                     isFocused = !item.isCompleted && firstUncheckedIndex == i,
-                                    onToggle = { meetingInProgressViewModel.changeAgendaStatus(item.agendaId, !item.isCompleted) }
+                                    onToggle = { meetingInProgressViewModel.changeAgendaStatus(meetingId, item.agendaId, !item.isCompleted) }
                                 )
                             }
                         }
@@ -103,6 +183,7 @@ fun MeetingRecordScreen(
                         .onGloballyPositioned { coordinates ->
                             topSheetHeightPx.value = coordinates.size.height
                         }
+                        .padding(top = 20.dp, start = 20.dp, end = 20.dp, bottom = 4.dp)
                 )
 
             }
@@ -118,7 +199,19 @@ fun MeetingRecordScreen(
                         if (index == 0) {
                             Spacer(modifier = Modifier.padding(top = 4.dp))
                         }
+                        
+                        // 이전 세그먼트 확인
+                        val prevSegment = if (index > 0) segments[index - 1] else null
+                        val isPrevInRestBreak = prevSegment != null && isInRestBreak(prevSegment.timestamp, restBreakPeriods)
+                        val isCurrentInRestBreak = isInRestBreak(message.timestamp, restBreakPeriods)
+                        
+                        // 쉬는 시간 시작
+                        if (!isPrevInRestBreak && isCurrentInRestBreak) {
+                            DividerWithText()
+                        }
+                        
                         ChatBubble(segment = message)
+                        
                         if (index == segments.lastIndex) {
                             Spacer(modifier = Modifier.padding(bottom = 28.dp))
                         }
@@ -127,33 +220,36 @@ fun MeetingRecordScreen(
             }
 
         }
-//        when {
-//            latestFeedback != null && feedbackVisible -> {
-//                val elapsed = DateTimeUtils.getElapsedString(startTime, latestFeedback.timestamp)
-//
-//                Box(
-//                    modifier = Modifier
-//                        .align(Alignment.TopCenter)
-//                        .padding(WindowInsets.statusBars.asPaddingValues())
-//                        .padding(top = 48.dp)
-//                ) {
-//                    SwipeToDismissNotification(
-//                        message = latestFeedback.comment,
-//                        time = latestFeedback.timestamp,
-//                        onDismiss = { feedbackVisible = false }
-//                    )
-//                }
-//            }
-//        }
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() }, start = 20.dp, end = 20.dp)
-        ) {
-            SwipeToDismissNotification(
-                feedback = FeedbackUi("회의 종료까지 10분 남았습니다.\n예정 종료 시각: {종료 예정 시각}", "03:45:12", true),
-                onDismiss = {  }
-            )
+        
+        // 새로운 피드백 알림 표시
+        if (showNotification && displayedFeedback != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() }, start = 20.dp, end = 20.dp)
+            ) {
+                SwipeToDismissNotification(
+                    feedback = displayedFeedback!!,
+                    onDismiss = {
+                        // 피드백 읽음 처리
+                        val feedbackIndex = feedbacks.indexOfLast { 
+                            it.comment == displayedFeedback!!.comment && 
+                            it.timestamp == displayedFeedback!!.timestamp 
+                        }
+                        if (feedbackIndex >= 0) {
+                            meetingInProgressViewModel.markFeedbackReadAt(feedbackIndex)
+                        }
+                        
+                        // 스케줄링된 피드백인 경우 해제
+                        if (displayedFeedback == scheduledFeedback) {
+                            meetingInProgressViewModel.dismissScheduledFeedback()
+                        }
+                        
+                        showNotification = false
+                        displayedFeedback = null
+                    }
+                )
+            }
         }
     }
 }
@@ -210,18 +306,20 @@ fun SwipeToDismissNotification(
         Notification(
             feedback = feedback,
             blur = true,
-            isRead = true
+            isRead = feedback.isRead
         )
     }
 }
 
 @Composable
 fun DividerWithText(
-    text: String,
+    text: String = "쉬는 시간",
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 왼쪽 선
@@ -249,5 +347,32 @@ fun DividerWithText(
                 .height(1.dp)
                 .background(gray400)
         )
+    }
+}
+
+/**
+ * 세그먼트의 timestamp가 쉬는 시간 범위에 있는지 확인
+ */
+private fun isInRestBreak(timestamp: String, restBreakPeriods: List<Pair<String, String>>): Boolean {
+    if (restBreakPeriods.isEmpty()) return false
+    
+    val timestampSeconds = timestampToSeconds(timestamp)
+    
+    return restBreakPeriods.any { (startTime, endTime) ->
+        val startSeconds = timestampToSeconds(startTime)
+        val endSeconds = timestampToSeconds(endTime)
+        timestampSeconds >= startSeconds && timestampSeconds <= endSeconds
+    }
+}
+
+/**
+ * HH:MM:SS 형식의 timestamp를 초로 변환
+ */
+private fun timestampToSeconds(timestamp: String): Int {
+    val parts = timestamp.split(":").map { it.toIntOrNull() ?: 0 }
+    return when (parts.size) {
+        3 -> parts[0] * 3600 + parts[1] * 60 + parts[2]
+        2 -> parts[0] * 60 + parts[1]
+        else -> 0
     }
 }

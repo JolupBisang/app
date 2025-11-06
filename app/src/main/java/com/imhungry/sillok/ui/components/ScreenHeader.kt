@@ -19,10 +19,11 @@ import com.imhungry.sillok.R
 @Composable
 fun ScreenHeader(
     title: String,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
     ) {
         Image(

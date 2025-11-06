@@ -89,13 +89,13 @@ class WaitingRoomViewModel @Inject constructor(
         }
     }
 
-    // 분 단위 시간을 "- HH:MM:SS" 형식으로 변환
+    // 분 단위 시간을 "HH:MM:SS" 형식으로 변환
     private fun formatDurationForDisplay(totalMinutes: Int): String {
         val hours = totalMinutes / 60
         val minutes = totalMinutes % 60
         val seconds = 0
         fun two(n: Int) = n.toString().padStart(2, '0')
-        return "- ${two(hours)}:${two(minutes)}:${two(seconds)}"
+        return "${two(hours)}:${two(minutes)}:${two(seconds)}"
     }
 
     // 아젠다 체크 상태를 낙관적 업데이트하고 서버 요청 실패 시 롤백.
@@ -104,16 +104,17 @@ class WaitingRoomViewModel @Inject constructor(
         val updated = previous.map { agenda ->
             if (agenda.agendaId == agendaId) agenda.copy(isCompleted = isCompleted) else agenda
         }
-        _state.update { it.copy(agendas = updated) }
 
-//        viewModelScope.launch {
-//            when (val result = changeAgendaStatusUseCase(meetingId, agendaId, isCompleted)) {
-//                is ApiResult.Success -> {}
-//                is ApiResult.Failure -> {
-//                    _state.update { it.copy(agendas = previous, error = result.message) }
-//                }
-//            }
-//        }
+        viewModelScope.launch {
+            when (val result = changeAgendaStatusUseCase(meetingId, agendaId, isCompleted)) {
+                is ApiResult.Success -> {
+                     _state.update { it.copy(agendas = updated) }
+                }
+                is ApiResult.Failure -> {
+                    _state.update { it.copy(agendas = previous, error = result.message) }
+                }
+            }
+        }
     }
 
     // 회의를 시작: 상태 변경 → 상세 조회 → Firestore 사용자들에게 시작 알림 플래그 업데이트 → 이벤트 발행
@@ -153,7 +154,7 @@ class WaitingRoomViewModel @Inject constructor(
                                 val docRef = snapshot.documents.first().reference
                                 docRef.update(
                                     mapOf(
-                                        "hasMeetingStarted" to true,
+                                        "meetingStarted" to true,
                                         "startedMeetingId" to meetingId
                                     )
                                 ).await()

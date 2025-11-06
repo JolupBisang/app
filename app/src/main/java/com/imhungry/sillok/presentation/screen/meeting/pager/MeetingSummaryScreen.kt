@@ -82,7 +82,7 @@ fun MeetingSummaryScreen(
                     }
                     Icon(
                         painter = painterResource(
-                            id = if (expanded) R.drawable.collapse else R.drawable.expand2
+                            id = if (expanded) R.drawable.expand else R.drawable.expand2
                         ),
                         contentDescription = if (expanded) "접기" else "펼치기",
                         modifier = Modifier.size(24.dp)

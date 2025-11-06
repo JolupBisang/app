@@ -53,6 +53,12 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+        
+        <!-- 회의 진행 중 서비스 -->
+        <service
+            android:name=".presentation.service.MeetingInProgressService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>

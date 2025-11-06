@@ -101,44 +101,40 @@ private fun OthersMessage(
 ) {
     Row(verticalAlignment = Alignment.Top) {
         if (!segment.isSameAsPrevious) {
-            Row(
-                modifier = Modifier.padding(top = 6.dp)
-            ) {
-                AsyncImage(
-                    model = segment.profileImage.ifEmpty { null },
-                    contentDescription = "프로필 이미지",
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(placeHolder),
-                    contentScale = ContentScale.Crop
+            AsyncImage(
+                model = segment.profileImage.ifEmpty { null },
+                contentDescription = "프로필 이미지",
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(placeHolder),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+
+            Column {
+                Text(
+                    text = segment.nickname,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(bottom = 6.dp)
                 )
-                Spacer(modifier = Modifier.width(6.dp))
 
-                Column {
-                    Text(
-                        text = segment.nickname,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(bottom = 6.dp)
+                Row(verticalAlignment = Alignment.Bottom) {
+                    ChatBox(
+                        text = segment.text,
+                        backgroundColor = if (highlighted) brown200 else brown500,
+                        shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 4.dp, bottomEnd = 10.dp),
                     )
-
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        ChatBox(
-                            text = segment.text,
-                            backgroundColor = if (highlighted) brown200 else brown500,
-                            shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 4.dp, bottomEnd = 10.dp),
+                    if (!segment.isSameAsNext) {
+                        Spacer(modifier = Modifier.width(2.dp))
+                        TimestampText(
+                            time = segment.timestamp,
+                            modifier = Modifier
+                                .align(Alignment.Bottom)
+                                .padding(bottom = 2.dp)
                         )
-                        if (!segment.isSameAsNext) {
-                            Spacer(modifier = Modifier.width(2.dp))
-                            TimestampText(
-                                time = segment.timestamp,
-                                modifier = Modifier
-                                    .align(Alignment.Bottom)
-                                    .padding(bottom = 2.dp)
-                            )
-                        }
                     }
                 }
             }

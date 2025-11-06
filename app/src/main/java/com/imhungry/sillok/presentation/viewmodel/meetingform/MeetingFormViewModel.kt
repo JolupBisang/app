@@ -456,7 +456,7 @@ class MeetingFormViewModel @Inject constructor(
                         }
 
                         if (addOk) {
-                            // 파이어베이스에 회의 정보 저장 및 사용자 hasMeeting 플래그 업데이트
+                            // 파이어베이스에 회의 정보 저장 및 사용자 hasNewMeeting 플래그 업데이트
                             try {
                                 val db = FirebaseFirestore.getInstance()
                                 val hostEmail = currentUserEmail
@@ -490,7 +490,7 @@ class MeetingFormViewModel @Inject constructor(
                                     if (!snapshot.isEmpty) {
                                         val docRef = snapshot.documents.first().reference
                                         docRef.update(
-                                            mapOf("hasMeeting" to true)
+                                            mapOf("hasNewMeeting" to true)
                                         ).await()
                                     }
                                 }
@@ -664,7 +664,7 @@ class MeetingFormViewModel @Inject constructor(
                     val emailsToUpdate = mutableSetOf<String>()
                     hostEmail?.let { emailsToUpdate.add(it) }
                     emailsToUpdate.addAll(emails)
-                    // 제거된 참가자들도 hasMeeting = true로 유지
+                    // 제거된 참가자들도 hasNewMeeting = true로 유지
                     emailsToUpdate.addAll(emailsToRemove)
                     for (email in emailsToUpdate) {
                         val snapshot = db.collection("users")
@@ -675,7 +675,7 @@ class MeetingFormViewModel @Inject constructor(
                         if (!snapshot.isEmpty) {
                             val docRef = snapshot.documents.first().reference
                             docRef.update(
-                                mapOf("hasMeeting" to true)
+                                mapOf("hasNewMeeting" to true)
                             ).await()
                         }
                     }
@@ -765,7 +765,7 @@ class MeetingFormViewModel @Inject constructor(
         }
 
         if (_state.value.agendas.isEmpty() || _state.value.agendas.all { it.trim().isEmpty() }) {
-            errors["agendas"] = "아젠다를 한 개 이상 입력해주세요"
+            errors["agendas"] = "주제를 한 개 이상 입력해주세요"
         }
 
         if (_state.value.breakInterval.trim().isEmpty()) {

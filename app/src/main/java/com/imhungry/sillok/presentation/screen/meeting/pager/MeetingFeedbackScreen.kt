@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -30,6 +31,14 @@ fun MeetingFeedbackScreen(
 ) {
     val state by meetingInProgressViewModel.state.collectAsState()
     val feedbacks = state.feedbacks
+
+    // 화면을 벗어날 때 모든 피드백을 읽음 처리
+    DisposableEffect(Unit) {
+        onDispose {
+            // 화면이 제거될 때 읽음 처리
+            meetingInProgressViewModel.markAllFeedbacksAsRead()
+        }
+    }
 
     Column(
         modifier = Modifier

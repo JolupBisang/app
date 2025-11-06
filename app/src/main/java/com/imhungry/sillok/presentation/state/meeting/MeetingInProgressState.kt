@@ -32,6 +32,9 @@ data class MeetingInProgressState(
     val segments: List<SegmentUi> = emptyList(),
     val summaries: List<SummaryUi> = emptyList(),
     val startTime: Long = 0L,
+    val targetTime: Int = 0, // 목표 시간 (분)
+    val restInterval: Int = 0, // 휴식 간격 (분)
+    val restDuration: Int = 0, // 휴식 시간 (분)
     val isLoading: Boolean = false,
     val error: String? = null
 )

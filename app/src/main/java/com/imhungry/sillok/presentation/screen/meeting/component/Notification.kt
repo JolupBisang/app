@@ -1,8 +1,5 @@
 package com.imhungry.sillok.presentation.screen.meeting.component
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -41,73 +38,67 @@ fun Notification(
     isRead: Boolean,
     onTimeClick: (() -> Unit)? = null
 ) {
-    AnimatedVisibility(
-        visible = feedback.isRead,
-        enter = fadeIn(),
-        exit = fadeOut()
+    Box(
+        modifier = modifier
+            .background(
+                color = if (blur) blurBackground else green500,
+                shape = MaterialTheme.shapes.small
+            )
+            .border(
+                width = 1.dp,
+                color = gray500,
+                shape = MaterialTheme.shapes.small
+            )
     ) {
-        Box(
-            modifier = modifier
-                .background(
-                    color = if (blur) blurBackground else green500,
-                    shape = MaterialTheme.shapes.small
-                )
-                .border(
-                    width = 1.dp,
-                    color = gray500,
-                    shape = MaterialTheme.shapes.small
-                )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
-                verticalAlignment = Alignment.CenterVertically
+                    .weight(1f)
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                contentAlignment = Alignment.CenterStart
             ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Text(
-                        text = feedback.comment,
-                        fontWeight = FontWeight.Medium,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontSize = 14.sp
+                Text(
+                    text = feedback.comment,
+                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 14.sp
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .padding(top = 12.dp, bottom = 12.dp, end = 20.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                if (!isRead) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .background(orange100, shape = CircleShape)
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(top = 12.dp, bottom = 12.dp, end = 20.dp),
-                    horizontalAlignment = Alignment.End
-                ) {
-                    if (!isRead) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(orange100, shape = CircleShape)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
+                Spacer(modifier = Modifier.weight(1f))
 
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    Text(
-                        text = feedback.timestamp,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Normal,
-                        modifier = Modifier.clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            enabled = onTimeClick != null
-                        ) { onTimeClick?.invoke() }
-                            .padding(bottom = 3.dp)
-                    )
-                }
+                Text(
+                    text = feedback.timestamp,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Normal,
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = onTimeClick != null
+                    ) { onTimeClick?.invoke() }
+                        .padding(bottom = 3.dp)
+                )
             }
         }
     }

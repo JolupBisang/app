@@ -57,8 +57,6 @@ fun TopSheet(
         modifier = modifier
             .fillMaxWidth()
             .background(whiteBackground)
-            .windowInsetsPadding(WindowInsets.statusBars)
-            .padding(top = 20.dp, start = 20.dp, end = 20.dp, bottom = 4.dp)
             .animateContentSize()
     ) {
         Row(
