@@ -260,8 +260,8 @@ fun MeetingFormScreen(
                                             onEmailSelected = { email ->
                                                 viewModel.onEvent(MeetingFormEvent.ParticipantEmailSelected(email))
                                             },
-                                            onEmailSubmitted = { email ->
-                                                viewModel.onEvent(MeetingFormEvent.ParticipantEmailSelected(email))
+                                            onEmailSubmitted = { 
+                                                // 직접 입력 추가 불가 (드롭다운에서만 선택 가능)
                                             },
                                             onEmailRemoved = { index ->
                                                 viewModel.onEvent(MeetingFormEvent.ParticipantEmailRemoved(index))
@@ -405,7 +405,7 @@ fun MeetingFormScreen(
 
                                                 Column {
                                                     AgendaInputField(
-                                                        label = "아젠다",
+                                                        label = "주제",
                                                         agendas = state.agendas,
                                                         onAgendaChanged = { index, agenda ->
                                                             viewModel.onEvent(MeetingFormEvent.AgendaChanged(index, agenda))

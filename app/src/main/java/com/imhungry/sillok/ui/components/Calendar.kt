@@ -45,11 +45,21 @@ import java.util.Locale
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Calendar(
-    selectedDate: LocalDate = LocalDate.now(),
+    selectedDate: LocalDate? = null,
     onDateSelected: (LocalDate) -> Unit = {},
+    onDateCleared: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var currentMonth by remember { mutableStateOf(YearMonth.from(selectedDate)) }
+    var currentMonth by remember { mutableStateOf(selectedDate?.let { YearMonth.from(it) } ?: YearMonth.from(LocalDate.now())) }
+    var previousMonth by remember { mutableStateOf(currentMonth) }
+
+    // 달이 변경될 때 선택 초기화
+    LaunchedEffect(currentMonth) {
+        if (currentMonth != previousMonth) {
+            onDateCleared()
+            previousMonth = currentMonth
+        }
+    }
 
     Box(
         modifier = modifier.fillMaxWidth()
@@ -160,7 +170,7 @@ private fun CalendarWeekHeader() {
 @Composable
 private fun CalendarDateGrid(
     currentMonth: YearMonth,
-    selectedDate: LocalDate,
+    selectedDate: LocalDate?,
     onDateSelected: (LocalDate) -> Unit
 ) {
     val firstDayOfMonth = currentMonth.atDay(1)
@@ -231,10 +241,7 @@ private fun CalendarDateItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val isToday = date == LocalDate.now()
-
     val textColor = when {
-        isToday -> primarySurface
         isSelected -> primarySurface
         isCurrentMonth -> primaryTextColor
         else -> Color.Transparent

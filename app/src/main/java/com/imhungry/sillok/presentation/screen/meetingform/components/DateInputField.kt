@@ -134,10 +134,8 @@ fun DateInputField(
                     // 달력 컴포넌트
                     Calendar(
                         selectedDate = selectedDate,
-                        onDateSelected = { date ->
-                            selectedDate = date
-                        },
-                        modifier = Modifier.height(300.dp)
+                        onDateSelected = { date -> selectedDate = date },
+                        onDateCleared = { selectedDate = null }
                     )
 
                     Row(

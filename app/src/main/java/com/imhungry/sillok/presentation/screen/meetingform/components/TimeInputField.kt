@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,10 +18,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,15 +30,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import com.imhungry.sillok.R
 import com.imhungry.sillok.ui.theme.border
 import com.imhungry.sillok.ui.theme.gray400
+import com.imhungry.sillok.ui.theme.inverse
 import com.imhungry.sillok.ui.theme.primaryBackground
+import com.imhungry.sillok.ui.theme.primaryButton
 import com.imhungry.sillok.ui.theme.primaryTextColor
+import com.imhungry.sillok.ui.theme.tertiary
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -60,56 +65,42 @@ fun TimeInputField(
     isReadOnly: Boolean = false
 ) {
     var editingField by remember { mutableStateOf<TimeField?>(null) }
-    var isDurationFocused by remember { mutableStateOf(false) }
+    var wasEditingStartTime by remember { mutableStateOf(false) }
 
-    fun calculateMissingValue() {
-        when {
-            // 시작 시간과 종료 시간이 모두 설정된 경우 -> 분 단위 자동 계산
-            startTime.isNotEmpty() && endTime.isNotEmpty() && startTime.length >= 4 && endTime.length >= 4 -> {
-                val startMinutes = parseTimeToMinutes(startTime)
-                val endMinutes = parseTimeToMinutes(endTime)
-                val calculatedDuration = endMinutes - startMinutes
-                if (calculatedDuration > 0) {
-                    onDurationChange(calculatedDuration.toString())
-                }
+    // 시작 시간과 종료 시간으로부터 목표 시간 자동 계산
+    LaunchedEffect(startTime, endTime, showTimePicker) {
+        if (!showTimePicker && startTime.isNotEmpty() && endTime.isNotEmpty() && 
+            startTime.length >= 4 && endTime.length >= 4) {
+            val startMinutes = parseTimeToMinutes(startTime)
+            val endMinutes = parseTimeToMinutes(endTime)
+            val calculatedDuration = endMinutes - startMinutes
+            if (calculatedDuration > 0) {
+                onDurationChange(calculatedDuration.toString())
+            } else if (calculatedDuration <= 0) {
+                // 종료 시간이 시작 시간보다 이전이거나 같으면 목표 시간 초기화
+                onDurationChange("")
             }
-            // 시작 시간과 분 단위가 설정된 경우 -> 종료 시간 자동 계산
-            startTime.isNotEmpty() && duration.isNotEmpty() && startTime.length >= 4 -> {
-                val startMinutes = parseTimeToMinutes(startTime)
-                val durationMinutes = duration.toIntOrNull() ?: 0
-                val endMinutes = startMinutes + durationMinutes
-                if (endMinutes <= 24 * 60) { // 24시간을 넘지 않는 경우만
-                    val endHour = endMinutes / 60
-                    val endMinute = endMinutes % 60
-                    val endTimeString = String.format("%02d%02d", endHour, endMinute)
-                    onEndTimeChange(endTimeString)
-                }
-            }
-            // 종료 시간과 분 단위가 설정된 경우 -> 시작 시간 자동 계산
-            endTime.isNotEmpty() && duration.isNotEmpty() && endTime.length >= 4 -> {
-                val endMinutes = parseTimeToMinutes(endTime)
-                val durationMinutes = duration.toIntOrNull() ?: 0
-                val startMinutes = endMinutes - durationMinutes
-                if (startMinutes >= 0) {
-                    val startHour = startMinutes / 60
-                    val startMinute = startMinutes % 60
-                    val startTimeString = String.format("%02d%02d", startHour, startMinute)
-                    onStartTimeChange(startTimeString)
-                }
-            }
+        } else if (!showTimePicker && (startTime.isEmpty() || endTime.isEmpty() || 
+            startTime.length < 4 || endTime.length < 4)) {
+            // 시작 시간 또는 종료 시간이 비어있으면 목표 시간 초기화
+            onDurationChange("")
         }
     }
 
-    // TimePicker가 사라진 상태이고 분 단위 필드에 포커스가 없을 때만 자동 계산 실행
-    LaunchedEffect(startTime, endTime, duration, showTimePicker, isDurationFocused) {
-        if (!showTimePicker && !isDurationFocused) {
-            calculateMissingValue()
-        }
-    }
-
-    // TimePicker가 숨겨질 때 editingField 초기화
-    LaunchedEffect(showTimePicker) {
-        if (!showTimePicker) {
+    // 시작 시간 다이얼로그가 닫혔을 때 종료 시간 다이얼로그 자동 열기
+    LaunchedEffect(showTimePicker, startTime, endTime) {
+        if (!showTimePicker && wasEditingStartTime) {
+            // 시작 시간이 설정되었고, 종료 시간이 비어있으면 종료 시간 다이얼로그 열기
+            if (startTime.isNotEmpty() && startTime.length >= 4 &&
+                (endTime.isEmpty() || endTime.length < 4)) {
+                wasEditingStartTime = false
+                editingField = TimeField.END
+                onEndTimeClick()
+            } else {
+                wasEditingStartTime = false
+                editingField = null
+            }
+        } else if (!showTimePicker && !wasEditingStartTime) {
             editingField = null
         }
     }
@@ -146,9 +137,11 @@ fun TimeInputField(
                                         // 이미 시작 시간 TimePicker가 표시되어 있으면 숨김
                                         onTimePickerDismiss()
                                         editingField = null
+                                        wasEditingStartTime = false
                                     } else {
                                         // 시작 시간 TimePicker 표시
                                         editingField = TimeField.START
+                                        wasEditingStartTime = true
                                         onStartTimeClick()
                                     }
                                 }
@@ -197,9 +190,11 @@ fun TimeInputField(
                                         // 이미 종료 시간 TimePicker가 표시되어 있으면 숨김
                                         onTimePickerDismiss()
                                         editingField = null
+                                        wasEditingStartTime = false
                                     } else {
                                         // 종료 시간 TimePicker 표시
                                         editingField = TimeField.END
+                                        wasEditingStartTime = false
                                         onEndTimeClick()
                                     }
                                 }
@@ -225,64 +220,25 @@ fun TimeInputField(
 
                 Spacer(Modifier.width(8.dp))
 
-                // 분 단위 입력 필드 (직접 입력 가능)
+                // 분 단위 표시 필드 (읽기 전용, 자동 계산)
                 Box(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(4.dp))
+                        .border(1.dp, border, RoundedCornerShape(4.dp))
+                        .background(primaryBackground)
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    BasicTextField(
-                        value = duration,
-                        onValueChange = { newValue ->
-                            if (!isReadOnly) {
-                                if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
-                                    onDurationChange(newValue)
-                                }
-                            }
+                    Text(
+                        text = if (duration.isNotEmpty()) {
+                            duration
+                        } else {
+                            durationPlaceholder
                         },
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = if (duration.isEmpty()) gray400 else primaryTextColor,
-                            fontWeight = FontWeight.Normal
-                        ),
-                        enabled = !isReadOnly,
-                        decorationBox = { innerTextField ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .border(1.dp, border, RoundedCornerShape(4.dp))
-                                    .background(primaryBackground)
-                                    .padding(horizontal = 12.dp, vertical = 9.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (duration.isEmpty()) {
-                                    Text(
-                                        text = durationPlaceholder,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = gray400,
-                                        fontWeight = FontWeight.Normal
-                                    )
-                                }
-                                innerTextField()
-                            }
-                        },
-                        singleLine = true,
-                        maxLines = 1,
-                        modifier = Modifier.onFocusChanged { focusState ->
-                            val wasFocused = isDurationFocused
-                            isDurationFocused = focusState.isFocused
-                            
-                            // 포커스가 제거되었을 때 분 단위 기준으로 종료 시간 계산
-                            if (wasFocused && !focusState.isFocused && duration.isNotEmpty() && startTime.isNotEmpty() && startTime.length >= 4) {
-                                val startMinutes = parseTimeToMinutes(startTime)
-                                val durationMinutes = duration.toIntOrNull() ?: 0
-                                val endMinutes = startMinutes + durationMinutes
-                                if (endMinutes <= 24 * 60) { // 24시간을 넘지 않는 경우만
-                                    val endHour = endMinutes / 60
-                                    val endMinute = endMinutes % 60
-                                    val endTimeString = String.format("%02d%02d", endHour, endMinute)
-                                    onEndTimeChange(endTimeString)
-                                }
-                            }
-                        }
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (duration.isEmpty()) gray400 else primaryTextColor,
+                        fontWeight = FontWeight.Normal
                     )
                 }
 
@@ -297,20 +253,42 @@ fun TimeInputField(
             }
         }
 
-        // 단일 TimePicker (현재 편집 중인 필드에 따라 표시, 읽기 전용일 때는 표시하지 않음)
+        // 단일 TimePicker 다이얼로그 (현재 편집 중인 필드에 따라 표시, 읽기 전용일 때는 표시하지 않음)
         if (showTimePicker && editingField != null && !isReadOnly) {
-            Spacer(modifier = Modifier.height(16.dp))
+            // 종료 시간 필드를 클릭했을 때 종료 시간이 비어있으면 시작 시간을 초기값으로 사용
+            val initialHour = when (editingField) {
+                TimeField.START -> parseTimeToHour(startTime)
+                TimeField.END -> {
+                    if (endTime.isEmpty() || endTime.length < 4) {
+                        // 종료 시간이 비어있으면 시작 시간을 초기값으로 사용
+                        parseTimeToHour(startTime)
+                    } else {
+                        parseTimeToHour(endTime)
+                    }
+                }
+                null -> 0
+            }
+            val initialMinute = when (editingField) {
+                TimeField.START -> parseTimeToMinute(startTime)
+                TimeField.END -> {
+                    if (endTime.isEmpty() || endTime.length < 4) {
+                        // 종료 시간이 비어있으면 시작 시간을 초기값으로 사용
+                        parseTimeToMinute(startTime)
+                    } else {
+                        parseTimeToMinute(endTime)
+                    }
+                }
+                null -> 0
+            }
+            
             InlineTimePicker(
-                hour = when (editingField) {
-                    TimeField.START -> parseTimeToHour(startTime)
-                    TimeField.END -> parseTimeToHour(endTime)
-                    null -> 0
+                title = when (editingField) {
+                    TimeField.START -> "시작 시간"
+                    TimeField.END -> "종료 시간"
+                    null -> "시간"
                 },
-                minute = when (editingField) {
-                    TimeField.START -> parseTimeToMinute(startTime)
-                    TimeField.END -> parseTimeToMinute(endTime)
-                    null -> 0
-                },
+                hour = initialHour,
+                minute = initialMinute,
                 onTimeChange = { hour, minute ->
                     val timeString = String.format("%02d%02d", hour, minute)
                     when (editingField) {
@@ -318,7 +296,8 @@ fun TimeInputField(
                         TimeField.END -> onEndTimeChange(timeString)
                         null -> {}
                     }
-                }
+                },
+                onDismiss = onTimePickerDismiss
             )
         }
     }
@@ -332,32 +311,113 @@ private enum class TimeField {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun InlineTimePicker(
+    title: String,
     hour: Int,
     minute: Int,
-    onTimeChange: (Int, Int) -> Unit
+    onTimeChange: (Int, Int) -> Unit,
+    onDismiss: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 40.dp)
+    var currentHour by remember { mutableStateOf(hour) }
+    var currentMinute by remember { mutableStateOf(minute) }
+
+    // 초기값이 변경되면 현재 선택값도 업데이트
+    LaunchedEffect(hour, minute) {
+        currentHour = hour
+        currentMinute = minute
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss
     ) {
-        AndroidView(
-            factory = { context ->
-                LayoutInflater.from(context).inflate(R.layout.time_picker_layout, null).apply {
-                    (this as TimePicker).apply {
-                        this.hour = hour
-                        this.minute = minute
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    color = primaryBackground,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .padding(vertical = 32.dp, horizontal = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 14.dp)
+            ) {
+                AndroidView(
+                    factory = { context ->
+                        LayoutInflater.from(context).inflate(R.layout.time_picker_layout, null).apply {
+                            (this as TimePicker).apply {
+                                this.hour = currentHour
+                                this.minute = currentMinute
+                            }
+                        } as TimePicker
+                    },
+                    update = { picker ->
+                        picker.hour = currentHour
+                        picker.minute = currentMinute
+                        picker.setOnTimeChangedListener { _, h, m ->
+                            currentHour = h
+                            currentMinute = m
+                        }
                     }
-                } as TimePicker
-            },
-            update = { picker ->
-                picker.hour = hour
-                picker.minute = minute
-                picker.setOnTimeChangedListener { _, h, m ->
-                    onTimeChange(h, m)
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.Transparent
+                ) {
+                    Text(
+                        text = "취소",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                        color = tertiary,
+                        modifier = Modifier
+                            .padding(horizontal = 14.dp, vertical = 5.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) {
+                                onDismiss()
+                            }
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = primaryButton
+                ) {
+                    Text(
+                        text = "확인",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = inverse,
+                        modifier = Modifier
+                            .padding(horizontal = 14.dp, vertical = 5.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) {
+                                // 선택된 시간을 적용
+                                onTimeChange(currentHour, currentMinute)
+                                onDismiss()
+                            }
+                    )
                 }
             }
-        )
+        }
     }
 }
 

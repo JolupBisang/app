@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Modifier
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,19 +23,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.R
-import com.imhungry.sillok.ui.theme.beige
 import com.imhungry.sillok.ui.theme.border
 import com.imhungry.sillok.ui.theme.gray400
+import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.primaryTextColor
-import android.util.Patterns
-import com.imhungry.sillok.ui.theme.disabled
+import com.imhungry.sillok.ui.theme.secondaryButton
+import com.imhungry.sillok.ui.theme.tertiary
 
 @Composable
 fun EmailInputFieldWithAutocomplete(
@@ -59,6 +61,9 @@ fun EmailInputFieldWithAutocomplete(
     val filteredSuggestions = emailSuggestions.filter { email ->
         !participantEmails.contains(email)
     }
+    
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -83,9 +88,9 @@ fun EmailInputFieldWithAutocomplete(
                         ),
                         keyboardActions = KeyboardActions(
                             onDone = {
-                                if (value.isNotEmpty() && isValidEmail(value)) {
-                                    onEmailSubmitted(value)
-                                }
+                                // 포커스 제거 및 키보드 닫기 (직접 입력 추가 불가)
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
                             }
                         ),
                         textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -159,22 +164,27 @@ fun SelectedEmailsList(
     ) {
         emails.forEachIndexed { index, email ->
             val isHost = hostEmail == email
-            val backgroundColor = when {
-                isReadOnly && isHost -> beige
-                isReadOnly && !isHost -> disabled
-                else -> beige
+            val borderColor = when {
+                isReadOnly && isHost -> green300
+                else -> secondaryButton
+            }
+            val textColor = when {
+                isReadOnly && isHost -> green300
+                else -> tertiary
             }
             
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(9.dp))
-                    .background(backgroundColor)
-                    .padding(horizontal = 11.dp, vertical = 5.dp),
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+                    .background(secondaryButton)
+                    .padding(horizontal = 16.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = email,
-                    style = MaterialTheme.typography.labelSmall
+                    style = MaterialTheme.typography.labelSmall,
+                    color = textColor
                 )
 
                 // 생성 모드가 아닐 때만 삭제 버튼 표시
@@ -197,9 +207,4 @@ fun SelectedEmailsList(
             }
         }
     }
-}
-
-// 이메일 형식 유효성 검사 함수
-private fun isValidEmail(email: String): Boolean {
-    return Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }
