@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.hilt)
     id("kotlin-parcelize")
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 val localProperties = Properties().apply {
@@ -126,6 +127,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-crashlytics-ndk")
 
     // Pager
     implementation("com.google.accompanist:accompanist-pager-indicators:0.28.0")
