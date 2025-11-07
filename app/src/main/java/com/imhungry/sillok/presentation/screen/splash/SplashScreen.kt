@@ -1,14 +1,12 @@
 package com.imhungry.sillok.presentation.screen.splash
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -16,11 +14,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.viewmodel.splash.SplashViewModel
-import com.imhungry.sillok.ui.components.BasicBox
+import com.imhungry.sillok.ui.components.SystemBars
 import com.imhungry.sillok.ui.theme.beige
 
 @Composable
@@ -44,27 +41,26 @@ fun SplashScreen(
         }
     }
 
-    BasicBox(
+    SystemBars(
         statusBarColor = beige,
         navigationBarColor = beige,
-        backgroundColor = beige
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(beige)
+            .windowInsetsPadding(WindowInsets.systemBars)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "Logo",
-                modifier = Modifier.size(100.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "seal-log",
-                style = MaterialTheme.typography.headlineLarge
+                painter = painterResource(id = R.drawable.splash),
+                contentDescription = "splash",
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
