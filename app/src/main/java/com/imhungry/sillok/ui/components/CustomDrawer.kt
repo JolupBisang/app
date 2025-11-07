@@ -175,7 +175,8 @@ fun CustomDrawer(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        // 클릭 이벤트를 소비하여 하위 컴포넌트로 전달되지 않도록 함
+                        // 사이드바 바깥 영역 클릭 시 사이드바 닫기
+                        drawerState.close()
                     }
             )
         }
