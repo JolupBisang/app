@@ -11,10 +11,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.imhungry.sillok.data.local.DismissedMeetingStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -22,7 +24,8 @@ import java.time.format.DateTimeFormatter
 @HiltViewModel
 class MeetingDetailViewModel @Inject constructor(
     private val getMeetingDetailUseCase: GetMeetingDetailUseCase,
-    private val getAgendasUseCase: GetAgendasUseCase
+    private val getAgendasUseCase: GetAgendasUseCase,
+    private val dismissedMeetingStore: DismissedMeetingStore
 ) : ViewModel() {
     
     private val _state = MutableStateFlow(MeetingDetailState())
@@ -133,6 +136,22 @@ class MeetingDetailViewModel @Inject constructor(
                 isLoading = false,
                 error = null
             )
+        }
+    }
+
+    fun showDismissDialog() {
+        _state.update { it.copy(showDismissDialog = true) }
+    }
+
+    fun dismissDismissDialog() {
+        _state.update { it.copy(showDismissDialog = false) }
+    }
+
+    fun dismissMeeting() {
+        val meetingId = state.value.meetingId
+        viewModelScope.launch {
+            dismissedMeetingStore.addDismissedMeeting(meetingId)
+            _state.update { it.copy(showDismissDialog = false) }
         }
     }
 }

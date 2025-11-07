@@ -96,7 +96,7 @@ fun SillokButtonRow(
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         SillokButton(
-            text = "취소",
+            text = "숨기기",
             onClick = onBack,
             modifier = Modifier.weight(1f),
             backgroundColor = gray500,

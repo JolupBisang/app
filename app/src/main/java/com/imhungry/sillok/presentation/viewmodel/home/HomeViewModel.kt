@@ -151,39 +151,10 @@ class HomeViewModel @Inject constructor(
         val startedMeetingId = snapshot.getLong("startedMeetingId") ?: 0L
         if (startedMeetingId > 0L) {
             Log.d(TAG, "회의 시작 감지: meetingId=$startedMeetingId")
-            viewModelScope.launch {
-                fetchMeetingTitleAndShowDialog(db, uid, startedMeetingId)
-                resetMeetingStartedFlag(db, uid)
-            }
-        }
-    }
-
-    private suspend fun fetchMeetingTitleAndShowDialog(
-        db: FirebaseFirestore,
-        uid: String,
-        startedMeetingId: Long
-    ) {
-        val meetingTitle = try {
-            val meetingDoc = db.collection(COLLECTION_MEETINGS)
-                .document(startedMeetingId.toString())
-                .get()
-                .await()
-            meetingDoc.getString("title") ?: DEFAULT_MEETING_TITLE
-        } catch (e: Exception) {
-            Log.e(TAG, "회의 정보 조회 실패", e)
-            null
-        }
-
-        showMeetingStartedDialog(startedMeetingId, meetingTitle)
-    }
-
-    private fun showMeetingStartedDialog(meetingId: Long, title: String?) {
-        _state.update {
-            it.copy(
-                showMeetingStartedDialog = true,
-                pendingMeetingId = meetingId,
-                pendingMeetingTitle = title
-            )
+            // 홈 데이터 새로고침
+            loadHomeData()
+            // 플래그 리셋
+            resetMeetingStartedFlag(db, uid)
         }
     }
 
@@ -201,16 +172,6 @@ class HomeViewModel @Inject constructor(
     // Dialog 관리
     // ========================================
 
-    fun dismissMeetingStartedDialog() {
-        _state.update {
-            it.copy(
-                showMeetingStartedDialog = false,
-                pendingMeetingId = null,
-                pendingMeetingTitle = null
-            )
-        }
-    }
-
     fun showExitDialog() {
         Log.d(TAG, "종료 다이얼로그 표시 요청")
         _state.update { it.copy(showExitDialog = true) }
@@ -219,6 +180,36 @@ class HomeViewModel @Inject constructor(
 
     fun dismissExitDialog() {
         _state.update { it.copy(showExitDialog = false) }
+    }
+
+    fun dismissGeneratingMeetingNoteDialog() {
+        _state.update { it.copy(showGeneratingMeetingNoteDialog = false) }
+    }
+
+    fun onMeetingClick(meetingId: Long, onNavigate: (Long) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val db = FirebaseFirestore.getInstance()
+                val meetingDoc = db.collection(COLLECTION_MEETINGS)
+                    .document(meetingId.toString())
+                    .get()
+                    .await()
+
+                val generatingMeetingNoteId = meetingDoc.getLong("generatingMeetingNoteId")
+                
+                if (generatingMeetingNoteId != null && generatingMeetingNoteId > 0L) {
+                    // 회의록 생성 중이면 다이얼로그 표시
+                    _state.update { it.copy(showGeneratingMeetingNoteDialog = true) }
+                } else {
+                    // 회의록 생성 중이 아니면 바로 이동
+                    onNavigate(meetingId)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "회의록 생성 상태 확인 실패: ${e.message}")
+                // 에러 발생 시에도 이동 허용
+                onNavigate(meetingId)
+            }
+        }
     }
 
     // ========================================
@@ -320,11 +311,17 @@ class HomeViewModel @Inject constructor(
         year: Int,
         month: Int
     ) {
-        val (ongoing, upcoming, meetings) = categorizeMeetings(summaries)
+        // DataStore에서 숨긴 회의 ID 가져오기
+        val dismissedMeetingIds = dismissedMeetingStore.getDismissedMeetingIds()
+        
+        // 숨긴 회의 제외
+        val filteredSummaries = summaries.filter { !dismissedMeetingIds.contains(it.id) }
+        
+        val (ongoing, upcoming, meetings) = categorizeMeetings(filteredSummaries)
         
         logMeetingLoadResult(year, month, summaries.size, ongoing.size, upcoming.size)
         
-        // DataStore에서 dismiss 정보 가져오기
+        // DataStore에서 dismiss 정보 가져오기 (알림용)
         val dismissedOngoingIds = dismissedMeetingStore.getDismissedOngoingMeetingIds()
         val dismissedScheduledIds = dismissedMeetingStore.getDismissedScheduledMeetingIds()
         
@@ -429,7 +426,12 @@ class HomeViewModel @Inject constructor(
         val participantResults = searchByParticipants(db, query)
 
         val merged = (titleResults + participantResults).distinctBy { it.id }
-        return merged.map { MeetingUi.from(it) }
+        
+        // 숨긴 회의 제외
+        val dismissedMeetingIds = dismissedMeetingStore.getDismissedMeetingIds()
+        val filteredMerged = merged.filter { !dismissedMeetingIds.contains(it.id) }
+        
+        return filteredMerged.map { MeetingUi.from(it) }
     }
 
     private suspend fun searchByTitle(

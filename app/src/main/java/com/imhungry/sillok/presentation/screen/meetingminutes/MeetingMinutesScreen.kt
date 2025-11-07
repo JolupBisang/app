@@ -3,6 +3,7 @@ package com.imhungry.sillok.presentation.screen.meetingminutes
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -10,10 +11,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,12 +25,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.rememberAsyncImagePainter
+import coil.decode.GifDecoder
+import coil.request.ImageRequest
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
+import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.screen.meeting.CustomHorizontalPagerIndicator
 import com.imhungry.sillok.presentation.screen.meetingminutes.components.AudioPlayerBar
 import com.imhungry.sillok.presentation.screen.meetingminutes.pager.MeetingMinutesFeedbackScreen
@@ -35,6 +44,8 @@ import com.imhungry.sillok.presentation.screen.meetingminutes.pager.MeetingMinut
 import com.imhungry.sillok.presentation.screen.meetingminutes.pager.MeetingMinutesSummaryScreen
 import com.imhungry.sillok.presentation.viewmodel.meetingminutes.MeetingMinutesViewModel
 import com.imhungry.sillok.ui.components.MeetingBasicBox
+import androidx.compose.foundation.Image
+import com.imhungry.sillok.ui.theme.dialogBackGround
 import com.imhungry.sillok.ui.theme.primaryBackground
 import com.imhungry.sillok.ui.theme.whiteBackground
 import kotlinx.coroutines.delay
@@ -71,6 +82,9 @@ fun MeetingMinutesScreen(
     val pagerState = rememberPagerState(initialPage = 1)
     val coroutineScope = rememberCoroutineScope()
     var audioBarHeightPx by remember { mutableStateOf(0) }
+    
+    // ViewModel state 관찰
+    val state by meetingMinutesViewModel.state.collectAsState()
 
     MeetingBasicBox(
         navigationBarColor = whiteBackground,
@@ -161,6 +175,28 @@ fun MeetingMinutesScreen(
                     // AudioPlayerBar 외부에서 seekTo 요청이 왔을 때 처리
                 }
             )
+            
+            // 로딩 오버레이
+            if (state.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(dialogBackGround)
+                        .zIndex(1000f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(R.drawable.loading)
+                                .decoderFactory(GifDecoder.Factory())
+                                .build()
+                        ),
+                        contentDescription = "로딩 gif",
+                        modifier = Modifier.size(80.dp)
+                    )
+                }
+            }
         }
     }
 }

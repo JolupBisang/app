@@ -23,6 +23,7 @@ import com.imhungry.sillok.presentation.screen.meetingform.components.InputField
 import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.components.SillokButtonRow
+import com.imhungry.sillok.ui.components.SillokDialog
 import com.imhungry.sillok.presentation.screen.meetingform.components.TimeInputField
 import com.imhungry.sillok.presentation.state.meetingform.MeetingFormEvent
 import com.imhungry.sillok.ui.theme.primaryBackground
@@ -124,7 +125,7 @@ fun MeetingDetailScreen(
 
                     item {
                         AgendaInputField(
-                            label = "아젠다",
+                            label = "주제",
                             agendas = state.agendas,
                             onAgendaChanged = { index, agenda -> /* 사용되지 않음 */ },
                             onAgendaAdded = { /* 사용되지 않음 */ },
@@ -155,7 +156,7 @@ fun MeetingDetailScreen(
                     if (state.isHost) {
                         SillokButtonRow(
                             onBack = {
-                                onBackClick()
+                                viewModel.showDismissDialog()
                             },
                             onEnter = {
                                 onStartMeeting()
@@ -173,5 +174,19 @@ fun MeetingDetailScreen(
                 }
             }
         }
+
+        SillokDialog(
+            visible = state.showDismissDialog,
+            message = "이 회의를 목록에서 숨기시겠습니까?",
+            confirmText = "예",
+            cancelText = "취소",
+            onConfirm = {
+                viewModel.dismissMeeting()
+                onBackClick()
+            },
+            onDismiss = {
+                viewModel.dismissDismissDialog()
+            }
+        )
     }
 }

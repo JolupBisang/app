@@ -2,7 +2,9 @@ package com.imhungry.sillok.presentation.viewmodel.waitingroom
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.domain.model.meeting.MeetingStatus
@@ -40,11 +42,20 @@ class WaitingRoomViewModel @Inject constructor(
     val events = _events.asSharedFlow()
 
     private var currentUserEmail: String? = null
+    private var currentUserId: String? = null
+    private var meetingStartedListener: ListenerRegistration? = null
 
     init {
         viewModelScope.launch {
             userStore.user.collect { user ->
                 currentUserEmail = user?.email
+                currentUserId = user?.id?.toString()
+                // 사용자 정보가 있으면 리스너 등록
+                if (!currentUserId.isNullOrBlank()) {
+                    attachMeetingStartedListener(currentUserId!!)
+                } else {
+                    detachMeetingStartedListener()
+                }
             }
         }
     }
@@ -171,8 +182,58 @@ class WaitingRoomViewModel @Inject constructor(
         }
     }
 
+    // ========================================
+    // Firestore 리스너 관리
+    // ========================================
+
+    private fun attachMeetingStartedListener(uid: String) {
+        meetingStartedListener?.remove()
+        val db = FirebaseFirestore.getInstance()
+        meetingStartedListener = db.collection("users").document(uid)
+            .addSnapshotListener { snapshot, _ ->
+                val meetingStarted = snapshot?.getBoolean("meetingStarted") ?: false
+                if (meetingStarted) {
+                    handleMeetingStartedDetected(db, uid, snapshot)
+                }
+            }
+    }
+
+    private fun handleMeetingStartedDetected(
+        db: FirebaseFirestore,
+        uid: String,
+        snapshot: DocumentSnapshot
+    ) {
+        val startedMeetingId = snapshot.getLong("startedMeetingId") ?: 0L
+        val currentMeetingId = state.value.meetingId
+
+        // 현재 대기실의 meetingId와 시작된 meetingId가 같으면 회의 중 화면으로 이동
+        if (startedMeetingId > 0L && currentMeetingId > 0L && startedMeetingId == currentMeetingId) {
+            viewModelScope.launch {
+                // meetingStarted 플래그 리셋
+                resetMeetingStartedFlag(db, uid)
+                // 회의 중 화면으로 이동 이벤트 발행
+                _events.emit(WaitingRoomEvent.MeetingStarted)
+            }
+        }
+    }
+
+    private fun resetMeetingStartedFlag(db: FirebaseFirestore, uid: String) {
+        db.collection("users").document(uid)
+            .update(mapOf("meetingStarted" to false, "updatedAt" to System.currentTimeMillis()))
+    }
+
+    private fun detachMeetingStartedListener() {
+        meetingStartedListener?.remove()
+        meetingStartedListener = null
+    }
+
+    public override fun onCleared() {
+        super.onCleared()
+        detachMeetingStartedListener()
+    }
+
     // 디버깅/시연을 위한 더미 데이터 주입
-    fun loadDummyWaitingRoomState() {
+    fun loadDummyWaitingRoomState(meetingId: Long = 9999L) {
         val dummyAgendas = listOf(
             com.imhungry.sillok.domain.model.agenda.Agenda(
                 agendaId = 1L,
@@ -193,7 +254,7 @@ class WaitingRoomViewModel @Inject constructor(
 
         _state.update {
             it.copy(
-                meetingId = 9999L,
+                meetingId = meetingId,
                 agendas = dummyAgendas,
                 targetTimeDisplay = "- 01:00:00",
                 isLoading = false,

@@ -27,6 +27,7 @@ class DismissedMeetingStore @Inject constructor(
     companion object {
         private val DISMISSED_ONGOING_MEETINGS_KEY = stringPreferencesKey("dismissed_ongoing_meetings")
         private val DISMISSED_SCHEDULED_MEETINGS_KEY = stringPreferencesKey("dismissed_scheduled_meetings")
+        private val DISMISSED_MEETINGS_KEY = stringPreferencesKey("dismissed_meetings")
     }
 
     val dismissedOngoingMeetingIds: Flow<Set<Long>> = dataStore.data.map { preferences ->
@@ -93,6 +94,39 @@ class DismissedMeetingStore @Inject constructor(
 
     suspend fun getDismissedScheduledMeetingIds(): Set<Long> {
         return dismissedScheduledMeetingIds.first()
+    }
+
+    suspend fun addDismissedMeeting(meetingId: Long) {
+        dataStore.edit { preferences ->
+            val currentIdsJson = preferences[DISMISSED_MEETINGS_KEY]
+            val currentIds = if (currentIdsJson != null) {
+                try {
+                    val type = object : TypeToken<Set<Long>>() {}.type
+                    gson.fromJson<Set<Long>>(currentIdsJson, type) ?: emptySet()
+                } catch (e: Exception) {
+                    emptySet()
+                }
+            } else {
+                emptySet()
+            }
+
+            val updatedIds = currentIds + meetingId
+            preferences[DISMISSED_MEETINGS_KEY] = gson.toJson(updatedIds)
+        }
+    }
+
+    suspend fun getDismissedMeetingIds(): Set<Long> {
+        val idsJson = dataStore.data.first()[DISMISSED_MEETINGS_KEY]
+        return if (idsJson != null) {
+            try {
+                val type = object : TypeToken<Set<Long>>() {}.type
+                gson.fromJson<Set<Long>>(idsJson, type) ?: emptySet()
+            } catch (e: Exception) {
+                emptySet()
+            }
+        } else {
+            emptySet()
+        }
     }
 }
 

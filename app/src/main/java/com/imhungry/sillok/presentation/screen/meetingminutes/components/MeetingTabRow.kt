@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.imhungry.sillok.ui.components.Divider
 import com.imhungry.sillok.ui.theme.primaryButton
 import com.imhungry.sillok.ui.theme.tertiary
 
@@ -50,4 +51,5 @@ fun MeetingTabRow(
             )
         }
     }
+    Divider()
 }

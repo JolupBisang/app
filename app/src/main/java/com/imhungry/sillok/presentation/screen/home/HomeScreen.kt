@@ -47,6 +47,7 @@ import com.imhungry.sillok.ui.components.ExitDialog
 import com.imhungry.sillok.ui.components.HomeBasicBox
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.components.SillokDialog
+import com.imhungry.sillok.ui.components.SillokInfoDialog
 import com.imhungry.sillok.ui.theme.gradientBrush2
 import com.imhungry.sillok.ui.theme.gradientBrush3
 import com.imhungry.sillok.ui.theme.primaryBackground
@@ -99,23 +100,21 @@ fun HomeScreen(
         onNavigateToMeetingMinutes = onNavigateToMeetingMinutes
     )
 
-    MeetingStartedDialog(
-        visible = homeState.showMeetingStartedDialog,
-        meetingTitle = homeState.pendingMeetingTitle,
-        pendingMeetingId = homeState.pendingMeetingId,
-        onConfirm = { meetingId ->
-            viewModel.dismissMeetingStartedDialog()
-            onNavigagteToMeetingInProgress(meetingId)
-        },
-        onDismiss = { viewModel.dismissMeetingStartedDialog() }
-    )
-
     ExitDialog(
         visible = homeState.showExitDialog,
         onConfirm = {
             viewModel.dismissExitDialog()
         },
         onDismiss = { viewModel.dismissExitDialog() }
+    )
+
+    SillokInfoDialog(
+        visible = homeState.showGeneratingMeetingNoteDialog,
+        message = "회의록을 생성하는 중입니다",
+        confirmText = "확인",
+        onConfirm = {
+            viewModel.dismissGeneratingMeetingNoteDialog()
+        }
     )
 
     HandleBackPress(
@@ -165,7 +164,13 @@ fun HomeScreen(
             onSearchFocusChange = { isSearchFocused = it },
             onSearchTextChange = { viewModel.onSearchTextChange(it) },
             onMeetingItemClick = { meeting ->
-                navigationHandlers.navigateToMeeting(meeting)
+                viewModel.onMeetingClick(meeting.id) { meetingId ->
+                    // meetingId로 MeetingUi를 찾아서 navigate
+                    val targetMeeting = homeState.meetings.find { it.id == meetingId }
+                        ?: homeState.searchResults.find { it.id == meetingId }
+                        ?: meeting
+                    navigationHandlers.navigateToMeeting(targetMeeting)
+                }
             },
             onMonthChanged = { year, month ->
                 viewModel.loadHomeDataForMonth(year, month)
@@ -175,7 +180,13 @@ fun HomeScreen(
                 onNavigagteToMeetingInProgress(meeting.id)
             },
             onJoinScheduledMeeting = { meeting ->
-                navigationHandlers.navigateToMeeting(meeting)
+                viewModel.onMeetingClick(meeting.id) { meetingId ->
+                    // meetingId로 MeetingUi를 찾아서 navigate
+                    val targetMeeting = homeState.meetings.find { it.id == meetingId }
+                        ?: homeState.upcomingMeetings.find { it.id == meetingId }
+                        ?: meeting
+                    navigationHandlers.navigateToMeeting(targetMeeting)
+                }
             },
             onCreateMeeting = {
                 onNavigateToCreateMeeting()
@@ -228,38 +239,6 @@ private fun rememberNavigationHandlers(
 private data class NavigationHandlers(
     val navigateToMeeting: (MeetingUi) -> Unit
 )
-
-@Composable
-private fun MeetingStartedDialog(
-    visible: Boolean,
-    meetingTitle: String?,
-    pendingMeetingId: Long?,
-    onConfirm: (Long) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val dialogMessage = if (meetingTitle != null) {
-        "\"$meetingTitle\"\n회의가 시작되었습니다.\n참여하시겠습니까?"
-    } else {
-        "회의가 시작되었습니다.\n참여하시겠습니까?"
-    }
-
-    SillokDialog(
-        visible = visible,
-        message = dialogMessage,
-        confirmText = "참여",
-        cancelText = "나중에",
-        onConfirm = {
-            pendingMeetingId?.let { meetingId ->
-                Log.d(TAG, "회의 참여 선택: meetingId=$meetingId")
-                onConfirm(meetingId)
-            }
-        },
-        onDismiss = {
-            Log.d(TAG, "회의 참여 취소")
-            onDismiss()
-        }
-    )
-}
 
 @Composable
 private fun HandleBackPress(

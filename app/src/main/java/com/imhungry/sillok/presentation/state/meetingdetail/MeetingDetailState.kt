@@ -15,5 +15,6 @@ data class MeetingDetailState(
     val breakDuration: String = "",
     val isHost: Boolean = false,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val showDismissDialog: Boolean = false
 )

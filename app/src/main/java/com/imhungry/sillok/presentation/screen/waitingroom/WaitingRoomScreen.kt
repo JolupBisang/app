@@ -65,7 +65,7 @@ fun WaitingRoomScreen(
     // 진입 시 아젠다/회의 상세 로드
     LaunchedEffect(meetingId) {
         //waitingRoomViewModel.loadAgendasAndMeetingDetail(meetingId)
-        waitingRoomViewModel.loadDummyWaitingRoomState()
+        waitingRoomViewModel.loadDummyWaitingRoomState(meetingId)
     }
 
     // 회의 시작/실패 이벤트 처리

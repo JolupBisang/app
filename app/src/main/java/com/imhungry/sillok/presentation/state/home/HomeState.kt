@@ -64,6 +64,7 @@ data class HomeState(
     val pendingMeetingId: Long? = null,
     val pendingMeetingTitle: String? = null,
     val showExitDialog: Boolean = false,
+    val showGeneratingMeetingNoteDialog: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null
 ) 

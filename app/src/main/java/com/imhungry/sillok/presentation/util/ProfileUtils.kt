@@ -4,6 +4,7 @@ import com.imhungry.sillok.R
 
 object ProfileUtils {
     private val profileDrawables = listOf(
+        R.drawable.profile1,
         R.drawable.profile2,
         R.drawable.profile3,
         R.drawable.profile4,
