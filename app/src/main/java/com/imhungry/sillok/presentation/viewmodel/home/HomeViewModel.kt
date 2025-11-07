@@ -95,8 +95,8 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun loadInitialData() {
-        //loadHomeData()
-        loadDummyHomeState()
+        loadHomeData()
+        //loadDummyHomeState()
     }
 
     // ========================================

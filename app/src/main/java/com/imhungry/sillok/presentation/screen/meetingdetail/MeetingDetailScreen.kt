@@ -41,8 +41,7 @@ fun MeetingDetailScreen(
     val state by viewModel.state.collectAsState()
     
     LaunchedEffect(Unit) {
-        //viewModel.loadMeetingDetail(meetingId)
-        viewModel.loadDummyMeetingDetail()
+        viewModel.loadMeetingDetail(meetingId)
     }
 
     BackHandler { onBackClick() }

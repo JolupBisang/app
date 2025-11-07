@@ -64,8 +64,7 @@ fun WaitingRoomScreen(
 
     // 진입 시 아젠다/회의 상세 로드
     LaunchedEffect(meetingId) {
-        //waitingRoomViewModel.loadAgendasAndMeetingDetail(meetingId)
-        waitingRoomViewModel.loadDummyWaitingRoomState(meetingId)
+        waitingRoomViewModel.loadAgendasAndMeetingDetail(meetingId)
     }
 
     // 회의 시작/실패 이벤트 처리
@@ -144,8 +143,7 @@ fun WaitingRoomScreen(
                     SillokTextButton(
                         text = "시작하기",
                         onClick = {
-                            //waitingRoomViewModel.startMeeting()
-                            onStartMeeting()
+                            waitingRoomViewModel.startMeeting()
                         },
                         modifier = Modifier.padding(top = 28.dp),
                         textColor = primarySurface,

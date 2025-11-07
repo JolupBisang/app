@@ -22,7 +22,7 @@ class TeamListViewModel @Inject constructor(
     val state: StateFlow<TeamListState> = _state.asStateFlow()
     
     init {
-        loadTeams()
+        //loadTeams()
     }
     
     fun loadTeams() {

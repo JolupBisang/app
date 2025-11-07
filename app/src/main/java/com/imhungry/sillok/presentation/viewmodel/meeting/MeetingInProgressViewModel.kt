@@ -107,8 +107,8 @@ class MeetingInProgressViewModel @Inject constructor(
         _state.update { it.copy(meetingId = meetingId) }
         viewModelScope.launch {
             // refreshAll() 완료 후 Service 시작
-            //refreshAll()
-            loadDummyMeetingInProgressState()
+            refreshAll()
+
             // TokenStore에서 토큰 가져오기
             val jwtToken = tokenStore.accessToken.first()
             if (jwtToken == null) {

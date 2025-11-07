@@ -52,8 +52,8 @@ class MeetingMinutesViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun initialize(meetingId: Long) {
         _state.update { it.copy(meetingId = meetingId) }
-        //refreshAll()
-        loadDummyMeetingMinutesState()
+        refreshAll()
+        //loadDummyMeetingMinutesState()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

@@ -23,7 +23,7 @@ class MeetingMinutesFolderViewModel @Inject constructor(
     val state: StateFlow<MeetingMinutesFolderState> = _state.asStateFlow()
 
     init {
-        loadFolders()
+        //loadFolders()
     }
 
     fun loadFolders() {

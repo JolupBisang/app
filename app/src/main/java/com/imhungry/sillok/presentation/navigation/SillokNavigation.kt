@@ -100,7 +100,7 @@ fun SillokNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route
+        startDestination = Screen.Splash.route
     ) {
         // 스플래시 화면
         composable(Screen.Splash.route) {
