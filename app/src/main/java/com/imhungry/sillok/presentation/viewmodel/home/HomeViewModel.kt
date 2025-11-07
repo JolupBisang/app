@@ -6,11 +6,10 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.messaging.FirebaseMessaging
 import com.imhungry.sillok.data.local.DismissedMeetingStore
-import com.imhungry.sillok.data.local.NotificationHistoryStore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
@@ -18,7 +17,6 @@ import com.imhungry.sillok.domain.model.meeting.MeetingStatus
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingSummaryListUseCase
 import com.imhungry.sillok.presentation.state.home.HomeState
 import com.imhungry.sillok.presentation.state.home.MeetingUi
-import com.imhungry.sillok.presentation.util.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +33,6 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val getMeetingSummaryListUseCase: GetMeetingSummaryListUseCase,
     private val userStore: UserStore,
-    private val notificationHistoryStore: NotificationHistoryStore,
     private val dismissedMeetingStore: DismissedMeetingStore,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -54,18 +51,10 @@ class HomeViewModel @Inject constructor(
     private var currentYearMonth: Pair<Int, Int>? = null
     private var hasNewMeetingListener: ListenerRegistration? = null
     private var meetingStartedListener: ListenerRegistration? = null
-    private var previousUpcomingMeetingIds: Set<Long> = emptySet()
 
     init {
-        initializeNotificationHelper()
         observeUserChanges()
         loadInitialData()
-        observeUpcomingMeetingsForNotification()
-    }
-
-    private fun initializeNotificationHelper() {
-        NotificationHelper.createNotificationChannel(context)
-        NotificationHelper.setHistoryStore(notificationHistoryStore)
     }
 
     private fun observeUserChanges() {
@@ -90,7 +79,6 @@ class HomeViewModel @Inject constructor(
         val uid = user?.id?.toString()
         if (!uid.isNullOrBlank()) {
             attachFirestoreListeners(uid)
-            getFCMToken(uid)
         } else {
             detachAllListeners()
         }
@@ -111,16 +99,6 @@ class HomeViewModel @Inject constructor(
         loadDummyHomeState()
     }
 
-    private fun observeUpcomingMeetingsForNotification() {
-        viewModelScope.launch {
-            state.collect { s ->
-                if (s.upcomingMeetings.isNotEmpty() && previousUpcomingMeetingIds.isEmpty()) {
-                    previousUpcomingMeetingIds = s.upcomingMeetings.map { it.id }.toSet()
-                }
-            }
-        }
-    }
-
     // ========================================
     // Firestore 리스너 관리
     // ========================================
@@ -138,7 +116,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun handleNewMeetingDetected(db: FirebaseFirestore, uid: String) {
-        loadHomeDataWithNotification()
+        loadHomeData()
         resetHasNewMeetingFlag(db, uid)
         _state.update { it.copy(hasNewMeeting = false) }
     }
@@ -168,7 +146,7 @@ class HomeViewModel @Inject constructor(
     private fun handleMeetingStarted(
         db: FirebaseFirestore,
         uid: String,
-        snapshot: com.google.firebase.firestore.DocumentSnapshot
+        snapshot: DocumentSnapshot
     ) {
         val startedMeetingId = snapshot.getLong("startedMeetingId") ?: 0L
         if (startedMeetingId > 0L) {
@@ -244,35 +222,6 @@ class HomeViewModel @Inject constructor(
     }
 
     // ========================================
-    // FCM 토큰 관리
-    // ========================================
-
-    private fun getFCMToken(uid: String) {
-        viewModelScope.launch {
-            try {
-                val token = FirebaseMessaging.getInstance().token.await()
-                if (token.isNotEmpty()) {
-                    saveFCMTokenToFirestore(uid, token)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "FCM 토큰 가져오기 실패", e)
-            }
-        }
-    }
-
-    private fun saveFCMTokenToFirestore(uid: String, token: String) {
-        val db = FirebaseFirestore.getInstance()
-        db.collection(COLLECTION_USERS).document(uid)
-            .update("fcmToken", token)
-            .addOnSuccessListener {
-                Log.d(TAG, "FCM 토큰 저장 성공: $token")
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "FCM 토큰 저장 실패", e)
-            }
-    }
-
-    // ========================================
     // 생명주기 관리
     // ========================================
 
@@ -288,11 +237,6 @@ class HomeViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun refreshData() {
         loadHomeData()
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun loadHomeDataForMonth(year: Int, month: Int) {
-        loadHomeDataForMonth(year, month, showNotification = false)
     }
 
     fun clearError() {
@@ -344,26 +288,21 @@ class HomeViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun loadHomeData() {
-        loadHomeDataWithNotification(showNotification = false)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun loadHomeDataWithNotification(showNotification: Boolean = true) {
         val calendar = Calendar.getInstance()
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH) + 1
-        loadHomeDataForMonth(year, month, showNotification)
+        loadHomeDataForMonth(year, month)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun loadHomeDataForMonth(year: Int, month: Int, showNotification: Boolean) {
+    fun loadHomeDataForMonth(year: Int, month: Int) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
                 currentYearMonth = year to month
                 when (val result = getMeetingSummaryListUseCase(year, month)) {
                     is ApiResult.Success -> {
-                        handleSuccessResult(result.data, year, month, showNotification)
+                        handleSuccessResult(result.data, year, month)
                     }
                     is ApiResult.Failure -> {
                         handleFailureResult(result.message)
@@ -379,8 +318,7 @@ class HomeViewModel @Inject constructor(
     private suspend fun handleSuccessResult(
         summaries: List<MeetingDetailSummary>,
         year: Int,
-        month: Int,
-        showNotification: Boolean
+        month: Int
     ) {
         val (ongoing, upcoming, meetings) = categorizeMeetings(summaries)
         
@@ -391,11 +329,7 @@ class HomeViewModel @Inject constructor(
         val dismissedScheduledIds = dismissedMeetingStore.getDismissedScheduledMeetingIds()
         
         val meetingUis = convertToMeetingUis(ongoing, upcoming, meetings, dismissedOngoingIds, dismissedScheduledIds)
-        
-        if (showNotification) {
-            checkAndNotifyNewMeetings(meetingUis.upcoming)
-        }
-        
+
         updateStateWithMeetings(meetingUis)
     }
 
@@ -438,28 +372,6 @@ class HomeViewModel @Inject constructor(
     private fun logMeetingLoadResult(year: Int, month: Int, total: Int, ongoing: Int, upcoming: Int) {
         val past = total - ongoing - upcoming
         Log.d(TAG, "${year}-${month} 달 로드 성공: 전체=$total, 예정=$upcoming, 진행=$ongoing, 종료=$past")
-    }
-
-    private fun checkAndNotifyNewMeetings(currentUpcoming: List<MeetingUi>) {
-        if (previousUpcomingMeetingIds.isEmpty()) {
-            previousUpcomingMeetingIds = currentUpcoming.map { it.id }.toSet()
-            return
-        }
-
-        val currentIds = currentUpcoming.map { it.id }.toSet()
-        val newMeetings = currentUpcoming.filter { it.id !in previousUpcomingMeetingIds }
-
-        if (newMeetings.isNotEmpty()) {
-            val latestMeeting = newMeetings.first()
-            NotificationHelper.showNewMeetingNotification(
-                context = context,
-                meetingId = latestMeeting.id,
-                meetingTitle = latestMeeting.title
-            )
-            Log.d(TAG, "새로운 회의 알림 표시: ${latestMeeting.title} (ID: ${latestMeeting.id})")
-        }
-
-        previousUpcomingMeetingIds = currentIds
     }
 
     private fun updateStateWithMeetings(meetingUis: MeetingUis) {

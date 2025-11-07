@@ -685,43 +685,4 @@ private fun SearchResultList(
             )
         }
     }
-//    LazyColumn(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(start = 16.dp, end = 8.dp)
-//    ) {
-//        items(results) { meeting ->
-//            MeetingListItem(meeting = meeting) { onItemClick(meeting) }
-//        }
-//    }
-}
-
-@Composable
-private fun MeetingItemUi(
-    meeting: MeetingUi,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { onClick() },
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        SillokTextButton(
-            text = "∘  ${meeting.title}",
-            onClick = onClick
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Text(
-            modifier = Modifier.width(80.dp),
-            text = meeting.timeRange,
-            style = MaterialTheme.typography.bodySmall,
-            color = tertiary
-        )
-    }
 }
