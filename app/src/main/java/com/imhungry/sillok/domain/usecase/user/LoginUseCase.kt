@@ -48,8 +48,11 @@ class LoginUseCase @Inject constructor(
                                 "email" to email,
                                 "createdAt" to System.currentTimeMillis(),
                                 "hasNewMeeting" to false, // meeting이 추가되었으면 홈 새로고침
+                                "newMeetingId" to -1L,
+                                "hasNewTeam" to false,
+                                "newTeamId" to -1L,
                                 "meetingStarted" to false, // meeting 시작되면 바로 회의 중 화면으로 이동
-                                "startedMeetingId" to 0L // 시작된 회의 ID
+                                "startedMeetingId" to -1L // 시작된 회의 ID
                             )
                             db.collection("users").document(uid).set(data)
                         }

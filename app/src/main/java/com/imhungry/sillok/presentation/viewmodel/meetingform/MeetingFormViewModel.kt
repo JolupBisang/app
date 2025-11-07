@@ -460,17 +460,11 @@ class MeetingFormViewModel @Inject constructor(
                             try {
                                 val db = FirebaseFirestore.getInstance()
                                 val hostEmail = currentUserEmail
-                                val scheduledEndTime = calcEndTimeIsoLocal(scheduledStartTime, targetTime)
                                 val data = hashMapOf(
                                     "meetingId" to meetingId,
                                     "title" to s.title,
-                                    "scheduledStartTime" to scheduledStartTime,
-                                    "targetTime" to targetTime,
-                                    "scheduledEndTime" to scheduledEndTime,
                                     "participants" to emails,
                                     "hostEmail" to hostEmail,
-                                    "meetingStatus" to MeetingStatus.WAITING.name,
-                                    "updatedAt" to System.currentTimeMillis(),
                                     "startMillis" to null,
                                     "endMillis" to null
                                 )
@@ -646,17 +640,11 @@ class MeetingFormViewModel @Inject constructor(
                     val db = FirebaseFirestore.getInstance()
                     val hostEmail = currentUserEmail
                     val emails = s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }
-                    val scheduledEndTime = calcEndTimeIsoLocal(scheduledStartTime, targetTime)
                     db.collection("meetings").document(meetingId.toString())
                         .update(
                             mapOf(
                                 "title" to s.title,
-                                "scheduledStartTime" to scheduledStartTime,
-                                "targetTime" to targetTime,
-                                "scheduledEndTime" to scheduledEndTime,
-                                "participants" to emails,
-                                "hostEmail" to hostEmail,
-                                "updatedAt" to System.currentTimeMillis()
+                                "participants" to emails
                             )
                         )
                         .await()
