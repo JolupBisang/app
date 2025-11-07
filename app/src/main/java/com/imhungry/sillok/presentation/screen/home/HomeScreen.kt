@@ -9,6 +9,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -41,12 +43,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.state.home.MeetingUi
 import com.imhungry.sillok.presentation.viewmodel.home.HomeViewModel
-import com.imhungry.sillok.ui.components.CustomDrawer
 import com.imhungry.sillok.ui.components.ExitDialog
 import com.imhungry.sillok.ui.components.HomeBasicBox
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.components.SillokDialog
-import com.imhungry.sillok.ui.components.rememberDrawerState
 import com.imhungry.sillok.ui.theme.gradientBrush2
 import com.imhungry.sillok.ui.theme.gradientBrush3
 import com.imhungry.sillok.ui.theme.primaryBackground
@@ -54,6 +54,19 @@ import com.imhungry.sillok.ui.theme.primaryTextColor
 import com.imhungry.sillok.ui.theme.sideBar
 import com.imhungry.sillok.ui.components.SillokTextButton
 import com.imhungry.sillok.ui.theme.tertiary
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.rememberDrawerState as rememberMaterialDrawerState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.SoftwareKeyboardController
+import androidx.compose.ui.unit.Dp
+import com.imhungry.sillok.presentation.state.home.HomeState
+import com.imhungry.sillok.ui.theme.green300
+import com.imhungry.sillok.ui.theme.lightMeetingOutline
+import com.imhungry.sillok.ui.theme.meetingOutline
+import kotlinx.coroutines.launch
 
 private const val TAG = "HomeScreen"
 
@@ -76,7 +89,8 @@ fun HomeScreen(
     var isSearchFocused by remember { mutableStateOf(false) }
     
     val notificationState = rememberNotificationState()
-    val drawerState = rememberDrawerState()
+    val materialDrawerState = rememberMaterialDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
     val navigationHandlers = rememberNavigationHandlers(
         onNavigateToCreateMeeting = onNavigateToCreateMeeting,
@@ -107,36 +121,37 @@ fun HomeScreen(
     HandleBackPress(
         showExitDialog = homeState.showExitDialog,
         searchText = homeState.searchText,
-        isDrawerOpen = drawerState.isOpen,
+        isDrawerOpen = materialDrawerState.currentValue == DrawerValue.Open,
         onExitDialogDismiss = { viewModel.dismissExitDialog() },
         onSearchClose = {
             clearSearchFocus(focusManager, keyboardController) { isSearchFocused = false }
             viewModel.onSearchTextChange("")
         },
-        onDrawerClose = { drawerState.close() },
+        onDrawerClose = { 
+            scope.launch { materialDrawerState.close() }
+        },
         onExitDialogShow = { viewModel.showExitDialog() }
     )
-
-    CustomDrawer(
-        drawerState = drawerState,
-        drawerWidth = 280.dp,
-        edgeThreshold = 50.dp,
-        swipeThreshold = 0.1f,
+    
+    ModalNavigationDrawer(
+        drawerState = materialDrawerState,
         drawerContent = {
-            DrawerContent(
+            Sidebar(
                 userName = homeState.userName,
                 profileImage = homeState.profileImage,
                 onNewMeeting = {
-                    drawerState.close()
+                    scope.launch { materialDrawerState.close() }
                     onNavigateToCreateMeeting()
                 },
                 onTeamManagement = {
-                    drawerState.close()
+                    scope.launch { materialDrawerState.close() }
                     onNavigateToTeamList()
                 },
-                onFeedbackHistory = { drawerState.close() },
+                onFeedbackHistory = { 
+                    scope.launch { materialDrawerState.close() }
+                },
                 onMeetingFolder = {
-                    drawerState.close()
+                    scope.launch { materialDrawerState.close() }
                     onNavigateToMeetingMinutesFolder()
                 }
             )
@@ -145,6 +160,7 @@ fun HomeScreen(
         HomeContent(
             homeState = homeState,
             notificationState = notificationState,
+            viewModel = viewModel,
             focusRequester = focusRequester,
             onSearchFocusChange = { isSearchFocused = it },
             onSearchTextChange = { viewModel.onSearchTextChange(it) },
@@ -164,7 +180,9 @@ fun HomeScreen(
             onCreateMeeting = {
                 onNavigateToCreateMeeting()
             },
-            onMenuClick = { drawerState.open() },
+            onMenuClick = { 
+                scope.launch { materialDrawerState.open() }
+            },
             onNotificationClick = onNavigateToNotificationHistory,
             onScreenClick = {
                 if (isSearchFocused) {
@@ -179,17 +197,13 @@ fun HomeScreen(
 private fun rememberNotificationState() = remember {
     NotificationState(
         showOngoingMeeting = mutableStateOf(true),
-        ongoingIndex = mutableStateOf(0),
-        showScheduledMeeting = mutableStateOf(true),
-        scheduledIndex = mutableStateOf(0)
+        showScheduledMeeting = mutableStateOf(true)
     )
 }
 
 private data class NotificationState(
     val showOngoingMeeting: MutableState<Boolean>,
-    val ongoingIndex: MutableState<Int>,
-    val showScheduledMeeting: MutableState<Boolean>,
-    val scheduledIndex: MutableState<Int>
+    val showScheduledMeeting: MutableState<Boolean>
 )
 
 @Composable
@@ -276,8 +290,8 @@ private fun HandleBackPress(
 }
 
 private fun clearSearchFocus(
-    focusManager: androidx.compose.ui.focus.FocusManager,
-    keyboardController: androidx.compose.ui.platform.SoftwareKeyboardController?,
+    focusManager: FocusManager,
+    keyboardController: SoftwareKeyboardController?,
     onFocusCleared: () -> Unit
 ) {
     focusManager.clearFocus()
@@ -313,8 +327,9 @@ private fun DrawerContent(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun HomeContent(
-    homeState: com.imhungry.sillok.presentation.state.home.HomeState,
+    homeState: HomeState,
     notificationState: NotificationState,
+    viewModel: HomeViewModel,
     focusRequester: FocusRequester,
     onSearchFocusChange: (Boolean) -> Unit,
     onSearchTextChange: (String) -> Unit,
@@ -356,6 +371,7 @@ private fun HomeContent(
                 ongoingList = ongoingList,
                 upcomingList = upcomingList,
                 notificationState = notificationState,
+                viewModel = viewModel,
                 onMenuClick = onMenuClick,
                 onNotificationClick = onNotificationClick,
                 onJoinOngoingMeeting = onJoinOngoingMeeting,
@@ -374,7 +390,6 @@ private fun HomeContent(
             BottomButtons(
                 ongoingList = ongoingList,
                 showOngoingMeeting = notificationState.showOngoingMeeting.value,
-                ongoingIndex = notificationState.ongoingIndex.value,
                 onJoinOngoingMeeting = onJoinOngoingMeeting,
                 onCreateMeeting = onCreateMeeting
             )
@@ -403,6 +418,7 @@ private fun TopContent(
     ongoingList: List<MeetingUi>,
     upcomingList: List<MeetingUi>,
     notificationState: NotificationState,
+    viewModel: HomeViewModel,
     onMenuClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onJoinOngoingMeeting: (MeetingUi) -> Unit,
@@ -427,6 +443,7 @@ private fun TopContent(
             ongoingList = ongoingList,
             upcomingList = upcomingList,
             notificationState = notificationState,
+            viewModel = viewModel,
             onJoinOngoingMeeting = onJoinOngoingMeeting,
             onJoinScheduledMeeting = onJoinScheduledMeeting
         )
@@ -492,49 +509,43 @@ private fun NotificationArea(
     ongoingList: List<MeetingUi>,
     upcomingList: List<MeetingUi>,
     notificationState: NotificationState,
+    viewModel: HomeViewModel,
     onJoinOngoingMeeting: (MeetingUi) -> Unit,
     onJoinScheduledMeeting: (MeetingUi) -> Unit
 ) {
-    when {
-        ongoingList.isNotEmpty() && notificationState.showOngoingMeeting.value -> {
-            val current = ongoingList.getOrNull(notificationState.ongoingIndex.value)
-            current?.let { meeting ->
-                key(meeting.id) {
-                    OngoingMeetingNotification(
-                        meeting = meeting,
-                        onJoinMeeting = { onJoinOngoingMeeting(meeting) },
-                        onDeclineMeeting = {},
-                        onDismiss = {
-                            if (notificationState.ongoingIndex.value < ongoingList.lastIndex) {
-                                notificationState.ongoingIndex.value += 1
-                            } else {
-                                notificationState.showOngoingMeeting.value = false
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
+    // dismissed가 false인 회의만 필터링
+    val availableOngoing = ongoingList.filter { !it.dismissed }
+    val availableUpcoming = upcomingList.filter { !it.dismissed }
+    
+    // 리스트가 비어있으면 알림 숨기기
+    LaunchedEffect(availableOngoing.isEmpty()) {
+        if (availableOngoing.isEmpty() && notificationState.showOngoingMeeting.value) {
+            notificationState.showOngoingMeeting.value = false
         }
-        upcomingList.isNotEmpty() && notificationState.showScheduledMeeting.value -> {
-            val current = upcomingList.getOrNull(notificationState.scheduledIndex.value)
-            current?.let { meeting ->
-                key(meeting.id) {
-                    ScheduledMeetingNotification(
-                        meeting = meeting,
-                        onJoinMeeting = { onJoinScheduledMeeting(meeting) },
-                        onDeclineMeeting = {},
-                        onDismiss = {
-                            if (notificationState.scheduledIndex.value < upcomingList.lastIndex) {
-                                notificationState.scheduledIndex.value += 1
-                            } else {
-                                notificationState.showScheduledMeeting.value = false
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
+    }
+    
+    LaunchedEffect(availableUpcoming.isEmpty()) {
+        if (availableUpcoming.isEmpty() && notificationState.showScheduledMeeting.value) {
+            notificationState.showScheduledMeeting.value = false
+        }
+    }
+    
+    when {
+        availableOngoing.isNotEmpty() && notificationState.showOngoingMeeting.value -> {
+            OngoingMeetingNotification(
+                meetings = ongoingList,
+                onJoinMeeting = { meeting -> onJoinOngoingMeeting(meeting) },
+                onDismiss = { meeting -> viewModel.dismissOngoingMeeting(meeting.id) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        availableUpcoming.isNotEmpty() && notificationState.showScheduledMeeting.value -> {
+            ScheduledMeetingNotification(
+                meetings = upcomingList,
+                onJoinMeeting = { meeting -> onJoinScheduledMeeting(meeting) },
+                onDismiss = { meeting -> viewModel.dismissScheduledMeeting(meeting.id) },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -566,7 +577,6 @@ private fun MeetingListArea(
     onMonthChanged: (Int, Int) -> Unit
 ) {
     if (searchText.isNotBlank()) {
-        Spacer(modifier = Modifier.height(24.dp))
         SearchResultList(
             results = searchResults,
             isLoading = isSearching,
@@ -588,7 +598,6 @@ private fun MeetingListArea(
 private fun BottomButtons(
     ongoingList: List<MeetingUi>,
     showOngoingMeeting: Boolean,
-    ongoingIndex: Int,
     onJoinOngoingMeeting: (MeetingUi) -> Unit,
     onCreateMeeting: () -> Unit
 ) {
@@ -596,7 +605,8 @@ private fun BottomButtons(
         Spacer(modifier = Modifier.height(16.dp))
 
         if (ongoingList.isNotEmpty() && showOngoingMeeting) {
-            val current = ongoingList.getOrNull(ongoingIndex)
+            // 항상 첫 번째 요소 사용
+            val current = ongoingList.firstOrNull()
             current?.let { meeting ->
                 SillokButton(
                     text = "현재 진행 중인 회의 참여하기",
@@ -626,14 +636,64 @@ private fun SearchResultList(
     if (isLoading || results.isEmpty()) return
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 8.dp)
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         items(results) { meeting ->
-            MeetingItemUi(meeting = meeting) { onItemClick(meeting) }
+            val backgroundColor: Color
+            val borderColor: Color
+            val borderWith: Dp
+            val titleColor: Color
+            val timeColor: Color
+
+            when (meeting.status) {
+                "IN_PROGRESS" -> {
+                    // 진행 중인 회의
+                    backgroundColor = Color.White
+                    borderColor = green300
+                    borderWith = 2.dp
+                    titleColor = primaryTextColor
+                    timeColor = primaryTextColor
+                }
+
+                "WAITING" -> {
+                    // 예정된 회의
+                    backgroundColor = Color.White
+                    borderColor = meetingOutline
+                    borderWith = 1.dp
+                    titleColor = primaryTextColor
+                    timeColor = tertiary
+                }
+
+                else -> {
+                    // 그 외 (COMPLETED 등)
+                    backgroundColor = Color.Transparent
+                    borderColor = lightMeetingOutline
+                    borderWith = 1.dp
+                    titleColor = tertiary
+                    timeColor = tertiary
+                }
+            }
+
+            MeetingListItem(
+                meeting = meeting,
+                onClick = { onItemClick(meeting) },
+                backgroundColor = backgroundColor,
+                borderColor = borderColor,
+                borderWith = borderWith,
+                titleColor = titleColor,
+                timeColor = timeColor
+            )
         }
     }
+//    LazyColumn(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .padding(start = 16.dp, end = 8.dp)
+//    ) {
+//        items(results) { meeting ->
+//            MeetingListItem(meeting = meeting) { onItemClick(meeting) }
+//        }
+//    }
 }
 
 @Composable

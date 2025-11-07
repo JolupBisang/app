@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.messaging.FirebaseMessaging
+import com.imhungry.sillok.data.local.DismissedMeetingStore
 import com.imhungry.sillok.data.local.NotificationHistoryStore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
@@ -35,6 +36,7 @@ class HomeViewModel @Inject constructor(
     private val getMeetingSummaryListUseCase: GetMeetingSummaryListUseCase,
     private val userStore: UserStore,
     private val notificationHistoryStore: NotificationHistoryStore,
+    private val dismissedMeetingStore: DismissedMeetingStore,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     
@@ -296,6 +298,36 @@ class HomeViewModel @Inject constructor(
     fun clearError() {
         _state.update { it.copy(error = null) }
     }
+    
+    fun dismissOngoingMeeting(meetingId: Long) {
+        // 상태를 먼저 업데이트하여 즉시 UI 반영
+        _state.update { current ->
+            current.copy(
+                ongoingMeetings = current.ongoingMeetings.map { 
+                    if (it.id == meetingId) it.copy(dismissed = true) else it 
+                }
+            )
+        }
+        // DataStore 저장은 백그라운드에서 처리
+        viewModelScope.launch {
+            dismissedMeetingStore.addDismissedOngoingMeeting(meetingId)
+        }
+    }
+    
+    fun dismissScheduledMeeting(meetingId: Long) {
+        // 상태를 먼저 업데이트하여 즉시 UI 반영
+        _state.update { current ->
+            current.copy(
+                upcomingMeetings = current.upcomingMeetings.map { 
+                    if (it.id == meetingId) it.copy(dismissed = true) else it 
+                }
+            )
+        }
+        // DataStore 저장은 백그라운드에서 처리
+        viewModelScope.launch {
+            dismissedMeetingStore.addDismissedScheduledMeeting(meetingId)
+        }
+    }
 
     fun onSearchTextChange(text: String) {
         _state.update { it.copy(searchText = text) }
@@ -344,7 +376,7 @@ class HomeViewModel @Inject constructor(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun handleSuccessResult(
+    private suspend fun handleSuccessResult(
         summaries: List<MeetingDetailSummary>,
         year: Int,
         month: Int,
@@ -354,7 +386,11 @@ class HomeViewModel @Inject constructor(
         
         logMeetingLoadResult(year, month, summaries.size, ongoing.size, upcoming.size)
         
-        val meetingUis = convertToMeetingUis(ongoing, upcoming, meetings)
+        // DataStore에서 dismiss 정보 가져오기
+        val dismissedOngoingIds = dismissedMeetingStore.getDismissedOngoingMeetingIds()
+        val dismissedScheduledIds = dismissedMeetingStore.getDismissedScheduledMeetingIds()
+        
+        val meetingUis = convertToMeetingUis(ongoing, upcoming, meetings, dismissedOngoingIds, dismissedScheduledIds)
         
         if (showNotification) {
             checkAndNotifyNewMeetings(meetingUis.upcoming)
@@ -374,12 +410,22 @@ class HomeViewModel @Inject constructor(
     private fun convertToMeetingUis(
         ongoing: List<MeetingDetailSummary>,
         upcoming: List<MeetingDetailSummary>,
-        meetings: List<MeetingDetailSummary>
+        meetings: List<MeetingDetailSummary>,
+        dismissedOngoingIds: Set<Long>,
+        dismissedScheduledIds: Set<Long>
     ): MeetingUis {
         return MeetingUis(
-            ongoing = ongoing.map { MeetingUi.from(it) },
-            upcoming = upcoming.map { MeetingUi.from(it) },
-            all = meetings.map { MeetingUi.from(it) }
+            ongoing = ongoing.map { 
+                MeetingUi.from(it).copy(dismissed = dismissedOngoingIds.contains(it.id))
+            },
+            upcoming = upcoming.map { 
+                MeetingUi.from(it).copy(dismissed = dismissedScheduledIds.contains(it.id))
+            },
+            all = meetings.map { 
+                val isDismissed = dismissedOngoingIds.contains(it.id) || 
+                                 dismissedScheduledIds.contains(it.id)
+                MeetingUi.from(it).copy(dismissed = isDismissed)
+            }
         )
     }
 
@@ -552,18 +598,21 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val meetings = createDummyMeetings()
             val ongoingSummaries = createDummyOngoingMeetings()
+            val searchMeetings = createDummySearchResults()
 
             val ongoingUi = ongoingSummaries.map { MeetingUi.from(it) }
             val upcomingUi = meetings.map { MeetingUi.from(it) }
+            val searchUi = searchMeetings.map { MeetingUi.from(it) }
 
             _state.update {
                 it.copy(
-                    userName = it.userName,
+                    userName = "조은경",
                     isLoading = false,
                     error = null,
                     meetings = upcomingUi,
                     ongoingMeetings = ongoingUi,
-                    upcomingMeetings = upcomingUi
+                    upcomingMeetings = upcomingUi,
+                    searchResults = searchUi
                 )
             }
         }
@@ -571,22 +620,43 @@ class HomeViewModel @Inject constructor(
 
     private fun createDummyMeetings(): List<MeetingDetailSummary> {
         return listOf(
-            MeetingDetailSummary(1001L, "프로덕트 킥오프 회의", "2025-11-01T10:00:00", 60, "WAITING"),
-            MeetingDetailSummary(1002L, "디자인 리뷰", "2025-11-027T15:30:00", 45, "COMPLETED"),
-            MeetingDetailSummary(1001L, "프로덕트 킥오프 회의", "2025-11-03T10:00:00", 60, "CANCELED"),
-            MeetingDetailSummary(1002L, "디자인 리뷰", "2025-11-04T15:30:00", 45, "IN_PROGRESS"),
-            MeetingDetailSummary(1001L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "IN_PROGRESS"),
-            MeetingDetailSummary(1002L, "디자인 리뷰", "2025-10-27T15:30:00", 45, "IN_PROGRESS"),
-            MeetingDetailSummary(1001L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "IN_PROGRESS"),
-            MeetingDetailSummary(1002L, "디자인 리뷰", "2025-10-27T15:30:00", 45, "WAITING"),
-            MeetingDetailSummary(1001L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "WAITING")
+            MeetingDetailSummary(2L, "프로덕트 킥오프 회의", "2025-11-01T10:00:00", 60, "WAITING"),
+            MeetingDetailSummary(3L, "디자인 리뷰", "2025-11-027T15:30:00", 45, "COMPLETED"),
+            MeetingDetailSummary(4L, "프로덕트 킥오프 회의", "2025-11-03T10:00:00", 60, "CANCELED"),
+            MeetingDetailSummary(5L, "디자인 리뷰", "2025-11-04T15:30:00", 45, "IN_PROGRESS"),
+            MeetingDetailSummary(6L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "IN_PROGRESS"),
+            MeetingDetailSummary(2L, "프로덕트 킥오프 회의", "2025-11-01T10:00:00", 60, "WAITING"),
+            MeetingDetailSummary(3L, "디자인 리뷰", "2025-11-027T15:30:00", 45, "COMPLETED"),
+            MeetingDetailSummary(4L, "프로덕트 킥오프 회의", "2025-11-03T10:00:00", 60, "CANCELED"),
+            MeetingDetailSummary(5L, "디자인 리뷰", "2025-11-04T15:30:00", 45, "IN_PROGRESS"),
+            MeetingDetailSummary(6L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "IN_PROGRESS"),
+            MeetingDetailSummary(7L, "디자인 리뷰", "2025-10-27T15:30:00", 45, "IN_PROGRESS"),
+            MeetingDetailSummary(8L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "IN_PROGRESS"),
+            MeetingDetailSummary(9L, "디자인 리뷰", "2025-10-27T15:30:00", 45, "WAITING"),
+            MeetingDetailSummary(10L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "WAITING")
         )
     }
 
     private fun createDummyOngoingMeetings(): List<MeetingDetailSummary> {
         return listOf(
-            MeetingDetailSummary(1101L, "기술 공유 세션", "2025-10-22T13:00:00", 50, "IN_PROGRESS"),
-            MeetingDetailSummary(1102L, "기술 공유 세션2", "2025-10-22T13:00:00", 50, "IN_PROGRESS")
+            MeetingDetailSummary(11L, "기술 공유 세션", "2025-10-22T13:00:00", 50, "IN_PROGRESS"),
+            MeetingDetailSummary(12L, "기술 공유 세션2", "2025-10-22T13:00:00", 50, "IN_PROGRESS")
+        )
+    }
+
+    private fun createDummySearchResults(): List<MeetingDetailSummary> {
+        return listOf(
+            MeetingDetailSummary(2L, "프로덕트 킥오프 회의", "2025-11-01T10:00:00", 60, "WAITING"),
+            MeetingDetailSummary(3L, "디자인 리뷰", "2025-11-027T15:30:00", 45, "COMPLETED"),
+            MeetingDetailSummary(2L, "프로덕트 킥오프 회의", "2025-11-01T10:00:00", 60, "WAITING"),
+            MeetingDetailSummary(3L, "디자인 리뷰", "2025-11-027T15:30:00", 45, "COMPLETED"),
+            MeetingDetailSummary(4L, "프로덕트 킥오프 회의", "2025-11-03T10:00:00", 60, "CANCELED"),
+            MeetingDetailSummary(5L, "디자인 리뷰", "2025-11-04T15:30:00", 45, "IN_PROGRESS"),
+            MeetingDetailSummary(6L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "IN_PROGRESS"),
+            MeetingDetailSummary(7L, "디자인 리뷰", "2025-10-27T15:30:00", 45, "IN_PROGRESS"),
+            MeetingDetailSummary(8L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "IN_PROGRESS"),
+            MeetingDetailSummary(9L, "디자인 리뷰", "2025-10-27T15:30:00", 45, "WAITING"),
+            MeetingDetailSummary(10L, "프로덕트 킥오프 회의", "2025-10-25T10:00:00", 60, "WAITING")
         )
     }
 }

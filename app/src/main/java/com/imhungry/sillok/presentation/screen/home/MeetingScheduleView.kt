@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -19,9 +18,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material.SnackbarDefaults.backgroundColor
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,6 +46,7 @@ import com.imhungry.sillok.ui.theme.border
 import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.lightMeetingOutline
 import com.imhungry.sillok.ui.theme.meetingOutline
+import com.imhungry.sillok.ui.theme.primaryBackground
 import com.imhungry.sillok.ui.theme.primaryButton
 import com.imhungry.sillok.ui.theme.primarySurface
 import com.imhungry.sillok.ui.theme.primaryTextColor
@@ -86,7 +88,7 @@ fun MeetingScheduleView(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             SelectedDateMeetingList(
                 selectedDate = selectedDate,
@@ -162,10 +164,28 @@ private fun SelectedDateMeetingList(
             val meetingsOnSelectedDate = meetings.filter { meeting ->
                 meeting.scheduledStartTime.startsWith(selectedDateString)
             }
+            
+            // WAITING이나 IN_PROGRESS 상태인 회의가 있는지 확인
+            val hasActiveMeetings = meetingsOnSelectedDate.any { meeting ->
+                meeting.status == "WAITING" || meeting.status == "IN_PROGRESS"
+            }
 
-            if (meetingsOnSelectedDate.isNotEmpty()) {
+            if (meetingsOnSelectedDate.isEmpty()) {
+                // 회의가 아예 없을 때
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "예정된 회의가 없습니다!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+            } else {
+                // 회의가 있을 때
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     items(meetingsOnSelectedDate) { meeting ->
                         val backgroundColor: Color
@@ -173,7 +193,7 @@ private fun SelectedDateMeetingList(
                         val borderWith: Dp
                         val titleColor: Color
                         val timeColor: Color
-                        
+
                         when (meeting.status) {
                             "IN_PROGRESS" -> {
                                 // 진행 중인 회의
@@ -200,7 +220,7 @@ private fun SelectedDateMeetingList(
                                 timeColor = tertiary
                             }
                         }
-                        
+
                         MeetingListItem(
                             meeting = meeting,
                             onClick = { onMeetingItemClick(meeting) },
@@ -211,17 +231,25 @@ private fun SelectedDateMeetingList(
                             timeColor = timeColor
                         )
                     }
-                }
-            } else {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "예정된 회의가 없습니다!",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Normal
-                    )
+
+//                    // WAITING이나 IN_PROGRESS 상태인 회의가 없을 때 메시지 표시
+//                    if (!hasActiveMeetings) {
+//                        item {
+//                            Box(
+//                                modifier = Modifier
+//                                    .fillMaxSize()
+//                                    .background(Color.Yellow)
+//                                    .padding(vertical = 16.dp),
+//                                contentAlignment = Alignment.Center
+//                            ) {
+//                                Text(
+//                                    text = "예정된 회의가 없습니다!",
+//                                    style = MaterialTheme.typography.bodyMedium,
+//                                    fontWeight = FontWeight.Normal
+//                                )
+//                            }
+//                        }
+//                    }
                 }
             }
         }
@@ -230,7 +258,7 @@ private fun SelectedDateMeetingList(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-private fun MeetingListItem(
+fun MeetingListItem(
     meeting: MeetingUi,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -240,30 +268,41 @@ private fun MeetingListItem(
     titleColor: Color = primaryTextColor,
     timeColor: Color = primaryTextColor,
 ) {
-    Button(
-        onClick = onClick,
+    Card(
         modifier = modifier
-            .fillMaxWidth()
-            .defaultMinSize(minHeight = 42.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = backgroundColor),
+            .fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
         border = BorderStroke(borderWith, borderColor),
-        shape = MaterialTheme.shapes.small,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
+        shape = MaterialTheme.shapes.small
     ) {
-        Text(
-            text = meeting.title,
-            style = MaterialTheme.typography.bodyMedium,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = titleColor
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Text(
-            text = meeting.timeRange,
-            style = MaterialTheme.typography.bodySmall,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Light,
-            color = timeColor
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = meeting.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = titleColor
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = meeting.timeRange,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Light,
+                    color = timeColor
+                )
+            }
+        }
     }
 }

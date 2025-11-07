@@ -13,7 +13,8 @@ data class MeetingUi(
     val status: String,
     val scheduledStartTime: String,
     val formattedTime: String,
-    val timeRange: String
+    val timeRange: String,
+    val dismissed: Boolean = false
 ) {
     companion object {
         fun from(meeting: MeetingDetailSummary): MeetingUi {
@@ -31,7 +32,7 @@ data class MeetingUi(
                     title = meeting.title,
                     status = meeting.status,
                     scheduledStartTime = meeting.scheduledStartTime,
-                    formattedTime = "$startDate    $startTimeFormatted ~ $endTimeFormatted",
+                    formattedTime = "$startDate   $startTimeFormatted~$endTimeFormatted",
                     timeRange = "$startTimeFormatted - $endTimeFormatted"
                 )
             } catch (e: Exception) {

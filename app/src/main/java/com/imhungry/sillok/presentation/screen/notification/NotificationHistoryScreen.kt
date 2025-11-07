@@ -56,7 +56,7 @@ fun NotificationHistoryScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             ScreenHeader(
-                title = "알림 기록",
+                title = "알림",
                 onBackClick = onBackClick
             )
 
@@ -71,9 +71,10 @@ fun NotificationHistoryScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "알림 기록이 없습니다",
-                            style = MaterialTheme.typography.bodyLarge,
+                            text = "알림 기록이 없습니다.",
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Normal,
+                            fontSize = 14.sp,
                             color = tertiary
                         )
                     }

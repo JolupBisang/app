@@ -222,6 +222,25 @@ fun HeaderSection(
                                 )
                             }
                         }
+                        Box(
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .height(32.dp),
+                            contentAlignment = Alignment.TopEnd
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.home),
+                                contentDescription = "홈으로",
+                                modifier = Modifier
+                                    .size(26.dp)
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                       onBackClick()
+                                    }
+                            )
+                        }
                     }
 
                     // 아젠다

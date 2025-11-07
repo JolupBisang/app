@@ -38,11 +38,7 @@ import com.imhungry.sillok.ui.components.SillokTextButton
 import com.imhungry.sillok.ui.theme.cancledMeeting
 import com.imhungry.sillok.ui.theme.completedMeeting
 import com.imhungry.sillok.ui.theme.gray300
-import com.imhungry.sillok.ui.theme.green200
-import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.inProgressMeeting
-import com.imhungry.sillok.ui.theme.lightSurface
-import com.imhungry.sillok.ui.theme.primarySurface
 import com.imhungry.sillok.ui.theme.primaryTextColor
 import com.imhungry.sillok.ui.theme.selectedDate
 import com.imhungry.sillok.ui.theme.tertiary
@@ -79,6 +75,11 @@ fun CalendarView(
     LaunchedEffect(currentMonth) {
         if (isInitialized) {
             onMonthChanged(currentMonth)
+            // 달이 변경되었을 때 해당 달에 오늘 날짜가 있으면 자동 선택
+            val today = LocalDate.now()
+            if (currentMonth.year == today.year && currentMonth.month == today.month) {
+                onDateSelected(today)
+            }
         } else {
             isInitialized = true
         }
@@ -108,7 +109,7 @@ fun CalendarView(
 
             CalendarWeekHeader()
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             CalendarDateGrid(
                 currentMonth = currentMonth,
@@ -134,7 +135,7 @@ private fun CalendarNavigationBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 56.dp, end = 56.dp, top = 8.dp),
+                .padding(start = 64.dp, end = 64.dp, top = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -187,7 +188,7 @@ private fun CalendarWeekHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = 10.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         val weekDays = listOf("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT")
@@ -238,8 +239,7 @@ private fun CalendarDateGrid(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = 8.dp)
     ) {
         rows.forEach { weekDays ->
             Row(
@@ -248,7 +248,7 @@ private fun CalendarDateGrid(
             ) {
                 weekDays.forEach { date ->
                     if (date != null) {
-                        val meetingStatus = getMeetingStatusOnDate(date, meetings)
+                        val meetingCounts = getMeetingCountsByStatus(date, meetings)
                         val isCurrentMonth = date.month == currentMonth.month
                         val isToday = date == LocalDate.now()
 
@@ -257,7 +257,7 @@ private fun CalendarDateGrid(
 							isCurrentMonth = isCurrentMonth,
 							isSelected = selectedDate != null && date == selectedDate,
 							isToday = isToday,
-							meetingStatus = meetingStatus,
+							meetingCounts = meetingCounts,
 							onClick = {
                                 if (isCurrentMonth) {
                                     onDateSelected(date)
@@ -272,10 +272,10 @@ private fun CalendarDateGrid(
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-private fun getMeetingStatusOnDate(
+private fun getMeetingCountsByStatus(
     date: LocalDate,
     meetings: List<MeetingUi>
-): String? {
+): Map<String, Int> {
     val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     val dateString = date.format(dateFormatter)
     
@@ -284,16 +284,16 @@ private fun getMeetingStatusOnDate(
     }
     
     if (meetingsOnDate.isEmpty()) {
-        return null
+        return emptyMap()
     }
     
-    // 우선순위: IN_PROGRESS > WAITING > COMPLETED > 그 외
-    return when {
-        meetingsOnDate.any { it.status == "IN_PROGRESS" } -> "IN_PROGRESS"
-        meetingsOnDate.any { it.status == "WAITING" } -> "WAITING"
-        meetingsOnDate.any { it.status == "COMPLETED" } -> "COMPLETED"
-        else -> "CANCELED"
+    val counts = mutableMapOf<String, Int>()
+    meetingsOnDate.forEach { meeting ->
+        val status = meeting.status ?: "CANCELED"
+        counts[status] = counts.getOrDefault(status, 0) + 1
     }
+    
+    return counts
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -303,19 +303,10 @@ private fun CalendarDateItem(
     isCurrentMonth: Boolean,
     isSelected: Boolean,
     isToday: Boolean,
-    meetingStatus: String?,
+    meetingCounts: Map<String, Int>,
     onClick: () -> Unit
 ) {
     val textColor = when {
-        meetingStatus != null && isCurrentMonth -> {
-            when (meetingStatus) {
-                "IN_PROGRESS" -> inProgressMeeting
-                "WAITING" -> waitingMeeting
-                "COMPLETED" -> completedMeeting
-                "CANCELED" -> cancledMeeting
-                else -> primarySurface
-            }
-        }
         isCurrentMonth -> primaryTextColor
         else -> Color.Transparent
     }
@@ -327,24 +318,73 @@ private fun CalendarDateItem(
     }
 
     Box(
-        modifier = Modifier
-            .size(32.dp)
-            .clip(CircleShape)
-            .background(backgroundColor)
-            .then(
-                if (isCurrentMonth) {
-                    Modifier.clickable { onClick() }
-                } else {
-                    Modifier
-                }
-            ),
-        contentAlignment = Alignment.Center
+        modifier = Modifier.size(40.dp),
+        contentAlignment = Alignment.TopCenter
     ) {
-        Text(
-            text = date.dayOfMonth.toString(),
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
-            color = textColor
-        )
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(backgroundColor)
+                .then(
+                    if (isCurrentMonth) {
+                        Modifier.clickable { onClick() }
+                    } else {
+                        Modifier
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = date.dayOfMonth.toString(),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = textColor
+            )
+        }
+        if (isCurrentMonth && meetingCounts.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 26.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    // 취소된 회의
+                    repeat(meetingCounts.getOrDefault("CANCELED", 0)) {
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(cancledMeeting, shape = CircleShape)
+                        )
+                    }
+                    // 완료된 회의
+                    repeat(meetingCounts.getOrDefault("COMPLETED", 0)) {
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(completedMeeting, shape = CircleShape)
+                        )
+                    }
+                    // 대기 중인 회의
+                    repeat(meetingCounts.getOrDefault("WAITING", 0)) {
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(waitingMeeting, shape = CircleShape)
+                        )
+                    }
+                    // 진행 중인 회의
+                    repeat(meetingCounts.getOrDefault("IN_PROGRESS", 0)) {
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .background(inProgressMeeting, shape = CircleShape)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
