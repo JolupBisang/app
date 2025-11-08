@@ -7,7 +7,7 @@ import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.user.User
 import com.imhungry.sillok.domain.repository.user.UserRepository
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class LoginUseCase @Inject constructor(
@@ -31,33 +31,40 @@ class LoginUseCase @Inject constructor(
                     // 3. 사용자 정보 저장
                     userStore.saveUser(userResult.data)
 
-                    // 4. 파이어베이스에 사용자 이메일 저장 (이미 없는 경우에만)
+                    // 4. 파이어베이스에 사용자 정보 업데이트 (항상 업데이트)
                     try {
                         val db = FirebaseFirestore.getInstance()
                         val email = userResult.data.email
                         val uid = userResult.data.id.toString()
-                        // 이메일 기준으로 존재 여부 확인
-                        val existing = db.collection("users")
-                            .whereEqualTo("email", email)
-                            .limit(1)
-                            .get()
-                            .await()
-
-                        if (existing.isEmpty) {
-                            val data = hashMapOf(
-                                "email" to email,
-                                "createdAt" to System.currentTimeMillis(),
-                                "hasNewMeeting" to false, // meeting이 추가되었으면 홈 새로고침
-                                "newMeetingId" to -1L,
-                                "hasNewTeam" to false,
-                                "newTeamId" to -1L,
-                                "meetingStarted" to false, // meeting 시작되면 바로 회의 중 화면으로 이동
-                                "startedMeetingId" to -1L // 시작된 회의 ID
-                            )
-                            db.collection("users").document(uid).set(data)
+                        
+                        // DataStore에서 FCM 토큰 가져오기
+                        val fcmToken = try {
+                            tokenStore.fcmToken.first()
+                        } catch (e: Exception) {
+                            Log.w(TAG, "DataStore에서 FCM 토큰 가져오기 실패: ${e.message}")
+                            null
                         }
+                        
+                        // 항상 업데이트 (기존 문서가 있으면 업데이트, 없으면 생성)
+                        val updateData = hashMapOf<String, Any>(
+                            "email" to email,
+                            "hasNewMeeting" to false, // meeting이 추가되었으면 홈 새로고침
+                            "newMeetingId" to -1L,
+                            "hasNewTeam" to false,
+                            "newTeamId" to -1L,
+                            "meetingStarted" to false, // meeting 시작되면 바로 회의 중 화면으로 이동
+                            "startedMeetingId" to -1L // 시작된 회의 ID
+                        )
+                        
+                        // FCM 토큰이 있으면 추가
+                        fcmToken?.let {
+                            updateData["fcmToken"] = it
+                        }
+                        
+                        db.collection("users").document(uid).set(updateData)
+                        Log.d(TAG, "파이어베이스 사용자 정보 업데이트 완료: userId=$uid, fcmToken=${fcmToken != null}")
                     } catch (e: Exception) {
-                        Log.e(TAG, "파이어베이스 저장 중 예외: ${e.message}")
+                        Log.e(TAG, "파이어베이스 저장 중 예외: ${e.message}", e)
                     }
                     ApiResult.Success(userResult.data)
                 }

@@ -518,7 +518,9 @@ class MeetingFormViewModel @Inject constructor(
                                 val data = hashMapOf(
                                     "meetingId" to meetingId,
                                     "title" to s.title,
-                                    "participants" to emails
+                                    "participants" to emails,
+                                    "startMillis" to null,
+                                    "endMillis" to null
                                 )
                                 db.collection("meetings").document(meetingId.toString())
                                     .set(data)
