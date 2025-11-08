@@ -214,29 +214,43 @@ class MeetingInProgressViewModel @Inject constructor(
             try {
                 val meetingId = state.value.meetingId
                 val currentTimeMillis = System.currentTimeMillis()
-                Log.d(TAG, "[6-1] 회의 시작 시간 설정: meetingId=$meetingId, startMillis=$currentTimeMillis")
+                Log.d(TAG, "[6-1] 회의 시작 시간 확인: meetingId=$meetingId")
                 
-                // Firebase에 startMillis 업데이트
+                // Firebase에서 기존 startMillis 조회
                 try {
-                    Log.d(TAG, "[6-2] Firebase startMillis 업데이트 시작")
-                    FirebaseFirestore.getInstance()
+                    Log.d(TAG, "[6-2] Firebase startMillis 조회 시작")
+                    val snapshot = FirebaseFirestore.getInstance()
                         .collection("meetings")
                         .document(meetingId.toString())
-                        .update("startMillis", currentTimeMillis)
+                        .get()
                         .await()
-                    Log.d(TAG, "[6-2 완료] Firebase startMillis 업데이트 성공: $currentTimeMillis")
+                    val existingStartMillis = snapshot.getLong("startMillis")
+                    
+                    val startMillisToUse = if (existingStartMillis != null) {
+                        Log.d(TAG, "[6-2 완료] Firebase에 이미 startMillis가 존재: $existingStartMillis (업데이트하지 않음)")
+                        existingStartMillis
+                    } else {
+                        Log.d(TAG, "[6-2-1] Firebase에 startMillis가 없음, 새로 저장: $currentTimeMillis")
+                        FirebaseFirestore.getInstance()
+                            .collection("meetings")
+                            .document(meetingId.toString())
+                            .update("startMillis", currentTimeMillis)
+                            .await()
+                        Log.d(TAG, "[6-2 완료] Firebase startMillis 저장 성공: $currentTimeMillis")
+                        currentTimeMillis
+                    }
                     
                     // state 업데이트
                     withContext(Dispatchers.Main) {
                         Log.d(TAG, "[6-3] State 업데이트 시작")
-                        _state.update { it.copy(startTime = currentTimeMillis) }
+                        _state.update { it.copy(startTime = startMillisToUse) }
                         
                         // 휴식 시간 피드백 스케줄링
                         val currentState = state.value
                         if (currentState.targetTime > 0 && currentState.restInterval > 0 && currentState.restDuration > 0) {
                             Log.d(TAG, "[6-4] 휴식 시간 피드백 스케줄링 시작: targetTime=${currentState.targetTime}, restInterval=${currentState.restInterval}, restDuration=${currentState.restDuration}")
                             scheduleRestBreakFeedbacks(
-                                currentTimeMillis,
+                                startMillisToUse,
                                 currentState.targetTime,
                                 currentState.restInterval,
                                 currentState.restDuration
@@ -249,7 +263,7 @@ class MeetingInProgressViewModel @Inject constructor(
                         // 회의 종료 10분 전 피드백 스케줄링
                         if (currentState.targetTime > 0) {
                             Log.d(TAG, "[6-5] 회의 종료 피드백 스케줄링 시작: targetTime=${currentState.targetTime}")
-                            scheduleMeetingEndFeedback(currentTimeMillis, currentState.targetTime)
+                            scheduleMeetingEndFeedback(startMillisToUse, currentState.targetTime)
                             Log.d(TAG, "[6-5 완료] 회의 종료 피드백 스케줄링 완료")
                         } else {
                             Log.d(TAG, "[6-5 스킵] 목표 시간이 없어 스케줄링을 건너뜁니다")
@@ -260,7 +274,7 @@ class MeetingInProgressViewModel @Inject constructor(
                     Log.d(TAG, "[6단계 완료] 연결 확립 처리 완료")
                     Log.d(TAG, "========================================")
                 } catch (e: Exception) {
-                    Log.e(TAG, "[6-2 실패] Firebase startMillis 업데이트 실패: ${e.message}", e)
+                    Log.e(TAG, "[6-2 실패] Firebase startMillis 조회/저장 실패: ${e.message}", e)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "[6단계 실패] 연결 확립 처리 중 오류: ${e.message}", e)
@@ -636,7 +650,7 @@ class MeetingInProgressViewModel @Inject constructor(
 
     /**
      * COMPLETION_SCHEDULED 수신 시 처리
-     * Firebase에 endMillis와 generatingMeetingNoteId 저장
+     * Firebase에 generatingMeetingNoteId 저장
      * (녹음과 SSE 연결은 Service에서 이미 해제됨)
      */
     @RequiresApi(Build.VERSION_CODES.O)
@@ -648,21 +662,15 @@ class MeetingInProgressViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val meetingId = state.value.meetingId
-                val endMillis = System.currentTimeMillis()
                 
-                // Firebase에 endMillis와 generatingMeetingNoteId 저장
+                // Firebase에 generatingMeetingNoteId 저장
                 FirebaseFirestore.getInstance()
                     .collection("meetings")
                     .document(meetingId.toString())
-                    .update(
-                        mapOf(
-                            "endMillis" to endMillis,
-                            "generatingMeetingNoteId" to meetingId
-                        )
-                    )
+                    .update("generatingMeetingNoteId", meetingId)
                     .await()
                 
-                Log.d(TAG, "Firebase endMillis 및 generatingMeetingNoteId 업데이트 완료: meetingId=$meetingId, endMillis=$endMillis")
+                Log.d(TAG, "Firebase generatingMeetingNoteId 업데이트 완료: meetingId=$meetingId")
                 
                 // 홈으로 이동 이벤트 발생
                 _events.emit(MeetingInProgressEvent.NavigateToHome)
