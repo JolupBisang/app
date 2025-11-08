@@ -61,13 +61,14 @@ fun MeetingMinutesSummaryScreen(
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        MeetingTabRow(selectedTab = selectedTab, onTabClick = onTabClick)
-        Divider()
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 20.dp)
         ) {
+            item {
+                MeetingTabRow(selectedTab = selectedTab, onTabClick = onTabClick)
+            }
             item {
                 SectionWithToggle(
                     title = "진행 시간",

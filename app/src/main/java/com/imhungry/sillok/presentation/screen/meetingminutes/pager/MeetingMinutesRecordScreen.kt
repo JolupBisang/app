@@ -113,8 +113,6 @@ fun MeetingMinutesRecordScreen(
             onTabClick = onTabClick
         )
 
-        Divider()
-
         LazyColumn(
             state = listState,
             modifier = Modifier

@@ -38,7 +38,6 @@ fun MeetingMinutesFeedbackScreen(
             .padding(horizontal = 20.dp)
     ) {
         MeetingTabRow(selectedTab = selectedTab, onTabClick = onTabClick)
-        Divider()
 
         LazyColumn(
             modifier = Modifier
