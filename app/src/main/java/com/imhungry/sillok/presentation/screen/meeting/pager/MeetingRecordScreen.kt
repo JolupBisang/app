@@ -226,7 +226,7 @@ fun MeetingRecordScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() }, start = 20.dp, end = 20.dp)
+                    .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 20.dp, start = 20.dp, end = 20.dp)
             ) {
                 SwipeToDismissNotification(
                     feedback = displayedFeedback!!,
@@ -306,7 +306,7 @@ fun SwipeToDismissNotification(
         Notification(
             feedback = feedback,
             blur = true,
-            isRead = feedback.isRead
+            isRead = true
         )
     }
 }

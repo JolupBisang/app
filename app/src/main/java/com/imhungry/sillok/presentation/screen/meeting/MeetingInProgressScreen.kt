@@ -147,7 +147,8 @@ fun MeetingInProgressScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         MeetingBasicBox(
             navigationBarColor = whiteBackground,
-            backgroundColor = primaryBackground
+            backgroundColor = primaryBackground,
+            isLoading = state.isLoading && !showCompleteDialog && !showLeaveDialog
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()
@@ -222,28 +223,6 @@ fun MeetingInProgressScreen(
                 showLeaveDialog = false
             }
         )
-        
-        // 로딩 오버레이
-        if (state.isLoading && !showCompleteDialog && !showLeaveDialog) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(dialogBackGround)
-                    .zIndex(1000f),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(R.drawable.loading)
-                            .decoderFactory(GifDecoder.Factory())
-                            .build()
-                    ),
-                    contentDescription = "로딩 gif",
-                    modifier = Modifier.size(80.dp)
-                )
-            }
-        }
     }
 }
 
