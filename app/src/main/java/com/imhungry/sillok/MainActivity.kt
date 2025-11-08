@@ -11,14 +11,18 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import com.imhungry.sillok.data.local.TokenExpirationManager
+import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.presentation.navigation.SillokNavigation
 import com.imhungry.sillok.ui.theme.SillokTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -28,6 +32,13 @@ class MainActivity : ComponentActivity() {
     
     @Inject
     lateinit var tokenExpirationManager: TokenExpirationManager
+    
+    @Inject
+    lateinit var userStore: UserStore
+    
+    companion object {
+        private const val TAG = "MainActivity"
+    }
     
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,6 +57,17 @@ class MainActivity : ComponentActivity() {
                         notificationMeetingId = notificationMeetingId,
                         onNotificationHandled = { notificationMeetingId = null }
                     )
+                }
+            }
+        }
+        
+        // User 데이터 로그 출력
+        lifecycleScope.launch {
+            userStore.user.collect { user ->
+                if (user != null) {
+                    Log.d(TAG, "User 데이터: id=${user.id}, email=${user.email}, nickname=${user.nickname}, profileImage=${user.profileImage}")
+                } else {
+                    Log.d(TAG, "User 데이터: null")
                 }
             }
         }

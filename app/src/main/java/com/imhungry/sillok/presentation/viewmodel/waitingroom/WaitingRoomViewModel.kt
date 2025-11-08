@@ -7,6 +7,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.data.local.UserStore
+import com.imhungry.sillok.data.model.meeting.TargetMeetingStatus
 import com.imhungry.sillok.domain.model.meeting.MeetingStatus
 import com.imhungry.sillok.domain.usecase.agenda.ChangeAgendaStatusUseCase
 import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
@@ -133,7 +134,7 @@ class WaitingRoomViewModel @Inject constructor(
         val meetingId = state.value.meetingId
         _state.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
-            when (val statusRes = updateMeetingStatusUseCase(meetingId, MeetingStatus.IN_PROGRESS.name)) {
+            when (val statusRes = updateMeetingStatusUseCase(meetingId, TargetMeetingStatus.IN_PROGRESSING)) {
                 is ApiResult.Failure -> {
                     _state.update { it.copy(isLoading = false, error = statusRes.message) }
                     _events.emit(WaitingRoomEvent.StartFailed(statusRes.message))

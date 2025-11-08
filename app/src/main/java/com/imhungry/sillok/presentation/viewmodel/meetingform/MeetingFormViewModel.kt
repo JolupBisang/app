@@ -538,7 +538,7 @@ class MeetingFormViewModel @Inject constructor(
                     targetTime = targetTime,
                     restInterval = restInterval,
                     restDuration = restDuration,
-                    agendas = agendas
+                    //agendas = agendas
                 )
 
                 when (val updateRes = updateMeetingUseCase(meetingId, updateReq)) {
@@ -609,15 +609,13 @@ class MeetingFormViewModel @Inject constructor(
 
                 // desired가 더 길면 나머지 추가
                 if (desiredContents.size > originalContents.size) {
-                    for (i in originalContents.size until desiredContents.size) {
-                        val content = desiredContents[i]
-                        when (val addAgRes = addAgendaUseCase(meetingId, content)) {
-                            is ApiResult.Failure -> {
-                                _state.update { it.copy(isLoading = false, error = addAgRes.message) }
-                                return@launch
-                            }
-                            is ApiResult.Success -> {}
+                    val contentsToAdd = desiredContents.subList(originalContents.size, desiredContents.size)
+                    when (val addAgRes = addAgendaUseCase(meetingId, contentsToAdd)) {
+                        is ApiResult.Failure -> {
+                            _state.update { it.copy(isLoading = false, error = addAgRes.message) }
+                            return@launch
                         }
+                        is ApiResult.Success -> {}
                     }
                 }
 
@@ -639,19 +637,28 @@ class MeetingFormViewModel @Inject constructor(
                 try {
                     val db = FirebaseFirestore.getInstance()
                     val hostEmail = currentUserEmail
-                    val emails = s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }
+                    // 서버에서 최신 참석자 목록 조회 (삭제 후 반영된 상태)
+                    val latestParticipantEmails = when (val detailResult = getMeetingDetailUseCase(meetingId)) {
+                        is ApiResult.Success -> {
+                            detailResult.data.participants.map { it.email }
+                        }
+                        is ApiResult.Failure -> {
+                            // 조회 실패 시 폼 상태 사용
+                            s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }
+                        }
+                    }
                     db.collection("meetings").document(meetingId.toString())
                         .update(
                             mapOf(
                                 "title" to s.title,
-                                "participants" to emails
+                                "participants" to latestParticipantEmails
                             )
                         )
                         .await()
 
                     val emailsToUpdate = mutableSetOf<String>()
                     hostEmail?.let { emailsToUpdate.add(it) }
-                    emailsToUpdate.addAll(emails)
+                    emailsToUpdate.addAll(latestParticipantEmails)
                     // 제거된 참가자들도 hasNewMeeting = true로 유지
                     emailsToUpdate.addAll(emailsToRemove)
                     for (email in emailsToUpdate) {

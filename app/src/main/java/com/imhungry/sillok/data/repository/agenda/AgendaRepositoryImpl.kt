@@ -31,12 +31,12 @@ class AgendaRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun addAgenda(meetingId: Long, content: String): ApiResult<Long> = withContext(Dispatchers.IO) {
+    override suspend fun addAgenda(meetingId: Long, content: List<String>): ApiResult<List<Long>> = withContext(Dispatchers.IO) {
         try {
-            val res = api.addAgenda(meetingId, AgendaCreateReqDto(content))
+            val res = api.addAgenda(meetingId, AgendaCreateReqDto(contents = content))
             if (res.isSuccessful) {
-                val created = res.body()?.agendaDetails?.firstOrNull()?.agendaId
-                if (created != null) ApiResult.Success(created) else ApiResult.Failure("응답 파싱 오류")
+                val createdIds = res.body()?.agendaDetails?.mapNotNull { it.agendaId } ?: emptyList()
+                if (createdIds.isNotEmpty()) ApiResult.Success(createdIds) else ApiResult.Failure("응답 파싱 오류")
             } else {
                 ApiResult.Failure(res.message())
             }

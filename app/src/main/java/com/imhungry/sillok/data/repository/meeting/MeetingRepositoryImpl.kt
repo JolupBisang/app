@@ -3,6 +3,7 @@ package com.imhungry.sillok.data.repository.meeting
 import com.imhungry.sillok.data.mapper.meeting.MeetingMapper
 import com.imhungry.sillok.data.model.meeting.MeetingStatusUpdateReqDto
 import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
+import com.imhungry.sillok.data.model.meeting.TargetMeetingStatus
 import com.imhungry.sillok.data.remote.meeting.MeetingApi
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
@@ -53,8 +54,8 @@ class MeetingRepositoryImpl @Inject constructor(
         try {
             val res = api.getMeetings(year, month)
             if (res.isSuccessful) {
-				val dto = res.body()
-				val summaries = if (dto != null) listOf(mapper.toMeetingSummary(dto)) else emptyList()
+				val dtoList = res.body()
+				val summaries = dtoList?.map { mapper.toMeetingSummary(it) } ?: emptyList()
 				ApiResult.Success(summaries)
             } else {
                 ApiResult.Failure(res.message())
@@ -64,7 +65,7 @@ class MeetingRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateMeetingStatus(meetingId: Long, targetStatus: String): ApiResult<Unit> = withContext(Dispatchers.IO) {
+    override suspend fun updateMeetingStatus(meetingId: Long, targetStatus: TargetMeetingStatus): ApiResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val res = api.updateMeetingStatus(meetingId, MeetingStatusUpdateReqDto(targetStatus))
             if (res.isSuccessful) {

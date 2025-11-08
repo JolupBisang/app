@@ -12,7 +12,7 @@
     <application
         android:name=".SillokApplication"
         android:usesCleartextTraffic="true"
-        android:allowBackup="false"
+        android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -44,15 +44,6 @@
                     android:host="oauth2callback" />
             </intent-filter>
         </activity>
-        
-        <!-- FCM 서비스 -->
-        <service
-            android:name=".presentation.service.MyFirebaseMessagingService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
         
         <!-- 회의 진행 중 서비스 -->
         <service

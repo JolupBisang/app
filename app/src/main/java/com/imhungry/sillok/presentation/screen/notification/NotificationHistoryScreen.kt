@@ -51,7 +51,7 @@ fun NotificationHistoryScreen(
                         text = "알림 기록이 없습니다.",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Normal,
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         color = tertiary
                     )
                 }

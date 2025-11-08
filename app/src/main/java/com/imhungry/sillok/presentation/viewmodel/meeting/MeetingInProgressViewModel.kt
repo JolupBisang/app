@@ -18,6 +18,7 @@ import com.imhungry.sillok.data.model.realtime.LiveFeedbackDto
 import com.imhungry.sillok.data.model.realtime.LiveSummaryDto
 import com.imhungry.sillok.data.model.realtime.RealtimeSegmentDto
 import com.imhungry.sillok.data.util.ApiResult
+import com.imhungry.sillok.data.model.meeting.TargetMeetingStatus
 import com.imhungry.sillok.domain.model.meeting.MeetingStatus
 import com.imhungry.sillok.domain.model.participation.UserParticipationRate
 import com.imhungry.sillok.domain.usecase.agenda.ChangeAgendaStatusUseCase
@@ -104,18 +105,27 @@ class MeetingInProgressViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun initialize(meetingId: Long) {
+        Log.d(TAG, "========================================")
+        Log.d(TAG, "[1단계] 회의 초기화 시작: meetingId=$meetingId")
+        Log.d(TAG, "========================================")
         _state.update { it.copy(meetingId = meetingId) }
         viewModelScope.launch {
             // refreshAll() 완료 후 Service 시작
+            Log.d(TAG, "[2단계] 회의 데이터 로드 시작 (refreshAll)")
             refreshAll()
+            Log.d(TAG, "[2단계 완료] 회의 데이터 로드 완료")
 
             // TokenStore에서 토큰 가져오기
+            Log.d(TAG, "[3단계] JWT 토큰 조회 시작")
             val jwtToken = tokenStore.accessToken.first()
             if (jwtToken == null) {
+                Log.e(TAG, "[3단계 실패] JWT 토큰이 null입니다")
                 return@launch
             }
+            Log.d(TAG, "[3단계 완료] JWT 토큰 조회 완료")
             
             // Service 시작
+            Log.d(TAG, "[4단계] Service 시작 요청")
             startService(
                 serverUrl = BuildConfig.BASE_URL,
                 meetingId = meetingId,
@@ -123,7 +133,9 @@ class MeetingInProgressViewModel @Inject constructor(
             )
             
             // Service 이벤트 구독
+            Log.d(TAG, "[5단계] Service 이벤트 구독 시작")
             observeServiceEvents()
+            Log.d(TAG, "[5단계 완료] Service 이벤트 구독 완료")
         }
     }
     
@@ -132,6 +144,7 @@ class MeetingInProgressViewModel @Inject constructor(
      */
     @RequiresApi(Build.VERSION_CODES.O)
     private fun startService(serverUrl: String, meetingId: Long, jwtToken: String) {
+        Log.d(TAG, "[4-1] Service Intent 생성: serverUrl=$serverUrl, meetingId=$meetingId")
         val intent = Intent(app, MeetingInProgressService::class.java).apply {
             action = MeetingInProgressService.ACTION_START
             putExtra(MeetingInProgressService.EXTRA_SERVER_URL, serverUrl)
@@ -139,7 +152,7 @@ class MeetingInProgressViewModel @Inject constructor(
             putExtra(MeetingInProgressService.EXTRA_JWT_TOKEN, jwtToken)
         }
         ContextCompat.startForegroundService(app, intent)
-        Log.d(TAG, "Service 시작 요청: meetingId=$meetingId")
+        Log.d(TAG, "[4-2] Foreground Service 시작 요청 완료: meetingId=$meetingId")
     }
     
     /**
@@ -148,9 +161,12 @@ class MeetingInProgressViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private fun observeServiceEvents() {
         viewModelScope.launch {
+            Log.d(TAG, "[5-1] Service 이벤트 Flow 구독 시작")
             MeetingInProgressService.serviceEvents.collectLatest { event ->
+                Log.d(TAG, "[5-2] Service 이벤트 수신: ${event::class.simpleName}")
                 when (event) {
                     is MeetingInProgressService.ServiceEvent.ConnectionEstablished -> {
+                        Log.d(TAG, "[5-3] ConnectionEstablished 이벤트 처리 시작: lastProcessedChunkId=${event.lastProcessedChunkId}")
                         _state.update { it.copy(isLoading = false) }
                         handleConnectionEstablishedFromService(event.lastProcessedChunkId)
                     }
@@ -182,59 +198,82 @@ class MeetingInProgressViewModel @Inject constructor(
     
     @RequiresApi(Build.VERSION_CODES.O)
     private fun handleConnectionEstablishedFromService(lastProcessedChunkId: Long?) {
+        Log.d(TAG, "========================================")
+        Log.d(TAG, "[6단계] 연결 확립 처리 시작")
+        Log.d(TAG, "  - lastProcessedChunkId: $lastProcessedChunkId")
+        Log.d(TAG, "========================================")
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val meetingId = state.value.meetingId
                 val currentTimeMillis = System.currentTimeMillis()
+                Log.d(TAG, "[6-1] 회의 시작 시간 설정: meetingId=$meetingId, startMillis=$currentTimeMillis")
                 
                 // Firebase에 startMillis 업데이트
                 try {
+                    Log.d(TAG, "[6-2] Firebase startMillis 업데이트 시작")
                     FirebaseFirestore.getInstance()
                         .collection("meetings")
                         .document(meetingId.toString())
                         .update("startMillis", currentTimeMillis)
                         .await()
+                    Log.d(TAG, "[6-2 완료] Firebase startMillis 업데이트 성공: $currentTimeMillis")
                     
                     // state 업데이트
                     withContext(Dispatchers.Main) {
+                        Log.d(TAG, "[6-3] State 업데이트 시작")
                         _state.update { it.copy(startTime = currentTimeMillis) }
                         
                         // 휴식 시간 피드백 스케줄링
                         val currentState = state.value
                         if (currentState.targetTime > 0 && currentState.restInterval > 0 && currentState.restDuration > 0) {
+                            Log.d(TAG, "[6-4] 휴식 시간 피드백 스케줄링 시작: targetTime=${currentState.targetTime}, restInterval=${currentState.restInterval}, restDuration=${currentState.restDuration}")
                             scheduleRestBreakFeedbacks(
                                 currentTimeMillis,
                                 currentState.targetTime,
                                 currentState.restInterval,
                                 currentState.restDuration
                             )
+                            Log.d(TAG, "[6-4 완료] 휴식 시간 피드백 스케줄링 완료")
+                        } else {
+                            Log.d(TAG, "[6-4 스킵] 휴식 시간 설정이 없어 스케줄링을 건너뜁니다")
                         }
                         
                         // 회의 종료 10분 전 피드백 스케줄링
                         if (currentState.targetTime > 0) {
+                            Log.d(TAG, "[6-5] 회의 종료 피드백 스케줄링 시작: targetTime=${currentState.targetTime}")
                             scheduleMeetingEndFeedback(currentTimeMillis, currentState.targetTime)
+                            Log.d(TAG, "[6-5 완료] 회의 종료 피드백 스케줄링 완료")
+                        } else {
+                            Log.d(TAG, "[6-5 스킵] 목표 시간이 없어 스케줄링을 건너뜁니다")
                         }
+                        Log.d(TAG, "[6-3 완료] State 업데이트 완료")
                     }
-                    Log.d(TAG, "Firebase startMillis 업데이트 완료: $currentTimeMillis")
+                    Log.d(TAG, "========================================")
+                    Log.d(TAG, "[6단계 완료] 연결 확립 처리 완료")
+                    Log.d(TAG, "========================================")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Firebase startMillis 업데이트 실패: ${e.message}", e)
+                    Log.e(TAG, "[6-2 실패] Firebase startMillis 업데이트 실패: ${e.message}", e)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "연결 확립 처리 중 오류", e)
+                Log.e(TAG, "[6단계 실패] 연결 확립 처리 중 오류: ${e.message}", e)
             }
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     suspend fun refreshAll() {
+        Log.d(TAG, "[2-1] refreshAll 시작: isLoading=true")
         _state.update { it.copy(isLoading = true) }
         val meetingId = state.value.meetingId
+        Log.d(TAG, "[2-2] meetingId: $meetingId")
 
         coroutineScope {
             // 1. Meeting Detail 가져오기 (participants 정보 포함)
+            Log.d(TAG, "[2-3] Meeting Detail 조회 시작")
             when (val meetingDetailResult = getMeetingDetailUseCase(meetingId)) {
                 is ApiResult.Success -> {
                     val meeting = meetingDetailResult.data
+                    Log.d(TAG, "[2-3 완료] Meeting Detail 조회 성공: targetTime=${meeting.targetTime}, restInterval=${meeting.restInterval}, restDuration=${meeting.restDuration}, participants=${meeting.participants.size}명")
                     // targetTime, restInterval, restDuration 저장
                     _state.update {
                         it.copy(
@@ -277,14 +316,16 @@ class MeetingInProgressViewModel @Inject constructor(
                 }
 
                 is ApiResult.Failure -> {
-                    Log.e(TAG, "Meeting Detail 로드 실패: ${meetingDetailResult.message}")
+                    Log.e(TAG, "[2-3 실패] Meeting Detail 조회 실패: ${meetingDetailResult.message}")
                 }
             }
 
+            Log.d(TAG, "[2-4] 아젠다 조회 시작 (비동기)")
             val agendasDeferred = async { getAgendasUseCase(meetingId) }
 
             var startMillis: Long? = null
 
+            Log.d(TAG, "[2-5] Firebase startMillis 조회 시작")
             try {
                 val snapshot = FirebaseFirestore.getInstance()
                     .collection("meetings")
@@ -292,6 +333,7 @@ class MeetingInProgressViewModel @Inject constructor(
                     .get()
                     .await()
                 startMillis = snapshot.getLong("startMillis")
+                Log.d(TAG, "[2-5 완료] Firebase startMillis 조회 완료: $startMillis")
                 if (startMillis != null) {
                     _state.update { it.copy(startTime = startMillis) }
                     
@@ -312,12 +354,16 @@ class MeetingInProgressViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-				Log.e(TAG, "startMillis 조회 실패: ${e.message}", e)
+				Log.e(TAG, "[2-5 실패] Firebase startMillis 조회 실패: ${e.message}", e)
             }
 
+            Log.d(TAG, "[2-4 대기] 아젠다 조회 결과 대기 중")
             when (val result = agendasDeferred.await()) {
-				is ApiResult.Success -> _state.update { it.copy(agendas = result.data) }
-				is ApiResult.Failure -> Log.e(TAG, "아젠다 로드 실패: ${result.message}")
+				is ApiResult.Success -> {
+                    Log.d(TAG, "[2-4 완료] 아젠다 조회 성공: ${result.data.size}개")
+                    _state.update { it.copy(agendas = result.data) }
+                }
+				is ApiResult.Failure -> Log.e(TAG, "[2-4 실패] 아젠다 조회 실패: ${result.message}")
             }
 
             val currentUserId = userStore.user.first()?.id
@@ -445,7 +491,7 @@ class MeetingInProgressViewModel @Inject constructor(
     fun completeMeeting() {
         viewModelScope.launch {
             val meetingId = state.value.meetingId
-            when (val result = updateMeetingStatusUseCase(meetingId, MeetingStatus.COMPLETED.name)) {
+            when (val result = updateMeetingStatusUseCase(meetingId, TargetMeetingStatus.COMPLETED)) {
                 is ApiResult.Success -> {
                     Log.d(TAG, "회의 완료 처리 성공: meetingId=$meetingId")
 

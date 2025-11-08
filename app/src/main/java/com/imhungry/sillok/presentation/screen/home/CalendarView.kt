@@ -110,7 +110,7 @@ fun CalendarView(
 
             CalendarWeekHeader()
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             CalendarDateGrid(
                 currentMonth = currentMonth,

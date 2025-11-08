@@ -17,7 +17,7 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface MeetingApi {
-    @POST("/api/v1/meeting")
+    @POST("/api/v1/meetings")
     suspend fun createMeeting(
         @Body request: MeetingReqDto
     ): Response<MeetingCreationResDto>
@@ -31,7 +31,7 @@ interface MeetingApi {
     suspend fun getMeetings(
         @Query("year") year: Int,
         @Query("month") month: Int
-    ): Response<MeetingDetailSummaryResDto>
+    ): Response<List<MeetingDetailSummaryResDto>>
 
     @PUT("/api/v1/meetings/{meetingId}/status")
     suspend fun updateMeetingStatus(

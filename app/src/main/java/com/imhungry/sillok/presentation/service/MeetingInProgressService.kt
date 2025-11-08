@@ -26,6 +26,7 @@ import com.imhungry.sillok.data.model.realtime.RealtimeSegmentDto
 import com.imhungry.sillok.data.model.realtime.SocketResponse
 import com.imhungry.sillok.data.model.realtime.SocketResponseType
 import com.imhungry.sillok.data.model.realtime.SseResponseType
+import com.imhungry.sillok.presentation.util.DateTimeUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -146,15 +147,26 @@ class MeetingInProgressService : Service() {
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "========================================")
+        Log.d(TAG, "[Service] onStartCommand 호출: action=${intent?.action}")
+        Log.d(TAG, "========================================")
         when (intent?.action) {
             ACTION_START -> {
+                Log.d(TAG, "[Service-1] ACTION_START 처리 시작")
                 val serverUrl = intent.getStringExtra(EXTRA_SERVER_URL)
                 val meetingId = intent.getLongExtra(EXTRA_MEETING_ID, -1L)
                 val jwtToken = intent.getStringExtra(EXTRA_JWT_TOKEN)
                 
+                Log.d(TAG, "[Service-1-1] Intent 파라미터 확인: serverUrl=${serverUrl?.take(30)}..., meetingId=$meetingId, jwtToken=${if (jwtToken != null) "있음" else "null"}")
+                
                 if (serverUrl != null && meetingId != -1L && jwtToken != null) {
+                    Log.d(TAG, "[Service-1-2] Foreground Service 시작")
                     startForeground(NOTIFICATION_ID, createNotification())
+                    Log.d(TAG, "[Service-1-3] 연결 시작 (WebSocket + SSE)")
                     startConnections(serverUrl, meetingId, jwtToken)
+                    Log.d(TAG, "[Service-1 완료] ACTION_START 처리 완료")
+                } else {
+                    Log.e(TAG, "[Service-1 실패] 필수 파라미터 누락: serverUrl=$serverUrl, meetingId=$meetingId, jwtToken=${if (jwtToken != null) "있음" else "null"}")
                 }
             }
             ACTION_STOP -> {
@@ -204,52 +216,66 @@ class MeetingInProgressService : Service() {
     }
     
     private fun startConnections(serverUrl: String, meetingId: Long, jwtToken: String) {
+        Log.d(TAG, "[Service-1-3-1] startConnections 시작: meetingId=$meetingId")
         currentMeetingId = meetingId
         packetDir = File(cacheDir, "audio_packets/$meetingId").apply {
             if (!exists()) mkdirs()
+            Log.d(TAG, "[Service-1-3-2] 오디오 패킷 디렉토리 준비: ${this.absolutePath}")
         }
         
         serviceScope.launch {
             // WebSocket 연결
+            Log.d(TAG, "[Service-1-3-3] WebSocket 연결 시작")
             connectWebSocket(serverUrl, meetingId, jwtToken)
             
             // SSE 연결
+            Log.d(TAG, "[Service-1-3-4] SSE 연결 시작")
             connectSse(serverUrl, meetingId, jwtToken)
+            Log.d(TAG, "[Service-1-3 완료] startConnections 완료")
         }
     }
     
     private fun connectWebSocket(serverUrl: String, meetingId: Long, jwtToken: String) {
         serviceScope.launch {
             try {
-                Log.d(TAG, "WebSocket 연결 시작")
+                Log.d(TAG, "[Service-WebSocket-1] WebSocket 연결 시작")
                 val wsUrl = "${serverUrl}ws/v1/meeting/$meetingId/audio"
+                Log.d(TAG, "[Service-WebSocket-1-1] WebSocket URL: $wsUrl")
                 
                 val request = Request.Builder()
                     .url(wsUrl)
                     .addHeader("Authorization", "Bearer $jwtToken")
                     .build()
                 
+                Log.d(TAG, "[Service-WebSocket-1-2] WebSocket 요청 생성 완료")
                 webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
                     override fun onOpen(webSocket: WebSocket, response: Response) {
-                        Log.d(TAG, "WebSocket 연결 성공!")
+                        Log.d(TAG, "========================================")
+                        Log.d(TAG, "[Service-WebSocket-2] WebSocket 연결 성공!")
+                        Log.d(TAG, "  - Response Code: ${response.code}")
+                        Log.d(TAG, "========================================")
                     }
                     
                     @RequiresApi(Build.VERSION_CODES.O)
                     override fun onMessage(webSocket: WebSocket, text: String) {
+                        Log.d(TAG, "[Service-WebSocket-3] WebSocket 메시지 수신: ${text.take(100)}...")
                         parseWebSocketMessage(text, webSocket)
                     }
                     
                     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                        Log.e(TAG, "WebSocket 연결 실패: ${t.message}", t)
+                        Log.e(TAG, "[Service-WebSocket-실패] WebSocket 연결 실패: ${t.message}", t)
+                        Log.e(TAG, "  - Response: ${response?.code}")
                     }
                 })
+                Log.d(TAG, "[Service-WebSocket-1-3] WebSocket 리스너 등록 완료")
             } catch (e: Exception) {
-                Log.e(TAG, "WebSocket 연결 예외: ${e.message}", e)
+                Log.e(TAG, "[Service-WebSocket-예외] WebSocket 연결 예외: ${e.message}", e)
             }
         }
     }
     
     private fun connectSse(serverUrl: String, meetingId: Long, jwtToken: String) {
+        Log.d(TAG, "[Service-SSE-1] SSE 연결 준비 시작")
         sseServerUrl = serverUrl
         sseMeetingId = meetingId
         sseJwtToken = jwtToken
@@ -258,8 +284,9 @@ class MeetingInProgressService : Service() {
         
         serviceScope.launch {
             try {
-                Log.d(TAG, "SSE 연결 시작")
+                Log.d(TAG, "[Service-SSE-1-1] SSE 연결 시작")
                 val sseUrl = "${serverUrl}api/v1/meetings/$meetingId/events/subscribe"
+                Log.d(TAG, "[Service-SSE-1-2] SSE URL: $sseUrl")
                 
                 val request = Request.Builder()
                     .url(sseUrl)
@@ -272,10 +299,14 @@ class MeetingInProgressService : Service() {
                     .connectTimeout(30, TimeUnit.SECONDS)
                     .build()
                 
+                Log.d(TAG, "[Service-SSE-1-3] SSE EventSource 생성 시작")
                 eventSource = EventSources.createFactory(sseClient)
                     .newEventSource(request, object : EventSourceListener() {
                         override fun onOpen(eventSource: EventSource, response: Response) {
-                            Log.d(TAG, "SSE 연결 성공!")
+                            Log.d(TAG, "========================================")
+                            Log.d(TAG, "[Service-SSE-2] SSE 연결 성공!")
+                            Log.d(TAG, "  - Response Code: ${response.code}")
+                            Log.d(TAG, "========================================")
                         }
                         
                         @RequiresApi(Build.VERSION_CODES.O)
@@ -285,17 +316,22 @@ class MeetingInProgressService : Service() {
                             type: String?,
                             data: String
                         ) {
+                            Log.d(TAG, "[Service-SSE-3] SSE 이벤트 수신: type=$type, id=$id, data=${data.take(100)}...")
                             parseSseEvent(type, data)
                         }
                         
                         override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
-                            Log.e(TAG, "SSE 실패: ${t?.message}", t)
+                            Log.e(TAG, "[Service-SSE-실패] SSE 실패: ${t?.message}", t)
+                            Log.e(TAG, "  - Response: ${response?.code}")
                         }
                     })
                 
+                Log.d(TAG, "[Service-SSE-1-4] SSE EventSource 생성 완료")
+                Log.d(TAG, "[Service-SSE-1-5] SSE 재연결 Job 시작")
                 startSseReconnectJob()
+                Log.d(TAG, "[Service-SSE-1 완료] SSE 연결 설정 완료")
             } catch (e: Exception) {
-                Log.e(TAG, "SSE 예외: ${e.message}", e)
+                Log.e(TAG, "[Service-SSE-예외] SSE 예외: ${e.message}", e)
             }
         }
     }
@@ -441,44 +477,57 @@ class MeetingInProgressService : Service() {
     
     @RequiresApi(Build.VERSION_CODES.O)
     private fun handleConnectionEstablished(lastProcessedChunkId: Long?, webSocket: WebSocket) {
-        Log.d(TAG, "연결 확립됨")
-        Log.d(TAG, "서버 마지막 처리 청크 ID: ${lastProcessedChunkId ?: "없음 (첫 연결)"}")
+        Log.d(TAG, "========================================")
+        Log.d(TAG, "[Service-WebSocket-4] 연결 확립 처리 시작")
+        Log.d(TAG, "  - 서버 마지막 처리 청크 ID: ${lastProcessedChunkId ?: "없음 (첫 연결)"}")
+        Log.d(TAG, "========================================")
         
         serviceScope.launch(Dispatchers.IO) {
             try {
                 // 재전송이 필요한 청크 확인 및 재전송
+                Log.d(TAG, "[Service-WebSocket-4-1] 재전송 필요한 청크 확인 시작")
                 val savedChunks = getSavedChunksForRetransmission(lastProcessedChunkId)
+                Log.d(TAG, "[Service-WebSocket-4-1 완료] 재전송 필요한 청크: ${savedChunks.size}개")
                 
+                // 재전송이 필요한 경우 먼저 재전송 완료 후 녹음 시작
                 if (savedChunks.isNotEmpty()) {
-                    Log.d(TAG, "재전송 필요한 청크: ${savedChunks.size}개")
+                    Log.d(TAG, "[Service-WebSocket-4-2] 청크 재전송 시작 (녹음 시작 전)")
                     retransmitMissingChunks(webSocket, savedChunks)
+                    Log.d(TAG, "[Service-WebSocket-4-2 완료] 청크 재전송 완료 - 이제 녹음 시작 가능")
                     
                     // 청크 ID 카운터를 재전송한 마지막 청크 다음으로 설정
                     val lastRetransmittedId = savedChunks.maxOfOrNull { it.chunkId } ?: -1
                     chunkIdCounter.set(lastRetransmittedId + 1)
-                    Log.d(TAG, "청크 ID 카운터를 ${lastRetransmittedId + 1}로 설정")
+                    Log.d(TAG, "[Service-WebSocket-4-3] 청크 ID 카운터 설정: ${lastRetransmittedId + 1}")
                 } else {
-                    Log.d(TAG, "재전송 필요한 청크 없음")
+                    Log.d(TAG, "[Service-WebSocket-4-2 스킵] 재전송 필요한 청크 없음 - 바로 녹음 시작 가능")
                     
                     // 청크 ID 카운터 초기화
                     if (lastProcessedChunkId != null) {
                         chunkIdCounter.set(lastProcessedChunkId + 1)
-                        Log.d(TAG, "청크 ID를 ${lastProcessedChunkId + 1}부터 시작합니다")
+                        Log.d(TAG, "[Service-WebSocket-4-3] 청크 ID 카운터 설정: ${lastProcessedChunkId + 1} (서버 기준)")
                     } else {
                         chunkIdCounter.set(0)
-                        Log.d(TAG, "청크 ID를 0부터 시작합니다")
+                        Log.d(TAG, "[Service-WebSocket-4-3] 청크 ID 카운터 설정: 0 (첫 연결)")
                     }
                 }
                 
-                // 실시간 녹음 시작
+                // 재전송 완료 후 실시간 녹음 시작
+                Log.d(TAG, "[Service-WebSocket-4-4] 재전송 완료 후 실시간 녹음 시작")
                 withContext(Dispatchers.Main) {
                     startRecording(webSocket)
                 }
+                Log.d(TAG, "[Service-WebSocket-4-4 완료] 실시간 녹음 시작 완료")
                 
                 // ConnectionEstablished 이벤트 발생 (ViewModel에서 Firebase 업데이트 처리)
+                Log.d(TAG, "[Service-WebSocket-4-5] ConnectionEstablished 이벤트 발행")
                 _serviceEvents.emit(ServiceEvent.ConnectionEstablished(lastProcessedChunkId))
+                Log.d(TAG, "[Service-WebSocket-4-5 완료] ConnectionEstablished 이벤트 발행 완료")
+                Log.d(TAG, "========================================")
+                Log.d(TAG, "[Service-WebSocket-4 완료] 연결 확립 처리 완료")
+                Log.d(TAG, "========================================")
             } catch (e: Exception) {
-                Log.e(TAG, "연결 확립 처리 중 오류", e)
+                Log.e(TAG, "[Service-WebSocket-4 실패] 연결 확립 처리 중 오류: ${e.message}", e)
             }
         }
     }
@@ -640,21 +689,26 @@ class MeetingInProgressService : Service() {
     
     @RequiresApi(Build.VERSION_CODES.O)
     private fun startRecording(webSocket: WebSocket) {
+        Log.d(TAG, "[Service-Recording-1] 녹음 시작 요청")
         if (isRecording) {
+            Log.d(TAG, "[Service-Recording-1 스킵] 이미 녹음 중입니다")
             return
         }
         
         // 권한 체크
+        Log.d(TAG, "[Service-Recording-1-1] 오디오 녹음 권한 확인")
         if (ContextCompat.checkSelfPermission(
                 this,
                 android.Manifest.permission.RECORD_AUDIO
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.e(TAG, "오디오 녹음 권한이 없습니다")
+            Log.e(TAG, "[Service-Recording-1-1 실패] 오디오 녹음 권한이 없습니다")
             return
         }
+        Log.d(TAG, "[Service-Recording-1-1 완료] 오디오 녹음 권한 확인 완료")
         
         try {
+            Log.d(TAG, "[Service-Recording-1-2] AudioRecord 초기화 시작: sampleRate=$sampleRate, bufferSize=$bufferSize")
             audioRecord = AudioRecord(
                 MediaRecorder.AudioSource.MIC,
                 sampleRate,
@@ -664,27 +718,36 @@ class MeetingInProgressService : Service() {
             )
             
             if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
-                Log.e(TAG, "AudioRecord 초기화 실패")
+                Log.e(TAG, "[Service-Recording-1-2 실패] AudioRecord 초기화 실패")
                 audioRecord?.release()
                 audioRecord = null
                 return
             }
+            Log.d(TAG, "[Service-Recording-1-2 완료] AudioRecord 초기화 성공")
             
+            Log.d(TAG, "[Service-Recording-1-3] AudioRecord 녹음 시작")
             audioRecord?.startRecording()
             isRecording = true
+            Log.d(TAG, "[Service-Recording-1-3 완료] AudioRecord 녹음 시작 완료")
             
+            Log.d(TAG, "[Service-Recording-1-4] 오디오 데이터 읽기 Job 시작")
             recordingJob = serviceScope.launch(Dispatchers.IO) {
                 readAndSendAudioData(webSocket)
             }
+            Log.d(TAG, "[Service-Recording-1 완료] 녹음 시작 완료")
         } catch (e: Exception) {
-            Log.e(TAG, "녹음 시작 실패: ${e.message}", e)
+            Log.e(TAG, "[Service-Recording-1 실패] 녹음 시작 실패: ${e.message}", e)
         }
     }
     
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun readAndSendAudioData(webSocket: WebSocket) {
+        Log.d(TAG, "[Audio-1] 오디오 데이터 읽기 및 전송 시작")
         val chunkSizeInBytes = frameSize * 2
         val buffer = ByteArray(chunkSizeInBytes)
+        var chunkCount = 0L
+        var lastLogTime = System.currentTimeMillis()
+        val logInterval = 5000L // 5초마다 로그
         
         try {
             while (isRecording &&
@@ -693,15 +756,33 @@ class MeetingInProgressService : Service() {
                 
                 val bytesRead = audioRecord?.read(buffer, 0, buffer.size) ?: 0
                 
-                if (bytesRead > 0 && micEnabled) {
-                    val audioChunk = buffer.copyOf(bytesRead)
-                    sendAudioChunk(webSocket, audioChunk)
+                if (bytesRead > 0) {
+                    if (micEnabled) {
+                        val audioChunk = buffer.copyOf(bytesRead)
+                        sendAudioChunk(webSocket, audioChunk)
+                        chunkCount++
+                        
+                        // 주기적으로 로그 출력 (5초마다)
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastLogTime >= logInterval) {
+                            Log.d(TAG, "[Audio-2] 음성 패킷 전송 중: 총 ${chunkCount}개 전송됨 (마지막 5초간)")
+                            lastLogTime = currentTime
+                        }
+                    } else {
+                        // 마이크가 꺼져있으면 스킵 (로그는 너무 자주 찍히지 않도록)
+                        if (chunkCount % 100 == 0L) {
+                            Log.d(TAG, "[Audio-3] 마이크 꺼짐 상태 - 패킷 전송 스킵")
+                        }
+                    }
+                } else if (bytesRead < 0) {
+                    Log.w(TAG, "[Audio-경고] 오디오 읽기 실패: bytesRead=$bytesRead")
                 }
             }
+            Log.d(TAG, "[Audio-1 완료] 오디오 데이터 읽기 및 전송 종료: 총 ${chunkCount}개 전송됨")
         } catch (e: CancellationException) {
-            Log.d(TAG, "오디오 읽기 취소됨")
+            Log.d(TAG, "[Audio-취소] 오디오 읽기 취소됨: 총 ${chunkCount}개 전송됨")
         } catch (e: Exception) {
-            Log.e(TAG, "오디오 읽기 에러", e)
+            Log.e(TAG, "[Audio-에러] 오디오 읽기 에러: ${e.message} (총 ${chunkCount}개 전송됨)", e)
         }
     }
     
@@ -714,7 +795,7 @@ class MeetingInProgressService : Service() {
                 put("type", "AUDIO_CHUNK")
                 put("chunkId", chunkId)
                 put("encoding", "audio/pcm")
-                put("timestamp", getCurrentTimestamp())
+                put("timestamp", DateTimeUtils.koreaToUtcTime(getCurrentTimestamp()))
             }
             
             val metaBytes = metaJson.toString().toByteArray(Charsets.UTF_8)
@@ -728,15 +809,28 @@ class MeetingInProgressService : Service() {
             val totalSize = buffer.position()
             val binaryMessage = buffer.array().toByteString(0, totalSize)
             
-            webSocket.send(binaryMessage)
+            // WebSocket으로 전송
+            val sendSuccess = webSocket.send(binaryMessage)
+            if (!sendSuccess) {
+                Log.w(TAG, "[Audio-Chunk-경고] 청크 전송 실패: chunkId=$chunkId, size=${audioData.size} bytes (큐가 가득 참)")
+            }
             
             // 로컬 파일로 저장
             packetDir?.let { dir ->
-                val audioFile = File(dir, "chunk_${chunkId}.pcm")
-                FileOutputStream(audioFile).use { it.write(audioData) }
+                try {
+                    val audioFile = File(dir, "chunk_${chunkId}.pcm")
+                    FileOutputStream(audioFile).use { it.write(audioData) }
+                } catch (e: Exception) {
+                    Log.e(TAG, "[Audio-Chunk-저장실패] 청크 파일 저장 실패: chunkId=$chunkId, ${e.message}", e)
+                }
+            }
+            
+            // 첫 번째 청크와 주기적으로 로그 출력 (100개마다)
+            if (chunkId == 0L || chunkId % 100 == 0L) {
+                Log.d(TAG, "[Audio-Chunk] 청크 전송: chunkId=$chunkId, size=${audioData.size} bytes, totalSize=$totalSize bytes, success=$sendSuccess")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "청크 전송 예외: ${e.message}", e)
+            Log.e(TAG, "[Audio-Chunk-예외] 청크 전송 예외: ${e.message}", e)
         }
     }
     

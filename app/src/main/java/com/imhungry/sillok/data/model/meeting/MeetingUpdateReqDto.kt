@@ -7,5 +7,5 @@ data class MeetingUpdateReqDto(
     val targetTime: Int,
     val restInterval: Int,
     val restDuration: Int,
-    val agendas: List<String>
+    //val agendas: List<String>
 )

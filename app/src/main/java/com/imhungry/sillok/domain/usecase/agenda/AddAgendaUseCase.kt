@@ -6,5 +6,5 @@ import javax.inject.Inject
 class AddAgendaUseCase @Inject constructor(
     private val repository: AgendaRepository
 ) {
-    suspend operator fun invoke(meetingId: Long, content: String) = repository.addAgenda(meetingId, content)
+    suspend operator fun invoke(meetingId: Long, content: List<String>) = repository.addAgenda(meetingId, content)
 }
