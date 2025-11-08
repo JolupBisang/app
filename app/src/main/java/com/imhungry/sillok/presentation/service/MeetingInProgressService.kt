@@ -390,7 +390,7 @@ class MeetingInProgressService : Service() {
                         }
                     }
                 }
-                SocketResponseType.MEETING_COMPLETED -> {
+                SocketResponseType.COMPLETION_SCHEDULED -> {
                     // 회의 완료 시 녹음과 SSE 연결 해제 (Service는 WebSocket 연결 유지하여 회의록 생성 완료 기다림)
                     stopRecording()
                     disconnectSseConnection()
@@ -402,7 +402,7 @@ class MeetingInProgressService : Service() {
                         _serviceEvents.emit(ServiceEvent.MeetingCompleted)
                     }
                 }
-                SocketResponseType.MEETING_NOTE_CREATED -> {
+                SocketResponseType.MEETING_COMPLETED -> {
                     val response = gson.fromJson<SocketResponse<String>>(
                         jsonString,
                         object : TypeToken<SocketResponse<String>>() {}.type
@@ -631,7 +631,7 @@ class MeetingInProgressService : Service() {
                 val timestamp = if (metaFile.exists()) {
                     try {
                         val metaJson = JSONObject(metaFile.readText())
-                        metaJson.optString("timestamp", getCurrentTimestamp())
+                        metaJson.optString("timestamp", DateTimeUtils.koreaToUtcTime(getCurrentTimestamp()))
                     } catch (e: Exception) {
                         getCurrentTimestamp()
                     }

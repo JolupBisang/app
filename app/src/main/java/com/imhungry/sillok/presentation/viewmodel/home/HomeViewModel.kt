@@ -6,15 +6,16 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.Timestamp
 import com.imhungry.sillok.data.local.DismissedMeetingStore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.domain.model.meeting.MeetingStatus
+import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingSummaryListUseCase
 import com.imhungry.sillok.presentation.state.home.HomeState
 import com.imhungry.sillok.presentation.state.home.MeetingUi
@@ -33,6 +34,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getMeetingSummaryListUseCase: GetMeetingSummaryListUseCase,
+    private val getMeetingDetailUseCase: GetMeetingDetailUseCase,
     private val userStore: UserStore,
     private val dismissedMeetingStore: DismissedMeetingStore,
     @ApplicationContext private val context: Context
@@ -447,23 +449,44 @@ class HomeViewModel @Inject constructor(
         val db = FirebaseFirestore.getInstance()
         val (start, end) = buildPrefixRange(query)
 
-        val titleResults = searchByTitle(db, start, end)
-        val participantResults = searchByParticipants(db, query)
+        // Firestore에서 회의 ID만 수집
+        val titleResultIds = searchByTitleIds(db, start, end)
+        val participantResultIds = searchByParticipantsIds(db, query)
 
-        val merged = (titleResults + participantResults).distinctBy { it.id }
+        val mergedIds = (titleResultIds + participantResultIds).distinct()
         
         // 숨긴 회의 제외
         val dismissedMeetingIds = dismissedMeetingStore.getDismissedMeetingIds()
-        val filteredMerged = merged.filter { !dismissedMeetingIds.contains(it.id) }
+        val filteredIds = mergedIds.filter { !dismissedMeetingIds.contains(it) }
         
-        return filteredMerged.map { MeetingUi.from(it) }
+        // 각 회의 ID에 대해 GetMeetingDetailUseCase 호출하여 완전한 정보 가져오기
+        val meetingSummaries = filteredIds.mapNotNull { meetingId ->
+            when (val result = getMeetingDetailUseCase(meetingId)) {
+                is ApiResult.Success -> {
+                    val meeting = result.data
+                    MeetingDetailSummary(
+                        id = meeting.meetingId,
+                        title = meeting.title,
+                        scheduledStartTime = meeting.scheduledStartTime,
+                        targetTime = meeting.targetTime,
+                        status = meeting.meetingStatus
+                    )
+                }
+                is ApiResult.Failure -> {
+                    Log.e(TAG, "회의 상세 정보 조회 실패: meetingId=$meetingId, error=${result.message}")
+                    null
+                }
+            }
+        }
+        
+        return meetingSummaries.map { MeetingUi.from(it) }
     }
 
-    private suspend fun searchByTitle(
+    private suspend fun searchByTitleIds(
         db: FirebaseFirestore,
         start: String,
         end: String
-    ): List<MeetingDetailSummary> {
+    ): List<Long> {
         val snapshot = db.collection(COLLECTION_MEETINGS)
             .orderBy("title")
             .startAt(start)
@@ -472,13 +495,15 @@ class HomeViewModel @Inject constructor(
             .get()
             .await()
 
-        return snapshot.documents.mapNotNull { mapMeetingDoc(it.data ?: emptyMap()) }
+        return snapshot.documents.mapNotNull { 
+            (it.data?.get("meetingId") as? Number)?.toLong()
+        }
     }
 
-    private suspend fun searchByParticipants(
+    private suspend fun searchByParticipantsIds(
         db: FirebaseFirestore,
         query: String
-    ): List<MeetingDetailSummary> {
+    ): List<Long> {
         val (start, end) = buildPrefixRange(query)
         
         val userSnapshot = db.collection(COLLECTION_USERS)
@@ -491,19 +516,21 @@ class HomeViewModel @Inject constructor(
 
         val candidateEmails = userSnapshot.documents.mapNotNull { it.getString("email") }.toSet()
 
-        val participantResults = mutableListOf<MeetingDetailSummary>()
+        val participantResultIds = mutableSetOf<Long>()
         for (email in candidateEmails) {
             val meetingSnapshot = db.collection(COLLECTION_MEETINGS)
                 .whereArrayContains("participants", email)
                 .limit(SEARCH_LIMIT)
                 .get()
                 .await()
-            participantResults += meetingSnapshot.documents.mapNotNull { 
-                mapMeetingDoc(it.data ?: emptyMap()) 
+            meetingSnapshot.documents.forEach { doc ->
+                (doc.data?.get("meetingId") as? Number)?.toLong()?.let { 
+                    participantResultIds.add(it) 
+                }
             }
         }
 
-        return participantResults
+        return participantResultIds.toList()
     }
 
     private fun normalize(text: String): String = text.trim().lowercase()

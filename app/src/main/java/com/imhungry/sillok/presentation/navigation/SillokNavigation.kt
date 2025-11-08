@@ -251,7 +251,9 @@ fun SillokNavigation(
                     navController.navigate(Screen.WaitingRoom.createRoute(meetingId))
                 },
                 onBackClick = {
-                    navController.popBackStack()
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.MeetingDetail.route) { inclusive = true }
+                    }
                 }
             )
         }

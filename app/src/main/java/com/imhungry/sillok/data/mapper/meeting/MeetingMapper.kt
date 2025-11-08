@@ -7,13 +7,14 @@ import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import javax.inject.Inject
+import kotlin.text.take
 
 class MeetingMapper @Inject constructor() {
     fun toDto(request: CreateMeetingRequest): MeetingReqDto {
         return MeetingReqDto(
             title = request.title,
             location = request.location,
-            scheduledStartTime = request.scheduledStartTime,
+            scheduledStartTime = request.scheduledStartTime.take(19),
             targetTime = request.targetTime,
             restInterval = request.restInterval,
             restDuration = request.restDuration,
@@ -27,7 +28,7 @@ class MeetingMapper @Inject constructor() {
             meetingId = dto.meetingId,
             title = dto.title,
             location = dto.location,
-            scheduledStartTime = dto.scheduledStartTime,
+            scheduledStartTime = dto.scheduledStartTime.take(19),
             targetTime = dto.targetTime,
             restInterval = dto.restInterval,
             restDuration = dto.restDuration,
@@ -43,7 +44,7 @@ class MeetingMapper @Inject constructor() {
         return MeetingDetailSummary(
             id = dto.id,
             title = dto.title,
-            scheduledStartTime = dto.scheduledStartTime,
+            scheduledStartTime = dto.scheduledStartTime.take(19),
             targetTime = dto.targetTime,
             status = dto.status
         )

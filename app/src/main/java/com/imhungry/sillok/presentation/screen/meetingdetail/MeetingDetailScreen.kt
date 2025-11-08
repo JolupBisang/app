@@ -25,7 +25,6 @@ import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.components.SillokButtonRow
 import com.imhungry.sillok.ui.components.SillokDialog
 import com.imhungry.sillok.presentation.screen.meetingform.components.TimeInputField
-import com.imhungry.sillok.presentation.state.meetingform.MeetingFormEvent
 import com.imhungry.sillok.ui.theme.primaryBackground
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -43,8 +42,6 @@ fun MeetingDetailScreen(
     LaunchedEffect(Unit) {
         viewModel.loadMeetingDetail(meetingId)
     }
-
-    BackHandler { onBackClick() }
 
     Box(
         modifier = Modifier.fillMaxSize()
