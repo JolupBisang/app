@@ -384,7 +384,7 @@ class MeetingInProgressViewModel @Inject constructor(
                             SegmentUi(
                                 timestamp = DateTimeUtils.getElapsedString(startMillis, seg.timestamp),
                                 text = seg.text,
-                                nickname = seg.userName,
+                                nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
                                 profileImage = "",
                                 isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
                                 isSameAsPrevious = isSameAsPrevious,
@@ -400,8 +400,8 @@ class MeetingInProgressViewModel @Inject constructor(
                     is ApiResult.Success -> {
                         val ui = result.data.map {
                             SummaryUi(
-                                content = it.content,
-                                timestamp = DateTimeUtils.getElapsedString(startMillis, it.timestamp)
+                                content = it.content.joinToString("\n"),
+                                timestamp = DateTimeUtils.getElapsedString(startMillis, it.generatedDateTime)
                             )
                         }
                         _state.update { it.copy(summaries = ui) }
@@ -422,7 +422,7 @@ class MeetingInProgressViewModel @Inject constructor(
                         val ui = result.data.map {
                             FeedbackUi(
                                 comment = it.comment,
-                                timestamp = DateTimeUtils.getElapsedString(startMillis, it.timestamp),
+                                timestamp = DateTimeUtils.getElapsedString(startMillis, it.generatedDateTime),
                                 isRead = false
                             )
                         }
@@ -682,14 +682,14 @@ class MeetingInProgressViewModel @Inject constructor(
             val currentState = state.value
             val existingRatesMap = currentState.participationRates.associateBy { it.userId }
             
-            // 새로운 참여율로 업데이트 (nickname 조회)
+            // 새로운 참여율로 업데이트
             val updatedRates = rates.map { (userId, rate) ->
                 existingRatesMap[userId]?.let { existing ->
                     existing.copy(rate = rate)
                 } ?: UserParticipationRate(
                     userId = userId,
-                    nickname = userNicknameCache[userId] ?: "사용자 $userId",
-                    rate = rate
+                    rate = rate,
+                    totalParticipationChunk = 0L
                 )
             }
             
@@ -983,11 +983,11 @@ class MeetingInProgressViewModel @Inject constructor(
 		)
 
 		val dummyParticipation = listOf(
-			UserParticipationRate(userId = 1L, nickname = "김부장", rate = 0.45),
-			UserParticipationRate(userId = 2L, nickname = "조사원", rate = 0.35),
-			UserParticipationRate(userId = 3L, nickname = "정대리", rate = 0.15),
-            UserParticipationRate(userId = 4L, nickname = "김상병", rate = 0.08),
-            UserParticipationRate(userId = 5L, nickname = "정과장", rate = 0.07)
+			UserParticipationRate(userId = 1L, rate = 0.45, totalParticipationChunk = 150L),
+			UserParticipationRate(userId = 2L, rate = 0.35, totalParticipationChunk = 120L),
+			UserParticipationRate(userId = 3L, rate = 0.15, totalParticipationChunk = 50L),
+            UserParticipationRate(userId = 4L, rate = 0.08, totalParticipationChunk = 25L),
+            UserParticipationRate(userId = 5L, rate = 0.07, totalParticipationChunk = 20L)
 		)
 
 		val dummyFeedbacks = listOf(

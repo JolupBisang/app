@@ -38,7 +38,7 @@ class FeedbackApiMockWebServerTest {
 
     @Test
     fun getFeedbacks_contract() = runTest {
-        val body = gson.toJson(FeedbackListResDto(id=1, comment="c", timestamp="t"))
+        val body = gson.toJson(FeedbackListResDto(id=1, comment="c", generatedDateTime="t"))
         server.enqueue(MockResponse().setResponseCode(200).setBody(body))
 
         val resp = api.getFeedbacks(10)

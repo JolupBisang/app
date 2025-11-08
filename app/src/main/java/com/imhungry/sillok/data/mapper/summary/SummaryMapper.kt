@@ -10,7 +10,7 @@ class SummaryMapper @Inject constructor() {
             id = dto.id,
             content = dto.content,
             isRecap = dto.isRecap,
-            timestamp = dto.timestamp
+            generatedDateTime = dto.generatedDateTime
         )
     }
 }

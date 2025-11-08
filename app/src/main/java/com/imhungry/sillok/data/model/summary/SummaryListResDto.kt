@@ -2,7 +2,7 @@ package com.imhungry.sillok.data.model.summary
 
 data class SummaryListResDto(
     val id: Long,
-    val content: String,
+    val content: List<String>,
     val isRecap: Boolean,
-    val timestamp: String
+    val generatedDateTime: String
 )

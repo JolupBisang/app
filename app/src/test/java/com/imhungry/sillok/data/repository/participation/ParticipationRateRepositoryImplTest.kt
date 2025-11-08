@@ -25,8 +25,8 @@ class ParticipationRateRepositoryImplTest {
     fun getParticipationRateHistory_success_mapsList() = runTest {
         val dto = ParticipationRateHistoryResDto(
             userParticipationRates = listOf(
-                UserParticipationRateDto(userId = 1L, nickname = "n1", rate = 0.5),
-                UserParticipationRateDto(userId = 2L, nickname = "n2", rate = 0.7)
+                UserParticipationRateDto(userId = 1L, rate = 0.5, totalParticipationChunk = 10L),
+                UserParticipationRateDto(userId = 2L, rate = 0.7, totalParticipationChunk = 15L)
             )
         )
         coEvery { api.getParticipationRateHistory(10) } returns Response.success(dto)
@@ -36,7 +36,9 @@ class ParticipationRateRepositoryImplTest {
         assertTrue(result is ApiResult.Success)
         val data = (result as ApiResult.Success).data
         assertEquals(2, data.size)
-        assertEquals("n2", data[1].nickname)
+        assertEquals(2L, data[1].userId)
+        assertEquals(0.7, data[1].rate)
+        assertEquals(15L, data[1].totalParticipationChunk)
     }
 }
 

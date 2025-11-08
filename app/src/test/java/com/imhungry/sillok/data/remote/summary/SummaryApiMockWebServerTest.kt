@@ -38,7 +38,7 @@ class SummaryApiMockWebServerTest {
 
     @Test
     fun getSummaries_contract() = runTest {
-        val body = gson.toJson(SummaryListResDto(id = 1, content = "c", isRecap = false, timestamp = "t"))
+        val body = gson.toJson(SummaryListResDto(id = 1, content = listOf(SummaryContentItem(text = "c")), isRecap = false, generatedDateTime = "t"))
         server.enqueue(MockResponse().setResponseCode(200).setBody(body))
 
         val resp = api.getSummaries(10, false)
@@ -47,7 +47,8 @@ class SummaryApiMockWebServerTest {
         assertEquals("/api/v1/meetings/10/summary?isRecap=false", req.path)
         assertEquals("GET", req.method)
         assertTrue(resp.isSuccessful)
-        assertEquals("c", resp.body()!!.content)
+        assertEquals(1, resp.body()!!.content.size)
+        assertEquals("c", resp.body()!!.content[0].text)
     }
 }
 

@@ -22,7 +22,7 @@ class SummaryRepositoryImplTest {
 
     @Test
     fun getSummaries_success_mapsList() = runTest {
-        val dto = SummaryListResDto(id = 7L, content = "c", isRecap = false, timestamp = "t")
+        val dto = SummaryListResDto(id = 7L, content = listOf(SummaryContentItem(text = "c")), isRecap = false, generatedDateTime = "t")
         coEvery { api.getSummaries(10, false) } returns Response.success(dto)
 
         val result = repository.getSummaries(10, false, 0, 30)

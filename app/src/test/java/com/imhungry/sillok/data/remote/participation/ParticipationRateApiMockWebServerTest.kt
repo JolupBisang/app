@@ -42,8 +42,8 @@ class ParticipationRateApiMockWebServerTest {
         val body = gson.toJson(
             ParticipationRateHistoryResDto(
                 userParticipationRates = listOf(
-                    UserParticipationRateDto(1, "n1", 0.5),
-                    UserParticipationRateDto(2, "n2", 0.7)
+                    UserParticipationRateDto(userId = 1L, rate = 0.5, totalParticipationChunk = 10L),
+                    UserParticipationRateDto(userId = 2L, rate = 0.7, totalParticipationChunk = 15L)
                 )
             )
         )

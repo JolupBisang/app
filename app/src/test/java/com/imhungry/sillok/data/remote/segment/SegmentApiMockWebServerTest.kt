@@ -40,7 +40,7 @@ class SegmentApiMockWebServerTest {
     fun getSegments_contract() = runTest {
         val body = gson.toJson(
             SegmentListResDto(
-                id = 1, userId = 2, userName = "u",
+                id = 1, userId = 2,
                 segmentOrder = 1, timestamp = "t", text = "hello", lang = "ko"
             )
         )

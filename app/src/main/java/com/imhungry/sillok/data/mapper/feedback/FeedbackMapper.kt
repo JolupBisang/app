@@ -9,7 +9,7 @@ class FeedbackMapper @Inject constructor() {
         return Feedback(
             id = dto.id,
             comment = dto.comment,
-            timestamp = dto.timestamp
+            generatedDateTime = dto.generatedDateTime
         )
     }
 }

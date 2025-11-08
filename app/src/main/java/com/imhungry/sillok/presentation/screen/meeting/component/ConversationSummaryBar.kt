@@ -63,7 +63,7 @@ fun ConversationSummaryBar(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     range.forEach { i ->
-                        LegendItem(name = participationRates[i].nickname, color = colors.getOrElse(i) { green500 })
+                        LegendItem(name = "사용자 ${participationRates[i].userId}", color = colors.getOrElse(i) { green500 })
                     }
                 }
             }

@@ -2,6 +2,6 @@ package com.imhungry.sillok.domain.model.participation
 
 data class UserParticipationRate(
     val userId: Long,
-    val nickname: String,
-    val rate: Double
+    val rate: Double,
+    val totalParticipationChunk: Long
 )

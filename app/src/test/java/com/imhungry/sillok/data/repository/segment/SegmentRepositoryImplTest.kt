@@ -23,7 +23,7 @@ class SegmentRepositoryImplTest {
     @Test
     fun getSegments_success_mapsDomainList() = runTest {
         val dto = SegmentListResDto(
-            id = 1L, userId = 2L, userName = "u",
+            id = 1L, userId = 2L,
             segmentOrder = 1, timestamp = "t", text = "hello", lang = "ko"
         )
         coEvery { api.getSegments(10) } returns Response.success(dto)

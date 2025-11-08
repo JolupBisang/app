@@ -22,7 +22,7 @@ class FeedbackRepositoryImplTest {
 
     @Test
     fun getFeedbacks_success_mapsDomainList() = runTest {
-        val dto = FeedbackListResDto(id = 1L, comment = "good", timestamp = "t")
+        val dto = FeedbackListResDto(id = 1L, comment = "good", generatedDateTime = "t")
         coEvery { api.getFeedbacks(10) } returns Response.success(dto)
 
         val result = repository.getFeedbacks(10, 0, 30)

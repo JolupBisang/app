@@ -133,7 +133,7 @@ class MeetingMinutesViewModel @Inject constructor(
                         SegmentUi(
                             timestamp = DateTimeUtils.getElapsedString(startMillis, seg.timestamp),
                             text = seg.text,
-                            nickname = seg.userName,
+                            nickname = "사용자 ${seg.userId}",
                             profileImage = "",
                             isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
                             isSameAsPrevious = isSameAsPrevious,
@@ -149,8 +149,8 @@ class MeetingMinutesViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     val ui = result.data.map {
                         SummaryUi(
-                            content = it.content,
-                            timestamp = DateTimeUtils.getElapsedString(startMillis, it.timestamp)
+                            content = it.content.joinToString("\n"),
+                            timestamp = DateTimeUtils.getElapsedString(startMillis, it.generatedDateTime)
                         )
                     }
                     _state.update { it.copy(summaries = ui) }
@@ -160,7 +160,8 @@ class MeetingMinutesViewModel @Inject constructor(
 
             when (val result = recapDeferred.await()) {
                 is ApiResult.Success -> {
-                    val recap = result.data.firstOrNull()?.content ?: ""
+                    val recap: String = result.data.first().content.joinToString("\n")
+                    // generatedDateTime이 null이어도 recapSummary는 설정
                     _state.update { it.copy(recapSummary = recap) }
                     Log.d(TAG, "리캡 요약 로드 성공: ${recap}")
                 }
@@ -180,7 +181,7 @@ class MeetingMinutesViewModel @Inject constructor(
                     val ui = result.data.map {
                         FeedbackUi(
                             comment = it.comment,
-                            timestamp = DateTimeUtils.getElapsedString(startMillis, it.timestamp),
+                            timestamp = DateTimeUtils.getElapsedString(startMillis, it.generatedDateTime),
                             isRead = false
                         )
                     }
@@ -217,9 +218,9 @@ class MeetingMinutesViewModel @Inject constructor(
         )
 
         val dummyParticipation = listOf(
-            com.imhungry.sillok.domain.model.participation.UserParticipationRate(userId = 1L, nickname = "김철수", rate = 0.32),
-            com.imhungry.sillok.domain.model.participation.UserParticipationRate(userId = 2L, nickname = "이영희", rate = 0.27),
-            com.imhungry.sillok.domain.model.participation.UserParticipationRate(userId = 3L, nickname = "박민수", rate = 0.18),
+            com.imhungry.sillok.domain.model.participation.UserParticipationRate(userId = 1L, rate = 0.32, totalParticipationChunk = 100L),
+            com.imhungry.sillok.domain.model.participation.UserParticipationRate(userId = 2L, rate = 0.27, totalParticipationChunk = 85L),
+            com.imhungry.sillok.domain.model.participation.UserParticipationRate(userId = 3L, rate = 0.18, totalParticipationChunk = 55L),
         )
 
         val dummySegments = listOf(

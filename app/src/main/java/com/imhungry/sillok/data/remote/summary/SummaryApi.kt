@@ -10,6 +10,6 @@ interface SummaryApi {
     @GET("/api/v1/meetings/{meetingId}/summary")
     suspend fun getSummaries(
         @Path("meetingId") meetingId: Long,
-        @Query("isRecap") isRecap: Boolean = false
+        @Query("isRecap") isRecap: Boolean = false,
     ): Response<SummaryListResDto>
 }

@@ -9,11 +9,10 @@ class SegmentMapper @Inject constructor() {
         return Segment(
             id = dto.id,
             userId = dto.userId,
-            userName = dto.userName,
             segmentOrder = dto.segmentOrder,
-            timestamp = dto.timestamp,
-            text = dto.text,
-            lang = dto.lang
+            timestamp = dto.timestamp ?: "",
+            text = dto.text ?: "",
+            lang = dto.lang ?: ""
         )
     }
 }
