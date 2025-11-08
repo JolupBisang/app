@@ -31,11 +31,6 @@ fun BasicBox(
     navigationBarColor: Color,
     backgroundColor: Color,
     isLoading: Boolean = false,
-    dialogMessage: String? = null,
-    dialogConfirmText: String = "예",
-    dialogCancelText: String = "취소",
-    onDialogConfirm: (() -> Unit)? = null,
-    onDialogDismiss: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     SystemBars(
@@ -47,11 +42,15 @@ fun BasicBox(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
-            .windowInsetsPadding(WindowInsets.systemBars)
-            .padding(20.dp)
     ) {
-        content()
-
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.systemBars)
+                .padding(20.dp)
+        ) {
+            content()
+        }
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -72,17 +71,6 @@ fun BasicBox(
                 )
             }
         }
-
-        if (dialogMessage != null && onDialogConfirm != null && onDialogDismiss != null) {
-            SillokDialog(
-                visible = true,
-                message = dialogMessage,
-                confirmText = dialogConfirmText,
-                cancelText = dialogCancelText,
-                onConfirm = onDialogConfirm,
-                onDismiss = onDialogDismiss
-            )
-        }
     }
 }
 
@@ -101,10 +89,14 @@ fun MeetingBasicBox(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
-            .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
-        content()
-
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+        ) {
+            content()
+        }
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -147,11 +139,14 @@ fun HomeBasicBox(
             .fillMaxSize()
             .background(backgroundColor)
             .background(gradientBrush)
-            .windowInsetsPadding(WindowInsets.systemBars)
-            .padding(start = 20.dp, end = 20.dp, bottom = 20.dp, top = 12.dp)
-    ) {
-        content()
-
+            .windowInsetsPadding(WindowInsets.systemBars)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 20.dp, end = 20.dp, bottom = 20.dp, top = 12.dp)
+        ) {
+            content()
+        }
         if (isLoading) {
             Box(
                 modifier = Modifier
