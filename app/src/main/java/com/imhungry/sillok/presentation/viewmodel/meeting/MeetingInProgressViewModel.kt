@@ -31,6 +31,7 @@ import com.imhungry.sillok.domain.usecase.segment.GetSegmentsUseCase
 import com.imhungry.sillok.domain.usecase.summary.GetSummariesUseCase
 import com.imhungry.sillok.domain.usecase.user.GetUserInfoUseCase
 import com.imhungry.sillok.presentation.service.MeetingInProgressService
+import com.imhungry.sillok.presentation.service.ServiceEvent
 import com.imhungry.sillok.presentation.state.meeting.FeedbackUi
 import com.imhungry.sillok.presentation.state.meeting.MeetingInProgressEvent
 import com.imhungry.sillok.presentation.state.meeting.MeetingInProgressState
@@ -165,31 +166,38 @@ class MeetingInProgressViewModel @Inject constructor(
             MeetingInProgressService.serviceEvents.collectLatest { event ->
                 Log.d(TAG, "[5-2] Service 이벤트 수신: ${event::class.simpleName}")
                 when (event) {
-                    is MeetingInProgressService.ServiceEvent.ConnectionEstablished -> {
+                    is ServiceEvent.ConnectionEstablished -> {
                         Log.d(TAG, "[5-3] ConnectionEstablished 이벤트 처리 시작: lastProcessedChunkId=${event.lastProcessedChunkId}")
                         _state.update { it.copy(isLoading = false) }
                         handleConnectionEstablishedFromService(event.lastProcessedChunkId)
                     }
-                    is MeetingInProgressService.ServiceEvent.DiarizedSegment -> {
+                    is ServiceEvent.DiarizedSegment -> {
                         handleDiarizedSegment(event.segment)
                     }
-                    is MeetingInProgressService.ServiceEvent.MeetingCompleted -> {
-                        handleMeetingCompleted()
+                    is ServiceEvent.CompletionScheduled -> {
+                        handleCompletionScheduled()
                     }
-                    is MeetingInProgressService.ServiceEvent.MeetingNoteCreated -> {
-                        handleMeetingNoteCreated(event.message)
+                    is ServiceEvent.MeetingCompleted -> {
+                        handleMeetingCompleted(event.message)
                     }
-                    is MeetingInProgressService.ServiceEvent.ParticipationRate -> {
+                    is ServiceEvent.ParticipationRate -> {
                         handleParticipationRate(event.rates)
                     }
-                    is MeetingInProgressService.ServiceEvent.Feedback -> {
+                    is ServiceEvent.Feedback -> {
                         handleFeedback(event.feedback)
                     }
-                    is MeetingInProgressService.ServiceEvent.Summary -> {
+                    is ServiceEvent.Summary -> {
                         handleSummary(event.summary)
                     }
-                    is MeetingInProgressService.ServiceEvent.Error -> {
+                    is ServiceEvent.Error -> {
                         handleError(event.error)
+                    }
+                    is ServiceEvent.MicEnabled -> {
+                        _state.update { it.copy(isMicLoading = false) }
+                        Log.d(TAG, "마이크 활성화 완료")
+                    }
+                    is ServiceEvent.AgendaUpdated -> {
+                        handleAgendaUpdated(event.agendaId, event.isCompleted)
                     }
                 }
             }
@@ -521,12 +529,24 @@ class MeetingInProgressViewModel @Inject constructor(
      */
     @RequiresApi(Build.VERSION_CODES.O)
     fun toggleMic() {
+        val wasEnabled = _micEnabled.value
+        val newState = !wasEnabled
+        
         val intent = Intent(app, MeetingInProgressService::class.java).apply {
             action = MeetingInProgressService.ACTION_TOGGLE_MIC
         }
         app.startService(intent)
-        val newState = !_micEnabled.value
+        
         _micEnabled.value = newState
+        
+        // 마이크를 켤 때 (꺼져있었다가 켜질 때) 로딩 상태 설정
+        if (!wasEnabled && newState) {
+            _state.update { it.copy(isMicLoading = true) }
+            Log.d(TAG, "마이크 켜는 중... (로딩 시작)")
+        } else {
+            _state.update { it.copy(isMicLoading = false) }
+        }
+        
         Log.d(TAG, "마이크 토글: ${if (newState) "켜짐" else "꺼짐"}")
     }
 
@@ -548,6 +568,20 @@ class MeetingInProgressViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * 웹소켓에서 받은 아젠다 업데이트 처리
+     * 서버에서 이미 처리된 상태이므로 로컬 state만 업데이트
+     */
+    private fun handleAgendaUpdated(agendaId: Long, isCompleted: Boolean) {
+        Log.d(TAG, "아젠다 업데이트 수신: agendaId=$agendaId, isCompleted=$isCompleted")
+        val currentAgendas = state.value.agendas
+        val updated = currentAgendas.map { agenda ->
+            if (agenda.agendaId == agendaId) agenda.copy(isCompleted = isCompleted) else agenda
+        }
+        _state.update { it.copy(agendas = updated) }
+        Log.d(TAG, "아젠다 업데이트 완료: agendaId=$agendaId, isCompleted=$isCompleted")
     }
 
 
@@ -601,11 +635,50 @@ class MeetingInProgressViewModel @Inject constructor(
     }
 
     /**
-     * MEETING_NOTE_CREATED 수신 시 처리
-     * Firebase에 회의록 생성 완료 상태 업데이트 및 연결 해제
+     * COMPLETION_SCHEDULED 수신 시 처리
+     * Firebase에 endMillis와 generatingMeetingNoteId 저장
+     * (녹음과 SSE 연결은 Service에서 이미 해제됨)
      */
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun handleMeetingNoteCreated(message: String?) {
+    private fun handleCompletionScheduled() {
+        Log.d(TAG, "========================================")
+        Log.d(TAG, "회의 완료 예약 (회의록 생성 시작)")
+        Log.d(TAG, "========================================")
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val meetingId = state.value.meetingId
+                val endMillis = System.currentTimeMillis()
+                
+                // Firebase에 endMillis와 generatingMeetingNoteId 저장
+                FirebaseFirestore.getInstance()
+                    .collection("meetings")
+                    .document(meetingId.toString())
+                    .update(
+                        mapOf(
+                            "endMillis" to endMillis,
+                            "generatingMeetingNoteId" to meetingId
+                        )
+                    )
+                    .await()
+                
+                Log.d(TAG, "Firebase endMillis 및 generatingMeetingNoteId 업데이트 완료: meetingId=$meetingId, endMillis=$endMillis")
+                
+                // 홈으로 이동 이벤트 발생
+                _events.emit(MeetingInProgressEvent.NavigateToHome)
+            } catch (e: Exception) {
+                Log.e(TAG, "Firebase 업데이트 실패: ${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * MEETING_COMPLETED 수신 시 처리
+     * Firebase에 회의록 생성 완료 상태 업데이트 (generatingMeetingNoteId 제거)
+     * WebSocket 연결과 Service 종료
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun handleMeetingCompleted(message: String?) {
         Log.d(TAG, "========================================")
         Log.d(TAG, "회의록 생성 완료: $message")
         Log.d(TAG, "========================================")
@@ -623,44 +696,11 @@ class MeetingInProgressViewModel @Inject constructor(
                 
                 Log.d(TAG, "Firebase generatingMeetingNoteId 제거 완료: meetingId=$meetingId")
                 
-                // 웹소켓과 SSE 연결 해제
+                // WebSocket 연결과 Service 종료
                 disconnectAll()
-                Log.d(TAG, "회의록 생성 완료 후 연결 해제 완료")
+                Log.d(TAG, "회의록 생성 완료 후 연결 해제 및 Service 종료 완료")
             } catch (e: Exception) {
                 Log.e(TAG, "Firebase generatingMeetingNoteId 제거 실패: ${e.message}", e)
-            }
-        }
-    }
-
-    /**
-     * MEETING_COMPLETED 수신 시 처리
-     * Firebase에 회의록 생성 중인 회의 id 저장, 음성 녹음 및 SSE 연결 해제, 홈으로 이동 이벤트 발생
-     */
-    private fun handleMeetingCompleted() {
-        Log.d(TAG, "========================================")
-        Log.d(TAG, "회의 완료 (회의록 생성 시작)")
-        Log.d(TAG, "========================================")
-        
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val meetingId = state.value.meetingId
-                
-                // Firebase에 회의록 생성 중인 회의 id 저장
-                FirebaseFirestore.getInstance()
-                    .collection("meetings")
-                    .document(meetingId.toString())
-                    .update("generatingMeetingNoteId", meetingId)
-                    .await()
-                
-                Log.d(TAG, "Firebase generatingMeetingNoteId 업데이트 완료: meetingId=$meetingId")
-                
-                // Service에서 녹음과 SSE 연결은 이미 해제되었으므로, Service는 회의록 생성 완료를 기다리도록 유지
-                // (MEETING_NOTE_CREATED를 받으면 disconnectAll() 호출)
-                
-                // 홈으로 이동 이벤트 발생
-                _events.emit(MeetingInProgressEvent.NavigateToHome)
-            } catch (e: Exception) {
-                Log.e(TAG, "Firebase generatingMeetingNoteId 업데이트 실패: ${e.message}", e)
             }
         }
     }

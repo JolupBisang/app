@@ -148,7 +148,7 @@ fun MeetingInProgressScreen(
         MeetingBasicBox(
             navigationBarColor = whiteBackground,
             backgroundColor = primaryBackground,
-            isLoading = state.isLoading && !showCompleteDialog && !showLeaveDialog
+            isLoading = (state.isLoading || state.isMicLoading) && !showCompleteDialog && !showLeaveDialog
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()

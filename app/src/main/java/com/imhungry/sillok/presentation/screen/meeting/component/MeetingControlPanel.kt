@@ -1,5 +1,7 @@
 package com.imhungry.sillok.presentation.screen.meeting.component
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,6 +41,7 @@ import com.imhungry.sillok.ui.theme.shadow
 import com.imhungry.sillok.ui.theme.tertiary
 import com.imhungry.sillok.ui.theme.whiteBackground
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MeetingControlPanel(
     modifier: Modifier = Modifier,
