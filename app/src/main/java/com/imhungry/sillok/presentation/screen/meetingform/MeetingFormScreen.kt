@@ -291,8 +291,12 @@ fun MeetingFormScreen(
                                                         )
                                                     )
                                                 },
-                                                onEmailSubmitted = {
-                                                    // 직접 입력 추가 불가 (드롭다운에서만 선택 가능)
+                                                onEmailSubmitted = { email ->
+                                                    viewModel.onEvent(
+                                                        MeetingFormEvent.ParticipantEmailSelected(
+                                                            email
+                                                        )
+                                                    )
                                                 },
                                                 onEmailRemoved = { index ->
                                                     viewModel.onEvent(

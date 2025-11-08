@@ -1,5 +1,6 @@
 package com.imhungry.sillok.presentation.screen.meetingform.components
 
+import android.util.Patterns
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -88,7 +89,13 @@ fun EmailInputFieldWithAutocomplete(
                         ),
                         keyboardActions = KeyboardActions(
                             onDone = {
-                                // 포커스 제거 및 키보드 닫기 (직접 입력 추가 불가)
+                                val trimmedValue = value.trim()
+                                // 이메일 형식이 맞고, 중복이 아니면 추가
+                                if (trimmedValue.isNotEmpty() && 
+                                    Patterns.EMAIL_ADDRESS.matcher(trimmedValue).matches() &&
+                                    !participantEmails.contains(trimmedValue)) {
+                                    onEmailSubmitted(trimmedValue)
+                                }
                                 focusManager.clearFocus()
                                 keyboardController?.hide()
                             }
