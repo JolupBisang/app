@@ -755,12 +755,16 @@ class MeetingFormViewModel @Inject constructor(
             errors["endTime"] = "종료 시간을 선택해주세요"
         }
 
+        if (_state.value.duration.trim().isEmpty()) {
+            errors["duration"] = "시작 시간은 종료시간보다 빨라야 합니다."
+        }
+
         if (_state.value.location.trim().isEmpty()) {
-            errors["location"] = "장소를 입력해주세요"
+            errors["location"] = "회의 장소를 입력해주세요"
         }
 
         if (_state.value.agendas.isEmpty() || _state.value.agendas.all { it.trim().isEmpty() }) {
-            errors["agendas"] = "주제를 한 개 이상 입력해주세요"
+            errors["agendas"] = "회의 안건을 한 개 이상 입력해주세요"
         }
 
         if (_state.value.breakInterval.trim().isEmpty()) {
@@ -768,6 +772,13 @@ class MeetingFormViewModel @Inject constructor(
         }
         if (_state.value.breakDuration.trim().isEmpty()) {
             errors["breakDuration"] = "쉬는 시간 지속 시간을 입력해주세요"
+        }
+
+        if (_state.value.breakInterval.trim().toInt() <= 0) {
+            errors["breakInterval"] = "쉬는 시간 간격은 0보다 커야 합니다"
+        }
+        if (_state.value.breakDuration.trim().toInt() <= 0) {
+            errors["breakDuration"] = "쉬는 시간 지속 시간은 0보다 커야 합니다"
         }
 
         if (errors.isEmpty()) {

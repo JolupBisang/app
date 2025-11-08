@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import com.imhungry.sillok.data.local.DismissedMeetingStore
 import com.imhungry.sillok.data.local.TokenExpirationManager
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.presentation.navigation.SillokNavigation
@@ -35,6 +36,9 @@ class MainActivity : ComponentActivity() {
     
     @Inject
     lateinit var userStore: UserStore
+    
+    @Inject
+    lateinit var dismissedMeetingStore: DismissedMeetingStore
     
     companion object {
         private const val TAG = "MainActivity"
@@ -59,6 +63,12 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+        
+        // 앱 시작 시 숨긴 회의 목록 초기화
+        lifecycleScope.launch {
+            dismissedMeetingStore.clearAll()
+            Log.d(TAG, "DismissedMeetingStore 초기화 완료")
         }
         
         // User 데이터 로그 출력

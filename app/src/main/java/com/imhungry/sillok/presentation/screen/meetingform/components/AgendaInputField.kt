@@ -145,7 +145,7 @@ private fun AgendaItem(
             decorationBox = { innerTextField ->
                 if (agenda.isEmpty()) {
                     Text(
-                        text = "주제를 입력하세요",
+                        text = "안건을 입력하세요",
                         color = gray400,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Normal

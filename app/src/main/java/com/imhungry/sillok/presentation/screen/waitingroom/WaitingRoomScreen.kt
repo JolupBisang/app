@@ -45,6 +45,7 @@ import com.imhungry.sillok.presentation.state.waitingroom.WaitingRoomEvent
 import com.imhungry.sillok.presentation.viewmodel.meeting.AgendaViewModel
 import com.imhungry.sillok.presentation.viewmodel.waitingroom.WaitingRoomViewModel
 import com.imhungry.sillok.ui.components.MeetingBasicBox
+import com.imhungry.sillok.ui.components.SillokInfoDialog
 import com.imhungry.sillok.ui.components.SillokTextButton
 import com.imhungry.sillok.ui.theme.disabled
 import com.imhungry.sillok.ui.theme.primaryBackground
@@ -82,159 +83,172 @@ fun WaitingRoomScreen(
     val firstUncheckedIndex = agendas.indexOfFirst { !it.isCompleted }
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
 
-    MeetingBasicBox(
-        navigationBarColor = whiteBackground,
-        backgroundColor = primaryBackground,
-        isLoading = state.isLoading
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-                .padding(bottom = 20.dp)
+        MeetingBasicBox(
+            navigationBarColor = whiteBackground,
+            backgroundColor = primaryBackground,
+            isLoading = state.isLoading
         ) {
-            TopSheet(
-                expanded = isTopSheetExpanded,
-                onExpandedChange = { agendaViewModel.setTopSheetExpanded(it) },
-                peekContent = {
-                    if (agendas.isNotEmpty()) {
-                        val item = agendas[peekIndex]
-                        CheckItem(
-                            text = item.content,
-                            checked = item.isCompleted,
-                            isFocused = !item.isCompleted,
-                            onToggle = { waitingRoomViewModel.changeAgendaStatus(meetingId, item.agendaId, !item.isCompleted) }
-                        )
-                    }
-                },
-                content = {
-                    LazyColumn (
-                        modifier = Modifier.heightIn(max = 161.dp)
-                    ) {
-                        itemsIndexed(agendas) { i, item ->
+            Column(
+                modifier = Modifier.fillMaxSize()
+                    .padding(bottom = 20.dp)
+            ) {
+                TopSheet(
+                    expanded = isTopSheetExpanded,
+                    onExpandedChange = { agendaViewModel.setTopSheetExpanded(it) },
+                    peekContent = {
+                        if (agendas.isNotEmpty()) {
+                            val item = agendas[peekIndex]
                             CheckItem(
                                 text = item.content,
                                 checked = item.isCompleted,
-                                isFocused = !item.isCompleted && firstUncheckedIndex == i,
+                                isFocused = !item.isCompleted,
                                 onToggle = { waitingRoomViewModel.changeAgendaStatus(meetingId, item.agendaId, !item.isCompleted) }
                             )
                         }
-                    }
-                },
-                modifier = Modifier
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(top = 20.dp, start = 20.dp, end = 20.dp, bottom = 4.dp)
-            )
+                    },
+                    content = {
+                        LazyColumn (
+                            modifier = Modifier.heightIn(max = 161.dp)
+                        ) {
+                            itemsIndexed(agendas) { i, item ->
+                                CheckItem(
+                                    text = item.content,
+                                    checked = item.isCompleted,
+                                    isFocused = !item.isCompleted && firstUncheckedIndex == i,
+                                    onToggle = { waitingRoomViewModel.changeAgendaStatus(meetingId, item.agendaId, !item.isCompleted) }
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .padding(top = 20.dp, start = 20.dp, end = 20.dp, bottom = 4.dp)
+                )
 
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "회의가 시작되길 기다리는 중",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = tertiary,
-                        fontWeight = FontWeight.Medium
-                    )
-                    SillokTextButton(
-                        text = "시작하기",
-                        onClick = {
-                            waitingRoomViewModel.startMeeting()
-                        },
-                        modifier = Modifier.padding(top = 28.dp),
-                        textColor = primarySurface,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(7.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                shadow
-                            )
-                        )
-                    )
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .background(whiteBackground)
-                    .padding(start = 20.dp, end = 20.dp, top = 12.dp)
-            ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "00:00:00",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = disabled,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                    Text(
-                        text = state.targetTimeDisplay,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontSize = 13.sp,
-                        color = disabled,
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(end = 4.dp)
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "회의가 시작되길 기다리는 중",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = tertiary,
+                            fontWeight = FontWeight.Medium
+                        )
+                        SillokTextButton(
+                            text = "시작하기",
+                            onClick = {
+                                waitingRoomViewModel.startMeeting()
+                            },
+                            modifier = Modifier.padding(top = 28.dp),
+                            textColor = primarySurface,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Row(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 20.dp, end = 20.dp)
-                        .height(42.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .height(7.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    shadow
+                                )
+                            )
+                        )
+                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .background(whiteBackground)
+                        .padding(start = 20.dp, end = 20.dp, top = 12.dp)
                 ) {
                     Box(
-                        modifier = Modifier.padding(top = 6.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.power),
-                            contentDescription = "종료",
-                            modifier = Modifier.size(20.dp),
-                            colorFilter = ColorFilter.tint(disabled)
+                        Text(
+                            text = "00:00:00",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = disabled,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                        Text(
+                            text = state.targetTimeDisplay,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontSize = 13.sp,
+                            color = disabled,
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 4.dp)
                         )
                     }
 
-                    Box(
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(start = 20.dp, end = 20.dp)
+                            .height(42.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Box(
+                            modifier = Modifier.padding(top = 6.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.power),
+                                contentDescription = "종료",
+                                modifier = Modifier.size(20.dp),
+                                colorFilter = ColorFilter.tint(disabled)
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.mic),
+                                contentDescription = "마이크",
+                                modifier = Modifier.size(42.dp),
+                                colorFilter = ColorFilter.tint(disabled)
+                            )
+                        }
+
                         Image(
-                            painter = painterResource(id = R.drawable.mic),
-                            contentDescription = "마이크",
-                            modifier = Modifier.size(42.dp),
+                            painter = painterResource(id = R.drawable.out),
+                            contentDescription = "나가기",
+                            modifier = Modifier.size(26.dp),
                             colorFilter = ColorFilter.tint(disabled)
                         )
                     }
-
-                    Image(
-                        painter = painterResource(id = R.drawable.out),
-                        contentDescription = "나가기",
-                        modifier = Modifier.size(26.dp),
-                        colorFilter = ColorFilter.tint(disabled)
-                    )
                 }
             }
         }
+
+        SillokInfoDialog(
+            visible = state.error != null,
+            message = state.error ?: "오류가 발생했습니다.",
+            confirmText = "확인",
+            onConfirm = {
+                waitingRoomViewModel.clearError()
+            }
+        )
     }
 }

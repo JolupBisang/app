@@ -308,8 +308,12 @@ fun MeetingFormScreen(
                                             onEndTimeClick = { viewModel.onEvent(MeetingFormEvent.TimePickerShown) }
                                         )
                                         // 시간 에러 메시지
-                                        if (state.showValidationErrors && (state.validationErrors.containsKey("startTime") || state.validationErrors.containsKey("endTime"))) {
-                                            val timeError = state.validationErrors["startTime"] ?: state.validationErrors["endTime"] ?: ""
+                                        if (state.showValidationErrors &&
+                                            (state.validationErrors.containsKey("startTime")
+                                                    || state.validationErrors.containsKey("endTime")
+                                                    || state.validationErrors.containsKey("duration"))
+                                            ) {
+                                            val timeError = state.validationErrors["startTime"] ?: state.validationErrors["endTime"] ?: state.validationErrors["duration"] ?: ""
                                             if (timeError.isNotEmpty()) {
                                                 ErrorText(
                                                     text = timeError,
@@ -405,7 +409,7 @@ fun MeetingFormScreen(
 
                                                 Column {
                                                     AgendaInputField(
-                                                        label = "주제",
+                                                        label = "안건",
                                                         agendas = state.agendas,
                                                         onAgendaChanged = { index, agenda ->
                                                             viewModel.onEvent(MeetingFormEvent.AgendaChanged(index, agenda))

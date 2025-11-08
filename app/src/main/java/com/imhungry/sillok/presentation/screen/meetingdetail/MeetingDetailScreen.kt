@@ -125,7 +125,7 @@ fun MeetingDetailScreen(
 
                         item {
                             AgendaInputField(
-                                label = "주제",
+                                label = "안건",
                                 agendas = state.agendas,
                                 onAgendaChanged = { index, agenda -> /* 사용되지 않음 */ },
                                 onAgendaAdded = { /* 사용되지 않음 */ },

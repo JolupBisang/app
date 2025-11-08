@@ -228,6 +228,10 @@ class WaitingRoomViewModel @Inject constructor(
         meetingStartedListener = null
     }
 
+    fun clearError() {
+        _state.update { it.copy(error = null) }
+    }
+
     public override fun onCleared() {
         super.onCleared()
         detachMeetingStartedListener()
