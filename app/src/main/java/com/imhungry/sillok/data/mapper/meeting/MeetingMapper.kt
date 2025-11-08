@@ -34,7 +34,7 @@ class MeetingMapper @Inject constructor() {
             restDuration = dto.restDuration,
             meetingStatus = dto.meetingStatus,
             participants = dto.participants.map {
-                Meeting.Participant(it.userId, it.email)
+                Meeting.Participant(it.userId, it.email, it.role)
             },
             isHost = dto.isHost
         )

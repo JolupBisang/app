@@ -12,12 +12,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.imhungry.sillok.data.local.DismissedMeetingStore
+import com.imhungry.sillok.data.model.meeting.MeetingRole
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.tasks.await
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -50,22 +49,15 @@ class MeetingDetailViewModel @Inject constructor(
                             is ApiResult.Failure -> emptyList()
                         }
 
-                        // hostEmail from Firebase
-                        var hostEmail = ""
-                        try {
-                            val doc = FirebaseFirestore.getInstance()
-                                .collection("meetings")
-                                .document(meetingId.toString())
-                                .get()
-                                .await()
-                            hostEmail = doc.getString("hostEmail") ?: ""
-                        } catch (_: Exception) { }
+                        // hostEmail from participants role
+                        val hostEmail = meeting.participants
+                            .firstOrNull { it.role == MeetingRole.HOST }
+                            ?.email ?: ""
 
-                        // participant emails
-                        val participants = meeting.participants.map { it.email }.toMutableList()
-                        if (hostEmail.isNotBlank() && participants.none { it.equals(hostEmail, ignoreCase = true) }) {
-                            participants.add(0, hostEmail)
-                        }
+                        // participant emails (호스트를 맨 앞에 배치)
+                        val participants = meeting.participants
+                            .sortedBy { if (it.role == MeetingRole.HOST) 0 else 1 }
+                            .map { it.email }
 
                         _state.value = _state.value.copy(
                             meetingId = meetingId,

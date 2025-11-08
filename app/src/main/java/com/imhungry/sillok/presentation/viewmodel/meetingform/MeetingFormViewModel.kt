@@ -102,7 +102,6 @@ class MeetingFormViewModel @Inject constructor(
 
                         val meetingData = MeetingData(
                             title = meeting.title,
-                            description = "",
                             date = dateDigits,
                             startTime = startDigits,
                             endTime = endDigits,
@@ -463,10 +462,7 @@ class MeetingFormViewModel @Inject constructor(
                                 val data = hashMapOf(
                                     "meetingId" to meetingId,
                                     "title" to s.title,
-                                    "participants" to emails,
-                                    "hostEmail" to hostEmail,
-                                    "startMillis" to null,
-                                    "endMillis" to null
+                                    "participants" to emails
                                 )
                                 db.collection("meetings").document(meetingId.toString())
                                     .set(data)

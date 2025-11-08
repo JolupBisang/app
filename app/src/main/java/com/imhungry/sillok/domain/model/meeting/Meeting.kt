@@ -1,5 +1,7 @@
 package com.imhungry.sillok.domain.model.meeting
 
+import com.imhungry.sillok.data.model.meeting.MeetingRole
+
 data class Meeting(
     val meetingId: Long,
     val title: String,
@@ -14,6 +16,7 @@ data class Meeting(
 ) {
     data class Participant(
         val userId: Long,
-        val email: String
+        val email: String,
+        val role: MeetingRole
     )
 }

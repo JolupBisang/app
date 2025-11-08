@@ -14,6 +14,12 @@ data class MeetingDetailResDto(
 ) {
     data class ParticipantDto(
         val userId: Long,
-        val email: String
+        val email: String,
+        val role: MeetingRole,
     )
+}
+
+enum class MeetingRole {
+    HOST,
+    PARTICIPANT
 }

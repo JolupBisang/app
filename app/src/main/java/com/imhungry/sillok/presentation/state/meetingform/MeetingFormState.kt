@@ -48,7 +48,6 @@ data class MeetingFormState(
 // 기존 회의 데이터를 위한 데이터 클래스(편집 모드 초기화에 사용)
 data class MeetingData(
     val title: String,
-    val description: String,
     val date: String,
     val startTime: String,
     val endTime: String,
