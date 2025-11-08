@@ -77,7 +77,8 @@ fun VoiceRecognitionScreen(
     BasicBox(
         statusBarColor = brown400,
         navigationBarColor = brown400,
-        backgroundColor = brown400
+        backgroundColor = brown400,
+        isLoading = state.isProcessing
     ) {
         Box(
             modifier = Modifier.fillMaxSize()

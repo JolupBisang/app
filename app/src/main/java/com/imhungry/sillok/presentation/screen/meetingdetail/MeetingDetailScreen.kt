@@ -46,129 +46,134 @@ fun MeetingDetailScreen(
 
     BackHandler { onBackClick() }
 
-    BasicBox(
-        statusBarColor = primaryBackground,
-        navigationBarColor = primaryBackground,
-        backgroundColor = primaryBackground
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
+        BasicBox(
+            statusBarColor = primaryBackground,
+            navigationBarColor = primaryBackground,
+            backgroundColor = primaryBackground,
+            isLoading = state.isLoading
         ) {
-            ScreenHeader(
-                title = "회의 정보",
-                onBackClick = { onBackClick() }
-            )
-
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(top = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ScreenHeader(
+                    title = "회의 정보",
+                    onBackClick = { onBackClick() }
+                )
+
+                Column(
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    item {
-                        InputField(
-                            label = "제목",
-                            value = state.title,
-                            onValueChange = {},
-                            isReadOnly = true
-                        )
-                    }
-
-                    item {
-                        EmailInputFieldWithAutocomplete(
-                            label = "참석자",
-                            participantEmails = state.participantEmails,
-                            onValueChange = {},
-                            onEmailSelected = {},
-                            onEmailSubmitted = {},
-                            onEmailRemoved = {},
-                            isReadOnly = true,
-                            hostEmail = state.hostEmail
-                        )
-                    }
-
-                    item {
-                        DateInputField(
-                            label = "일시",
-                            value = state.date,
-                            onValueChange = {},
-                            placeholder = "YYYY / MM / DD",
-                            isReadOnly = true
-                        )
-                    }
-
-                    item {
-                        TimeInputField(
-                            label = "시간",
-                            startTime = state.startTime,
-                            endTime = state.endTime,
-                            duration = state.targetTime,
-                            onStartTimeChange = { /* 사용되지 않음 */ },
-                            onEndTimeChange = { /* 사용되지 않음 */ },
-                            onDurationChange = { /* 사용되지 않음 */ },
-                            isReadOnly = true
-                        )
-                    }
-
-                    item {
-                        InputField(
-                            label = "장소",
-                            value = state.location,
-                            onValueChange = {},
-                            isReadOnly = true
-                        )
-                    }
-
-                    item {
-                        AgendaInputField(
-                            label = "주제",
-                            agendas = state.agendas,
-                            onAgendaChanged = { index, agenda -> /* 사용되지 않음 */ },
-                            onAgendaAdded = { /* 사용되지 않음 */ },
-                            onAgendaRemoved = { index -> /* 사용되지 않음 */ },
-                            isReadOnly = true
-                        )
-                    }
-
-                    item {
-                        Column {
-                            BreakTimeInputField(
-                                label = "쉬는시간",
-                                breakInterval = state.breakInterval,
-                                breakDuration = state.breakDuration,
-                                onBreakIntervalChanged = { /* 사용되지 않음 */ },
-                                onBreakDurationChanged = { /* 사용되지 않음 */ },
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(top = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            InputField(
+                                label = "제목",
+                                value = state.title,
+                                onValueChange = {},
                                 isReadOnly = true
                             )
                         }
-                    }
-                }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 20.dp)
-                ) {
-                    if (state.isHost) {
-                        SillokButtonRow(
-                            onBack = {
-                                viewModel.showDismissDialog()
-                            },
-                            onEnter = {
-                                onStartMeeting()
-                            },
-                            onModify = {
-                                onEditMeeting()
+                        item {
+                            EmailInputFieldWithAutocomplete(
+                                label = "참석자",
+                                participantEmails = state.participantEmails,
+                                onValueChange = {},
+                                onEmailSelected = {},
+                                onEmailSubmitted = {},
+                                onEmailRemoved = {},
+                                isReadOnly = true,
+                                hostEmail = state.hostEmail
+                            )
+                        }
+
+                        item {
+                            DateInputField(
+                                label = "일시",
+                                value = state.date,
+                                onValueChange = {},
+                                placeholder = "YYYY / MM / DD",
+                                isReadOnly = true
+                            )
+                        }
+
+                        item {
+                            TimeInputField(
+                                label = "시간",
+                                startTime = state.startTime,
+                                endTime = state.endTime,
+                                duration = state.targetTime,
+                                onStartTimeChange = { /* 사용되지 않음 */ },
+                                onEndTimeChange = { /* 사용되지 않음 */ },
+                                onDurationChange = { /* 사용되지 않음 */ },
+                                isReadOnly = true
+                            )
+                        }
+
+                        item {
+                            InputField(
+                                label = "장소",
+                                value = state.location,
+                                onValueChange = {},
+                                isReadOnly = true
+                            )
+                        }
+
+                        item {
+                            AgendaInputField(
+                                label = "주제",
+                                agendas = state.agendas,
+                                onAgendaChanged = { index, agenda -> /* 사용되지 않음 */ },
+                                onAgendaAdded = { /* 사용되지 않음 */ },
+                                onAgendaRemoved = { index -> /* 사용되지 않음 */ },
+                                isReadOnly = true
+                            )
+                        }
+
+                        item {
+                            Column {
+                                BreakTimeInputField(
+                                    label = "쉬는시간",
+                                    breakInterval = state.breakInterval,
+                                    breakDuration = state.breakDuration,
+                                    onBreakIntervalChanged = { /* 사용되지 않음 */ },
+                                    onBreakDurationChanged = { /* 사용되지 않음 */ },
+                                    isReadOnly = true
+                                )
                             }
-                        )
-                    } else {
-                        SillokButton(
-                            text = "입장",
-                            onClick = { onStartMeeting() },
-                        )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 20.dp)
+                    ) {
+                        if (state.isHost) {
+                            SillokButtonRow(
+                                onBack = {
+                                    viewModel.showDismissDialog()
+                                },
+                                onEnter = {
+                                    onStartMeeting()
+                                },
+                                onModify = {
+                                    onEditMeeting()
+                                }
+                            )
+                        } else {
+                            SillokButton(
+                                text = "입장",
+                                onClick = { onStartMeeting() },
+                            )
+                        }
                     }
                 }
             }

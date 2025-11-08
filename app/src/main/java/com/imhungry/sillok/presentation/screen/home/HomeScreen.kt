@@ -335,7 +335,8 @@ private fun HomeContent(
         statusBarColor = primaryBackground,
         navigationBarColor = primaryBackground,
         backgroundColor = primaryBackground,
-        gradientBrush = gradientBrush
+        gradientBrush = gradientBrush,
+        isLoading = homeState.isLoading
     ) {
         Column(
             modifier = Modifier

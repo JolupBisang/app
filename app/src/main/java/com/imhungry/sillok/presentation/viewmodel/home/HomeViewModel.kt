@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Timestamp
 import com.imhungry.sillok.data.local.DismissedMeetingStore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
@@ -514,7 +515,16 @@ class HomeViewModel @Inject constructor(
     private fun mapMeetingDoc(data: Map<String, Any?>): MeetingDetailSummary? {
         val id = (data["meetingId"] as? Number)?.toLong() ?: return null
         val title = data["title"] as? String ?: ""
-        val scheduledStartTime = data["scheduledStartTime"] as? String ?: ""
+        val scheduledStartTime = when (val timeValue = data["scheduledStartTime"]) {
+            is String -> if (timeValue.isNotBlank()) timeValue else ""
+            is Timestamp -> {
+                // Firestore Timestamp를 ISO 형식 문자열로 변환
+                val date = timeValue.toDate()
+                val formatter = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+                formatter.format(date)
+            }
+            else -> ""
+        }
         val targetTime = (data["targetTime"] as? Number)?.toInt() ?: 0
         val status = data["meetingStatus"] as? String ?: "WAITING"
         

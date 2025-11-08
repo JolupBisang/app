@@ -1,6 +1,7 @@
 package com.imhungry.sillok.presentation.screen.meetingform
 
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,21 +40,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.activity.compose.BackHandler
-import com.imhungry.sillok.presentation.state.meetingform.MeetingData
-import com.imhungry.sillok.presentation.state.meetingform.MeetingFormEvent
-import com.imhungry.sillok.presentation.viewmodel.meetingform.MeetingFormViewModel
 import com.imhungry.sillok.presentation.screen.meetingform.components.AgendaInputField
-import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.presentation.screen.meetingform.components.BreakTimeInputField
 import com.imhungry.sillok.presentation.screen.meetingform.components.DateInputField
 import com.imhungry.sillok.presentation.screen.meetingform.components.EmailInputFieldWithAutocomplete
 import com.imhungry.sillok.presentation.screen.meetingform.components.ErrorText
 import com.imhungry.sillok.presentation.screen.meetingform.components.InputField
+import com.imhungry.sillok.presentation.screen.meetingform.components.TimeInputField
+import com.imhungry.sillok.presentation.state.meetingform.MeetingFormEvent
+import com.imhungry.sillok.presentation.viewmodel.meetingform.MeetingFormViewModel
+import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.components.SillokDialog
-import com.imhungry.sillok.presentation.screen.meetingform.components.TimeInputField
 import com.imhungry.sillok.ui.theme.gray400
 import com.imhungry.sillok.ui.theme.gray500
 import com.imhungry.sillok.ui.theme.primaryBackground
@@ -135,7 +134,8 @@ fun MeetingFormScreen(
         BasicBox(
             statusBarColor = primaryBackground,
             navigationBarColor = primaryBackground,
-            backgroundColor = primaryBackground
+            backgroundColor = primaryBackground,
+            isLoading = state.isLoading
         ) {
             Column(
             modifier = Modifier

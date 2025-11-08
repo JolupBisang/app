@@ -71,7 +71,8 @@ fun LoginScreen(
     BasicBox(
         statusBarColor = beige,
         navigationBarColor = beige,
-        backgroundColor = beige
+        backgroundColor = beige,
+        isLoading = state.isLoading
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),

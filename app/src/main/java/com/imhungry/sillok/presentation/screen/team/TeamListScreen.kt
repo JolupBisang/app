@@ -79,7 +79,8 @@ fun TeamListScreen(
     BasicBox(
         statusBarColor = primaryBackground,
         navigationBarColor = primaryBackground,
-        backgroundColor = primaryBackground
+        backgroundColor = primaryBackground,
+        isLoading = state.isLoading
     ) {
         Box(
             modifier = Modifier.fillMaxSize()

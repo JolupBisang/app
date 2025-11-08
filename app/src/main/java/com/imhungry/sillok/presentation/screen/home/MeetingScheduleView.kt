@@ -1,26 +1,20 @@
 package com.imhungry.sillok.presentation.screen.home
 
-import android.R.attr.minHeight
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.material.SnackbarDefaults.backgroundColor
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -32,29 +26,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.presentation.state.home.MeetingUi
-import com.imhungry.sillok.ui.components.Divider
-import com.imhungry.sillok.ui.components.SillokTextButton
-import com.imhungry.sillok.ui.theme.border
 import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.lightMeetingOutline
 import com.imhungry.sillok.ui.theme.meetingOutline
-import com.imhungry.sillok.ui.theme.primaryBackground
-import com.imhungry.sillok.ui.theme.primaryButton
-import com.imhungry.sillok.ui.theme.primarySurface
 import com.imhungry.sillok.ui.theme.primaryTextColor
 import com.imhungry.sillok.ui.theme.tertiary
-import com.imhungry.sillok.ui.theme.whiteBackground
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.LocalDateTime
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable

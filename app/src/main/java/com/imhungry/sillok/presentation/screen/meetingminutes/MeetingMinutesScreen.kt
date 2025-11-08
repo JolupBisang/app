@@ -88,7 +88,8 @@ fun MeetingMinutesScreen(
 
     MeetingBasicBox(
         navigationBarColor = whiteBackground,
-        backgroundColor = primaryBackground
+        backgroundColor = primaryBackground,
+        isLoading = state.isLoading
     ) {
         Box(
             modifier = Modifier.fillMaxSize()
@@ -175,28 +176,6 @@ fun MeetingMinutesScreen(
                     // AudioPlayerBar 외부에서 seekTo 요청이 왔을 때 처리
                 }
             )
-            
-            // 로딩 오버레이
-            if (state.isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(dialogBackGround)
-                        .zIndex(1000f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(R.drawable.loading)
-                                .decoderFactory(GifDecoder.Factory())
-                                .build()
-                        ),
-                        contentDescription = "로딩 gif",
-                        modifier = Modifier.size(80.dp)
-                    )
-                }
-            }
         }
     }
 }

@@ -84,7 +84,8 @@ fun WaitingRoomScreen(
 
     MeetingBasicBox(
         navigationBarColor = whiteBackground,
-        backgroundColor = primaryBackground
+        backgroundColor = primaryBackground,
+        isLoading = state.isLoading
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
