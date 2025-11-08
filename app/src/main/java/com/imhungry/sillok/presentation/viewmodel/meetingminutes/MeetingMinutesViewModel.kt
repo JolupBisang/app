@@ -59,17 +59,31 @@ class MeetingMinutesViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun refreshAll() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { 
+                it.copy(
+                    isLoading = true, 
+                    error = null,
+                    // 페이징 상태 초기화
+                    segmentsPage = 0,
+                    summariesPage = 0,
+                    feedbacksPage = 0,
+                    hasMoreSegments = true,
+                    hasMoreSummaries = true,
+                    hasMoreFeedbacks = true
+                ) 
+            }
 
             val meetingId = state.value.meetingId
 
             val detailDeferred = async { getMeetingDetailUseCase(meetingId) }
             val agendasDeferred = async { getAgendasUseCase(meetingId) }
-            val segmentsDeferred = async { getSegmentsUseCase(meetingId) }
-            val summariesDeferred = async { getSummariesUseCase(meetingId) }
+            // 전체 데이터를 한 번에 로드 (충분히 큰 size 사용)
+            val segmentsDeferred = async { getSegmentsUseCase(meetingId, page = 0, size = 1000) }
+            val summariesDeferred = async { getSummariesUseCase(meetingId, page = 0, size = 500) }
             val recapDeferred = async { getSummariesUseCase(meetingId, isRecap = true, page = 0, size = 1) }
             val participationDeferred = async { getParticipationRateHistoryUseCase(meetingId) }
-            val feedbacksDeferred = async { getFeedbacksUseCase(meetingId) }
+            // 전체 데이터를 한 번에 로드
+            val feedbacksDeferred = async { getFeedbacksUseCase(meetingId, page = 0, size = 500) }
             val audioDeferred = async { getAudioListUseCase(meetingId) }
 
             var errorMessage: String? = null
@@ -140,7 +154,13 @@ class MeetingMinutesViewModel @Inject constructor(
                             isSameAsNext = isSameAsNext
                         )
                     }
-                    _state.update { it.copy(segments = ui) }
+                    _state.update { 
+                        it.copy(
+                            segments = ui,
+                            segmentsPage = 0,
+                            hasMoreSegments = false // 전체 로드이므로 더 이상 없음
+                        ) 
+                    }
                 }
                 is ApiResult.Failure -> Log.e(TAG, "세그먼트 로드 실패: ${result.message}")
             }
@@ -153,7 +173,13 @@ class MeetingMinutesViewModel @Inject constructor(
                             timestamp = DateTimeUtils.getElapsedString(startMillis, it.generatedDateTime)
                         )
                     }
-                    _state.update { it.copy(summaries = ui) }
+                    _state.update { 
+                        it.copy(
+                            summaries = ui,
+                            summariesPage = 0,
+                            hasMoreSummaries = false // 전체 로드이므로 더 이상 없음
+                        ) 
+                    }
                 }
                 is ApiResult.Failure -> Log.e(TAG, "요약 로드 실패: ${result.message}")
             }
@@ -185,7 +211,13 @@ class MeetingMinutesViewModel @Inject constructor(
                             isRead = false
                         )
                     }
-                    _state.update { it.copy(feedbacks = ui) }
+                    _state.update { 
+                        it.copy(
+                            feedbacks = ui,
+                            feedbacksPage = 0,
+                            hasMoreFeedbacks = false // 전체 로드이므로 더 이상 없음
+                        ) 
+                    }
                 }
                 is ApiResult.Failure -> Log.e(TAG, "피드백 로드 실패: ${result.message}")
             }
@@ -204,6 +236,209 @@ class MeetingMinutesViewModel @Inject constructor(
             }
 
             _state.update { it.copy(isLoading = false, error = errorMessage) }
+        }
+    }
+
+    /**
+     * 세그먼트 더 불러오기 (무한 스크롤)
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun loadMoreSegments() {
+        val currentState = state.value
+        if (!currentState.hasMoreSegments || currentState.isLoadingMoreSegments) {
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingMoreSegments = true) }
+
+            val meetingId = currentState.meetingId
+            val nextPage = currentState.segmentsPage + 1
+
+            // Firebase에서 startMillis 조회
+            var startMillis: Long? = null
+            try {
+                val snapshot = FirebaseFirestore.getInstance()
+                    .collection("meetings")
+                    .document(meetingId.toString())
+                    .get()
+                    .await()
+                startMillis = snapshot.getLong("startMillis")
+            } catch (e: Exception) {
+                Log.e(TAG, "startMillis 조회 실패: ${e.message}", e)
+            }
+
+            when (val result = getSegmentsUseCase(meetingId, page = nextPage, size = 40)) {
+                is ApiResult.Success -> {
+                    val currentUserId = userStore.user.first()?.id
+                    val existingSegments = currentState.segments
+                    
+                    // 기존 세그먼트의 마지막 userId 확인 (isSameAsNext 업데이트용)
+                    val lastSegment = existingSegments.lastOrNull()
+                    
+                    val newUi = result.data.mapIndexed { index, seg ->
+                        val prevUserId = if (index > 0) {
+                            result.data[index - 1].userId
+                        } else {
+                            // 첫 번째 새 세그먼트인 경우, 기존 마지막 세그먼트의 userId 추출
+                            lastSegment?.nickname?.removePrefix("사용자 ")?.toLongOrNull()
+                        }
+                        val nextUserId = if (index < result.data.lastIndex) result.data[index + 1].userId else null
+                        val isSameAsPrevious = prevUserId != null && prevUserId == seg.userId
+                        val isSameAsNext = nextUserId != null && nextUserId == seg.userId
+                        
+                        SegmentUi(
+                            timestamp = DateTimeUtils.getElapsedString(startMillis, seg.timestamp),
+                            text = seg.text,
+                            nickname = "사용자 ${seg.userId}",
+                            profileImage = "",
+                            isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
+                            isSameAsPrevious = isSameAsPrevious,
+                            isSameAsNext = isSameAsNext
+                        )
+                    }
+                    
+                    // 기존 마지막 세그먼트의 isSameAsNext 업데이트
+                    val updatedExistingSegments = if (existingSegments.isNotEmpty() && newUi.isNotEmpty()) {
+                        val lastIndex = existingSegments.lastIndex
+                        val lastExisting = existingSegments[lastIndex]
+                        val firstNew = newUi[0]
+                        if (lastExisting.nickname == firstNew.nickname) {
+                            existingSegments.toMutableList().apply {
+                                this[lastIndex] = lastExisting.copy(isSameAsNext = true)
+                            }
+                        } else {
+                            existingSegments
+                        }
+                    } else {
+                        existingSegments
+                    }
+
+                    _state.update {
+                        it.copy(
+                            segments = updatedExistingSegments + newUi,
+                            segmentsPage = nextPage,
+                            hasMoreSegments = result.data.size >= 40,
+                            isLoadingMoreSegments = false
+                        )
+                    }
+                }
+                is ApiResult.Failure -> {
+                    Log.e(TAG, "세그먼트 더 불러오기 실패: ${result.message}")
+                    _state.update { it.copy(isLoadingMoreSegments = false) }
+                }
+            }
+        }
+    }
+
+    /**
+     * 요약 더 불러오기 (무한 스크롤)
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun loadMoreSummaries() {
+        val currentState = state.value
+        if (!currentState.hasMoreSummaries || currentState.isLoadingMoreSummaries) {
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingMoreSummaries = true) }
+
+            val meetingId = currentState.meetingId
+            val nextPage = currentState.summariesPage + 1
+
+            // Firebase에서 startMillis 조회
+            var startMillis: Long? = null
+            try {
+                val snapshot = FirebaseFirestore.getInstance()
+                    .collection("meetings")
+                    .document(meetingId.toString())
+                    .get()
+                    .await()
+                startMillis = snapshot.getLong("startMillis")
+            } catch (e: Exception) {
+                Log.e(TAG, "startMillis 조회 실패: ${e.message}", e)
+            }
+
+            when (val result = getSummariesUseCase(meetingId, page = nextPage, size = 30)) {
+                is ApiResult.Success -> {
+                    val newUi = result.data.map {
+                        SummaryUi(
+                            content = it.content.joinToString("\n"),
+                            timestamp = DateTimeUtils.getElapsedString(startMillis, it.generatedDateTime)
+                        )
+                    }
+
+                    _state.update {
+                        it.copy(
+                            summaries = it.summaries + newUi,
+                            summariesPage = nextPage,
+                            hasMoreSummaries = result.data.size >= 30,
+                            isLoadingMoreSummaries = false
+                        )
+                    }
+                }
+                is ApiResult.Failure -> {
+                    Log.e(TAG, "요약 더 불러오기 실패: ${result.message}")
+                    _state.update { it.copy(isLoadingMoreSummaries = false) }
+                }
+            }
+        }
+    }
+
+    /**
+     * 피드백 더 불러오기 (무한 스크롤)
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun loadMoreFeedbacks() {
+        val currentState = state.value
+        if (!currentState.hasMoreFeedbacks || currentState.isLoadingMoreFeedbacks) {
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update { it.copy(isLoadingMoreFeedbacks = true) }
+
+            val meetingId = currentState.meetingId
+            val nextPage = currentState.feedbacksPage + 1
+
+            // Firebase에서 startMillis 조회
+            var startMillis: Long? = null
+            try {
+                val snapshot = FirebaseFirestore.getInstance()
+                    .collection("meetings")
+                    .document(meetingId.toString())
+                    .get()
+                    .await()
+                startMillis = snapshot.getLong("startMillis")
+            } catch (e: Exception) {
+                Log.e(TAG, "startMillis 조회 실패: ${e.message}", e)
+            }
+
+            when (val result = getFeedbacksUseCase(meetingId, page = nextPage, size = 30)) {
+                is ApiResult.Success -> {
+                    val newUi = result.data.map {
+                        FeedbackUi(
+                            comment = it.comment,
+                            timestamp = DateTimeUtils.getElapsedString(startMillis, it.generatedDateTime),
+                            isRead = false
+                        )
+                    }
+
+                    _state.update {
+                        it.copy(
+                            feedbacks = it.feedbacks + newUi,
+                            feedbacksPage = nextPage,
+                            hasMoreFeedbacks = result.data.size >= 30,
+                            isLoadingMoreFeedbacks = false
+                        )
+                    }
+                }
+                is ApiResult.Failure -> {
+                    Log.e(TAG, "피드백 더 불러오기 실패: ${result.message}")
+                    _state.update { it.copy(isLoadingMoreFeedbacks = false) }
+                }
+            }
         }
     }
 

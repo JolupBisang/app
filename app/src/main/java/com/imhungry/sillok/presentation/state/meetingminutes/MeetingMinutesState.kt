@@ -29,5 +29,15 @@ data class MeetingMinutesState(
         presignedUrl = ""
     ),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    // 페이징 관련 상태
+    val segmentsPage: Int = 0,
+    val summariesPage: Int = 0,
+    val feedbacksPage: Int = 0,
+    val hasMoreSegments: Boolean = true,
+    val hasMoreSummaries: Boolean = true,
+    val hasMoreFeedbacks: Boolean = true,
+    val isLoadingMoreSegments: Boolean = false,
+    val isLoadingMoreSummaries: Boolean = false,
+    val isLoadingMoreFeedbacks: Boolean = false
 )
