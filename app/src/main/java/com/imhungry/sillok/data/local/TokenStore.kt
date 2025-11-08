@@ -22,6 +22,7 @@ class TokenStore @Inject constructor(
 
     companion object {
         private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
+        private val FCM_TOKEN_KEY = stringPreferencesKey("fcm_token")
         private const val TAG = "TokenStore"
     }
 
@@ -30,15 +31,26 @@ class TokenStore @Inject constructor(
         value
     }
 
+    val fcmToken: Flow<String?> = dataStore.data.map { preferences ->
+        preferences[FCM_TOKEN_KEY]
+    }
+
     suspend fun saveTokens(accessToken: String) {
         dataStore.edit { preferences ->
             preferences[ACCESS_TOKEN_KEY] = accessToken
         }
     }
 
+    suspend fun saveFcmToken(fcmToken: String) {
+        dataStore.edit { preferences ->
+            preferences[FCM_TOKEN_KEY] = fcmToken
+        }
+    }
+
     suspend fun clearTokens() {
         dataStore.edit { preferences ->
             preferences.remove(ACCESS_TOKEN_KEY)
+            preferences.remove(FCM_TOKEN_KEY)
         }
     }
 }

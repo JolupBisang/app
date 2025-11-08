@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import com.google.firebase.messaging.FirebaseMessaging
 import com.imhungry.sillok.data.local.DismissedMeetingStore
 import com.imhungry.sillok.data.local.TokenExpirationManager
 import com.imhungry.sillok.data.local.UserStore
@@ -67,7 +68,16 @@ class MainActivity : ComponentActivity() {
         // 앱 시작 시 숨긴 회의 목록 초기화
         lifecycleScope.launch {
             dismissedMeetingStore.clearAll()
-            Log.d(TAG, "DismissedMeetingStore 초기화 완료")
+        }
+
+        // FCM 토큰 가져오기 (자동으로 FcmService.onNewToken 호출됨)
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                Log.d(TAG, "FCM 토큰: $token")
+            } else {
+                Log.e(TAG, "FCM 토큰 가져오기 실패", task.exception)
+            }
         }
 
         // User 데이터 로그 출력
