@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,10 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.input.pointer.PointerInputScope
-import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -48,7 +45,6 @@ import com.imhungry.sillok.presentation.screen.meeting.component.CheckItem
 import com.imhungry.sillok.presentation.screen.meeting.component.Notification
 import com.imhungry.sillok.presentation.screen.meeting.component.TopSheet
 import com.imhungry.sillok.presentation.state.meeting.FeedbackUi
-import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.presentation.viewmodel.meeting.AgendaViewModel
 import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewModel
 import com.imhungry.sillok.ui.components.ScreenHeader
@@ -78,23 +74,23 @@ fun MeetingRecordScreen(
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
     val listState = rememberLazyListState()
     val topSheetHeightPx = remember { mutableStateOf(0) }
-    
+
     // 표시할 피드백 추적
     var displayedFeedback by remember { mutableStateOf<FeedbackUi?>(null) }
     var showNotification by remember { mutableStateOf(false) }
-    
+
     // 새로운 피드백이 올 때마다 알림 표시
     LaunchedEffect(feedbacks) {
         if (feedbacks.isNotEmpty()) {
             // 가장 최신 피드백 찾기 (읽지 않은 것)
             val latestUnreadFeedback = feedbacks.lastOrNull { !it.isRead }
-            
+
             if (latestUnreadFeedback != null) {
                 // 새로운 피드백이거나 아직 표시하지 않은 피드백인 경우
-                val isNewFeedback = displayedFeedback == null || 
-                    (latestUnreadFeedback.comment != displayedFeedback!!.comment || 
-                     latestUnreadFeedback.timestamp != displayedFeedback!!.timestamp)
-                
+                val isNewFeedback = displayedFeedback == null ||
+                        (latestUnreadFeedback.comment != displayedFeedback!!.comment ||
+                                latestUnreadFeedback.timestamp != displayedFeedback!!.timestamp)
+
                 if (isNewFeedback) {
                     displayedFeedback = latestUnreadFeedback
                     showNotification = true
@@ -102,41 +98,41 @@ fun MeetingRecordScreen(
             }
         }
     }
-    
+
     // 스케줄링된 피드백 (휴식 시간, 종료 시간 알림) 감시
     LaunchedEffect(scheduledFeedback) {
         if (scheduledFeedback != null) {
             // 새로운 스케줄링된 피드백이 오면 알림 표시
-            val isNewScheduledFeedback = displayedFeedback == null || 
-                (scheduledFeedback!!.comment != displayedFeedback!!.comment || 
-                 scheduledFeedback!!.timestamp != displayedFeedback!!.timestamp)
-            
+            val isNewScheduledFeedback = displayedFeedback == null ||
+                    (scheduledFeedback!!.comment != displayedFeedback!!.comment ||
+                            scheduledFeedback!!.timestamp != displayedFeedback!!.timestamp)
+
             if (isNewScheduledFeedback) {
                 displayedFeedback = scheduledFeedback
                 showNotification = true
             }
         }
     }
-    
+
     // 알림이 표시되면 4초 후 자동으로 닫기
     LaunchedEffect(showNotification, displayedFeedback) {
         if (showNotification && displayedFeedback != null) {
             delay(4000) // 4초 대기
-            
+
             // 피드백 읽음 처리
-            val feedbackIndex = feedbacks.indexOfLast { 
-                it.comment == displayedFeedback!!.comment && 
-                it.timestamp == displayedFeedback!!.timestamp 
+            val feedbackIndex = feedbacks.indexOfLast {
+                it.comment == displayedFeedback!!.comment &&
+                        it.timestamp == displayedFeedback!!.timestamp
             }
             if (feedbackIndex >= 0) {
                 meetingInProgressViewModel.markFeedbackReadAt(feedbackIndex)
             }
-            
+
             // 스케줄링된 피드백인 경우 해제
             if (displayedFeedback == scheduledFeedback) {
                 meetingInProgressViewModel.dismissScheduledFeedback()
             }
-            
+
             showNotification = false
             displayedFeedback = null
         }
@@ -161,7 +157,13 @@ fun MeetingRecordScreen(
                             text = agendas[peekIndex].content,
                             checked = agendas[peekIndex].isCompleted,
                             isFocused = !agendas[peekIndex].isCompleted,
-                            onToggle = { meetingInProgressViewModel.changeAgendaStatus(meetingId, agendas[peekIndex].agendaId, !agendas[peekIndex].isCompleted) }
+                            onToggle = {
+                                meetingInProgressViewModel.changeAgendaStatus(
+                                    meetingId,
+                                    agendas[peekIndex].agendaId,
+                                    !agendas[peekIndex].isCompleted
+                                )
+                            }
                         )
                     },
                     content = {
@@ -173,7 +175,13 @@ fun MeetingRecordScreen(
                                     text = item.content,
                                     checked = item.isCompleted,
                                     isFocused = !item.isCompleted && firstUncheckedIndex == i,
-                                    onToggle = { meetingInProgressViewModel.changeAgendaStatus(meetingId, item.agendaId, !item.isCompleted) }
+                                    onToggle = {
+                                        meetingInProgressViewModel.changeAgendaStatus(
+                                            meetingId,
+                                            item.agendaId,
+                                            !item.isCompleted
+                                        )
+                                    }
                                 )
                             }
                         }
@@ -199,19 +207,23 @@ fun MeetingRecordScreen(
                         if (index == 0) {
                             Spacer(modifier = Modifier.padding(top = 4.dp))
                         }
-                        
+
                         // 이전 세그먼트 확인
                         val prevSegment = if (index > 0) segments[index - 1] else null
-                        val isPrevInRestBreak = prevSegment != null && isInRestBreak(prevSegment.timestamp, restBreakPeriods)
-                        val isCurrentInRestBreak = isInRestBreak(message.timestamp, restBreakPeriods)
-                        
+                        val isPrevInRestBreak = prevSegment != null && isInRestBreak(
+                            prevSegment.timestamp,
+                            restBreakPeriods
+                        )
+                        val isCurrentInRestBreak =
+                            isInRestBreak(message.timestamp, restBreakPeriods)
+
                         // 쉬는 시간 시작
                         if (!isPrevInRestBreak && isCurrentInRestBreak) {
                             DividerWithText()
                         }
-                        
+
                         ChatBubble(segment = message)
-                        
+
                         if (index == segments.lastIndex) {
                             Spacer(modifier = Modifier.padding(bottom = 28.dp))
                         }
@@ -220,31 +232,33 @@ fun MeetingRecordScreen(
             }
 
         }
-        
+
         // 새로운 피드백 알림 표시
         if (showNotification && displayedFeedback != null) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 20.dp, start = 20.dp, end = 20.dp)
+                    .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 20.dp,
+                        start = 20.dp,
+                        end = 20.dp)
             ) {
                 SwipeToDismissNotification(
                     feedback = displayedFeedback!!,
                     onDismiss = {
                         // 피드백 읽음 처리
-                        val feedbackIndex = feedbacks.indexOfLast { 
-                            it.comment == displayedFeedback!!.comment && 
-                            it.timestamp == displayedFeedback!!.timestamp 
+                        val feedbackIndex = feedbacks.indexOfLast {
+                            it.comment == displayedFeedback!!.comment &&
+                                    it.timestamp == displayedFeedback!!.timestamp
                         }
                         if (feedbackIndex >= 0) {
                             meetingInProgressViewModel.markFeedbackReadAt(feedbackIndex)
                         }
-                        
+
                         // 스케줄링된 피드백인 경우 해제
                         if (displayedFeedback == scheduledFeedback) {
                             meetingInProgressViewModel.dismissScheduledFeedback()
                         }
-                        
+
                         showNotification = false
                         displayedFeedback = null
                     }
@@ -283,7 +297,9 @@ fun SwipeToDismissNotification(
 
                                     offsetX.animateTo(
                                         target,
-                                        animationSpec = androidx.compose.animation.core.tween(durationMillis = 300)
+                                        animationSpec = androidx.compose.animation.core.tween(
+                                            durationMillis = 300
+                                        )
                                     )
 
                                     onDismiss()
@@ -353,11 +369,14 @@ fun DividerWithText(
 /**
  * 세그먼트의 timestamp가 쉬는 시간 범위에 있는지 확인
  */
-private fun isInRestBreak(timestamp: String, restBreakPeriods: List<Pair<String, String>>): Boolean {
+private fun isInRestBreak(
+    timestamp: String,
+    restBreakPeriods: List<Pair<String, String>>
+): Boolean {
     if (restBreakPeriods.isEmpty()) return false
-    
+
     val timestampSeconds = timestampToSeconds(timestamp)
-    
+
     return restBreakPeriods.any { (startTime, endTime) ->
         val startSeconds = timestampToSeconds(startTime)
         val endSeconds = timestampToSeconds(endTime)

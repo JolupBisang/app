@@ -17,9 +17,13 @@ import com.imhungry.sillok.presentation.screen.meeting.MeetingInProgressScreen
 import com.imhungry.sillok.presentation.screen.meetingdetail.MeetingDetailScreen
 import com.imhungry.sillok.presentation.screen.meetingform.MeetingFormScreen
 import com.imhungry.sillok.presentation.screen.meetingminutes.MeetingMinutesScreen
-import com.imhungry.sillok.presentation.screen.meetingminutesfolder.MeetingMinutesFolderScreen
+import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderDetailScreen
+import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderFormScreen
+import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderListScreen
 import com.imhungry.sillok.presentation.screen.notification.NotificationHistoryScreen
 import com.imhungry.sillok.presentation.screen.splash.SplashScreen
+import com.imhungry.sillok.presentation.screen.team.TeamDetailScreen
+import com.imhungry.sillok.presentation.screen.team.TeamFormScreen
 import com.imhungry.sillok.presentation.screen.team.TeamListScreen
 import com.imhungry.sillok.presentation.screen.voice.CreateMeetingCompleteScreen
 import com.imhungry.sillok.presentation.screen.voice.VoiceRecognitionCompleteScreen
@@ -30,8 +34,10 @@ import com.imhungry.sillok.presentation.screen.waitingroom.WaitingRoomScreen
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
     object Login : Screen("login?token={token}") {
-        fun createRoute(token: String? = null) = if (token != null) "login?token=$token" else "login"
+        fun createRoute(token: String? = null) =
+            if (token != null) "login?token=$token" else "login"
     }
+
     object VoiceRecognitionIntro : Screen("voice_recognition_intro")
     object VoiceRecognition : Screen("voice_recognition")
     object VoiceRecognitionComplete : Screen("voice_recognition_complete")
@@ -40,22 +46,31 @@ sealed class Screen(val route: String) {
     object EditMeetingForm : Screen("edit_meeting_form/{meetingId}") {
         fun createRoute(meetingId: Long) = "edit_meeting_form/$meetingId"
     }
+
     object CreateMeetingComplete : Screen("create_meeting_complete")
     object MeetingDetail : Screen("meeting_detail/{meetingId}") {
         fun createRoute(meetingId: Long) = "meeting_detail/$meetingId"
     }
+
     object WaitingRoom : Screen("waiting_room/{meetingId}") {
         fun createRoute(meetingId: Long) = "waiting_room/$meetingId"
     }
+
     object MeetingInProgress : Screen("meeting_in_progress/{meetingId}") {
         fun createRoute(meetingId: Long) = "meeting_in_progress/$meetingId"
     }
+
     object MeetingMinutes : Screen("meeting_minutes/{meetingId}") {
         fun createRoute(meetingId: Long) = "meeting_minutes/$meetingId"
     }
+
     object NotificationHistory : Screen("notification_history")
     object TeamList : Screen("team_list")
-    object MeetingMinutesFolder : Screen("meeting_minutes_folder")
+    object TeamForm : Screen("team_form")
+    object TeamDetail : Screen("team_detail")
+    object FolderList : Screen("folder_list")
+    object FolderForm : Screen("folder_form")
+    object FolderDetail : Screen("folder_detail")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -208,7 +223,7 @@ fun SillokNavigation(
                     navController.navigate(Screen.TeamList.route)
                 },
                 onNavigateToMeetingMinutesFolder = {
-                    navController.navigate(Screen.MeetingMinutesFolder.route)
+                    navController.navigate(Screen.FolderList.route)
                 }
             )
         }
@@ -356,9 +371,19 @@ fun SillokNavigation(
             )
         }
 
+        // 팀 생성 화면
+        composable(Screen.TeamForm.route) {
+            TeamFormScreen()
+        }
+
+        // 팀 상세 화면
+        composable(Screen.TeamDetail.route) {
+            TeamDetailScreen()
+        }
+
         // 회의록 폴더 화면
-        composable(Screen.MeetingMinutesFolder.route) {
-            MeetingMinutesFolderScreen(
+        composable(Screen.FolderList.route) {
+            FolderListScreen(
                 onBackClick = {
                     navController.popBackStack()
                 },
@@ -373,5 +398,15 @@ fun SillokNavigation(
                 }
             )
         }
+
+        // 회의록 폴더 생성 화면
+        composable(Screen.FolderForm.route) {
+            FolderFormScreen()
+        }
+
+        // 회의록 폴더 상세 화면
+        composable(Screen.FolderDetail.route) {
+            FolderDetailScreen()
+        }
     }
-} 
+}

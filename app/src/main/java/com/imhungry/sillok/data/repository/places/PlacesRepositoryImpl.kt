@@ -22,7 +22,7 @@ class PlacesRepositoryImpl @Inject constructor(
 
             val suggestions = response.items.map { mapper.mapToPlaceSuggestion(it) }
             suggestions
-            
+
         } catch (e: Exception) {
             emptyList()
         }

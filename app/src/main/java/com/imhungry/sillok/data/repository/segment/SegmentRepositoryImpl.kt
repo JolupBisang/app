@@ -3,8 +3,8 @@ package com.imhungry.sillok.data.repository.segment
 import com.imhungry.sillok.data.mapper.segment.SegmentMapper
 import com.imhungry.sillok.data.remote.segment.SegmentApi
 import com.imhungry.sillok.data.util.ApiResult
-import com.imhungry.sillok.domain.repository.segment.SegmentRepository
 import com.imhungry.sillok.domain.model.segment.Segment
+import com.imhungry.sillok.domain.repository.segment.SegmentRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject

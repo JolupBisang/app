@@ -25,7 +25,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.pagerIndicatorBackground
-import com.imhungry.sillok.ui.theme.primarySurface
 import com.imhungry.sillok.ui.theme.shadow
 
 @Composable

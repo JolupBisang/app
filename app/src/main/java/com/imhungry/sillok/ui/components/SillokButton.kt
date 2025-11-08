@@ -102,17 +102,17 @@ fun SillokButtonRow(
             backgroundColor = gray500,
             textColor = primaryTextColor
         )
-        
+
         Spacer(modifier = Modifier.width(12.dp))
-        
+
         SillokButton(
             text = "입장",
             onClick = onEnter,
             modifier = Modifier.weight(1f)
         )
-        
+
         Spacer(modifier = Modifier.width(12.dp))
-        
+
         SillokButton(
             text = "수정",
             onClick = onModify,

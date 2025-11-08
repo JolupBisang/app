@@ -61,10 +61,10 @@ fun EmailInputFieldWithAutocomplete(
     val filteredSuggestions = emailSuggestions.filter { email ->
         !participantEmails.contains(email)
     }
-    
+
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    
+
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -172,7 +172,7 @@ fun SelectedEmailsList(
                 isReadOnly && isHost -> green300
                 else -> tertiary
             }
-            
+
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))

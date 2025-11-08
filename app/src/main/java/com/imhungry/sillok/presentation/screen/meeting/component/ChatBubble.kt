@@ -1,8 +1,6 @@
 package com.imhungry.sillok.presentation.screen.meeting.component
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -11,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -32,16 +29,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
 import com.imhungry.sillok.presentation.state.meeting.SegmentUi
-import com.imhungry.sillok.ui.theme.blackBackGround
 import com.imhungry.sillok.ui.theme.brown200
 import com.imhungry.sillok.ui.theme.brown500
 import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.green500
 import com.imhungry.sillok.ui.theme.placeHolder
 import com.imhungry.sillok.ui.theme.tertiary
-import kotlin.text.ifEmpty
 
 @Composable
 fun ChatBubble(
@@ -61,9 +55,9 @@ fun ChatBubble(
         horizontalAlignment = if (segment.isFromCurrentUser) Alignment.End else Alignment.Start
     ) {
         if (segment.isFromCurrentUser) {
-            MyMessage(segment,highlighted)
+            MyMessage(segment, highlighted)
         } else {
-            OthersMessage(segment,highlighted)
+            OthersMessage(segment, highlighted)
         }
     }
 }
@@ -88,7 +82,12 @@ private fun MyMessage(segment: SegmentUi, highlighted: Boolean) {
             ChatBox(
                 text = segment.text,
                 backgroundColor = if (highlighted) green300 else green500,
-                shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 10.dp, bottomEnd = 4.dp),
+                shape = RoundedCornerShape(
+                    topStart = 10.dp,
+                    topEnd = 10.dp,
+                    bottomStart = 10.dp,
+                    bottomEnd = 4.dp
+                ),
             )
         }
     }
@@ -125,7 +124,12 @@ private fun OthersMessage(
                     ChatBox(
                         text = segment.text,
                         backgroundColor = if (highlighted) brown200 else brown500,
-                        shape = RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp, bottomStart = 4.dp, bottomEnd = 10.dp),
+                        shape = RoundedCornerShape(
+                            topStart = 10.dp,
+                            topEnd = 10.dp,
+                            bottomStart = 4.dp,
+                            bottomEnd = 10.dp
+                        ),
                     )
                     if (!segment.isSameAsNext) {
                         Spacer(modifier = Modifier.width(2.dp))
@@ -146,7 +150,12 @@ private fun OthersMessage(
                 ChatBox(
                     text = segment.text,
                     backgroundColor = brown500,
-                    shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 4.dp, bottomEnd = 14.dp),
+                    shape = RoundedCornerShape(
+                        topStart = 14.dp,
+                        topEnd = 14.dp,
+                        bottomStart = 4.dp,
+                        bottomEnd = 14.dp
+                    ),
                 )
                 if (!segment.isSameAsNext) {
                     Spacer(modifier = Modifier.width(4.dp))

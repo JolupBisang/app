@@ -2,7 +2,6 @@ package com.imhungry.sillok.presentation.state.meetingminutes
 
 import com.imhungry.sillok.domain.model.agenda.Agenda
 import com.imhungry.sillok.domain.model.audio.AudioInfo
-import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.participation.UserParticipationRate
 import com.imhungry.sillok.presentation.state.meeting.FeedbackUi
 import com.imhungry.sillok.presentation.state.meeting.SegmentUi

@@ -11,20 +11,24 @@ import javax.inject.Inject
 class MeetingUserRepositoryImpl @Inject constructor(
     private val api: MeetingUserApi
 ) : MeetingUserRepository {
-    override suspend fun addMeetingUser(meetingId: Long, emails: List<String>): ApiResult<Unit> = withContext(Dispatchers.IO) {
-        try {
-            val res = api.addMeetingUser(meetingId, ParticipantAddReqDto(emails))
-            if (res.isSuccessful) {
-                ApiResult.Success(Unit)
-            } else {
-                ApiResult.Failure(res.message())
+    override suspend fun addMeetingUser(meetingId: Long, emails: List<String>): ApiResult<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val res = api.addMeetingUser(meetingId, ParticipantAddReqDto(emails))
+                if (res.isSuccessful) {
+                    ApiResult.Success(Unit)
+                } else {
+                    ApiResult.Failure(res.message())
+                }
+            } catch (e: Exception) {
+                ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
             }
-        } catch (e: Exception) {
-            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
         }
-    }
 
-    override suspend fun removeMeetingUser(meetingId: Long, participantUserId: Long): ApiResult<Unit> = withContext(Dispatchers.IO) {
+    override suspend fun removeMeetingUser(
+        meetingId: Long,
+        participantUserId: Long
+    ): ApiResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val res = api.removeMeetingUser(meetingId, participantUserId)
             if (res.isSuccessful) {

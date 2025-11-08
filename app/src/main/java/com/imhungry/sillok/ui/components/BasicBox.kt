@@ -51,7 +51,7 @@ fun BasicBox(
             .padding(20.dp)
     ) {
         content()
-        
+
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -72,7 +72,7 @@ fun BasicBox(
                 )
             }
         }
-        
+
         if (dialogMessage != null && onDialogConfirm != null && onDialogDismiss != null) {
             SillokDialog(
                 visible = true,
@@ -104,7 +104,7 @@ fun MeetingBasicBox(
             .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
         content()
-        
+
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -136,7 +136,7 @@ fun HomeBasicBox(
     gradientBrush: Brush = gradientBrush2,
     isLoading: Boolean,
     content: @Composable () -> Unit
-){
+) {
     SystemBars(
         statusBarColor = statusBarColor,
         navigationBarColor = navigationBarColor,
@@ -151,7 +151,7 @@ fun HomeBasicBox(
             .padding(start = 20.dp, end = 20.dp, bottom = 20.dp, top = 12.dp)
     ) {
         content()
-        
+
         if (isLoading) {
             Box(
                 modifier = Modifier

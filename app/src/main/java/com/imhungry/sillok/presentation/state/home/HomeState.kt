@@ -29,16 +29,16 @@ data class MeetingUi(
                     timeRange = "시간 미정"
                 )
             }
-            
+
             return try {
                 // 다양한 날짜 형식 시도
                 val startTime = parseDateTime(meeting.scheduledStartTime)
                 val endTime = startTime.plusMinutes(meeting.targetTime.toLong())
-                
+
                 val startDate = meeting.scheduledStartTime.split("T", " ")[0].replace("-", ".")
                 val startTimeFormatted = startTime.format(DateTimeFormatter.ofPattern("HH:mm"))
                 val endTimeFormatted = endTime.format(DateTimeFormatter.ofPattern("HH:mm"))
-                
+
                 MeetingUi(
                     id = meeting.id,
                     title = meeting.title,
@@ -58,7 +58,7 @@ data class MeetingUi(
                 )
             }
         }
-        
+
         private fun parseDateTime(dateTimeString: String): LocalDateTime {
             // ISO_LOCAL_DATE_TIME 형식 시도 (예: "2025-11-01T10:00:00")
             return try {
@@ -66,18 +66,28 @@ data class MeetingUi(
             } catch (e: Exception) {
                 // ISO_DATE_TIME 형식 시도 (예: "2025-11-01T10:00:00Z")
                 try {
-                    java.time.ZonedDateTime.parse(dateTimeString, DateTimeFormatter.ISO_DATE_TIME).toLocalDateTime()
+                    java.time.ZonedDateTime.parse(dateTimeString, DateTimeFormatter.ISO_DATE_TIME)
+                        .toLocalDateTime()
                 } catch (e2: Exception) {
                     // ISO_OFFSET_DATE_TIME 형식 시도 (예: "2025-11-01T10:00:00+09:00")
                     try {
-                        java.time.OffsetDateTime.parse(dateTimeString, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toLocalDateTime()
+                        java.time.OffsetDateTime.parse(
+                            dateTimeString,
+                            DateTimeFormatter.ISO_OFFSET_DATE_TIME
+                        ).toLocalDateTime()
                     } catch (e3: Exception) {
                         // 커스텀 형식 시도 (예: "2025-11-01 10:00:00")
                         try {
-                            LocalDateTime.parse(dateTimeString, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                            LocalDateTime.parse(
+                                dateTimeString,
+                                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                            )
                         } catch (e4: Exception) {
                             // 마지막 시도: "yyyy-MM-dd'T'HH:mm:ss" 형식
-                            LocalDateTime.parse(dateTimeString, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))
+                            LocalDateTime.parse(
+                                dateTimeString,
+                                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+                            )
                         }
                     }
                 }

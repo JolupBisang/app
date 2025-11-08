@@ -4,8 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.imhungry.sillok.domain.model.meetingminutesfolder.MeetingMinutesFolderDetailSummary
-import com.imhungry.sillok.domain.model.team.TeamDetailSummary
-import com.imhungry.sillok.presentation.state.meetingminutesfolder.MeetingMinutesFolderState
+import com.imhungry.sillok.presentation.state.meetingminutesfolder.FolderListState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,11 +15,11 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MeetingMinutesFolderViewModel @Inject constructor(
+class FolderListViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
-    private val _state = MutableStateFlow(MeetingMinutesFolderState())
-    val state: StateFlow<MeetingMinutesFolderState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(FolderListState())
+    val state: StateFlow<FolderListState> = _state.asStateFlow()
 
     init {
         //loadFolders()

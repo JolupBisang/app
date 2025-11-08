@@ -43,13 +43,13 @@ fun GoogleLoginButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    
+
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
         animationSpec = tween(durationMillis = 100),
         label = "scale"
     )
-    
+
     Box(
         modifier = modifier
             .wrapContentWidth()
@@ -81,9 +81,9 @@ fun GoogleLoginButton(
                 contentDescription = "Google Logo",
                 modifier = Modifier.size(24.dp)
             )
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Text(
                 text = "Continue with Google",
                 color = googleButtonText,

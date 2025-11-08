@@ -43,7 +43,8 @@ class FeedbackReadStore @Inject constructor(
         val readInfoJson = preferences[FEEDBACK_READ_KEY] ?: return@map emptyMap()
         try {
             val type = object : TypeToken<List<FeedbackReadInfo>>() {}.type
-            val readInfoList = gson.fromJson<List<FeedbackReadInfo>>(readInfoJson, type) ?: emptyList()
+            val readInfoList =
+                gson.fromJson<List<FeedbackReadInfo>>(readInfoJson, type) ?: emptyList()
             readInfoList.associate { it.meetingId to it.lastReadFeedbackIndex }
         } catch (e: Exception) {
             emptyMap()
@@ -67,8 +68,11 @@ class FeedbackReadStore @Inject constructor(
             val currentReadInfoMap = if (currentReadInfoJson != null) {
                 try {
                     val type = object : TypeToken<List<FeedbackReadInfo>>() {}.type
-                    val readInfoList = gson.fromJson<List<FeedbackReadInfo>>(currentReadInfoJson, type) ?: emptyList()
-                    readInfoList.associate { it.meetingId to it.lastReadFeedbackIndex }.toMutableMap()
+                    val readInfoList =
+                        gson.fromJson<List<FeedbackReadInfo>>(currentReadInfoJson, type)
+                            ?: emptyList()
+                    readInfoList.associate { it.meetingId to it.lastReadFeedbackIndex }
+                        .toMutableMap()
                 } catch (e: Exception) {
                     mutableMapOf()
                 }
@@ -99,8 +103,11 @@ class FeedbackReadStore @Inject constructor(
             val currentReadInfoMap = if (currentReadInfoJson != null) {
                 try {
                     val type = object : TypeToken<List<FeedbackReadInfo>>() {}.type
-                    val readInfoList = gson.fromJson<List<FeedbackReadInfo>>(currentReadInfoJson, type) ?: emptyList()
-                    readInfoList.associate { it.meetingId to it.lastReadFeedbackIndex }.toMutableMap()
+                    val readInfoList =
+                        gson.fromJson<List<FeedbackReadInfo>>(currentReadInfoJson, type)
+                            ?: emptyList()
+                    readInfoList.associate { it.meetingId to it.lastReadFeedbackIndex }
+                        .toMutableMap()
                 } catch (e: Exception) {
                     mutableMapOf()
                 }
@@ -129,8 +136,11 @@ class FeedbackReadStore @Inject constructor(
             val currentReadInfoMap = if (currentReadInfoJson != null) {
                 try {
                     val type = object : TypeToken<List<FeedbackReadInfo>>() {}.type
-                    val readInfoList = gson.fromJson<List<FeedbackReadInfo>>(currentReadInfoJson, type) ?: emptyList()
-                    readInfoList.associate { it.meetingId to it.lastReadFeedbackIndex }.toMutableMap()
+                    val readInfoList =
+                        gson.fromJson<List<FeedbackReadInfo>>(currentReadInfoJson, type)
+                            ?: emptyList()
+                    readInfoList.associate { it.meetingId to it.lastReadFeedbackIndex }
+                        .toMutableMap()
                 } catch (e: Exception) {
                     mutableMapOf()
                 }

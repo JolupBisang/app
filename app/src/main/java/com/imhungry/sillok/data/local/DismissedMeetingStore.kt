@@ -25,8 +25,10 @@ class DismissedMeetingStore @Inject constructor(
     private val gson = Gson()
 
     companion object {
-        private val DISMISSED_ONGOING_MEETINGS_KEY = stringPreferencesKey("dismissed_ongoing_meetings")
-        private val DISMISSED_SCHEDULED_MEETINGS_KEY = stringPreferencesKey("dismissed_scheduled_meetings")
+        private val DISMISSED_ONGOING_MEETINGS_KEY =
+            stringPreferencesKey("dismissed_ongoing_meetings")
+        private val DISMISSED_SCHEDULED_MEETINGS_KEY =
+            stringPreferencesKey("dismissed_scheduled_meetings")
         private val DISMISSED_MEETINGS_KEY = stringPreferencesKey("dismissed_meetings")
     }
 

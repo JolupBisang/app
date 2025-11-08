@@ -9,26 +9,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.imhungry.sillok.data.local.UserStore
+import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
 import com.imhungry.sillok.data.util.ApiResult
+import com.imhungry.sillok.domain.model.agenda.Agenda
 import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
-import com.imhungry.sillok.domain.model.meeting.MeetingStatus
+import com.imhungry.sillok.domain.model.meeting.Meeting
+import com.imhungry.sillok.domain.usecase.agenda.AddAgendaUseCase
+import com.imhungry.sillok.domain.usecase.agenda.DeleteAgendaUseCase
+import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
+import com.imhungry.sillok.domain.usecase.agenda.UpdateAgendaUseCase
 import com.imhungry.sillok.domain.usecase.meeting.CreateMeetingUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.meeting.UpdateMeetingUseCase
-import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
 import com.imhungry.sillok.domain.usecase.meetinguser.AddMeetingUserUseCase
 import com.imhungry.sillok.domain.usecase.meetinguser.RemoveMeetingUserUseCase
 import com.imhungry.sillok.domain.usecase.places.SearchPlacesUseCase
 import com.imhungry.sillok.presentation.state.meetingform.MeetingData
 import com.imhungry.sillok.presentation.state.meetingform.MeetingFormEvent
 import com.imhungry.sillok.presentation.state.meetingform.MeetingFormState
-import com.imhungry.sillok.presentation.util.DateTimeUtils.calcEndTimeIsoLocal
-import com.imhungry.sillok.domain.model.agenda.Agenda
-import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
-import com.imhungry.sillok.domain.model.meeting.Meeting
-import com.imhungry.sillok.domain.usecase.agenda.AddAgendaUseCase
-import com.imhungry.sillok.domain.usecase.agenda.DeleteAgendaUseCase
-import com.imhungry.sillok.domain.usecase.agenda.UpdateAgendaUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -79,22 +77,28 @@ class MeetingFormViewModel @Inject constructor(
                         val ldt = LocalDateTime.parse(iso, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
                         val dateDigits = ldt.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
                         val startDigits = ldt.format(DateTimeFormatter.ofPattern("HHmm"))
-                        val endDigits = ldt.plusMinutes(meeting.targetTime.toLong()).format(DateTimeFormatter.ofPattern("HHmm"))
+                        val endDigits = ldt.plusMinutes(meeting.targetTime.toLong())
+                            .format(DateTimeFormatter.ofPattern("HHmm"))
 
                         // 아젠다 불러오기
-                        val agendas = when (val agendasResult = getAgendasUseCase(meeting.meetingId)) {
-                            is ApiResult.Success -> {
-                                loadedAgendas = agendasResult.data
-                                agendasResult.data.map { it.content }.ifEmpty { listOf("") }
+                        val agendas =
+                            when (val agendasResult = getAgendasUseCase(meeting.meetingId)) {
+                                is ApiResult.Success -> {
+                                    loadedAgendas = agendasResult.data
+                                    agendasResult.data.map { it.content }.ifEmpty { listOf("") }
+                                }
+
+                                is ApiResult.Failure -> listOf("")
                             }
-                            is ApiResult.Failure -> listOf("")
-                        }
 
                         val filteredParticipants = meeting.participants
                             .map { it.email }
                             .filter { email ->
                                 val me = currentUserEmail
-                                if (me.isNullOrBlank()) true else !email.equals(me, ignoreCase = true)
+                                if (me.isNullOrBlank()) true else !email.equals(
+                                    me,
+                                    ignoreCase = true
+                                )
                             }
 
                         // 참석자 저장 (호스트 포함)
@@ -117,14 +121,19 @@ class MeetingFormViewModel @Inject constructor(
                                 isEditMode = true,
                                 meetingId = meetingId,
                                 title = meetingData.title,
-                                titleTextFieldValue = TextFieldValue(meetingData.title, TextRange(meetingData.title.length)),
+                                titleTextFieldValue = TextFieldValue(
+                                    meetingData.title,
+                                    TextRange(meetingData.title.length)
+                                ),
                                 date = meetingData.date,
                                 startTime = meetingData.startTime,
                                 endTime = meetingData.endTime,
                                 duration = meeting.targetTime.toString(),
                                 location = meetingData.location,
                                 locationTextFieldValue = TextFieldValue(meetingData.location),
-                                agendas = if (meetingData.agendas.isNotEmpty()) meetingData.agendas else listOf(""),
+                                agendas = if (meetingData.agendas.isNotEmpty()) meetingData.agendas else listOf(
+                                    ""
+                                ),
                                 breakInterval = meetingData.breakInterval,
                                 breakDuration = meetingData.breakDuration,
                                 participantEmails = meetingData.participants,
@@ -140,13 +149,16 @@ class MeetingFormViewModel @Inject constructor(
                             endTime = endDigits,
                             duration = meeting.targetTime.toString(),
                             location = meetingData.location,
-                            agendas = (if (meetingData.agendas.isNotEmpty()) meetingData.agendas else listOf("")),
+                            agendas = (if (meetingData.agendas.isNotEmpty()) meetingData.agendas else listOf(
+                                ""
+                            )),
                             participantEmails = meetingData.participants
                         )
                     } catch (e: Exception) {
                         _state.update { it.copy(isLoading = false, error = e.message) }
                     }
                 }
+
                 is ApiResult.Failure -> {
                     _state.update { it.copy(isLoading = false, error = detailResult.message) }
                 }
@@ -170,6 +182,7 @@ class MeetingFormViewModel @Inject constructor(
                     is MeetingFormEvent.TitleChanged -> {
                         _state.update { it.copy(title = event.title) }
                     }
+
                     is MeetingFormEvent.TitleTextFieldValueChanged -> {
                         _state.update {
                             it.copy(
@@ -178,13 +191,18 @@ class MeetingFormViewModel @Inject constructor(
                             )
                         }
                     }
+
                     is MeetingFormEvent.ParticipantsChanged -> {
                         _state.update { it.copy(participants = event.participants) }
                         searchEmails(event.participants)
                     }
+
                     is MeetingFormEvent.ParticipantEmailSelected -> {
                         val currentEmails = _state.value.participantEmails
-                        if (event.email.isNotEmpty() && !currentEmails.contains(event.email) && isValidEmail(event.email)) {
+                        if (event.email.isNotEmpty() && !currentEmails.contains(event.email) && isValidEmail(
+                                event.email
+                            )
+                        ) {
                             _state.update {
                                 it.copy(
                                     participantEmails = currentEmails + event.email,
@@ -194,6 +212,7 @@ class MeetingFormViewModel @Inject constructor(
                             }
                         }
                     }
+
                     is MeetingFormEvent.ParticipantEmailRemoved -> {
                         val currentEmails = _state.value.participantEmails
                         _state.update {
@@ -202,22 +221,28 @@ class MeetingFormViewModel @Inject constructor(
                             )
                         }
                     }
+
                     is MeetingFormEvent.DateChanged -> {
                         _state.update { it.copy(date = event.date) }
                     }
+
                     is MeetingFormEvent.StartTimeChanged -> {
                         _state.update { it.copy(startTime = event.startTime) }
                     }
+
                     is MeetingFormEvent.EndTimeChanged -> {
                         _state.update { it.copy(endTime = event.endTime) }
                     }
+
                     is MeetingFormEvent.DurationChanged -> {
                         _state.update { it.copy(duration = event.duration) }
                     }
+
                     is MeetingFormEvent.LocationChanged -> {
                         _state.update { it.copy(location = event.location) }
                         searchPlaces(event.location)
                     }
+
                     is MeetingFormEvent.LocationTextFieldValueChanged -> {
                         _state.update {
                             it.copy(
@@ -227,6 +252,7 @@ class MeetingFormViewModel @Inject constructor(
                         }
                         searchPlaces(event.textFieldValue.text)
                     }
+
                     is MeetingFormEvent.LocationSelected -> {
                         val textFieldValue = TextFieldValue(
                             text = event.location,
@@ -240,6 +266,7 @@ class MeetingFormViewModel @Inject constructor(
                             )
                         }
                     }
+
                     is MeetingFormEvent.AgendaChanged -> {
                         val currentAgendas = _state.value.agendas.toMutableList()
                         if (event.index < currentAgendas.size) {
@@ -247,11 +274,13 @@ class MeetingFormViewModel @Inject constructor(
                             _state.update { it.copy(agendas = currentAgendas) }
                         }
                     }
+
                     is MeetingFormEvent.AgendaAdded -> {
                         val currentAgendas = _state.value.agendas.toMutableList()
                         currentAgendas.add("")
                         _state.update { it.copy(agendas = currentAgendas) }
                     }
+
                     is MeetingFormEvent.AgendaRemoved -> {
                         val currentAgendas = _state.value.agendas.toMutableList()
                         if (event.index < currentAgendas.size) {
@@ -259,15 +288,19 @@ class MeetingFormViewModel @Inject constructor(
                             _state.update { it.copy(agendas = currentAgendas) }
                         }
                     }
+
                     is MeetingFormEvent.BreakIntervalChanged -> {
                         _state.update { it.copy(breakInterval = event.breakInterval) }
                     }
+
                     is MeetingFormEvent.BreakDurationChanged -> {
                         _state.update { it.copy(breakDuration = event.breakDuration) }
                     }
+
                     is MeetingFormEvent.CreateMeeting -> {
                         createMeeting()
                     }
+
                     is MeetingFormEvent.CancelClicked -> {
                         // 변경 사항이 없으면 바로 뒤로가기, 있으면 확인 다이얼로그 노출
                         if (!isDirty()) {
@@ -276,15 +309,18 @@ class MeetingFormViewModel @Inject constructor(
                             _state.update { it.copy(showCancelDialog = true) }
                         }
                     }
+
                     is MeetingFormEvent.CancelConfirmed -> {
                         _state.update { it.copy(showCancelDialog = false) }
                         viewModelScope.launch {
                             _events.emit(MeetingFormEvent.BackClicked)
                         }
                     }
+
                     is MeetingFormEvent.CancelDismissed -> {
                         _state.update { it.copy(showCancelDialog = false) }
                     }
+
                     is MeetingFormEvent.ClearFocus -> {
                         _state.update {
                             it.copy(
@@ -294,6 +330,7 @@ class MeetingFormViewModel @Inject constructor(
                             )
                         }
                     }
+
                     is MeetingFormEvent.TimePickerShown -> {
                         _state.update { it.copy(showTimePicker = true) }
                     }
@@ -302,6 +339,7 @@ class MeetingFormViewModel @Inject constructor(
                     is MeetingFormEvent.ValidateForm -> {
                         validateForm()
                     }
+
                     is MeetingFormEvent.ClearValidationErrors -> {
                         _state.update {
                             it.copy(
@@ -310,6 +348,7 @@ class MeetingFormViewModel @Inject constructor(
                             )
                         }
                     }
+
                     is MeetingFormEvent.ShowValidationError -> {
                         val currentErrors = _state.value.validationErrors.toMutableMap()
                         currentErrors[event.field] = event.message
@@ -320,6 +359,7 @@ class MeetingFormViewModel @Inject constructor(
                             )
                         }
                     }
+
                     is MeetingFormEvent.FormValidationSuccess -> {
                         if (_state.value.isEditMode) {
                             updateMeeting()
@@ -350,7 +390,12 @@ class MeetingFormViewModel @Inject constructor(
 
                     val suggestions = firestoreQuery.documents
                         .mapNotNull { doc -> doc.getString("email") }
-                        .filter { it.isNotBlank() && !it.equals(currentUserEmail, ignoreCase = true) }
+                        .filter {
+                            it.isNotBlank() && !it.equals(
+                                currentUserEmail,
+                                ignoreCase = true
+                            )
+                        }
 
                     _state.update {
                         it.copy(
@@ -421,7 +466,12 @@ class MeetingFormViewModel @Inject constructor(
                 val s = _state.value
                 val dateDigits = s.date.filter { it.isDigit() }.padStart(8, '0')
                 val timeDigits = s.startTime.filter { it.isDigit() }.padStart(4, '0')
-                val datePart = "${dateDigits.substring(0, 4)}-${dateDigits.substring(4, 6)}-${dateDigits.substring(6, 8)}"
+                val datePart = "${dateDigits.substring(0, 4)}-${
+                    dateDigits.substring(
+                        4,
+                        6
+                    )
+                }-${dateDigits.substring(6, 8)}"
                 val timePart = "${timeDigits.substring(0, 2)}:${timeDigits.substring(2, 4)}:00"
                 val scheduledStartTime = "${datePart}T${timePart}"
                 val targetTime = s.duration.toIntOrNull() ?: 0
@@ -442,14 +492,20 @@ class MeetingFormViewModel @Inject constructor(
                     is ApiResult.Success -> {
                         val meetingId = result.data
                         // 참석자 추가
-                        val emails = s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }
+                        val emails =
+                            s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }
                         var addOk = true
                         if (emails.isNotEmpty()) {
                             when (val addRes = addMeetingUserUseCase(meetingId, emails)) {
                                 is ApiResult.Success -> addOk = true
                                 is ApiResult.Failure -> {
                                     addOk = false
-                                    _state.update { it.copy(isLoading = false, error = addRes.message) }
+                                    _state.update {
+                                        it.copy(
+                                            isLoading = false,
+                                            error = addRes.message
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -493,6 +549,7 @@ class MeetingFormViewModel @Inject constructor(
                             _events.emit(MeetingFormEvent.MeetingCreated(meetingId))
                         }
                     }
+
                     is ApiResult.Failure -> {
                         _state.update { it.copy(isLoading = false, error = result.message) }
                     }
@@ -514,12 +571,18 @@ class MeetingFormViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true) }
             try {
                 val s = _state.value
-                val meetingId = s.meetingId ?: throw IllegalStateException("meetingId is null in edit mode")
+                val meetingId =
+                    s.meetingId ?: throw IllegalStateException("meetingId is null in edit mode")
 
                 // 1) 회의 본문 정보 업데이트
                 val dateDigits = s.date.filter { it.isDigit() }.padStart(8, '0')
                 val timeDigits = s.startTime.filter { it.isDigit() }.padStart(4, '0')
-                val datePart = "${dateDigits.substring(0, 4)}-${dateDigits.substring(4, 6)}-${dateDigits.substring(6, 8)}"
+                val datePart = "${dateDigits.substring(0, 4)}-${
+                    dateDigits.substring(
+                        4,
+                        6
+                    )
+                }-${dateDigits.substring(6, 8)}"
                 val timePart = "${timeDigits.substring(0, 2)}:${timeDigits.substring(2, 4)}:00"
                 val scheduledStartTime = "${datePart}T${timePart}"
                 val targetTime = s.duration.toIntOrNull() ?: 0
@@ -542,13 +605,16 @@ class MeetingFormViewModel @Inject constructor(
                         _state.update { it.copy(isLoading = false, error = updateRes.message) }
                         return@launch
                     }
-                    is ApiResult.Success -> { /* continue */ }
+
+                    is ApiResult.Success -> { /* continue */
+                    }
                 }
 
                 // 2) 참석자 동기화
                 // loadedParticipants: setEditMode에서 로드된 원본(호스트 포함)
                 val originalEmails = loadedParticipants.map { it.email }.toSet()
-                val desiredEmails = s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+                val desiredEmails =
+                    s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
 
                 val emailsToAdd = desiredEmails.subtract(originalEmails)
                 if (emailsToAdd.isNotEmpty()) {
@@ -557,6 +623,7 @@ class MeetingFormViewModel @Inject constructor(
                             _state.update { it.copy(isLoading = false, error = addRes.message) }
                             return@launch
                         }
+
                         is ApiResult.Success -> {}
                     }
                 }
@@ -572,9 +639,15 @@ class MeetingFormViewModel @Inject constructor(
                         .forEach { p ->
                             when (val rmRes = removeMeetingUserUseCase(meetingId, p.userId)) {
                                 is ApiResult.Failure -> {
-                                    _state.update { it.copy(isLoading = false, error = rmRes.message) }
+                                    _state.update {
+                                        it.copy(
+                                            isLoading = false,
+                                            error = rmRes.message
+                                        )
+                                    }
                                     return@launch
                                 }
+
                                 is ApiResult.Success -> {}
                             }
                         }
@@ -598,6 +671,7 @@ class MeetingFormViewModel @Inject constructor(
                                 _state.update { it.copy(isLoading = false, error = upRes.message) }
                                 return@launch
                             }
+
                             is ApiResult.Success -> {}
                         }
                     }
@@ -605,12 +679,14 @@ class MeetingFormViewModel @Inject constructor(
 
                 // desired가 더 길면 나머지 추가
                 if (desiredContents.size > originalContents.size) {
-                    val contentsToAdd = desiredContents.subList(originalContents.size, desiredContents.size)
+                    val contentsToAdd =
+                        desiredContents.subList(originalContents.size, desiredContents.size)
                     when (val addAgRes = addAgendaUseCase(meetingId, contentsToAdd)) {
                         is ApiResult.Failure -> {
                             _state.update { it.copy(isLoading = false, error = addAgRes.message) }
                             return@launch
                         }
+
                         is ApiResult.Success -> {}
                     }
                 }
@@ -624,6 +700,7 @@ class MeetingFormViewModel @Inject constructor(
                                 _state.update { it.copy(isLoading = false, error = delRes.message) }
                                 return@launch
                             }
+
                             is ApiResult.Success -> {}
                         }
                     }
@@ -634,15 +711,17 @@ class MeetingFormViewModel @Inject constructor(
                     val db = FirebaseFirestore.getInstance()
                     val hostEmail = currentUserEmail
                     // 서버에서 최신 참석자 목록 조회 (삭제 후 반영된 상태)
-                    val latestParticipantEmails = when (val detailResult = getMeetingDetailUseCase(meetingId)) {
-                        is ApiResult.Success -> {
-                            detailResult.data.participants.map { it.email }
+                    val latestParticipantEmails =
+                        when (val detailResult = getMeetingDetailUseCase(meetingId)) {
+                            is ApiResult.Success -> {
+                                detailResult.data.participants.map { it.email }
+                            }
+
+                            is ApiResult.Failure -> {
+                                // 조회 실패 시 폼 상태 사용
+                                s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }
+                            }
                         }
-                        is ApiResult.Failure -> {
-                            // 조회 실패 시 폼 상태 사용
-                            s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }
-                        }
-                    }
                     db.collection("meetings").document(meetingId.toString())
                         .update(
                             mapOf(

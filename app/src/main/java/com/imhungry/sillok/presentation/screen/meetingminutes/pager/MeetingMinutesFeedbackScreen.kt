@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.presentation.screen.meeting.component.Notification
 import com.imhungry.sillok.presentation.screen.meetingminutes.components.MeetingTabRow
-import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.presentation.viewmodel.meetingminutes.MeetingMinutesViewModel
 import com.imhungry.sillok.ui.components.Divider
 
@@ -34,7 +33,8 @@ fun MeetingMinutesFeedbackScreen(
     val feedbacks = state.feedbacks
 
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .padding(horizontal = 20.dp)
     ) {
         MeetingTabRow(selectedTab = selectedTab, onTabClick = onTabClick)

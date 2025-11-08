@@ -17,13 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.pagerIndicatorBackground
-import com.imhungry.sillok.ui.theme.primarySurface
 import kotlin.math.abs
 
 @Composable
@@ -75,7 +73,8 @@ fun CustomSnapSeekBar(
                     cornerRadius = CornerRadius(trackHeightPx / 2, trackHeightPx / 2)
                 )
 
-                val progressRatio = (value - snapPoints.first()) / (snapPoints.last() - snapPoints.first())
+                val progressRatio =
+                    (value - snapPoints.first()) / (snapPoints.last() - snapPoints.first())
                 val progressWidth = progressRatio * size.width
                 drawRoundRect(
                     color = green300,

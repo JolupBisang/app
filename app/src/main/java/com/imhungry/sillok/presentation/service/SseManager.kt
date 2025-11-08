@@ -36,39 +36,39 @@ class SseManager(
         private const val TAG = "SseManager"
         private const val SSE_RECONNECT_INTERVAL = 8 * 60 * 1000L // 8분 (밀리초)
     }
-    
+
     private val gson = Gson()
     private var eventSource: EventSource? = null
     private var sseReconnectJob: Job? = null
     private var sseServerUrl: String? = null
     private var sseMeetingId: Long? = null
     private var sseJwtToken: String? = null
-    
+
     fun connect(serverUrl: String, meetingId: Long, jwtToken: String) {
         Log.d(TAG, "[SSE-1] SSE 연결 준비 시작")
         sseServerUrl = serverUrl
         sseMeetingId = meetingId
         sseJwtToken = jwtToken
-        
+
         sseReconnectJob?.cancel()
-        
+
         serviceScope.launch {
             try {
                 Log.d(TAG, "[SSE-1-1] SSE 연결 시작")
                 val sseUrl = "${serverUrl}api/v1/meetings/$meetingId/events/subscribe"
                 Log.d(TAG, "[SSE-1-2] SSE URL: $sseUrl")
-                
+
                 val request = Request.Builder()
                     .url(sseUrl)
                     .addHeader("Authorization", "Bearer $jwtToken")
                     .addHeader("Accept", "text/event-stream")
                     .build()
-                
+
                 val sseClient = OkHttpClient.Builder()
                     .readTimeout(0, TimeUnit.SECONDS)
                     .connectTimeout(30, TimeUnit.SECONDS)
                     .build()
-                
+
                 Log.d(TAG, "[SSE-1-3] SSE EventSource 생성 시작")
                 eventSource = EventSources.createFactory(sseClient)
                     .newEventSource(request, object : EventSourceListener() {
@@ -78,7 +78,7 @@ class SseManager(
                             Log.d(TAG, "  - Response Code: ${response.code}")
                             Log.d(TAG, "========================================")
                         }
-                        
+
                         @RequiresApi(Build.VERSION_CODES.O)
                         override fun onEvent(
                             eventSource: EventSource,
@@ -86,16 +86,23 @@ class SseManager(
                             type: String?,
                             data: String
                         ) {
-                            Log.d(TAG, "[SSE-3] SSE 이벤트 수신: type=$type, id=$id, data=${data.take(100)}...")
+                            Log.d(
+                                TAG,
+                                "[SSE-3] SSE 이벤트 수신: type=$type, id=$id, data=${data.take(100)}..."
+                            )
                             parseSseEvent(type, data)
                         }
-                        
-                        override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
+
+                        override fun onFailure(
+                            eventSource: EventSource,
+                            t: Throwable?,
+                            response: Response?
+                        ) {
                             Log.e(TAG, "[SSE-실패] SSE 실패: ${t?.message}", t)
                             Log.e(TAG, "  - Response: ${response?.code}")
                         }
                     })
-                
+
                 Log.d(TAG, "[SSE-1-4] SSE EventSource 생성 완료")
                 Log.d(TAG, "[SSE-1-5] SSE 재연결 Job 시작")
                 startSseReconnectJob()
@@ -105,18 +112,18 @@ class SseManager(
             }
         }
     }
-    
+
     private fun startSseReconnectJob() {
         sseReconnectJob?.cancel()
         sseReconnectJob = serviceScope.launch(Dispatchers.IO) {
             try {
                 while (coroutineContext.isActive) {
                     delay(SSE_RECONNECT_INTERVAL)
-                    
+
                     val serverUrl = sseServerUrl
                     val meetingId = sseMeetingId
                     val jwtToken = sseJwtToken
-                    
+
                     if (serverUrl != null && meetingId != null && jwtToken != null) {
                         Log.d(TAG, "SSE 재연결 시작 (8분 주기)")
                         eventSource?.cancel()
@@ -133,7 +140,7 @@ class SseManager(
             }
         }
     }
-    
+
     @RequiresApi(Build.VERSION_CODES.O)
     private fun parseSseEvent(type: String?, data: String) {
         val sseType = type.toSseResponseType()
@@ -141,6 +148,7 @@ class SseManager(
             SseResponseType.CONNECTED -> {
                 Log.d(TAG, "SSE 연결 확인: $data")
             }
+
             SseResponseType.PARTICIPATION_RATE -> {
                 try {
                     val participationRates = gson.fromJson<Map<Long, Double>>(
@@ -154,6 +162,7 @@ class SseManager(
                     Log.e(TAG, "참여율 파싱 실패", e)
                 }
             }
+
             SseResponseType.FEEDBACK -> {
                 try {
                     val feedback = gson.fromJson(data, LiveFeedbackDto::class.java)
@@ -164,6 +173,7 @@ class SseManager(
                     Log.e(TAG, "피드백 파싱 실패", e)
                 }
             }
+
             SseResponseType.SUMMARY -> {
                 try {
                     val summary = gson.fromJson(data, LiveSummaryDto::class.java)
@@ -174,28 +184,29 @@ class SseManager(
                     Log.e(TAG, "요약 파싱 실패", e)
                 }
             }
+
             else -> {
                 Log.w(TAG, "알 수 없는 SSE 타입: $type")
             }
         }
     }
-    
+
     fun disconnect() {
         // SSE 재연결 Job 취소
         sseReconnectJob?.cancel()
         sseReconnectJob = null
-        
+
         // SSE 연결 해제
         eventSource?.cancel()
         eventSource = null
-        
+
         sseServerUrl = null
         sseMeetingId = null
         sseJwtToken = null
-        
+
         Log.d(TAG, "SSE 연결 해제 완료")
     }
-    
+
     private fun String?.toSseResponseType(): SseResponseType? {
         return try {
             SseResponseType.valueOf(this ?: "")

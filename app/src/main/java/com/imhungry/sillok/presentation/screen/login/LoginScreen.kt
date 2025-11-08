@@ -1,7 +1,6 @@
 package com.imhungry.sillok.presentation.screen.login
 
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,7 +25,6 @@ import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.viewmodel.login.LoginViewModel
 import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.ExitDialog
-import com.imhungry.sillok.ui.components.SillokDialog
 import com.imhungry.sillok.ui.theme.beige
 
 @Composable

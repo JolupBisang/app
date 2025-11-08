@@ -17,7 +17,7 @@ fun SystemBars(
         if (window != null) {
             // 상태바 색상 설정
             window.statusBarColor = statusBarColor.toArgb()
-            
+
             // 하단바 색상 설정
             window.navigationBarColor = navigationBarColor.toArgb()
         }

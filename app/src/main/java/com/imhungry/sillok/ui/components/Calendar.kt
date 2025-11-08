@@ -50,7 +50,9 @@ fun Calendar(
     onDateCleared: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var currentMonth by remember { mutableStateOf(selectedDate?.let { YearMonth.from(it) } ?: YearMonth.from(LocalDate.now())) }
+    var currentMonth by remember {
+        mutableStateOf(selectedDate?.let { YearMonth.from(it) } ?: YearMonth.from(LocalDate.now()))
+    }
     var previousMonth by remember { mutableStateOf(currentMonth) }
 
     // 달이 변경될 때 선택 초기화
@@ -126,7 +128,12 @@ private fun CalendarNavigationBar(
 
             // 현재 년월 표시
             Text(
-                text = "${currentMonth.year} ${currentMonth.month.getDisplayName(TextStyle.SHORT, Locale.KOREAN)}",
+                text = "${currentMonth.year} ${
+                    currentMonth.month.getDisplayName(
+                        TextStyle.SHORT,
+                        Locale.KOREAN
+                    )
+                }",
                 style = MaterialTheme.typography.titleMedium,
             )
 

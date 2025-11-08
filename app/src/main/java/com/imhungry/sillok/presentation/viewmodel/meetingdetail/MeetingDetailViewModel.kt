@@ -4,21 +4,21 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.imhungry.sillok.data.local.DismissedMeetingStore
+import com.imhungry.sillok.data.model.meeting.MeetingRole
+import com.imhungry.sillok.data.util.ApiResult
+import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
+import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.presentation.state.meetingdetail.MeetingDetailState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-import com.imhungry.sillok.data.local.DismissedMeetingStore
-import com.imhungry.sillok.data.model.meeting.MeetingRole
-import com.imhungry.sillok.data.util.ApiResult
-import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
-import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 
 @HiltViewModel
 class MeetingDetailViewModel @Inject constructor(
@@ -26,10 +26,10 @@ class MeetingDetailViewModel @Inject constructor(
     private val getAgendasUseCase: GetAgendasUseCase,
     private val dismissedMeetingStore: DismissedMeetingStore
 ) : ViewModel() {
-    
+
     private val _state = MutableStateFlow(MeetingDetailState())
     val state: StateFlow<MeetingDetailState> = _state.asStateFlow()
-    
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun loadMeetingDetail(meetingId: Long) {
         viewModelScope.launch {
@@ -38,10 +38,14 @@ class MeetingDetailViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     val meeting = res.data
                     try {
-                        val ldt = LocalDateTime.parse(meeting.scheduledStartTime, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                        val ldt = LocalDateTime.parse(
+                            meeting.scheduledStartTime,
+                            DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                        )
                         val dateDigits = ldt.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
                         val startDigits = ldt.format(DateTimeFormatter.ofPattern("HHmm"))
-                        val endDigits = ldt.plusMinutes(meeting.targetTime.toLong()).format(DateTimeFormatter.ofPattern("HHmm"))
+                        val endDigits = ldt.plusMinutes(meeting.targetTime.toLong())
+                            .format(DateTimeFormatter.ofPattern("HHmm"))
 
                         // agendas
                         val agendas = when (val ag = getAgendasUseCase(meetingId)) {
@@ -80,6 +84,7 @@ class MeetingDetailViewModel @Inject constructor(
                         _state.value = _state.value.copy(isLoading = false, error = e.message)
                     }
                 }
+
                 is ApiResult.Failure -> {
                     _state.value = _state.value.copy(isLoading = false, error = res.message)
                 }
@@ -97,7 +102,8 @@ class MeetingDetailViewModel @Inject constructor(
             val ldt = LocalDateTime.parse(scheduledStart, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             val dateDigits = ldt.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
             val startDigits = ldt.format(DateTimeFormatter.ofPattern("HHmm"))
-            val endDigits = ldt.plusMinutes(targetTimeMinutes.toLong()).format(DateTimeFormatter.ofPattern("HHmm"))
+            val endDigits = ldt.plusMinutes(targetTimeMinutes.toLong())
+                .format(DateTimeFormatter.ofPattern("HHmm"))
 
             val agendas = listOf(
                 "소개 및 아젠다 확인",

@@ -39,7 +39,7 @@ class HomeViewModel @Inject constructor(
     private val dismissedMeetingStore: DismissedMeetingStore,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
-    
+
     companion object {
         private const val TAG = "HomeViewModel"
         private const val SEARCH_LIMIT = 25L
@@ -50,7 +50,7 @@ class HomeViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
-    
+
     private var currentYearMonth: Pair<Int, Int>? = null
     private var hasNewMeetingListener: ListenerRegistration? = null
     private var meetingStartedListener: ListenerRegistration? = null
@@ -63,7 +63,10 @@ class HomeViewModel @Inject constructor(
     private fun observeUserChanges() {
         viewModelScope.launch {
             userStore.user.collect { user ->
-                Log.d(TAG, "observeUserChanges: user=${if (user != null) "id=${user.id}, email=${user.email}" else "null"}")
+                Log.d(
+                    TAG,
+                    "observeUserChanges: user=${if (user != null) "id=${user.id}, email=${user.email}" else "null"}"
+                )
                 updateUserInfo(user)
                 handleUserAuthState(user)
             }
@@ -201,7 +204,7 @@ class HomeViewModel @Inject constructor(
                     .await()
 
                 val generatingMeetingNoteId = meetingDoc.getLong("generatingMeetingNoteId")
-                
+
                 if (generatingMeetingNoteId != null && generatingMeetingNoteId > 0L) {
                     // 회의록 생성 중이면 다이얼로그 표시
                     _state.update { it.copy(showGeneratingMeetingNoteDialog = true) }
@@ -238,13 +241,13 @@ class HomeViewModel @Inject constructor(
     fun clearError() {
         _state.update { it.copy(error = null) }
     }
-    
+
     fun dismissOngoingMeeting(meetingId: Long) {
         // 상태를 먼저 업데이트하여 즉시 UI 반영
         _state.update { current ->
             current.copy(
-                ongoingMeetings = current.ongoingMeetings.map { 
-                    if (it.id == meetingId) it.copy(dismissed = true) else it 
+                ongoingMeetings = current.ongoingMeetings.map {
+                    if (it.id == meetingId) it.copy(dismissed = true) else it
                 }
             )
         }
@@ -253,13 +256,13 @@ class HomeViewModel @Inject constructor(
             dismissedMeetingStore.addDismissedOngoingMeeting(meetingId)
         }
     }
-    
+
     fun dismissScheduledMeeting(meetingId: Long) {
         // 상태를 먼저 업데이트하여 즉시 UI 반영
         _state.update { current ->
             current.copy(
-                upcomingMeetings = current.upcomingMeetings.map { 
-                    if (it.id == meetingId) it.copy(dismissed = true) else it 
+                upcomingMeetings = current.upcomingMeetings.map {
+                    if (it.id == meetingId) it.copy(dismissed = true) else it
                 }
             )
         }
@@ -303,6 +306,7 @@ class HomeViewModel @Inject constructor(
                         Log.d(TAG, "API 호출 성공: 회의 수=${result.data.size}")
                         handleSuccessResult(result.data, year, month)
                     }
+
                     is ApiResult.Failure -> {
                         Log.e(TAG, "API 호출 실패: ${result.message}")
                         handleFailureResult(result.message)
@@ -325,36 +329,52 @@ class HomeViewModel @Inject constructor(
         summaries.forEach { summary ->
             Log.d(TAG, "  - 회의 ID: ${summary.id}, 제목: ${summary.title}, 상태: ${summary.status}")
         }
-        
+
         // DataStore에서 숨긴 회의 ID 가져오기
         val dismissedMeetingIds = dismissedMeetingStore.getDismissedMeetingIds()
         Log.d(TAG, "숨긴 회의 ID 개수: ${dismissedMeetingIds.size}, IDs: $dismissedMeetingIds")
-        
+
         // 숨긴 회의 제외
         val filteredSummaries = summaries.filter { !dismissedMeetingIds.contains(it.id) }
         Log.d(TAG, "필터링 후 회의 수: ${filteredSummaries.size}")
         filteredSummaries.forEach { summary ->
-            Log.d(TAG, "  - 필터링 후 회의 ID: ${summary.id}, 제목: ${summary.title}, 상태: ${summary.status}")
+            Log.d(
+                TAG,
+                "  - 필터링 후 회의 ID: ${summary.id}, 제목: ${summary.title}, 상태: ${summary.status}"
+            )
         }
-        
+
         val (ongoing, upcoming, meetings) = categorizeMeetings(filteredSummaries)
-        Log.d(TAG, "카테고리화: ongoing=${ongoing.size}, upcoming=${upcoming.size}, meetings=${meetings.size}")
-        
+        Log.d(
+            TAG,
+            "카테고리화: ongoing=${ongoing.size}, upcoming=${upcoming.size}, meetings=${meetings.size}"
+        )
+
         logMeetingLoadResult(year, month, summaries.size, ongoing.size, upcoming.size)
-        
+
         // DataStore에서 dismiss 정보 가져오기 (알림용)
         val dismissedOngoingIds = dismissedMeetingStore.getDismissedOngoingMeetingIds()
         val dismissedScheduledIds = dismissedMeetingStore.getDismissedScheduledMeetingIds()
-        
-        val meetingUis = convertToMeetingUis(ongoing, upcoming, meetings, dismissedOngoingIds, dismissedScheduledIds)
 
-        Log.d(TAG, "handleSuccessResult 완료: ongoing=${meetingUis.ongoing.size}, upcoming=${meetingUis.upcoming.size}, all=${meetingUis.all.size}")
+        val meetingUis = convertToMeetingUis(
+            ongoing,
+            upcoming,
+            meetings,
+            dismissedOngoingIds,
+            dismissedScheduledIds
+        )
+
+        Log.d(
+            TAG,
+            "handleSuccessResult 완료: ongoing=${meetingUis.ongoing.size}, upcoming=${meetingUis.upcoming.size}, all=${meetingUis.all.size}"
+        )
         updateStateWithMeetings(meetingUis)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun categorizeMeetings(summaries: List<MeetingDetailSummary>): Triple<List<MeetingDetailSummary>, List<MeetingDetailSummary>, List<MeetingDetailSummary>> {
-        val ongoing = summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.IN_PROGRESS }
+        val ongoing =
+            summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.IN_PROGRESS }
         val upcoming = summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.WAITING }
         val meetings = summaries
         return Triple(ongoing, upcoming, meetings)
@@ -368,15 +388,15 @@ class HomeViewModel @Inject constructor(
         dismissedScheduledIds: Set<Long>
     ): MeetingUis {
         return MeetingUis(
-            ongoing = ongoing.map { 
+            ongoing = ongoing.map {
                 MeetingUi.from(it).copy(dismissed = dismissedOngoingIds.contains(it.id))
             },
-            upcoming = upcoming.map { 
+            upcoming = upcoming.map {
                 MeetingUi.from(it).copy(dismissed = dismissedScheduledIds.contains(it.id))
             },
-            all = meetings.map { 
-                val isDismissed = dismissedOngoingIds.contains(it.id) || 
-                                 dismissedScheduledIds.contains(it.id)
+            all = meetings.map {
+                val isDismissed = dismissedOngoingIds.contains(it.id) ||
+                        dismissedScheduledIds.contains(it.id)
                 MeetingUi.from(it).copy(dismissed = isDismissed)
             }
         )
@@ -388,15 +408,27 @@ class HomeViewModel @Inject constructor(
         val all: List<MeetingUi>
     )
 
-    private fun logMeetingLoadResult(year: Int, month: Int, total: Int, ongoing: Int, upcoming: Int) {
+    private fun logMeetingLoadResult(
+        year: Int,
+        month: Int,
+        total: Int,
+        ongoing: Int,
+        upcoming: Int
+    ) {
         val past = total - ongoing - upcoming
         Log.d(TAG, "${year}-${month} 달 로드 성공: 전체=$total, 예정=$upcoming, 진행=$ongoing, 종료=$past")
     }
 
     private fun updateStateWithMeetings(meetingUis: MeetingUis) {
-        Log.d(TAG, "updateStateWithMeetings 호출: meetings=${meetingUis.all.size}, ongoing=${meetingUis.ongoing.size}, upcoming=${meetingUis.upcoming.size}")
+        Log.d(
+            TAG,
+            "updateStateWithMeetings 호출: meetings=${meetingUis.all.size}, ongoing=${meetingUis.ongoing.size}, upcoming=${meetingUis.upcoming.size}"
+        )
         meetingUis.all.forEach { meeting ->
-            Log.d(TAG, "  - State에 추가될 회의: ID=${meeting.id}, 제목=${meeting.title}, 상태=${meeting.status}, dismissed=${meeting.dismissed}")
+            Log.d(
+                TAG,
+                "  - State에 추가될 회의: ID=${meeting.id}, 제목=${meeting.title}, 상태=${meeting.status}, dismissed=${meeting.dismissed}"
+            )
         }
         _state.update {
             it.copy(
@@ -454,11 +486,11 @@ class HomeViewModel @Inject constructor(
         val participantResultIds = searchByParticipantsIds(db, query)
 
         val mergedIds = (titleResultIds + participantResultIds).distinct()
-        
+
         // 숨긴 회의 제외
         val dismissedMeetingIds = dismissedMeetingStore.getDismissedMeetingIds()
         val filteredIds = mergedIds.filter { !dismissedMeetingIds.contains(it) }
-        
+
         // 각 회의 ID에 대해 GetMeetingDetailUseCase 호출하여 완전한 정보 가져오기
         val meetingSummaries = filteredIds.mapNotNull { meetingId ->
             when (val result = getMeetingDetailUseCase(meetingId)) {
@@ -472,13 +504,14 @@ class HomeViewModel @Inject constructor(
                         status = meeting.meetingStatus
                     )
                 }
+
                 is ApiResult.Failure -> {
                     Log.e(TAG, "회의 상세 정보 조회 실패: meetingId=$meetingId, error=${result.message}")
                     null
                 }
             }
         }
-        
+
         return meetingSummaries.map { MeetingUi.from(it) }
     }
 
@@ -495,7 +528,7 @@ class HomeViewModel @Inject constructor(
             .get()
             .await()
 
-        return snapshot.documents.mapNotNull { 
+        return snapshot.documents.mapNotNull {
             (it.data?.get("meetingId") as? Number)?.toLong()
         }
     }
@@ -505,7 +538,7 @@ class HomeViewModel @Inject constructor(
         query: String
     ): List<Long> {
         val (start, end) = buildPrefixRange(query)
-        
+
         val userSnapshot = db.collection(COLLECTION_USERS)
             .orderBy("email")
             .startAt(start)
@@ -524,8 +557,8 @@ class HomeViewModel @Inject constructor(
                 .get()
                 .await()
             meetingSnapshot.documents.forEach { doc ->
-                (doc.data?.get("meetingId") as? Number)?.toLong()?.let { 
-                    participantResultIds.add(it) 
+                (doc.data?.get("meetingId") as? Number)?.toLong()?.let {
+                    participantResultIds.add(it)
                 }
             }
         }
@@ -547,14 +580,18 @@ class HomeViewModel @Inject constructor(
             is Timestamp -> {
                 // Firestore Timestamp를 ISO 형식 문자열로 변환
                 val date = timeValue.toDate()
-                val formatter = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+                val formatter = java.text.SimpleDateFormat(
+                    "yyyy-MM-dd'T'HH:mm:ss",
+                    java.util.Locale.getDefault()
+                )
                 formatter.format(date)
             }
+
             else -> ""
         }
         val targetTime = (data["targetTime"] as? Number)?.toInt() ?: 0
         val status = data["meetingStatus"] as? String ?: "WAITING"
-        
+
         return MeetingDetailSummary(
             id = id,
             title = title,

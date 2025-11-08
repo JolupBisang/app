@@ -39,11 +39,11 @@ private fun calculateTimeAgo(scheduledStartTime: String): String {
         val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
         val startTime = LocalDateTime.parse(scheduledStartTime, formatter)
         val now = LocalDateTime.now()
-        
+
         val minutesAgo = ChronoUnit.MINUTES.between(startTime, now)
         val hoursAgo = ChronoUnit.HOURS.between(startTime, now)
         val daysAgo = ChronoUnit.DAYS.between(startTime, now)
-        
+
         when {
             minutesAgo < 1 -> "just now"
             minutesAgo < 60 -> "$minutesAgo min${if (minutesAgo > 1) "s" else ""} ago"
@@ -65,14 +65,14 @@ fun OngoingMeetingNotification(
 ) {
     // dismissed가 false인 회의만 필터링
     val availableMeetings = meetings.filter { !it.dismissed }
-    
+
     // 리스트가 비어있으면 표시하지 않음
     if (availableMeetings.isEmpty()) return
-    
+
     // 첫 번째 회의 표시
     val meeting = availableMeetings.first()
     var timeAgoText by remember { mutableStateOf(calculateTimeAgo(meeting.scheduledStartTime)) }
-    
+
     // 매 분마다 시간 업데이트
     LaunchedEffect(meeting.scheduledStartTime) {
         while (true) {
@@ -80,7 +80,7 @@ fun OngoingMeetingNotification(
             delay(60000L) // 1분마다 업데이트
         }
     }
-    
+
     Box(
         modifier = modifier.fillMaxWidth()
     ) {
@@ -106,9 +106,9 @@ fun OngoingMeetingNotification(
                 )
             }
 
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // 회의 제목
             Text(
                 text = meeting.title,
@@ -119,7 +119,7 @@ fun OngoingMeetingNotification(
             )
 
             Spacer(modifier = Modifier.height(10.dp))
-            
+
             // 회의 시간
             Text(
                 text = meeting.formattedTime,
@@ -128,9 +128,9 @@ fun OngoingMeetingNotification(
                 fontSize = 13.sp,
                 color = gray200,
             )
-            
+
             Spacer(modifier = Modifier.height(6.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth()
             ) {

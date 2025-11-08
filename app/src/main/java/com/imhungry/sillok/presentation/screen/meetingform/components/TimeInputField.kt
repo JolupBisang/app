@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -69,8 +68,9 @@ fun TimeInputField(
 
     // 시작 시간과 종료 시간으로부터 목표 시간 자동 계산
     LaunchedEffect(startTime, endTime, showTimePicker) {
-        if (!showTimePicker && startTime.isNotEmpty() && endTime.isNotEmpty() && 
-            startTime.length >= 4 && endTime.length >= 4) {
+        if (!showTimePicker && startTime.isNotEmpty() && endTime.isNotEmpty() &&
+            startTime.length >= 4 && endTime.length >= 4
+        ) {
             val startMinutes = parseTimeToMinutes(startTime)
             val endMinutes = parseTimeToMinutes(endTime)
             val calculatedDuration = endMinutes - startMinutes
@@ -80,8 +80,9 @@ fun TimeInputField(
                 // 종료 시간이 시작 시간보다 이전이거나 같으면 목표 시간 초기화
                 onDurationChange("")
             }
-        } else if (!showTimePicker && (startTime.isEmpty() || endTime.isEmpty() || 
-            startTime.length < 4 || endTime.length < 4)) {
+        } else if (!showTimePicker && (startTime.isEmpty() || endTime.isEmpty() ||
+                    startTime.length < 4 || endTime.length < 4)
+        ) {
             // 시작 시간 또는 종료 시간이 비어있으면 목표 시간 초기화
             onDurationChange("")
         }
@@ -92,7 +93,8 @@ fun TimeInputField(
         if (!showTimePicker && wasEditingStartTime) {
             // 시작 시간이 설정되었고, 종료 시간이 비어있으면 종료 시간 다이얼로그 열기
             if (startTime.isNotEmpty() && startTime.length >= 4 &&
-                (endTime.isEmpty() || endTime.length < 4)) {
+                (endTime.isEmpty() || endTime.length < 4)
+            ) {
                 wasEditingStartTime = false
                 editingField = TimeField.END
                 onEndTimeClick()
@@ -132,7 +134,7 @@ fun TimeInputField(
                                 Modifier.clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
-                                ) { 
+                                ) {
                                     if (showTimePicker && editingField == TimeField.START) {
                                         // 이미 시작 시간 TimePicker가 표시되어 있으면 숨김
                                         onTimePickerDismiss()
@@ -185,7 +187,7 @@ fun TimeInputField(
                                 Modifier.clickable(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
-                                ) { 
+                                ) {
                                     if (showTimePicker && editingField == TimeField.END) {
                                         // 이미 종료 시간 TimePicker가 표시되어 있으면 숨김
                                         onTimePickerDismiss()
@@ -266,6 +268,7 @@ fun TimeInputField(
                         parseTimeToHour(endTime)
                     }
                 }
+
                 null -> 0
             }
             val initialMinute = when (editingField) {
@@ -278,9 +281,10 @@ fun TimeInputField(
                         parseTimeToMinute(endTime)
                     }
                 }
+
                 null -> 0
             }
-            
+
             InlineTimePicker(
                 title = when (editingField) {
                     TimeField.START -> "시작 시간"
@@ -352,12 +356,13 @@ fun InlineTimePicker(
             ) {
                 AndroidView(
                     factory = { context ->
-                        LayoutInflater.from(context).inflate(R.layout.time_picker_layout, null).apply {
-                            (this as TimePicker).apply {
-                                this.hour = currentHour
-                                this.minute = currentMinute
-                            }
-                        } as TimePicker
+                        LayoutInflater.from(context).inflate(R.layout.time_picker_layout, null)
+                            .apply {
+                                (this as TimePicker).apply {
+                                    this.hour = currentHour
+                                    this.minute = currentMinute
+                                }
+                            } as TimePicker
                     },
                     update = { picker ->
                         picker.hour = currentHour
@@ -428,10 +433,12 @@ private fun formatDisplayTime(timeString: String): String {
             val minute = timeString.substring(2, 4)
             "$hour : $minute"
         }
+
         timeString.length >= 2 -> {
             val hour = timeString.substring(0, 2)
             "$hour : "
         }
+
         else -> timeString
     }
 }

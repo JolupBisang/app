@@ -10,8 +10,6 @@ import okio.ByteString.Companion.toByteString
 import org.json.JSONObject
 import java.io.File
 import java.nio.ByteBuffer
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 /**
  * 청크 재전송을 담당하는 클래스
@@ -24,7 +22,7 @@ class ChunkRetransmitter(
     companion object {
         private const val TAG = "ChunkRetransmitter"
     }
-    
+
     /**
      * 저장된 청크 정보를 담는 데이터 클래스
      */
@@ -32,7 +30,7 @@ class ChunkRetransmitter(
         val chunkId: Long,
         val file: File
     )
-    
+
     /**
      * 재전송이 필요한 청크 파일 목록 조회
      */
@@ -85,7 +83,10 @@ class ChunkRetransmitter(
             if (missingChunks.isNotEmpty()) {
                 Log.d(TAG, "재전송 대상 청크:")
                 missingChunks.forEach { chunk ->
-                    Log.d(TAG, "  - 청크 ID: ${chunk.chunkId}, 파일: ${chunk.file.name}, 크기: ${chunk.file.length()} bytes")
+                    Log.d(
+                        TAG,
+                        "  - 청크 ID: ${chunk.chunkId}, 파일: ${chunk.file.name}, 크기: ${chunk.file.length()} bytes"
+                    )
                 }
             }
 
@@ -96,7 +97,7 @@ class ChunkRetransmitter(
             emptyList()
         }
     }
-    
+
     /**
      * 누락된 청크 재전송
      */
@@ -123,7 +124,10 @@ class ChunkRetransmitter(
                 val timestamp = if (metaFile.exists()) {
                     try {
                         val metaJson = JSONObject(metaFile.readText())
-                        metaJson.optString("timestamp", DateTimeUtils.koreaToUtcTime(getCurrentTimestamp()))
+                        metaJson.optString(
+                            "timestamp",
+                            DateTimeUtils.koreaToUtcTime(getCurrentTimestamp())
+                        )
                     } catch (e: Exception) {
                         getCurrentTimestamp()
                     }
@@ -156,7 +160,10 @@ class ChunkRetransmitter(
 
                 if (success) {
                     successCount++
-                    Log.d(TAG, "재전송 성공 - ID: ${chunkInfo.chunkId}, 크기: ${audioData.size} bytes (${successCount}/${chunks.size})")
+                    Log.d(
+                        TAG,
+                        "재전송 성공 - ID: ${chunkInfo.chunkId}, 크기: ${audioData.size} bytes (${successCount}/${chunks.size})"
+                    )
                 } else {
                     failCount++
                     Log.w(TAG, "재전송 실패 - ID: ${chunkInfo.chunkId}")
@@ -178,7 +185,7 @@ class ChunkRetransmitter(
         Log.d(TAG, "성공: ${successCount}개, 실패: ${failCount}개")
         Log.d(TAG, "========================================")
     }
-    
+
     /**
      * 청크 파일 디렉토리 삭제
      */

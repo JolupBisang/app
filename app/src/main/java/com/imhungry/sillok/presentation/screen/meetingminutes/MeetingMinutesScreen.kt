@@ -3,15 +3,12 @@ package com.imhungry.sillok.presentation.screen.meetingminutes
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
@@ -25,18 +22,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.rememberAsyncImagePainter
-import coil.decode.GifDecoder
-import coil.request.ImageRequest
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
-import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.screen.meeting.CustomHorizontalPagerIndicator
 import com.imhungry.sillok.presentation.screen.meetingminutes.components.AudioPlayerBar
 import com.imhungry.sillok.presentation.screen.meetingminutes.pager.MeetingMinutesFeedbackScreen
@@ -44,8 +35,6 @@ import com.imhungry.sillok.presentation.screen.meetingminutes.pager.MeetingMinut
 import com.imhungry.sillok.presentation.screen.meetingminutes.pager.MeetingMinutesSummaryScreen
 import com.imhungry.sillok.presentation.viewmodel.meetingminutes.MeetingMinutesViewModel
 import com.imhungry.sillok.ui.components.MeetingBasicBox
-import androidx.compose.foundation.Image
-import com.imhungry.sillok.ui.theme.dialogBackGround
 import com.imhungry.sillok.ui.theme.primaryBackground
 import com.imhungry.sillok.ui.theme.whiteBackground
 import kotlinx.coroutines.delay
@@ -82,7 +71,7 @@ fun MeetingMinutesScreen(
     val pagerState = rememberPagerState(initialPage = 1)
     val coroutineScope = rememberCoroutineScope()
     var audioBarHeightPx by remember { mutableStateOf(0) }
-    
+
     // ViewModel state 관찰
     val state by meetingMinutesViewModel.state.collectAsState()
 

@@ -20,36 +20,36 @@ class TeamListViewModel @Inject constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow(TeamListState())
     val state: StateFlow<TeamListState> = _state.asStateFlow()
-    
+
     init {
         //loadTeams()
     }
-    
+
     fun loadTeams() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            
+
             try {
                 // 임시 데이터 (추후 실제 API 호출로 대체)
                 val dummyTeams = getDummyTeams()
-                _state.update { 
+                _state.update {
                     it.copy(
                         teams = dummyTeams,
                         isLoading = false,
                         error = null
-                    ) 
+                    )
                 }
             } catch (e: Exception) {
-                _state.update { 
+                _state.update {
                     it.copy(
                         isLoading = false,
                         error = e.message ?: "팀 목록을 불러오는데 실패했습니다."
-                    ) 
+                    )
                 }
             }
         }
     }
-    
+
     private fun getDummyTeams(): List<TeamDetailSummary> {
         return listOf(
             TeamDetailSummary(
@@ -82,7 +82,7 @@ class TeamListViewModel @Inject constructor(
             )
         )
     }
-    
+
     fun clearError() {
         _state.update { it.copy(error = null) }
     }

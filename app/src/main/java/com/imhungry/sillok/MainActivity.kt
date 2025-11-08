@@ -11,7 +11,6 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -30,20 +29,20 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     private var loginToken by mutableStateOf<String?>(null)
     private var notificationMeetingId by mutableStateOf<Long?>(null)
-    
+
     @Inject
     lateinit var tokenExpirationManager: TokenExpirationManager
-    
+
     @Inject
     lateinit var userStore: UserStore
-    
+
     @Inject
     lateinit var dismissedMeetingStore: DismissedMeetingStore
-    
+
     companion object {
         private const val TAG = "MainActivity"
     }
-    
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,24 +63,27 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        
+
         // 앱 시작 시 숨긴 회의 목록 초기화
         lifecycleScope.launch {
             dismissedMeetingStore.clearAll()
             Log.d(TAG, "DismissedMeetingStore 초기화 완료")
         }
-        
+
         // User 데이터 로그 출력
         lifecycleScope.launch {
             userStore.user.collect { user ->
                 if (user != null) {
-                    Log.d(TAG, "User 데이터: id=${user.id}, email=${user.email}, nickname=${user.nickname}, profileImage=${user.profileImage}")
+                    Log.d(
+                        TAG,
+                        "User 데이터: id=${user.id}, email=${user.email}, nickname=${user.nickname}, profileImage=${user.profileImage}"
+                    )
                 } else {
                     Log.d(TAG, "User 데이터: null")
                 }
             }
         }
-        
+
         handleIntent(intent)
     }
 
@@ -95,7 +97,7 @@ class MainActivity : ComponentActivity() {
         intent?.getLongExtra("meetingId", -1L)?.takeIf { it != -1L }?.let { meetingId ->
             notificationMeetingId = meetingId
         }
-        
+
         // 기존 토큰 처리
         intent?.data?.getQueryParameter("token")?.let { token ->
             loginToken = token

@@ -1,9 +1,7 @@
 package com.imhungry.sillok.presentation.screen.home
 
 import android.os.Build
-import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,58 +14,51 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.MutableState
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.sillok.R
+import com.imhungry.sillok.presentation.state.home.HomeState
 import com.imhungry.sillok.presentation.state.home.MeetingUi
 import com.imhungry.sillok.presentation.viewmodel.home.HomeViewModel
 import com.imhungry.sillok.ui.components.ExitDialog
 import com.imhungry.sillok.ui.components.HomeBasicBox
 import com.imhungry.sillok.ui.components.SillokButton
-import com.imhungry.sillok.ui.components.SillokDialog
 import com.imhungry.sillok.ui.components.SillokInfoDialog
 import com.imhungry.sillok.ui.theme.gradientBrush2
 import com.imhungry.sillok.ui.theme.gradientBrush3
-import com.imhungry.sillok.ui.theme.primaryBackground
-import com.imhungry.sillok.ui.theme.primaryTextColor
-import com.imhungry.sillok.ui.theme.sideBar
-import com.imhungry.sillok.ui.components.SillokTextButton
-import com.imhungry.sillok.ui.theme.tertiary
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.rememberDrawerState as rememberMaterialDrawerState
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.focus.FocusManager
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.SoftwareKeyboardController
-import androidx.compose.ui.unit.Dp
-import com.imhungry.sillok.presentation.state.home.HomeState
 import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.lightMeetingOutline
 import com.imhungry.sillok.ui.theme.meetingOutline
+import com.imhungry.sillok.ui.theme.primaryBackground
+import com.imhungry.sillok.ui.theme.primaryTextColor
+import com.imhungry.sillok.ui.theme.sideBar
+import com.imhungry.sillok.ui.theme.tertiary
 import kotlinx.coroutines.launch
+import androidx.compose.material3.rememberDrawerState as rememberMaterialDrawerState
 
 private const val TAG = "HomeScreen"
 
@@ -88,7 +79,7 @@ fun HomeScreen(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     var isSearchFocused by remember { mutableStateOf(false) }
-    
+
     val notificationState = rememberNotificationState()
     val materialDrawerState = rememberMaterialDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -126,12 +117,12 @@ fun HomeScreen(
             clearSearchFocus(focusManager, keyboardController) { isSearchFocused = false }
             viewModel.onSearchTextChange("")
         },
-        onDrawerClose = { 
+        onDrawerClose = {
             scope.launch { materialDrawerState.close() }
         },
         onExitDialogShow = { viewModel.showExitDialog() }
     )
-    
+
     ModalNavigationDrawer(
         drawerState = materialDrawerState,
         drawerContent = {
@@ -146,7 +137,7 @@ fun HomeScreen(
                     scope.launch { materialDrawerState.close() }
                     onNavigateToTeamList()
                 },
-                onFeedbackHistory = { 
+                onFeedbackHistory = {
                     scope.launch { materialDrawerState.close() }
                 },
                 onMeetingFolder = {
@@ -191,7 +182,7 @@ fun HomeScreen(
             onCreateMeeting = {
                 onNavigateToCreateMeeting()
             },
-            onMenuClick = { 
+            onMenuClick = {
                 scope.launch { materialDrawerState.open() }
             },
             onNotificationClick = onNavigateToNotificationHistory,
@@ -223,7 +214,12 @@ private fun rememberNavigationHandlers(
     onNavigateToMeetingDetail: (Long) -> Unit,
     onNavigagteToMeetingInProgress: (Long) -> Unit,
     onNavigateToMeetingMinutes: (Long) -> Unit
-) = remember(onNavigateToCreateMeeting, onNavigateToMeetingDetail, onNavigagteToMeetingInProgress, onNavigateToMeetingMinutes) {
+) = remember(
+    onNavigateToCreateMeeting,
+    onNavigateToMeetingDetail,
+    onNavigagteToMeetingInProgress,
+    onNavigateToMeetingMinutes
+) {
     NavigationHandlers(
         navigateToMeeting = { meeting ->
             when (meeting.status) {
@@ -255,12 +251,15 @@ private fun HandleBackPress(
             showExitDialog -> {
                 onExitDialogDismiss()
             }
+
             searchText.isNotBlank() -> {
                 onSearchClose()
             }
+
             isDrawerOpen -> {
                 onDrawerClose()
             }
+
             else -> {
                 onExitDialogShow()
             }
@@ -496,20 +495,20 @@ private fun NotificationArea(
     // dismissed가 false인 회의만 필터링
     val availableOngoing = ongoingList.filter { !it.dismissed }
     val availableUpcoming = upcomingList.filter { !it.dismissed }
-    
+
     // 리스트가 비어있으면 알림 숨기기
     LaunchedEffect(availableOngoing.isEmpty()) {
         if (availableOngoing.isEmpty() && notificationState.showOngoingMeeting.value) {
             notificationState.showOngoingMeeting.value = false
         }
     }
-    
+
     LaunchedEffect(availableUpcoming.isEmpty()) {
         if (availableUpcoming.isEmpty() && notificationState.showScheduledMeeting.value) {
             notificationState.showScheduledMeeting.value = false
         }
     }
-    
+
     when {
         availableOngoing.isNotEmpty() && notificationState.showOngoingMeeting.value -> {
             OngoingMeetingNotification(
@@ -519,6 +518,7 @@ private fun NotificationArea(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+
         availableUpcoming.isNotEmpty() && notificationState.showScheduledMeeting.value -> {
             ScheduledMeetingNotification(
                 meetings = upcomingList,

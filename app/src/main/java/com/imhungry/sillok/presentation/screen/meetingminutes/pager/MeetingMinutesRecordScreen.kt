@@ -2,6 +2,9 @@ package com.imhungry.sillok.presentation.screen.meetingminutes.pager
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -21,9 +24,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -36,22 +36,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.sillok.R
 import com.imhungry.sillok.domain.model.agenda.Agenda
-import com.imhungry.sillok.domain.model.meeting.Meeting
-import com.imhungry.sillok.domain.model.segment.Segment
 import com.imhungry.sillok.presentation.screen.meeting.component.ChatBubble
 import com.imhungry.sillok.presentation.screen.meeting.component.CheckItem
 import com.imhungry.sillok.presentation.screen.meetingminutes.components.MeetingTabRow
 import com.imhungry.sillok.presentation.util.DateTimeUtils
-import com.imhungry.sillok.presentation.viewmodel.meeting.AgendaViewModel
 import com.imhungry.sillok.presentation.viewmodel.meetingminutes.MeetingMinutesViewModel
 import com.imhungry.sillok.ui.components.Divider
 import com.imhungry.sillok.ui.theme.tertiary
@@ -167,6 +162,7 @@ fun MeetingMinutesRecordScreen(
         }
     }
 }
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HeaderSection(
@@ -237,7 +233,7 @@ fun HeaderSection(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null
                                     ) {
-                                       onBackClick()
+                                        onBackClick()
                                     }
                             )
                         }

@@ -14,12 +14,12 @@ class AuthInterceptor @Inject constructor(
     private val userStore: UserStore,
     private val tokenExpirationManager: TokenExpirationManager
 ) : Interceptor {
-    
+
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
-        
+
         val token = runBlocking { tokenStore.accessToken.first() }
-        
+
         val newRequest = if (token != null) {
             originalRequest.newBuilder()
                 .addHeader("Authorization", "Bearer $token")
@@ -27,9 +27,9 @@ class AuthInterceptor @Inject constructor(
         } else {
             originalRequest
         }
-        
+
         val response = chain.proceed(newRequest)
-        
+
         // 토큰 만료 처리 (401 Unauthorized 응답)
         if (response.code == 401) {
             android.util.Log.w("AuthInterceptor", "토큰 만료")
@@ -40,7 +40,7 @@ class AuthInterceptor @Inject constructor(
                 tokenExpirationManager.notifyTokenExpired()
             }
         }
-        
+
         return response
     }
 }

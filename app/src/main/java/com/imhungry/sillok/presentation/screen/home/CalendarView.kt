@@ -40,7 +40,6 @@ import com.imhungry.sillok.ui.theme.cancledMeeting
 import com.imhungry.sillok.ui.theme.completedMeeting
 import com.imhungry.sillok.ui.theme.gray300
 import com.imhungry.sillok.ui.theme.inProgressMeeting
-import com.imhungry.sillok.ui.theme.primarySurface
 import com.imhungry.sillok.ui.theme.primaryTextColor
 import com.imhungry.sillok.ui.theme.selectedDate
 import com.imhungry.sillok.ui.theme.tertiary
@@ -61,7 +60,9 @@ fun CalendarView(
     meetings: List<MeetingUi> = emptyList(),
     modifier: Modifier = Modifier
 ) {
-    var currentMonth by remember { mutableStateOf(selectedDate?.let { YearMonth.from(it) } ?: YearMonth.from(LocalDate.now())) }
+    var currentMonth by remember {
+        mutableStateOf(selectedDate?.let { YearMonth.from(it) } ?: YearMonth.from(LocalDate.now()))
+    }
     var isInitialized by remember { mutableStateOf(false) }
     var isDateInitialized by remember { mutableStateOf(false) }
 
@@ -153,7 +154,12 @@ private fun CalendarNavigationBar(
             )
 
             Text(
-                text = "${currentMonth.year} ${currentMonth.month.getDisplayName(TextStyle.SHORT, Locale.KOREAN)}",
+                text = "${currentMonth.year} ${
+                    currentMonth.month.getDisplayName(
+                        TextStyle.SHORT,
+                        Locale.KOREAN
+                    )
+                }",
                 style = MaterialTheme.typography.titleMedium,
             )
 
@@ -194,7 +200,7 @@ private fun CalendarWeekHeader() {
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         val weekDays = listOf("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT")
-        
+
         weekDays.forEach { day ->
             Text(
                 text = day,
@@ -254,13 +260,13 @@ private fun CalendarDateGrid(
                         val isCurrentMonth = date.month == currentMonth.month
                         val isToday = date == LocalDate.now()
 
-						CalendarDateItem(
-							date = date,
-							isCurrentMonth = isCurrentMonth,
-							isSelected = selectedDate != null && date == selectedDate,
-							isToday = isToday,
-							meetingCounts = meetingCounts,
-							onClick = {
+                        CalendarDateItem(
+                            date = date,
+                            isCurrentMonth = isCurrentMonth,
+                            isSelected = selectedDate != null && date == selectedDate,
+                            isToday = isToday,
+                            meetingCounts = meetingCounts,
+                            onClick = {
                                 if (isCurrentMonth) {
                                     onDateSelected(date)
                                 }
@@ -280,21 +286,21 @@ private fun getMeetingCountsByStatus(
 ): Map<String, Int> {
     val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     val dateString = date.format(dateFormatter)
-    
+
     val meetingsOnDate = meetings.filter { meeting ->
         meeting.scheduledStartTime.startsWith(dateString)
     }
-    
+
     if (meetingsOnDate.isEmpty()) {
         return emptyMap()
     }
-    
+
     val counts = mutableMapOf<String, Int>()
     meetingsOnDate.forEach { meeting ->
         val status = meeting.status ?: "CANCELED"
         counts[status] = counts.getOrDefault(status, 0) + 1
     }
-    
+
     return counts
 }
 

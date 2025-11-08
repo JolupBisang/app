@@ -1,11 +1,15 @@
 package com.imhungry.sillok.presentation.screen.meetingdetail
 
 import android.os.Build
-import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -13,18 +17,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.imhungry.sillok.presentation.viewmodel.meetingdetail.MeetingDetailViewModel
 import com.imhungry.sillok.presentation.screen.meetingform.components.AgendaInputField
-import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.presentation.screen.meetingform.components.BreakTimeInputField
 import com.imhungry.sillok.presentation.screen.meetingform.components.DateInputField
 import com.imhungry.sillok.presentation.screen.meetingform.components.EmailInputFieldWithAutocomplete
 import com.imhungry.sillok.presentation.screen.meetingform.components.InputField
+import com.imhungry.sillok.presentation.screen.meetingform.components.TimeInputField
+import com.imhungry.sillok.presentation.viewmodel.meetingdetail.MeetingDetailViewModel
+import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.components.SillokButtonRow
 import com.imhungry.sillok.ui.components.SillokDialog
-import com.imhungry.sillok.presentation.screen.meetingform.components.TimeInputField
 import com.imhungry.sillok.ui.theme.primaryBackground
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -38,7 +42,7 @@ fun MeetingDetailScreen(
     viewModel: MeetingDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    
+
     LaunchedEffect(Unit) {
         viewModel.loadMeetingDetail(meetingId)
     }

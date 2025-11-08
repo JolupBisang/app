@@ -1,6 +1,5 @@
 package com.imhungry.sillok.presentation.screen.waitingroom
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -73,7 +72,8 @@ fun WaitingRoomScreen(
         waitingRoomViewModel.events.collect { event ->
             when (event) {
                 is WaitingRoomEvent.MeetingStarted -> onStartMeeting()
-                is WaitingRoomEvent.StartFailed -> { /* no-op, state.error already set */ }
+                is WaitingRoomEvent.StartFailed -> { /* no-op, state.error already set */
+                }
             }
         }
     }
@@ -92,7 +92,8 @@ fun WaitingRoomScreen(
             isLoading = state.isLoading
         ) {
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
                     .padding(bottom = 20.dp)
             ) {
                 TopSheet(
@@ -105,12 +106,18 @@ fun WaitingRoomScreen(
                                 text = item.content,
                                 checked = item.isCompleted,
                                 isFocused = !item.isCompleted,
-                                onToggle = { waitingRoomViewModel.changeAgendaStatus(meetingId, item.agendaId, !item.isCompleted) }
+                                onToggle = {
+                                    waitingRoomViewModel.changeAgendaStatus(
+                                        meetingId,
+                                        item.agendaId,
+                                        !item.isCompleted
+                                    )
+                                }
                             )
                         }
                     },
                     content = {
-                        LazyColumn (
+                        LazyColumn(
                             modifier = Modifier.heightIn(max = 161.dp)
                         ) {
                             itemsIndexed(agendas) { i, item ->
@@ -118,7 +125,13 @@ fun WaitingRoomScreen(
                                     text = item.content,
                                     checked = item.isCompleted,
                                     isFocused = !item.isCompleted && firstUncheckedIndex == i,
-                                    onToggle = { waitingRoomViewModel.changeAgendaStatus(meetingId, item.agendaId, !item.isCompleted) }
+                                    onToggle = {
+                                        waitingRoomViewModel.changeAgendaStatus(
+                                            meetingId,
+                                            item.agendaId,
+                                            !item.isCompleted
+                                        )
+                                    }
                                 )
                             }
                         }

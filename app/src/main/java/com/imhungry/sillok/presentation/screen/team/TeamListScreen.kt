@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,8 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -44,10 +43,8 @@ import coil.decode.GifDecoder
 import coil.request.ImageRequest
 import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.screen.home.SearchBar
-import com.imhungry.sillok.presentation.screen.team.TeamCard
 import com.imhungry.sillok.presentation.viewmodel.team.TeamListViewModel
 import com.imhungry.sillok.ui.components.BasicBox
-import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.theme.primaryBackground
 
@@ -93,7 +90,9 @@ fun TeamListScreen(
                         indication = null
                     ) {
                         if (isSearchFocused) {
-                            clearSearchFocus(focusManager, keyboardController) { isSearchFocused = false }
+                            clearSearchFocus(focusManager, keyboardController) {
+                                isSearchFocused = false
+                            }
                         }
                     }
             ) {
@@ -141,7 +140,9 @@ fun TeamListScreen(
                     onTextChange = { searchText = it },
                     onFocusChange = { isSearchFocused = it },
                     onImeAction = {
-                        clearSearchFocus(focusManager, keyboardController) { isSearchFocused = false }
+                        clearSearchFocus(focusManager, keyboardController) {
+                            isSearchFocused = false
+                        }
                     }
                 )
 
@@ -167,7 +168,7 @@ fun TeamListScreen(
                 } else {
                     // 검색 결과 영역 (추후 구현)
                 }
-                
+
                 // 팀 생성하기 버튼 (빈 상태가 아닐 때만 표시)
                 if (!(!isSearchFocused && searchText.isEmpty() && state.teams.isEmpty())) {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -219,7 +220,7 @@ fun TeamListScreen(
                         )
                         Spacer(modifier = Modifier.height(64.dp))
                         SillokButton(
-                            text = "폴더 생성하기",
+                            text = "팀 생성하기",
                             onClick = onNavigateToCreateTeam,
                             modifier = Modifier.padding(horizontal = 48.dp)
                         )
@@ -252,6 +253,7 @@ private fun HandleBackPress(
             searchText.isNotBlank() || isSearchFocused -> {
                 onSearchClose()
             }
+
             else -> {
                 onBackClick()
             }

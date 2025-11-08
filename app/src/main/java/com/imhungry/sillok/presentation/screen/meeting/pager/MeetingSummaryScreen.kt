@@ -28,17 +28,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.R
-import com.imhungry.sillok.domain.model.participation.UserParticipationRate
-import com.imhungry.sillok.domain.model.summary.Summary
-import com.imhungry.sillok.domain.model.user.User
 import com.imhungry.sillok.presentation.screen.meeting.component.ConversationSummaryBar
 import com.imhungry.sillok.presentation.screen.meeting.component.SummaryListItem
-import com.imhungry.sillok.presentation.util.DateTimeUtils
-import com.imhungry.sillok.presentation.viewmodel.meeting.AgendaViewModel
 import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewModel
 import com.imhungry.sillok.ui.components.Divider
 import com.imhungry.sillok.ui.components.HighlightText

@@ -29,7 +29,7 @@ class VoiceRecognitionStore @Inject constructor(
     val isCompleted: Flow<Boolean> = dataStore.data.map { preferences ->
         preferences[IS_COMPLETED_KEY] ?: false
     }
-    
+
     val currentStep: Flow<Int> = dataStore.data.map { preferences ->
         preferences[CURRENT_STEP_KEY] ?: 1
     }
@@ -39,13 +39,13 @@ class VoiceRecognitionStore @Inject constructor(
             preferences[IS_COMPLETED_KEY] = completed
         }
     }
-    
+
     suspend fun setCurrentStep(step: Int) {
         dataStore.edit { preferences ->
             preferences[CURRENT_STEP_KEY] = step
         }
     }
-    
+
     suspend fun clear() {
         dataStore.edit { preferences ->
             preferences.clear()

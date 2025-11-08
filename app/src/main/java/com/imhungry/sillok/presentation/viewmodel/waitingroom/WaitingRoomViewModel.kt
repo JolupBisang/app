@@ -5,23 +5,21 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.model.meeting.TargetMeetingStatus
-import com.imhungry.sillok.domain.model.meeting.MeetingStatus
+import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.usecase.agenda.ChangeAgendaStatusUseCase
 import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.meeting.UpdateMeetingStatusUseCase
-import com.imhungry.sillok.presentation.state.waitingroom.WaitingRoomState
 import com.imhungry.sillok.presentation.state.waitingroom.WaitingRoomEvent
+import com.imhungry.sillok.presentation.state.waitingroom.WaitingRoomState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -83,6 +81,7 @@ class WaitingRoomViewModel @Inject constructor(
                                 )
                             }
                         }
+
                         is ApiResult.Failure -> {
                             _state.update {
                                 it.copy(
@@ -94,6 +93,7 @@ class WaitingRoomViewModel @Inject constructor(
                         }
                     }
                 }
+
                 is ApiResult.Failure -> {
                     _state.update { it.copy(isLoading = false, error = agendasResult.message) }
                 }
@@ -120,8 +120,9 @@ class WaitingRoomViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = changeAgendaStatusUseCase(meetingId, agendaId, isCompleted)) {
                 is ApiResult.Success -> {
-                     _state.update { it.copy(agendas = updated) }
+                    _state.update { it.copy(agendas = updated) }
                 }
+
                 is ApiResult.Failure -> {
                     _state.update { it.copy(agendas = previous, error = result.message) }
                 }
@@ -134,12 +135,14 @@ class WaitingRoomViewModel @Inject constructor(
         val meetingId = state.value.meetingId
         _state.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
-            when (val statusRes = updateMeetingStatusUseCase(meetingId, TargetMeetingStatus.IN_PROGRESSING)) {
+            when (val statusRes =
+                updateMeetingStatusUseCase(meetingId, TargetMeetingStatus.IN_PROGRESSING)) {
                 is ApiResult.Failure -> {
                     _state.update { it.copy(isLoading = false, error = statusRes.message) }
                     _events.emit(WaitingRoomEvent.StartFailed(statusRes.message))
                     return@launch
                 }
+
                 is ApiResult.Success -> {}
             }
 
@@ -149,12 +152,18 @@ class WaitingRoomViewModel @Inject constructor(
                     _events.emit(WaitingRoomEvent.StartFailed(detailRes.message))
                     return@launch
                 }
+
                 is ApiResult.Success -> {
                     try {
                         val db = FirebaseFirestore.getInstance()
                         val me = currentUserEmail
                         val emails = detailRes.data.participants.map { it.email }
-                            .filter { email -> email.isNotBlank() && (me.isNullOrBlank() || !email.equals(me, ignoreCase = true)) }
+                            .filter { email ->
+                                email.isNotBlank() && (me.isNullOrBlank() || !email.equals(
+                                    me,
+                                    ignoreCase = true
+                                ))
+                            }
                             .toSet()
                         for (email in emails) {
                             val snapshot = db.collection("users")

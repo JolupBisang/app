@@ -9,7 +9,7 @@ class UpdateVoiceRecognitionProgressUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(currentStep: Int): ProgressUpdateResult {
         val newStep = currentStep + 1
-        
+
         return if (currentStep < VoiceRecognitionConstants.TOTAL_STEPS) {
             // 다음 단계로 이동
             voiceRecognitionStore.setCurrentStep(newStep)

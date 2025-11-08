@@ -1,12 +1,12 @@
 package com.imhungry.sillok.domain.usecase.user
 
 import android.util.Log
+import com.google.firebase.firestore.FirebaseFirestore
 import com.imhungry.sillok.data.local.TokenStore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.user.User
 import com.imhungry.sillok.domain.repository.user.UserRepository
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -15,17 +15,17 @@ class LoginUseCase @Inject constructor(
     private val tokenStore: TokenStore,
     private val userStore: UserStore
 ) {
-    
+
     companion object {
         private const val TAG = "LoginUseCase"
     }
-    
+
     suspend operator fun invoke(token: String): ApiResult<User> {
         return try {
             // 1. 토큰 저장
             tokenStore.saveTokens(token)
             val userResult = userRepository.getMyProfile()
-            
+
             when (userResult) {
                 is ApiResult.Success -> {
                     // 3. 사용자 정보 저장
@@ -61,6 +61,7 @@ class LoginUseCase @Inject constructor(
                     }
                     ApiResult.Success(userResult.data)
                 }
+
                 is ApiResult.Failure -> {
                     // 실패 시 토큰 삭제
                     tokenStore.clearTokens()

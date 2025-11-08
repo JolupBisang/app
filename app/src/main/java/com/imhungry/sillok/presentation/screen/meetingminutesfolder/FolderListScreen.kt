@@ -43,18 +43,18 @@ import coil.decode.GifDecoder
 import coil.request.ImageRequest
 import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.screen.home.SearchBar
-import com.imhungry.sillok.presentation.viewmodel.meetingminutesfolder.MeetingMinutesFolderViewModel
+import com.imhungry.sillok.presentation.viewmodel.meetingminutesfolder.FolderListViewModel
 import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.theme.primaryBackground
 
 @Composable
-fun MeetingMinutesFolderScreen(
+fun FolderListScreen(
     onBackClick: () -> Unit,
     onNavigateToCreateFolder: () -> Unit = {},
     onNavigateToFolderDetail: (Long) -> Unit = {},
     onNavigateToNotificationHistory: () -> Unit = {},
-    viewModel: MeetingMinutesFolderViewModel = hiltViewModel()
+    viewModel: FolderListViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     val focusRequester = remember { FocusRequester() }
@@ -90,7 +90,9 @@ fun MeetingMinutesFolderScreen(
                         indication = null
                     ) {
                         if (isSearchFocused) {
-                            clearSearchFocus(focusManager, keyboardController) { isSearchFocused = false }
+                            clearSearchFocus(focusManager, keyboardController) {
+                                isSearchFocused = false
+                            }
                         }
                     }
             ) {
@@ -138,7 +140,9 @@ fun MeetingMinutesFolderScreen(
                     onTextChange = { searchText = it },
                     onFocusChange = { isSearchFocused = it },
                     onImeAction = {
-                        clearSearchFocus(focusManager, keyboardController) { isSearchFocused = false }
+                        clearSearchFocus(focusManager, keyboardController) {
+                            isSearchFocused = false
+                        }
                     }
                 )
 
@@ -247,6 +251,7 @@ private fun HandleBackPress(
             searchText.isNotBlank() || isSearchFocused -> {
                 onSearchClose()
             }
+
             else -> {
                 onBackClick()
             }

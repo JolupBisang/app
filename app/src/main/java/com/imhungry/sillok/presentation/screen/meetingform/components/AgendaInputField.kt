@@ -53,7 +53,7 @@ fun AgendaInputField(
             LabelText(
                 text = label
             )
-            
+
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -71,7 +71,7 @@ fun AgendaInputField(
                         isReadOnly = isReadOnly
                     )
                 }
-                
+
                 // 새로운 아젠다 추가 버튼 (읽기 전용일 때는 표시하지 않음)
                 if (!isReadOnly) {
                     Column(
@@ -104,7 +104,7 @@ private fun AgendaItem(
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    
+
     Row(
         modifier = Modifier
             .fillMaxWidth(),
@@ -117,7 +117,7 @@ private fun AgendaItem(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 8.dp)
         )
-        
+
         BasicTextField(
             value = agenda,
             onValueChange = { newValue ->
@@ -154,9 +154,9 @@ private fun AgendaItem(
                 innerTextField()
             }
         )
-        
+
         Spacer(modifier = Modifier.width(8.dp))
-        
+
         if (!isReadOnly) {
             Image(
                 painter = painterResource(id = R.drawable.cancel2),

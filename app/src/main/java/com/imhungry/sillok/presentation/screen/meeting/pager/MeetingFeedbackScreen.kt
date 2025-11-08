@@ -20,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.presentation.screen.meeting.component.Notification
-import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewModel
 import com.imhungry.sillok.ui.components.HighlightText
 

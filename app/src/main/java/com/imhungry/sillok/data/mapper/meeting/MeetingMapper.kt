@@ -7,7 +7,6 @@ import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import javax.inject.Inject
-import kotlin.text.take
 
 class MeetingMapper @Inject constructor() {
     fun toDto(request: CreateMeetingRequest): MeetingReqDto {

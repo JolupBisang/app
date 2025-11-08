@@ -1,7 +1,6 @@
 package com.imhungry.sillok.presentation.screen.home
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,14 +22,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.R
-import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.presentation.state.home.MeetingUi
-import com.imhungry.sillok.ui.components.Divider
 import com.imhungry.sillok.ui.components.SillokTextButton
 import com.imhungry.sillok.ui.theme.tertiary
 
@@ -45,7 +40,7 @@ fun MeetingSection(
 ) {
     // 처음에 보여줄 항목 수
     var displayedCount by remember { mutableStateOf(8) }
-    
+
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -56,8 +51,7 @@ fun MeetingSection(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                ) { onToggle() }
-            ,
+                ) { onToggle() },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -75,9 +69,9 @@ fun MeetingSection(
                     .rotate(if (isExpanded) 0f else 90f)
             )
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         if (isExpanded) {
             if (meetings.isEmpty()) {
                 Text(
@@ -90,7 +84,7 @@ fun MeetingSection(
             } else {
                 // 표시할 회의 목록
                 val displayedMeetings = meetings.take(displayedCount)
-                
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -112,7 +106,8 @@ fun MeetingSection(
                         text = "더보기",
                         onClick = {
                             // 8개씩 더 표시
-                            displayedCount = if (displayedCount + 8 <= meetings.size) displayedCount + 8 else meetings.size
+                            displayedCount =
+                                if (displayedCount + 8 <= meetings.size) displayedCount + 8 else meetings.size
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -138,8 +133,7 @@ fun MeetingItem(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
-            ) { onClick() }
-        ,
+            ) { onClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 회의명
@@ -147,9 +141,9 @@ fun MeetingItem(
             text = "∘  ${meeting.title}",
             onClick = onClick
         )
-        
+
         Spacer(modifier = Modifier.weight(1f))
-        
+
         // 날짜
         Text(
             modifier = Modifier.width(80.dp),

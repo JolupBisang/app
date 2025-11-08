@@ -92,11 +92,12 @@ fun Notification(
                     style = MaterialTheme.typography.bodySmall,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Normal,
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        enabled = onTimeClick != null
-                    ) { onTimeClick?.invoke() }
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            enabled = onTimeClick != null
+                        ) { onTimeClick?.invoke() }
                         .padding(bottom = 3.dp)
                 )
             }

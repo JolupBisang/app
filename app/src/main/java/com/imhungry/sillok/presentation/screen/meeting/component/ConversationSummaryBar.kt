@@ -41,7 +41,7 @@ fun ConversationSummaryBar(
             modifier = Modifier.fillMaxWidth()
         )
 
-        val columnCount =3
+        val columnCount = 3
         val minColumnSize = participationRates.size / columnCount
         val extra = participationRates.size % columnCount
 
@@ -52,7 +52,8 @@ fun ConversationSummaryBar(
         }
 
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(top = 20.dp, bottom = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
@@ -63,7 +64,9 @@ fun ConversationSummaryBar(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     range.forEach { i ->
-                        LegendItem(name = "사용자 ${participationRates[i].userId}", color = colors.getOrElse(i) { green500 })
+                        LegendItem(
+                            name = "사용자 ${participationRates[i].userId}",
+                            color = colors.getOrElse(i) { green500 })
                     }
                 }
             }

@@ -39,11 +39,11 @@ private fun calculateTimeUntil(scheduledStartTime: String): String {
         val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
         val startTime = LocalDateTime.parse(scheduledStartTime, formatter)
         val now = LocalDateTime.now()
-        
+
         val minutesUntil = ChronoUnit.MINUTES.between(now, startTime)
         val hoursUntil = ChronoUnit.HOURS.between(now, startTime)
         val daysUntil = ChronoUnit.DAYS.between(now, startTime)
-        
+
         when {
             minutesUntil < 0 -> "started"
             minutesUntil < 1 -> "starting soon"
@@ -66,10 +66,10 @@ fun ScheduledMeetingNotification(
 ) {
     // dismissed가 false인 회의만 필터링
     val availableMeetings = meetings.filter { !it.dismissed }
-    
+
     // 리스트가 비어있으면 표시하지 않음
     if (availableMeetings.isEmpty()) return
-    
+
     // 첫 번째 회의 표시
     val meeting = availableMeetings.first()
     var timeUntilText by remember { mutableStateOf(calculateTimeUntil(meeting.scheduledStartTime)) }

@@ -13,7 +13,7 @@ class UserRepositoryImpl @Inject constructor(
     private val api: UserApi,
     private val mapper: UserMapper
 ) : UserRepository {
-    
+
     override suspend fun getUserInfo(email: String): ApiResult<User> = withContext(Dispatchers.IO) {
         try {
             val res = api.getUserInfo(email)

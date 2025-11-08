@@ -122,9 +122,11 @@ fun MeetingFormScreen(
                 is MeetingFormEvent.MeetingCreated -> {
                     onCreateMeeting()
                 }
+
                 is MeetingFormEvent.MeetingUpdated -> {
                     onCreateMeeting()
                 }
+
                 else -> {}
             }
         }
@@ -138,319 +140,449 @@ fun MeetingFormScreen(
             isLoading = state.isLoading
         ) {
             Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    focusManager.clearFocus()
-                    viewModel.onEvent(MeetingFormEvent.ClearFocus)
-                }
-        ) {
-            ScreenHeader(
-                title = if (isEditMode) "회의 정보" else "회의 생성",
-                onBackClick = { viewModel.onEvent(MeetingFormEvent.CancelClicked) }
-            )
-
-            // 메인 콘텐츠 영역
-            Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        focusManager.clearFocus()
+                        viewModel.onEvent(MeetingFormEvent.ClearFocus)
+                    }
             ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(top = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ScreenHeader(
+                    title = if (isEditMode) "회의 정보" else "회의 생성",
+                    onBackClick = { viewModel.onEvent(MeetingFormEvent.CancelClicked) }
+                )
+
+                // 메인 콘텐츠 영역
+                Column(
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                     // 제목
-                     item {
-                         Column {
-                             InputField(
-                                 label = "제목",
-                                 value = state.title,
-                                 onValueChange = { viewModel.onEvent(MeetingFormEvent.TitleChanged(it)) },
-                                 placeholder = "${state.userName}님의 회의",
-                                 textFieldValue = state.titleTextFieldValue,
-                                 onTextFieldValueChange = { viewModel.onEvent(MeetingFormEvent.TitleTextFieldValueChanged(it)) },
-                                 onImeDone = { participantsFocusRequester.requestFocus() }
-                             )
-                            // 제목 에러 메시지
-                            if (state.showValidationErrors && state.validationErrors.containsKey("title")) {
-                                ErrorText(
-                                    text = state.validationErrors["title"] ?: "",
-                                    modifier = Modifier.padding(start = 68.dp)
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(top = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // 제목
+                        item {
+                            Column {
+                                InputField(
+                                    label = "제목",
+                                    value = state.title,
+                                    onValueChange = {
+                                        viewModel.onEvent(
+                                            MeetingFormEvent.TitleChanged(
+                                                it
+                                            )
+                                        )
+                                    },
+                                    placeholder = "${state.userName}님의 회의",
+                                    textFieldValue = state.titleTextFieldValue,
+                                    onTextFieldValueChange = {
+                                        viewModel.onEvent(
+                                            MeetingFormEvent.TitleTextFieldValueChanged(
+                                                it
+                                            )
+                                        )
+                                    },
+                                    onImeDone = { participantsFocusRequester.requestFocus() }
                                 )
+                                // 제목 에러 메시지
+                                if (state.showValidationErrors && state.validationErrors.containsKey(
+                                        "title"
+                                    )
+                                ) {
+                                    ErrorText(
+                                        text = state.validationErrors["title"] ?: "",
+                                        modifier = Modifier.padding(start = 68.dp)
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    // 참석자
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            // 이메일 자동완성 드롭다운
-                            if (state.showEmailSuggestions) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 38.dp, start = 65.dp)
-                                        .zIndex(999f)
-                                ) {
-                                    Card(
+                        // 참석자
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                // 이메일 자동완성 드롭다운
+                                if (state.showEmailSuggestions) {
+                                    Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .border(1.dp, Color(0xFFE7E7E7), RoundedCornerShape(4.dp)),
-                                        shape = RoundedCornerShape(4.dp),
-                                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                                        colors = CardDefaults.cardColors(containerColor = primaryBackground)
+                                            .padding(top = 38.dp, start = 65.dp)
+                                            .zIndex(999f)
                                     ) {
-                                        LazyColumn(
-                                            modifier = Modifier.heightIn(max = 216.dp)
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .border(
+                                                    1.dp,
+                                                    Color(0xFFE7E7E7),
+                                                    RoundedCornerShape(4.dp)
+                                                ),
+                                            shape = RoundedCornerShape(4.dp),
+                                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                            colors = CardDefaults.cardColors(containerColor = primaryBackground)
                                         ) {
-                                            items(state.emailSuggestions.filter { email ->
-                                                !state.participantEmails.contains(email)
-                                            }) { email ->
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clickable {
-                                                            viewModel.onEvent(
-                                                                MeetingFormEvent.ParticipantEmailSelected(
-                                                                    email
+                                            LazyColumn(
+                                                modifier = Modifier.heightIn(max = 216.dp)
+                                            ) {
+                                                items(state.emailSuggestions.filter { email ->
+                                                    !state.participantEmails.contains(email)
+                                                }) { email ->
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .clickable {
+                                                                viewModel.onEvent(
+                                                                    MeetingFormEvent.ParticipantEmailSelected(
+                                                                        email
+                                                                    )
                                                                 )
-                                                            )
-                                                        }
-                                                        .padding(
-                                                            horizontal = 16.dp,
-                                                            vertical = 12.dp
-                                                        ),
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Text(
-                                                        text = email,
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        fontWeight = FontWeight.Normal
-                                                    )
+                                                            }
+                                                            .padding(
+                                                                horizontal = 16.dp,
+                                                                vertical = 12.dp
+                                                            ),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(
+                                                            text = email,
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            fontWeight = FontWeight.Normal
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
-                            }
 
-                            Column(
-                                modifier = Modifier.fillMaxSize()
-                            ) {
                                 Column(
-                                    modifier = Modifier.fillMaxSize(),
-                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    modifier = Modifier.fillMaxSize()
                                 ) {
-                                    Column {
-                                        EmailInputFieldWithAutocomplete(
-                                            label = "참석자",
-                                            value = state.participants,
-                                            onValueChange = { viewModel.onEvent(MeetingFormEvent.ParticipantsChanged(it)) },
-                                            placeholder = "이메일",
-                                            emailSuggestions = state.emailSuggestions,
-                                            showEmailSuggestions = state.showEmailSuggestions,
-                                            isSearching = state.isSearching,
-                                            participantEmails = state.participantEmails,
-                                            onEmailSelected = { email ->
-                                                viewModel.onEvent(MeetingFormEvent.ParticipantEmailSelected(email))
-                                            },
-                                            onEmailSubmitted = { 
-                                                // 직접 입력 추가 불가 (드롭다운에서만 선택 가능)
-                                            },
-                                            onEmailRemoved = { index ->
-                                                viewModel.onEvent(MeetingFormEvent.ParticipantEmailRemoved(index))
-                                            },
-                                            modifier = Modifier.focusRequester(participantsFocusRequester)
-                                        )
-                                        // 참석자 에러 메시지
-                                        if (state.showValidationErrors && state.validationErrors.containsKey("participants")) {
-                                            ErrorText(
-                                                text = state.validationErrors["participants"] ?: "",
-                                                modifier = Modifier.padding(start = 68.dp)
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        Column {
+                                            EmailInputFieldWithAutocomplete(
+                                                label = "참석자",
+                                                value = state.participants,
+                                                onValueChange = {
+                                                    viewModel.onEvent(
+                                                        MeetingFormEvent.ParticipantsChanged(
+                                                            it
+                                                        )
+                                                    )
+                                                },
+                                                placeholder = "이메일",
+                                                emailSuggestions = state.emailSuggestions,
+                                                showEmailSuggestions = state.showEmailSuggestions,
+                                                isSearching = state.isSearching,
+                                                participantEmails = state.participantEmails,
+                                                onEmailSelected = { email ->
+                                                    viewModel.onEvent(
+                                                        MeetingFormEvent.ParticipantEmailSelected(
+                                                            email
+                                                        )
+                                                    )
+                                                },
+                                                onEmailSubmitted = {
+                                                    // 직접 입력 추가 불가 (드롭다운에서만 선택 가능)
+                                                },
+                                                onEmailRemoved = { index ->
+                                                    viewModel.onEvent(
+                                                        MeetingFormEvent.ParticipantEmailRemoved(
+                                                            index
+                                                        )
+                                                    )
+                                                },
+                                                modifier = Modifier.focusRequester(
+                                                    participantsFocusRequester
+                                                )
                                             )
-                                        }
-                                    }
-
-                                    Column {
-                                        DateInputField(
-                                            label = "일시",
-                                            value = state.date,
-                                            onValueChange = { viewModel.onEvent(MeetingFormEvent.DateChanged(it)) },
-                                            placeholder = "YYYY / MM / DD"
-                                        )
-                                        // 날짜 에러 메시지
-                                        if (state.showValidationErrors && state.validationErrors.containsKey("date")) {
-                                            ErrorText(
-                                                text = state.validationErrors["date"] ?: "",
-                                                modifier = Modifier.padding(start = 68.dp)
-                                            )
-                                        }
-                                    }
-
-                                    Column {
-                                        TimeInputField(
-                                            label = "시간",
-                                            startTime = state.startTime,
-                                            endTime = state.endTime,
-                                            duration = state.duration,
-                                            onStartTimeChange = { viewModel.onEvent(MeetingFormEvent.StartTimeChanged(it)) },
-                                            onEndTimeChange = { viewModel.onEvent(MeetingFormEvent.EndTimeChanged(it)) },
-                                            onDurationChange = { viewModel.onEvent(MeetingFormEvent.DurationChanged(it)) },
-                                            showTimePicker = state.showTimePicker,
-                                            onTimePickerDismiss = { viewModel.onEvent(MeetingFormEvent.ClearFocus) },
-                                            onStartTimeClick = { viewModel.onEvent(MeetingFormEvent.TimePickerShown) },
-                                            onEndTimeClick = { viewModel.onEvent(MeetingFormEvent.TimePickerShown) }
-                                        )
-                                        // 시간 에러 메시지
-                                        if (state.showValidationErrors &&
-                                            (state.validationErrors.containsKey("startTime")
-                                                    || state.validationErrors.containsKey("endTime")
-                                                    || state.validationErrors.containsKey("duration"))
+                                            // 참석자 에러 메시지
+                                            if (state.showValidationErrors && state.validationErrors.containsKey(
+                                                    "participants"
+                                                )
                                             ) {
-                                            val timeError = state.validationErrors["startTime"] ?: state.validationErrors["endTime"] ?: state.validationErrors["duration"] ?: ""
-                                            if (timeError.isNotEmpty()) {
                                                 ErrorText(
-                                                    text = timeError,
+                                                    text = state.validationErrors["participants"]
+                                                        ?: "",
                                                     modifier = Modifier.padding(start = 68.dp)
                                                 )
                                             }
                                         }
-                                    }
 
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        // 장소 자동완성 드롭다운
-                                        if (state.showLocationSuggestions) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(top = 38.dp, start = 65.dp)
-                                                    .zIndex(999f)
+                                        Column {
+                                            DateInputField(
+                                                label = "일시",
+                                                value = state.date,
+                                                onValueChange = {
+                                                    viewModel.onEvent(
+                                                        MeetingFormEvent.DateChanged(
+                                                            it
+                                                        )
+                                                    )
+                                                },
+                                                placeholder = "YYYY / MM / DD"
+                                            )
+                                            // 날짜 에러 메시지
+                                            if (state.showValidationErrors && state.validationErrors.containsKey(
+                                                    "date"
+                                                )
                                             ) {
-                                                Card(
+                                                ErrorText(
+                                                    text = state.validationErrors["date"] ?: "",
+                                                    modifier = Modifier.padding(start = 68.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Column {
+                                            TimeInputField(
+                                                label = "시간",
+                                                startTime = state.startTime,
+                                                endTime = state.endTime,
+                                                duration = state.duration,
+                                                onStartTimeChange = {
+                                                    viewModel.onEvent(
+                                                        MeetingFormEvent.StartTimeChanged(it)
+                                                    )
+                                                },
+                                                onEndTimeChange = {
+                                                    viewModel.onEvent(
+                                                        MeetingFormEvent.EndTimeChanged(it)
+                                                    )
+                                                },
+                                                onDurationChange = {
+                                                    viewModel.onEvent(
+                                                        MeetingFormEvent.DurationChanged(it)
+                                                    )
+                                                },
+                                                showTimePicker = state.showTimePicker,
+                                                onTimePickerDismiss = {
+                                                    viewModel.onEvent(
+                                                        MeetingFormEvent.ClearFocus
+                                                    )
+                                                },
+                                                onStartTimeClick = {
+                                                    viewModel.onEvent(
+                                                        MeetingFormEvent.TimePickerShown
+                                                    )
+                                                },
+                                                onEndTimeClick = {
+                                                    viewModel.onEvent(
+                                                        MeetingFormEvent.TimePickerShown
+                                                    )
+                                                }
+                                            )
+                                            // 시간 에러 메시지
+                                            if (state.showValidationErrors &&
+                                                (state.validationErrors.containsKey("startTime")
+                                                        || state.validationErrors.containsKey("endTime")
+                                                        || state.validationErrors.containsKey("duration"))
+                                            ) {
+                                                val timeError = state.validationErrors["startTime"]
+                                                    ?: state.validationErrors["endTime"]
+                                                    ?: state.validationErrors["duration"] ?: ""
+                                                if (timeError.isNotEmpty()) {
+                                                    ErrorText(
+                                                        text = timeError,
+                                                        modifier = Modifier.padding(start = 68.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            // 장소 자동완성 드롭다운
+                                            if (state.showLocationSuggestions) {
+                                                Box(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .border(1.dp, Color(0xFFE7E7E7), RoundedCornerShape(4.dp)),
-                                                    shape = RoundedCornerShape(4.dp),
-                                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                                                    colors = CardDefaults.cardColors(containerColor = primaryBackground)
+                                                        .padding(top = 38.dp, start = 65.dp)
+                                                        .zIndex(999f)
                                                 ) {
-                                                    LazyColumn(
-                                                        modifier = Modifier.heightIn(max = 216.dp)
+                                                    Card(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .border(
+                                                                1.dp,
+                                                                Color(0xFFE7E7E7),
+                                                                RoundedCornerShape(4.dp)
+                                                            ),
+                                                        shape = RoundedCornerShape(4.dp),
+                                                        elevation = CardDefaults.cardElevation(
+                                                            defaultElevation = 0.dp
+                                                        ),
+                                                        colors = CardDefaults.cardColors(
+                                                            containerColor = primaryBackground
+                                                        )
                                                     ) {
-                                                        items(state.locationSuggestions) { place ->
-                                                            Row(
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth()
-                                                                    .clickable {
-                                                                        viewModel.onEvent(
-                                                                            MeetingFormEvent.LocationSelected(
-                                                                                place.name
+                                                        LazyColumn(
+                                                            modifier = Modifier.heightIn(max = 216.dp)
+                                                        ) {
+                                                            items(state.locationSuggestions) { place ->
+                                                                Row(
+                                                                    modifier = Modifier
+                                                                        .fillMaxWidth()
+                                                                        .clickable {
+                                                                            viewModel.onEvent(
+                                                                                MeetingFormEvent.LocationSelected(
+                                                                                    place.name
+                                                                                )
                                                                             )
+                                                                        }
+                                                                        .padding(
+                                                                            horizontal = 16.dp,
+                                                                            vertical = 12.dp
+                                                                        ),
+                                                                    verticalAlignment = Alignment.CenterVertically
+                                                                ) {
+                                                                    Column {
+                                                                        Text(
+                                                                            text = place.name,
+                                                                            style = MaterialTheme.typography.bodyMedium,
+                                                                            fontWeight = FontWeight.Normal
+                                                                        )
+                                                                        Text(
+                                                                            text = place.address,
+                                                                            style = MaterialTheme.typography.bodySmall,
+                                                                            color = gray400,
+                                                                            fontSize = 14.sp
                                                                         )
                                                                     }
-                                                                    .padding(
-                                                                        horizontal = 16.dp,
-                                                                        vertical = 12.dp
-                                                                    ),
-                                                                verticalAlignment = Alignment.CenterVertically
-                                                            ) {
-                                                                Column {
-                                                                    Text(
-                                                                        text = place.name,
-                                                                        style = MaterialTheme.typography.bodyMedium,
-                                                                        fontWeight = FontWeight.Normal
-                                                                    )
-                                                                    Text(
-                                                                        text = place.address,
-                                                                        style = MaterialTheme.typography.bodySmall,
-                                                                        color = gray400,
-                                                                        fontSize = 14.sp
-                                                                    )
                                                                 }
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
-                                        }
 
-                                        Column(
-                                            modifier = Modifier.fillMaxSize()
-                                        ) {
                                             Column(
-                                                modifier = Modifier.fillMaxSize(),
-                                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                modifier = Modifier.fillMaxSize()
                                             ) {
-                                                Column {
-                                                     InputField(
-                                                         label = "장소",
-                                                         value = state.location,
-                                                         onValueChange = { viewModel.onEvent(MeetingFormEvent.LocationChanged(it)) },
-                                                         placeholder = "장소",
-                                                         textFieldValue = state.locationTextFieldValue,
-                                                         onTextFieldValueChange = { viewModel.onEvent(MeetingFormEvent.LocationTextFieldValueChanged(it)) }
-                                                     )
-                                                    // 장소 에러 메시지
-                                                    if (state.showValidationErrors && state.validationErrors.containsKey("location")) {
-                                                        ErrorText(
-                                                            text = state.validationErrors["location"] ?: "",
-                                                            modifier = Modifier.padding(start = 68.dp)
+                                                Column(
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                ) {
+                                                    Column {
+                                                        InputField(
+                                                            label = "장소",
+                                                            value = state.location,
+                                                            onValueChange = {
+                                                                viewModel.onEvent(
+                                                                    MeetingFormEvent.LocationChanged(
+                                                                        it
+                                                                    )
+                                                                )
+                                                            },
+                                                            placeholder = "장소",
+                                                            textFieldValue = state.locationTextFieldValue,
+                                                            onTextFieldValueChange = {
+                                                                viewModel.onEvent(
+                                                                    MeetingFormEvent.LocationTextFieldValueChanged(
+                                                                        it
+                                                                    )
+                                                                )
+                                                            }
                                                         )
-                                                    }
-                                                }
-
-                                                Column {
-                                                    AgendaInputField(
-                                                        label = "안건",
-                                                        agendas = state.agendas,
-                                                        onAgendaChanged = { index, agenda ->
-                                                            viewModel.onEvent(MeetingFormEvent.AgendaChanged(index, agenda))
-                                                        },
-                                                        onAgendaAdded = {
-                                                            viewModel.onEvent(MeetingFormEvent.AgendaAdded)
-                                                        },
-                                                        onAgendaRemoved = { index ->
-                                                            viewModel.onEvent(MeetingFormEvent.AgendaRemoved(index))
-                                                        }
-                                                    )
-                                                    // 아젠다 에러 메시지
-                                                    if (state.showValidationErrors && state.validationErrors.containsKey("agendas")) {
-                                                        ErrorText(
-                                                            text = state.validationErrors["agendas"] ?: "",
-                                                            modifier = Modifier.padding(start = 68.dp)
-                                                        )
-                                                    }
-                                                }
-
-                                                Column {
-                                                    BreakTimeInputField(
-                                                        label = "쉬는시간",
-                                                        breakInterval = state.breakInterval,
-                                                        breakDuration = state.breakDuration,
-                                                        onBreakIntervalChanged = { interval ->
-                                                            viewModel.onEvent(MeetingFormEvent.BreakIntervalChanged(interval))
-                                                        },
-                                                        onBreakDurationChanged = { duration ->
-                                                            viewModel.onEvent(MeetingFormEvent.BreakDurationChanged(duration))
-                                                        }
-                                                    )
-
-                                                    // 쉬는 시간 에러 메시지
-                                                    if (state.showValidationErrors && (state.validationErrors.containsKey("breakInterval") || state.validationErrors.containsKey("breakDuration"))) {
-                                                        val breakTimeError = state.validationErrors["breakInterval"] ?: state.validationErrors["breakDuration"] ?: ""
-                                                        if (breakTimeError.isNotEmpty()) {
+                                                        // 장소 에러 메시지
+                                                        if (state.showValidationErrors && state.validationErrors.containsKey(
+                                                                "location"
+                                                            )
+                                                        ) {
                                                             ErrorText(
-                                                                text = breakTimeError,
+                                                                text = state.validationErrors["location"]
+                                                                    ?: "",
                                                                 modifier = Modifier.padding(start = 68.dp)
                                                             )
+                                                        }
+                                                    }
+
+                                                    Column {
+                                                        AgendaInputField(
+                                                            label = "안건",
+                                                            agendas = state.agendas,
+                                                            onAgendaChanged = { index, agenda ->
+                                                                viewModel.onEvent(
+                                                                    MeetingFormEvent.AgendaChanged(
+                                                                        index,
+                                                                        agenda
+                                                                    )
+                                                                )
+                                                            },
+                                                            onAgendaAdded = {
+                                                                viewModel.onEvent(MeetingFormEvent.AgendaAdded)
+                                                            },
+                                                            onAgendaRemoved = { index ->
+                                                                viewModel.onEvent(
+                                                                    MeetingFormEvent.AgendaRemoved(
+                                                                        index
+                                                                    )
+                                                                )
+                                                            }
+                                                        )
+                                                        // 아젠다 에러 메시지
+                                                        if (state.showValidationErrors && state.validationErrors.containsKey(
+                                                                "agendas"
+                                                            )
+                                                        ) {
+                                                            ErrorText(
+                                                                text = state.validationErrors["agendas"]
+                                                                    ?: "",
+                                                                modifier = Modifier.padding(start = 68.dp)
+                                                            )
+                                                        }
+                                                    }
+
+                                                    Column {
+                                                        BreakTimeInputField(
+                                                            label = "쉬는시간",
+                                                            breakInterval = state.breakInterval,
+                                                            breakDuration = state.breakDuration,
+                                                            onBreakIntervalChanged = { interval ->
+                                                                viewModel.onEvent(
+                                                                    MeetingFormEvent.BreakIntervalChanged(
+                                                                        interval
+                                                                    )
+                                                                )
+                                                            },
+                                                            onBreakDurationChanged = { duration ->
+                                                                viewModel.onEvent(
+                                                                    MeetingFormEvent.BreakDurationChanged(
+                                                                        duration
+                                                                    )
+                                                                )
+                                                            }
+                                                        )
+
+                                                        // 쉬는 시간 에러 메시지
+                                                        if (state.showValidationErrors && (state.validationErrors.containsKey(
+                                                                "breakInterval"
+                                                            ) || state.validationErrors.containsKey(
+                                                                "breakDuration"
+                                                            ))
+                                                        ) {
+                                                            val breakTimeError =
+                                                                state.validationErrors["breakInterval"]
+                                                                    ?: state.validationErrors["breakDuration"]
+                                                                    ?: ""
+                                                            if (breakTimeError.isNotEmpty()) {
+                                                                ErrorText(
+                                                                    text = breakTimeError,
+                                                                    modifier = Modifier.padding(
+                                                                        start = 68.dp
+                                                                    )
+                                                                )
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -460,59 +592,58 @@ fun MeetingFormScreen(
                                 }
                             }
                         }
-                    }
-                    item {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        // 장소 자동완성 드롭다운이 나타날 때만 Spacer 표시
-                        if (state.showLocationSuggestions) {
-                            Spacer(modifier = Modifier.height(220.dp))
+                        item {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            // 장소 자동완성 드롭다운이 나타날 때만 Spacer 표시
+                            if (state.showLocationSuggestions) {
+                                Spacer(modifier = Modifier.height(220.dp))
+                            }
                         }
                     }
-                }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 20.dp)
-                ) {
-                    if (isEditMode) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 20.dp)
+                    ) {
+                        if (isEditMode) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                SillokButton(
+                                    text = "취소",
+                                    onClick = {
+                                        viewModel.onEvent(MeetingFormEvent.CancelClicked)
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    backgroundColor = gray500,
+                                    textColor = primaryTextColor
+                                )
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                SillokButton(
+                                    text = "저장",
+                                    onClick = {
+                                        viewModel.onEvent(MeetingFormEvent.ValidateForm)
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                        if (!isEditMode) {
                             SillokButton(
-                                text = "취소",
-                                onClick = {
-                                    viewModel.onEvent(MeetingFormEvent.CancelClicked)
-                                },
-                                modifier = Modifier.weight(1f),
-                                backgroundColor = gray500,
-                                textColor = primaryTextColor
-                            )
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            SillokButton(
-                                text = "저장",
+                                text = "새 회의 등록",
                                 onClick = {
                                     viewModel.onEvent(MeetingFormEvent.ValidateForm)
-                                },
-                                modifier = Modifier.weight(1f)
+                                }
                             )
                         }
-                    }
-                    if (!isEditMode) {
-                        SillokButton(
-                            text = "새 회의 등록",
-                            onClick = {
-                                viewModel.onEvent(MeetingFormEvent.ValidateForm)
-                            }
-                        )
                     }
                 }
             }
-        }
-            
+
             // 시스템 뒤로가기 → 취소 동작과 동일하게 처리
             BackHandler {
                 viewModel.onEvent(MeetingFormEvent.CancelClicked)

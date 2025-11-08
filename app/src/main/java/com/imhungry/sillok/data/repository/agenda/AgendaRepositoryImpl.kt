@@ -17,37 +17,50 @@ class AgendaRepositoryImpl @Inject constructor(
     private val mapper: AgendaMapper
 ) : AgendaRepository {
 
-    override suspend fun getAgendas(meetingId: Long): ApiResult<List<Agenda>> = withContext(Dispatchers.IO) {
-        try {
-            val res = api.getAgendas(meetingId)
-            if (res.isSuccessful) {
-                val agendas = res.body()?.agendas?.map { mapper.toDomain(it) } ?: emptyList()
-                ApiResult.Success(agendas)
-            } else {
-                ApiResult.Failure(res.message())
+    override suspend fun getAgendas(meetingId: Long): ApiResult<List<Agenda>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val res = api.getAgendas(meetingId)
+                if (res.isSuccessful) {
+                    val agendas = res.body()?.agendas?.map { mapper.toDomain(it) } ?: emptyList()
+                    ApiResult.Success(agendas)
+                } else {
+                    ApiResult.Failure(res.message())
+                }
+            } catch (e: Exception) {
+                ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
             }
-        } catch (e: Exception) {
-            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
         }
-    }
 
-    override suspend fun addAgenda(meetingId: Long, content: List<String>): ApiResult<List<Long>> = withContext(Dispatchers.IO) {
-        try {
-            val res = api.addAgenda(meetingId, AgendaCreateReqDto(contents = content))
-            if (res.isSuccessful) {
-                val createdIds = res.body()?.agendaDetails?.mapNotNull { it.agendaId } ?: emptyList()
-                if (createdIds.isNotEmpty()) ApiResult.Success(createdIds) else ApiResult.Failure("응답 파싱 오류")
-            } else {
-                ApiResult.Failure(res.message())
+    override suspend fun addAgenda(meetingId: Long, content: List<String>): ApiResult<List<Long>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val res = api.addAgenda(meetingId, AgendaCreateReqDto(contents = content))
+                if (res.isSuccessful) {
+                    val createdIds =
+                        res.body()?.agendaDetails?.mapNotNull { it.agendaId } ?: emptyList()
+                    if (createdIds.isNotEmpty()) ApiResult.Success(createdIds) else ApiResult.Failure(
+                        "응답 파싱 오류"
+                    )
+                } else {
+                    ApiResult.Failure(res.message())
+                }
+            } catch (e: Exception) {
+                ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
             }
-        } catch (e: Exception) {
-            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
         }
-    }
 
-    override suspend fun updateAgenda(meetingId: Long, agendaId: Long, content: String): ApiResult<Long> = withContext(Dispatchers.IO) {
+    override suspend fun updateAgenda(
+        meetingId: Long,
+        agendaId: Long,
+        content: String
+    ): ApiResult<Long> = withContext(Dispatchers.IO) {
         try {
-            val res = api.updateAgenda(meetingId = meetingId, agendaId = agendaId, request = AgendaUpdateReqDto(content))
+            val res = api.updateAgenda(
+                meetingId = meetingId,
+                agendaId = agendaId,
+                request = AgendaUpdateReqDto(content)
+            )
             if (res.isSuccessful) {
                 val updatedId = res.body()?.agendaId
                 if (updatedId != null) ApiResult.Success(updatedId) else ApiResult.Failure("응답 파싱 오류")
@@ -59,9 +72,17 @@ class AgendaRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun changeAgendaStatus(meetingId: Long, agendaId: Long, isCompleted: Boolean): ApiResult<Boolean> = withContext(Dispatchers.IO) {
+    override suspend fun changeAgendaStatus(
+        meetingId: Long,
+        agendaId: Long,
+        isCompleted: Boolean
+    ): ApiResult<Boolean> = withContext(Dispatchers.IO) {
         try {
-            val res = api.changeAgendaStatus(meetingId = meetingId, agendaId = agendaId, request = AgendaStatusReqDto(isCompleted))
+            val res = api.changeAgendaStatus(
+                meetingId = meetingId,
+                agendaId = agendaId,
+                request = AgendaStatusReqDto(isCompleted)
+            )
             if (res.isSuccessful) {
                 val status = res.body()?.isCompleted
                 if (status != null) ApiResult.Success(status) else ApiResult.Failure("응답 파싱 오류")
@@ -73,16 +94,17 @@ class AgendaRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun deleteAgenda(meetingId: Long, agendaId: Long): ApiResult<Unit> = withContext(Dispatchers.IO) {
-        try {
-            val res = api.deleteAgenda(meetingId = meetingId, agendaId = agendaId)
-            if (res.isSuccessful) {
-                ApiResult.Success(Unit)
-            } else {
-                ApiResult.Failure(res.message())
+    override suspend fun deleteAgenda(meetingId: Long, agendaId: Long): ApiResult<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val res = api.deleteAgenda(meetingId = meetingId, agendaId = agendaId)
+                if (res.isSuccessful) {
+                    ApiResult.Success(Unit)
+                } else {
+                    ApiResult.Failure(res.message())
+                }
+            } catch (e: Exception) {
+                ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
             }
-        } catch (e: Exception) {
-            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
         }
-    }
 }

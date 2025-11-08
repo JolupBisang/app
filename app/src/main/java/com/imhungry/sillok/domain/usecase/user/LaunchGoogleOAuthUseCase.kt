@@ -7,7 +7,7 @@ import com.imhungry.sillok.BuildConfig
 import javax.inject.Inject
 
 class LaunchGoogleOAuthUseCase @Inject constructor() {
-    
+
     operator fun invoke(context: Context) {
         val authUrl = ("https://accounts.google.com/o/oauth2/v2/auth/oauthchooseaccount" +
                 "?client_id=${BuildConfig.OAUTH_CLIENT_ID}" +

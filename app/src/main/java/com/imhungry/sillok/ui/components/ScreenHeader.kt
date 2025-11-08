@@ -36,7 +36,7 @@ fun ScreenHeader(
                     indication = null
                 ) { onBackClick() }
         )
-        
+
         Text(
             text = title,
             style = MaterialTheme.typography.headlineMedium,

@@ -43,7 +43,7 @@ fun BreakTimeInputField(
     val durationFocusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    
+
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -54,7 +54,7 @@ fun BreakTimeInputField(
             LabelText(
                 text = label
             )
-            
+
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -104,9 +104,9 @@ fun BreakTimeInputField(
                         innerTextField()
                     }
                 )
-                
+
                 Spacer(modifier = Modifier.width(8.dp))
-                
+
                 // "분 마다" 텍스트
                 Text(
                     text = "분 마다",
@@ -114,9 +114,9 @@ fun BreakTimeInputField(
                     color = primaryTextColor,
                     fontWeight = FontWeight.Medium
                 )
-                
+
                 Spacer(modifier = Modifier.width(8.dp))
-                
+
                 // 쉬는 시간 지속 시간 입력 필드
                 BasicTextField(
                     value = breakDuration,
@@ -160,9 +160,9 @@ fun BreakTimeInputField(
                         innerTextField()
                     }
                 )
-                
+
                 Spacer(modifier = Modifier.width(8.dp))
-                
+
                 // "분" 텍스트
                 Text(
                     text = "분",

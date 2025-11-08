@@ -18,9 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,7 +31,6 @@ import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.components.SillokDialog
 import com.imhungry.sillok.ui.theme.brown100
 import com.imhungry.sillok.ui.theme.brown400
-import com.imhungry.sillok.ui.theme.inverse
 import com.imhungry.sillok.ui.theme.primarySurface
 
 @Composable
@@ -41,12 +38,12 @@ fun VoiceRecognitionCompleteScreen(
     onProcessingComplete: () -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
-    
+
     // 뒤로 가기 처리
     BackHandler(enabled = true) {
         showDialog = true
     }
-    
+
     BasicBox(
         statusBarColor = brown400,
         navigationBarColor = brown400,
@@ -102,7 +99,7 @@ fun VoiceRecognitionCompleteScreen(
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
-        
+
         SillokDialog(
             visible = showDialog,
             message = "목소리 학습을 완료하지 않고 나가시겠습니까?",

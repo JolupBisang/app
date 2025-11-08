@@ -50,7 +50,7 @@ fun MeetingScheduleView(
 ) {
     var isCalendarView by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-    
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -144,11 +144,11 @@ private fun SelectedDateMeetingList(
         } else {
             val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
             val selectedDateString = selectedDate.format(dateFormatter)
-            
+
             val meetingsOnSelectedDate = meetings.filter { meeting ->
                 meeting.scheduledStartTime.startsWith(selectedDateString)
             }
-            
+
             // WAITING이나 IN_PROGRESS 상태인 회의가 있는지 확인
             val hasActiveMeetings = meetingsOnSelectedDate.any { meeting ->
                 meeting.status == "WAITING" || meeting.status == "IN_PROGRESS"
@@ -187,6 +187,7 @@ private fun SelectedDateMeetingList(
                                 titleColor = primaryTextColor
                                 timeColor = primaryTextColor
                             }
+
                             "WAITING" -> {
                                 // 예정된 회의
                                 backgroundColor = Color.White
@@ -195,6 +196,7 @@ private fun SelectedDateMeetingList(
                                 titleColor = primaryTextColor
                                 timeColor = tertiary
                             }
+
                             else -> {
                                 // 그 외 (COMPLETED 등)
                                 backgroundColor = Color.Transparent

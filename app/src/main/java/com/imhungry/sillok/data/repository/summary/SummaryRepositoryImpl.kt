@@ -3,8 +3,8 @@ package com.imhungry.sillok.data.repository.summary
 import com.imhungry.sillok.data.mapper.summary.SummaryMapper
 import com.imhungry.sillok.data.remote.summary.SummaryApi
 import com.imhungry.sillok.data.util.ApiResult
-import com.imhungry.sillok.domain.repository.summary.SummaryRepository
 import com.imhungry.sillok.domain.model.summary.Summary
+import com.imhungry.sillok.domain.repository.summary.SummaryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject

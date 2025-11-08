@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import java.time.Instant
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
@@ -19,7 +18,8 @@ object DateTimeUtils {
         return try {
             // 'yyyy-MM-dd'T'HH:mm:ss'까지만 자르기 (19자, 소수점 초나 타임존 정보 제거)
             val baseTimestamp = isoTimestamp.take(19)
-            val localDateTime = LocalDateTime.parse(baseTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val localDateTime =
+                LocalDateTime.parse(baseTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             val utcZoned = localDateTime.atZone(ZoneOffset.UTC)
             val koreaZoned = utcZoned.withZoneSameInstant(ZoneId.of("Asia/Seoul"))
             koreaZoned.toInstant().toEpochMilli()
@@ -81,7 +81,8 @@ object DateTimeUtils {
     fun localIsoToDateString(isoLocalTimestamp: String?): String {
         if (isoLocalTimestamp.isNullOrBlank()) return "-"
         return try {
-            val localDateTime = LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val localDateTime =
+                LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             val datePart = localDateTime.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
             val dayOfWeek = localDateTime.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN)
             "$datePart $dayOfWeek"
@@ -94,7 +95,8 @@ object DateTimeUtils {
     fun localIsoToTimeString(isoLocalTimestamp: String?): String {
         if (isoLocalTimestamp.isNullOrBlank()) return "-"
         return try {
-            val localDateTime = LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val localDateTime =
+                LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             localDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
         } catch (e: Exception) {
             Log.e("DateTimeUtils", "파싱 실패: $isoLocalTimestamp", e)
@@ -105,7 +107,8 @@ object DateTimeUtils {
     fun localIsoToTimeStringPlusMinutes(isoLocalTimestamp: String?, targetTime: Int): String {
         if (isoLocalTimestamp.isNullOrBlank()) return "-"
         return try {
-            val localDateTime = LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val localDateTime =
+                LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             val updatedDateTime = localDateTime.plusMinutes(targetTime.toLong())
             updatedDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
         } catch (e: Exception) {
@@ -130,6 +133,7 @@ object DateTimeUtils {
             ""
         }
     }
+
     fun getMinutesBetweenMillis(startMillis: Long, endMillis: Long): Long {
         val diffMillis = endMillis - startMillis
         return diffMillis / 1000 / 60
@@ -145,7 +149,8 @@ object DateTimeUtils {
         return try {
             // 'yyyy-MM-dd'T'HH:mm:ss'까지만 자르기 (19자, 소수점 초 제거)
             val baseTimestamp = koreaTime.take(19)
-            val localDateTime = LocalDateTime.parse(baseTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val localDateTime =
+                LocalDateTime.parse(baseTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             val seoulZoned = ZonedDateTime.of(localDateTime, ZoneId.of("Asia/Seoul"))
             val utcZoned = seoulZoned.withZoneSameInstant(ZoneId.of("UTC"))
             utcZoned.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)

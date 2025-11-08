@@ -18,54 +18,60 @@ class MeetingRepositoryImpl @Inject constructor(
     private val api: MeetingApi,
     private val mapper: MeetingMapper
 ) : MeetingRepository {
-    override suspend fun createMeeting(request: CreateMeetingRequest): ApiResult<Long> = withContext(Dispatchers.IO) {
-        try {
-            val dto = mapper.toDto(request)
-            val res = api.createMeeting(dto)
-            if (res.isSuccessful) {
-				ApiResult.Success(res.body()?.meetingId ?: -1L)
-            } else {
-                ApiResult.Failure(res.message())
-            }
-        } catch (e: Exception) {
-            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
-        }
-    }
-
-	override suspend fun getMeetingDetail(meetingId: Long): ApiResult<Meeting> = withContext(Dispatchers.IO) {
-        try {
-            val res = api.getMeetingDetail(meetingId)
-            if (res.isSuccessful) {
-				val dto = res.body()
-                if (dto != null) {
-                    ApiResult.Success(mapper.toDomain(dto))
+    override suspend fun createMeeting(request: CreateMeetingRequest): ApiResult<Long> =
+        withContext(Dispatchers.IO) {
+            try {
+                val dto = mapper.toDto(request)
+                val res = api.createMeeting(dto)
+                if (res.isSuccessful) {
+                    ApiResult.Success(res.body()?.meetingId ?: -1L)
                 } else {
-                    ApiResult.Failure("응답 파싱 오류")
+                    ApiResult.Failure(res.message())
                 }
-            } else {
-                ApiResult.Failure(res.message())
+            } catch (e: Exception) {
+                ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
             }
-        } catch (e: Exception) {
-            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
         }
-    }
 
-	override suspend fun getMeetings(year: Int, month: Int): ApiResult<List<MeetingDetailSummary>> = withContext(Dispatchers.IO) {
-        try {
-            val res = api.getMeetings(year, month)
-            if (res.isSuccessful) {
-				val dtoList = res.body()
-				val summaries = dtoList?.map { mapper.toMeetingSummary(it) } ?: emptyList()
-				ApiResult.Success(summaries)
-            } else {
-                ApiResult.Failure(res.message())
+    override suspend fun getMeetingDetail(meetingId: Long): ApiResult<Meeting> =
+        withContext(Dispatchers.IO) {
+            try {
+                val res = api.getMeetingDetail(meetingId)
+                if (res.isSuccessful) {
+                    val dto = res.body()
+                    if (dto != null) {
+                        ApiResult.Success(mapper.toDomain(dto))
+                    } else {
+                        ApiResult.Failure("응답 파싱 오류")
+                    }
+                } else {
+                    ApiResult.Failure(res.message())
+                }
+            } catch (e: Exception) {
+                ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
             }
-        } catch (e: Exception) {
-            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
         }
-    }
 
-    override suspend fun updateMeetingStatus(meetingId: Long, targetStatus: TargetMeetingStatus): ApiResult<Unit> = withContext(Dispatchers.IO) {
+    override suspend fun getMeetings(year: Int, month: Int): ApiResult<List<MeetingDetailSummary>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val res = api.getMeetings(year, month)
+                if (res.isSuccessful) {
+                    val dtoList = res.body()
+                    val summaries = dtoList?.map { mapper.toMeetingSummary(it) } ?: emptyList()
+                    ApiResult.Success(summaries)
+                } else {
+                    ApiResult.Failure(res.message())
+                }
+            } catch (e: Exception) {
+                ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
+            }
+        }
+
+    override suspend fun updateMeetingStatus(
+        meetingId: Long,
+        targetStatus: TargetMeetingStatus
+    ): ApiResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val res = api.updateMeetingStatus(meetingId, MeetingStatusUpdateReqDto(targetStatus))
             if (res.isSuccessful) {
@@ -78,7 +84,10 @@ class MeetingRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateMeeting(meetingId: Long, request: MeetingUpdateReqDto): ApiResult<Unit> = withContext(Dispatchers.IO) {
+    override suspend fun updateMeeting(
+        meetingId: Long,
+        request: MeetingUpdateReqDto
+    ): ApiResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val res = api.updateMeeting(meetingId, request)
             if (res.isSuccessful) {

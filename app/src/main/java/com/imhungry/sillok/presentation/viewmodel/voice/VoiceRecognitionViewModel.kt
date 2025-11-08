@@ -28,49 +28,49 @@ class VoiceRecognitionViewModel @Inject constructor(
     private val getVoiceRecognitionStepUseCase: GetVoiceRecognitionStepUseCase,
     private val updateVoiceRecognitionProgressUseCase: UpdateVoiceRecognitionProgressUseCase
 ) : ViewModel() {
-    
+
     private val _state = MutableStateFlow(VoiceRecognitionState())
     val state: StateFlow<VoiceRecognitionState> = _state.asStateFlow()
-    
+
     private var recorder: MediaRecorder? = null
     private var startTime: Long = 0L
     private var audioFile: File? = null
-    
+
     init {
         loadCurrentStep()
     }
-    
+
     private fun loadCurrentStep() {
         viewModelScope.launch {
             val currentStep = getVoiceRecognitionStepUseCase()
             _state.update { it.copy(currentStep = currentStep) }
         }
     }
-    
+
     fun startRecording(context: Context) {
         viewModelScope.launch {
             try {
                 _state.update { it.copy(isProcessing = true) }
-                
+
                 val file = createAudioFile(context, state.value.currentStep)
                 audioFile = file
-                
+
                 recorder = setupMediaRecorder(file)
-                
+
                 startTime = System.currentTimeMillis()
-                _state.update { 
+                _state.update {
                     it.copy(
                         recordState = RecordState.Recording,
                         isProcessing = false
-                    ) 
+                    )
                 }
-                
+
             } catch (e: Exception) {
                 handleRecordingError()
             }
         }
     }
-    
+
     fun stopRecording() {
         viewModelScope.launch {
             try {
@@ -82,24 +82,24 @@ class VoiceRecognitionViewModel @Inject constructor(
             }
         }
     }
-    
+
     fun retryRecording() {
         audioFile?.delete()
         audioFile = null
-        _state.update { 
+        _state.update {
             it.copy(
                 recordState = RecordState.Idle,
                 recordedDuration = 0f,
                 error = null,
                 uploadSuccess = false
-            ) 
+            )
         }
     }
-    
+
     fun clearError() {
         _state.update { it.copy(error = null) }
     }
-    
+
     fun nextStep() {
         viewModelScope.launch {
             try {
@@ -117,13 +117,13 @@ class VoiceRecognitionViewModel @Inject constructor(
             }
         }
     }
-    
+
 
     private fun createAudioFile(context: Context, step: Int): File {
         val fileName = "voice_record_step${step}_${System.currentTimeMillis()}.m4a"
         return File(context.cacheDir, fileName)
     }
-    
+
     private fun createMediaRecorder(): MediaRecorder {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             MediaRecorder()
@@ -132,7 +132,7 @@ class VoiceRecognitionViewModel @Inject constructor(
             MediaRecorder()
         }
     }
-    
+
     private fun setupMediaRecorder(file: File): MediaRecorder {
         return createMediaRecorder().apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
@@ -145,12 +145,12 @@ class VoiceRecognitionViewModel @Inject constructor(
             start()
         }
     }
-    
+
     private fun calculateRecordingDuration(): Float {
         val endTime = System.currentTimeMillis()
         return (endTime - startTime) / 1000f
     }
-    
+
     private fun stopAndReleaseRecorder() {
         recorder?.apply {
             stop()
@@ -158,25 +158,25 @@ class VoiceRecognitionViewModel @Inject constructor(
         }
         recorder = null
     }
-    
+
     private fun updateStateAfterRecording(duration: Float) {
         if (duration < VoiceRecognitionConstants.MIN_RECORDING_DURATION) {
-            _state.update { 
+            _state.update {
                 it.copy(
                     recordState = RecordState.TooShort,
                     recordedDuration = duration
-                ) 
+                )
             }
         } else {
-            _state.update { 
+            _state.update {
                 it.copy(
                     recordState = RecordState.Recorded,
                     recordedDuration = duration
-                ) 
+                )
             }
         }
     }
-    
+
     private suspend fun uploadAudioFile(): Boolean {
         audioFile?.let { file ->
             _state.update { it.copy(isUploading = true) }
@@ -192,6 +192,7 @@ class VoiceRecognitionViewModel @Inject constructor(
                     }
                     true
                 }
+
                 is ApiResult.Failure -> {
                     _state.update {
                         it.copy(
@@ -205,20 +206,21 @@ class VoiceRecognitionViewModel @Inject constructor(
         }
         return true
     }
-    
+
     private suspend fun handleProgressUpdate() {
         val progressResult = updateVoiceRecognitionProgressUseCase(state.value.currentStep)
-        
+
         when (progressResult) {
             is ProgressUpdateResult.NextStep -> {
                 updateStateForNextStep(progressResult.step)
             }
+
             is ProgressUpdateResult.Completed -> {
                 updateStateForCompletion()
             }
         }
     }
-    
+
     private fun updateStateForNextStep(step: Int) {
         _state.update {
             it.copy(
@@ -231,7 +233,7 @@ class VoiceRecognitionViewModel @Inject constructor(
         }
         audioFile = null
     }
-    
+
     private fun updateStateForCompletion() {
         _state.update {
             it.copy(
@@ -241,26 +243,26 @@ class VoiceRecognitionViewModel @Inject constructor(
             )
         }
     }
-    
+
     private fun handleRecordingError() {
-        _state.update { 
+        _state.update {
             it.copy(
                 recordState = RecordState.Idle,
                 isProcessing = false
-            ) 
+            )
         }
         cleanupRecorder()
     }
-    
+
     private fun handleStopRecordingError() {
-        _state.update { 
+        _state.update {
             it.copy(
                 recordState = RecordState.TooShort
-            ) 
+            )
         }
         cleanupRecorder()
     }
-    
+
     private fun handleNextStepError(e: Exception) {
         _state.update {
             it.copy(
@@ -270,7 +272,7 @@ class VoiceRecognitionViewModel @Inject constructor(
             )
         }
     }
-    
+
     private fun cleanupRecorder() {
         try {
             recorder?.apply {
@@ -283,7 +285,7 @@ class VoiceRecognitionViewModel @Inject constructor(
             recorder = null
         }
     }
-    
+
     override fun onCleared() {
         super.onCleared()
         cleanupRecorder()

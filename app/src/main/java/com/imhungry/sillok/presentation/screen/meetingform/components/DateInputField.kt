@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -180,7 +179,12 @@ fun DateInputField(
                                         indication = null,
                                     ) {
                                         // 선택된 날짜를 YYYYMMDD 형식으로 변환하여 입력 필드에 설정
-                                        val dateString = String.format("%04d%02d%02d", selectedDate.year, selectedDate.monthValue, selectedDate.dayOfMonth)
+                                        val dateString = String.format(
+                                            "%04d%02d%02d",
+                                            selectedDate.year,
+                                            selectedDate.monthValue,
+                                            selectedDate.dayOfMonth
+                                        )
                                         onValueChange(dateString)
                                         isCalendarView = false
                                     }
@@ -202,15 +206,18 @@ private fun formatDisplayDate(dateString: String): String {
             val day = dateString.substring(6, 8)
             "$year / $month / $day"
         }
+
         dateString.length >= 6 -> {
             val year = dateString.substring(0, 4)
             val month = dateString.substring(4, 6)
             "$year / $month"
         }
+
         dateString.length >= 4 -> {
             val year = dateString.substring(0, 4)
             year
         }
+
         else -> dateString
     }
 }
