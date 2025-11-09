@@ -124,32 +124,38 @@ fun TeamListScreen(
                     )
                 }
 
-                if (!isSearchFocused && searchText.isEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(state.teams) { team ->
-                            TeamCard(
-                                teamName = team.name,
-                                memberCount = team.memberCount,
-                                date = team.date,
-                                timeRange = team.timeRange,
-                                onClick = { onNavigateToTeamDetail(team.id) },
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                // 콘텐츠 영역
+                Box(modifier = Modifier.weight(1f)) {
+                    if (!isSearchFocused && searchText.isEmpty()) {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                top = 12.dp,
+                                bottom = 16.dp
+                            ),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(state.teams) { team ->
+                                TeamCard(
+                                    teamName = team.name,
+                                    memberCount = team.memberCount,
+                                    date = team.date,
+                                    timeRange = team.timeRange,
+                                    onClick = { onNavigateToTeamDetail(team.id) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                         }
+                    } else {
+                        // 검색 결과 영역 (추후 구현)
+                        Spacer(modifier = Modifier.height(12.dp))
                     }
-                } else {
-                    // 검색 결과 영역 (추후 구현)
                 }
 
                 // 팀 생성하기 버튼 (빈 상태가 아닐 때만 표시)
                 if (!(!isSearchFocused && searchText.isEmpty() && state.teams.isEmpty())) {
-                    Spacer(modifier = Modifier.height(16.dp))
                     SillokButton(
                         text = "팀 생성하기",
                         onClick = onNavigateToCreateTeam,
