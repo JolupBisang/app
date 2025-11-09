@@ -11,5 +11,7 @@ interface SummaryApi {
     suspend fun getSummaries(
         @Path("meetingId") meetingId: Long,
         @Query("isRecap") isRecap: Boolean = false,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 30
     ): Response<SummaryListResDto>
 }

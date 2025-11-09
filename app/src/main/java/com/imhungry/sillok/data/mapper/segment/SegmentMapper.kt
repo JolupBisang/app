@@ -1,11 +1,11 @@
 package com.imhungry.sillok.data.mapper.segment
 
-import com.imhungry.sillok.data.model.segment.SegmentListResDto
+import com.imhungry.sillok.data.model.segment.SegmentItemDto
 import com.imhungry.sillok.domain.model.segment.Segment
 import javax.inject.Inject
 
 class SegmentMapper @Inject constructor() {
-    fun toDomain(dto: SegmentListResDto): Segment {
+    fun toDomain(dto: SegmentItemDto): Segment {
         return Segment(
             id = dto.id,
             userId = dto.userId,

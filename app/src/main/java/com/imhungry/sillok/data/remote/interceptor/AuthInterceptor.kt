@@ -31,7 +31,7 @@ class AuthInterceptor @Inject constructor(
         val response = chain.proceed(newRequest)
 
         // 토큰 만료 처리 (401 Unauthorized 응답)
-        if (response.code == 401) {
+        if (response.code == 401 && response.message.contains("만료된 토큰")) {
             android.util.Log.w("AuthInterceptor", "토큰 만료")
             runBlocking {
                 // 토큰과 사용자 정보 삭제

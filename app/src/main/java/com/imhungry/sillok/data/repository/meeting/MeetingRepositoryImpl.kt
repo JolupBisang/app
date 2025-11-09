@@ -1,5 +1,6 @@
 package com.imhungry.sillok.data.repository.meeting
 
+import android.util.Log
 import com.imhungry.sillok.data.mapper.meeting.MeetingMapper
 import com.imhungry.sillok.data.model.meeting.MeetingStatusUpdateReqDto
 import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
@@ -22,6 +23,7 @@ class MeetingRepositoryImpl @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 val dto = mapper.toDto(request)
+                Log.d("MeetingRepositoryImpl", "createMeeting: $dto")
                 val res = api.createMeeting(dto)
                 if (res.isSuccessful) {
                     ApiResult.Success(res.body()?.meetingId ?: -1L)

@@ -52,8 +52,8 @@ class MeetingMinutesViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun initialize(meetingId: Long) {
         _state.update { it.copy(meetingId = meetingId) }
-        //refreshAll()
-        loadDummyMeetingMinutesState()
+        refreshAll()
+        //loadDummyMeetingMinutesState()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -177,7 +177,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     val ui = result.data.map {
                         SummaryUi(
-                            content = it.content.joinToString("\n"),
+                            content = it.content,
                             timestamp = DateTimeUtils.getElapsedString(
                                 startMillis,
                                 it.generatedDateTime
@@ -198,7 +198,7 @@ class MeetingMinutesViewModel @Inject constructor(
 
             when (val result = recapDeferred.await()) {
                 is ApiResult.Success -> {
-                    val recap: String = result.data.first().content.joinToString("\n")
+                    val recap: String = result.data.first().content
                     // generatedDateTime이 null이어도 recapSummary는 설정
                     _state.update { it.copy(recapSummary = recap) }
                     Log.d(TAG, "리캡 요약 로드 성공: ${recap}")
@@ -390,7 +390,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     val newUi = result.data.map {
                         SummaryUi(
-                            content = it.content.joinToString("\n"),
+                            content = it.content,
                             timestamp = DateTimeUtils.getElapsedString(
                                 startMillis,
                                 it.generatedDateTime

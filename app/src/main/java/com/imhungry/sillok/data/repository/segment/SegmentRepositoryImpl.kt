@@ -20,12 +20,12 @@ class SegmentRepositoryImpl @Inject constructor(
         size: Int
     ): ApiResult<List<Segment>> = withContext(Dispatchers.IO) {
         try {
-            val res = api.getSegments(meetingId)
+            val res = api.getSegments(meetingId, page, size)
             if (res.isSuccessful) {
                 val dto = res.body()
                 if (dto != null) {
-                    val segment = mapper.toDomain(dto)
-                    ApiResult.Success(listOf(segment))
+                    val segments = dto.content.map { mapper.toDomain(it) }
+                    ApiResult.Success(segments)
                 } else {
                     ApiResult.Failure("응답 파싱 오류")
                 }

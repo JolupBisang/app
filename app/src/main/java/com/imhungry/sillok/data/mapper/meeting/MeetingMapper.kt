@@ -28,7 +28,7 @@ class MeetingMapper @Inject constructor() {
             title = dto.title,
             location = dto.location,
             scheduledStartTime = dto.scheduledStartTime.take(19),
-            targetTime = dto.targetTime,
+            targetTime = dto.targetTime / 60,
             restInterval = dto.restInterval,
             restDuration = dto.restDuration,
             meetingStatus = dto.meetingStatus,
@@ -44,7 +44,7 @@ class MeetingMapper @Inject constructor() {
             id = dto.id,
             title = dto.title,
             scheduledStartTime = dto.scheduledStartTime.take(19),
-            targetTime = dto.targetTime,
+            targetTime = dto.targetTime / 60,
             status = dto.status
         )
     }

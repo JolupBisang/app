@@ -16,7 +16,7 @@ interface AudioApi {
         @Part audioFile: MultipartBody.Part
     ): Response<Unit>
 
-    @GET("/api/v1/meeting/{meetingId}/fullAudio")
+    @GET("/api/v1/meetings/{meetingId}/fullAudio")
     suspend fun getAudioList(
         @Path("meetingId") meetingId: Long
     ): Response<AudioListResponseDto>

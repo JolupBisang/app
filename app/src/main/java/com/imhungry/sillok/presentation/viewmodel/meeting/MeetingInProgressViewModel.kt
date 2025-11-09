@@ -451,7 +451,7 @@ class MeetingInProgressViewModel @Inject constructor(
                     is ApiResult.Success -> {
                         val ui = result.data.map {
                             SummaryUi(
-                                content = it.content.joinToString("\n"),
+                                content = it.content,
                                 timestamp = DateTimeUtils.getElapsedString(
                                     startMillis,
                                     it.generatedDateTime

@@ -25,7 +25,7 @@ data class MeetingMinutesState(
     val recapSummary: String = "",
     val audio: AudioInfo = AudioInfo(
         userId = 1L,
-        presignedUrl = ""
+        presignedUrl = "https://bucket-silrok.s3.ap-northeast-2.amazonaws.com/merged-audio/meeting-10/user-1/merged.opus?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20251109T201103Z&X-Amz-SignedHeaders=host&X-Amz-Credential=AKIA23WHUNUR3LDEBZAX%2F20251109%2Fap-northeast-2%2Fs3%2Faws4_request&X-Amz-Expires=86400&X-Amz-Signature=374eba12fa56586a9c84d770f50fb96e725e784042a1341b4d8dca55eba59c19"
     ),
     val isLoading: Boolean = false,
     val error: String? = null,

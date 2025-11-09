@@ -20,12 +20,12 @@ class FeedbackRepositoryImpl @Inject constructor(
         size: Int
     ): ApiResult<List<Feedback>> = withContext(Dispatchers.IO) {
         try {
-            val res = api.getFeedbacks(meetingId)
+            val res = api.getFeedbacks(meetingId, page, size)
             if (res.isSuccessful) {
                 val dto = res.body()
                 if (dto != null) {
-                    val feedback = mapper.toDomain(dto)
-                    ApiResult.Success(listOf(feedback))
+                    val feedbacks = dto.content.map { mapper.toDomain(it) }
+                    ApiResult.Success(feedbacks)
                 } else {
                     ApiResult.Failure("응답 파싱 오류")
                 }

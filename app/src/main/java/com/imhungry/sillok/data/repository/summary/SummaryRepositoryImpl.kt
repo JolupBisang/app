@@ -21,12 +21,12 @@ class SummaryRepositoryImpl @Inject constructor(
         size: Int
     ): ApiResult<List<Summary>> = withContext(Dispatchers.IO) {
         try {
-            val res = api.getSummaries(meetingId, isRecap)
+            val res = api.getSummaries(meetingId, isRecap, page, size)
             if (res.isSuccessful) {
                 val dto = res.body()
                 if (dto != null) {
-                    val summary = mapper.toDomain(dto)
-                    ApiResult.Success(listOf(summary))
+                    val summaries = dto.content.map { mapper.toDomain(it) }
+                    ApiResult.Success(summaries)
                 } else {
                     ApiResult.Failure("응답 파싱 오류")
                 }

@@ -10,7 +10,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface MeetingUserApi {
-    @POST("/api/v1/meeting/{meetingId}/participants")
+    @POST("/api/v1/meetings/{meetingId}/participants")
     suspend fun addMeetingUser(
         @Path("meetingId") meetingId: Long,
         @Body request: ParticipantAddReqDto

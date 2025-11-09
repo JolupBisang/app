@@ -58,9 +58,20 @@ fun AudioPlayerBar(
 
     // ExoPlayer 생성 및 관리
     val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(Uri.parse(audio.presignedUrl)))
-            prepare()
+        ExoPlayer.Builder(context).build()
+    }
+    
+    // 오디오 URL이 변경될 때 ExoPlayer 업데이트
+    LaunchedEffect(audio.presignedUrl) {
+        if (audio.presignedUrl.isNotEmpty()) {
+            try {
+                exoPlayer.stop()
+                exoPlayer.clearMediaItems()
+                exoPlayer.setMediaItem(MediaItem.fromUri(Uri.parse(audio.presignedUrl)))
+                exoPlayer.prepare()
+            } catch (e: Exception) {
+                android.util.Log.e("AudioPlayerBar", "오디오 로드 실패: ${e.message}", e)
+            }
         }
     }
     var isPlaying by remember { mutableStateOf(false) }
