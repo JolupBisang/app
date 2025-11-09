@@ -45,6 +45,8 @@ import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.screen.home.SearchBar
 import com.imhungry.sillok.presentation.viewmodel.team.TeamListViewModel
 import com.imhungry.sillok.ui.components.BasicBox
+import com.imhungry.sillok.ui.components.ScreenHeader
+import com.imhungry.sillok.ui.components.ScreenHeaderWithNotification
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.theme.primaryBackground
 
@@ -96,55 +98,31 @@ fun TeamListScreen(
                         }
                     }
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.prev),
-                        contentDescription = "뒤로가기",
+                ScreenHeaderWithNotification(
+                    title = "팀 목록",
+                    onBackClick = onBackClick,
+                    onNavigateToNotificationHistory = onNavigateToNotificationHistory
+                )
+
+                // 검색바는 팀 목록이 있을 때만 표시
+                if (state.teams.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SearchBar(
                         modifier = Modifier
-                            .size(20.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { onBackClick() }
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        text = "팀 목록",
-                        style = MaterialTheme.typography.headlineMedium,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Image(
-                        painter = painterResource(id = R.drawable.alarm),
-                        contentDescription = "알림",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { onNavigateToNotificationHistory() }
+                            .fillMaxWidth(),
+                        focusRequester = focusRequester,
+                        text = searchText,
+                        innerText = "팀 이름, 멤버로 검색",
+                        onTextChange = { searchText = it },
+                        onFocusChange = { isSearchFocused = it },
+                        onImeAction = {
+                            clearSearchFocus(focusManager, keyboardController) {
+                                isSearchFocused = false
+                            }
+                        }
                     )
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                SearchBar(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    focusRequester = focusRequester,
-                    text = searchText,
-                    innerText = "팀 이름, 멤버로 검색",
-                    onTextChange = { searchText = it },
-                    onFocusChange = { isSearchFocused = it },
-                    onImeAction = {
-                        clearSearchFocus(focusManager, keyboardController) {
-                            isSearchFocused = false
-                        }
-                    }
-                )
 
                 if (!isSearchFocused && searchText.isEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
