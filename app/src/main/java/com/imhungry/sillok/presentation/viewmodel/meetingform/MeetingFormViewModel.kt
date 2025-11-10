@@ -851,10 +851,15 @@ class MeetingFormViewModel @Inject constructor(
             errors["breakDuration"] = "쉬는 시간 지속 시간을 입력해주세요"
         }
 
-        if (_state.value.breakInterval.trim().toInt() <= 0) {
+        val interval = _state.value.breakInterval.trim().toIntOrNull()
+
+        if (interval != null && interval <= 0) {
             errors["breakInterval"] = "쉬는 시간 간격은 0보다 커야 합니다"
         }
-        if (_state.value.breakDuration.trim().toInt() <= 0) {
+
+        val duration = _state.value.breakDuration.trim().toIntOrNull()
+
+        if (duration != null && duration <= 0) {
             errors["breakDuration"] = "쉬는 시간 지속 시간은 0보다 커야 합니다"
         }
 
