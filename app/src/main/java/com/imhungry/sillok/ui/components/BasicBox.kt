@@ -121,7 +121,7 @@ fun MeetingBasicBox(
 }
 
 @Composable
-fun HomeBasicBox(
+fun BasicBoxWithGradientBurshBackground(
     statusBarColor: Color,
     navigationBarColor: Color,
     backgroundColor: Color,
@@ -139,10 +139,11 @@ fun HomeBasicBox(
             .fillMaxSize()
             .background(backgroundColor)
             .background(gradientBrush)
-            .windowInsetsPadding(WindowInsets.systemBars)) {
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.systemBars)
                 .padding(start = 20.dp, end = 20.dp, bottom = 20.dp, top = 12.dp)
         ) {
             content()

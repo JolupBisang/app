@@ -74,173 +74,173 @@ class MeetingMinutesViewModel @Inject constructor(
             }
 
             val meetingId = state.value.meetingId
-
-            val detailDeferred = async { getMeetingDetailUseCase(meetingId) }
-            val agendasDeferred = async { getAgendasUseCase(meetingId) }
-            // 전체 데이터를 한 번에 로드 (충분히 큰 size 사용)
-            val segmentsDeferred = async { getSegmentsUseCase(meetingId, page = 0, size = 1000) }
-            val summariesDeferred = async { getSummariesUseCase(meetingId, page = 0, size = 500) }
-            val recapDeferred =
-                async { getSummariesUseCase(meetingId, isRecap = true, page = 0, size = 1) }
-            val participationDeferred = async { getParticipationRateHistoryUseCase(meetingId) }
-            // 전체 데이터를 한 번에 로드
-            val feedbacksDeferred = async { getFeedbacksUseCase(meetingId, page = 0, size = 500) }
+//
+//            val detailDeferred = async { getMeetingDetailUseCase(meetingId) }
+//            val agendasDeferred = async { getAgendasUseCase(meetingId) }
+//            // 전체 데이터를 한 번에 로드 (충분히 큰 size 사용)
+//            val segmentsDeferred = async { getSegmentsUseCase(meetingId, page = 0, size = 1000) }
+//            val summariesDeferred = async { getSummariesUseCase(meetingId, page = 0, size = 500) }
+//            val recapDeferred =
+//                async { getSummariesUseCase(meetingId, isRecap = true, page = 0, size = 1) }
+//            val participationDeferred = async { getParticipationRateHistoryUseCase(meetingId) }
+//            // 전체 데이터를 한 번에 로드
+//            val feedbacksDeferred = async { getFeedbacksUseCase(meetingId, page = 0, size = 500) }
             val audioDeferred = async { getAudioListUseCase(meetingId) }
 
             var errorMessage: String? = null
-
-            var startMillis: Long? = null
-            var endMillis: Long? = null
-
-            try {
-                val snapshot = FirebaseFirestore.getInstance()
-                    .collection("meetings")
-                    .document(meetingId.toString())
-                    .get()
-                    .await()
-                startMillis = snapshot.getLong("startMillis")
-            } catch (e: Exception) {
-                Log.e(TAG, "startMillis 조회 실패: ${e.message}", e)
-            }
-
-            try {
-                val snapshot = FirebaseFirestore.getInstance()
-                    .collection("meetings")
-                    .document(meetingId.toString())
-                    .get()
-                    .await()
-                endMillis = snapshot.getLong("endMillis")
-            } catch (e: Exception) {
-                Log.e(TAG, "endMillis 조회 실패: ${e.message}", e)
-            }
-
-            when (val result = detailDeferred.await()) {
-                is ApiResult.Success -> {
-                    val meeting = result.data
-                    val date = DateTimeUtils.localIsoToDateString(meeting.scheduledStartTime)
-                    val location = meeting.location
-
-                    _state.update {
-                        it.copy(
-                            meetingTitle = meeting.title,
-                            meetingDateAndLocation = "$date, $location",
-                            scheduledStartTime = DateTimeUtils.localIsoToTimeString(meeting.scheduledStartTime),
-                            targetTime = meeting.targetTime,
-                        )
-                    }
-                    Log.d(TAG, "회의 상세 로드 성공: ${meeting}")
-                }
-
-                is ApiResult.Failure -> {
-                    Log.e(TAG, "회의 상세 로드 실패: ${result.message}")
-                }
-            }
-
-            when (val result = agendasDeferred.await()) {
-                is ApiResult.Success -> _state.update { it.copy(agendas = result.data) }
-                is ApiResult.Failure -> Log.e(TAG, "아젠다 로드 실패: ${result.message}")
-            }
-
-            val currentUserId = userStore.user.first()?.id
-
-            when (val result = segmentsDeferred.await()) {
-                is ApiResult.Success -> {
-                    val ui = result.data.mapIndexed { index, seg ->
-                        val prevUserId = if (index > 0) result.data[index - 1].userId else null
-                        val nextUserId =
-                            if (index < result.data.lastIndex) result.data[index + 1].userId else null
-                        val isSameAsPrevious = prevUserId != null && prevUserId == seg.userId
-                        val isSameAsNext = nextUserId != null && nextUserId == seg.userId
-                        SegmentUi(
-                            timestamp = DateTimeUtils.getElapsedString(startMillis, seg.timestamp),
-                            text = seg.text,
-                            nickname = "사용자 ${seg.userId}",
-                            profileImage = "",
-                            isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
-                            isSameAsPrevious = isSameAsPrevious,
-                            isSameAsNext = isSameAsNext
-                        )
-                    }
-                    _state.update {
-                        it.copy(
-                            segments = ui,
-                            segmentsPage = 0,
-                            hasMoreSegments = false // 전체 로드이므로 더 이상 없음
-                        )
-                    }
-                }
-
-                is ApiResult.Failure -> Log.e(TAG, "세그먼트 로드 실패: ${result.message}")
-            }
-
-            when (val result = summariesDeferred.await()) {
-                is ApiResult.Success -> {
-                    val ui = result.data.map {
-                        SummaryUi(
-                            content = it.content,
-                            timestamp = DateTimeUtils.getElapsedString(
-                                startMillis,
-                                it.generatedDateTime
-                            )
-                        )
-                    }
-                    _state.update {
-                        it.copy(
-                            summaries = ui,
-                            summariesPage = 0,
-                            hasMoreSummaries = false // 전체 로드이므로 더 이상 없음
-                        )
-                    }
-                }
-
-                is ApiResult.Failure -> Log.e(TAG, "요약 로드 실패: ${result.message}")
-            }
-
-            when (val result = recapDeferred.await()) {
-                is ApiResult.Success -> {
-                    val recap: String = result.data.first().content
-                    // generatedDateTime이 null이어도 recapSummary는 설정
-                    _state.update { it.copy(recapSummary = recap) }
-                    Log.d(TAG, "리캡 요약 로드 성공: ${recap}")
-                }
-
-                is ApiResult.Failure -> {
-                    Log.e(TAG, "리캡 요약 로드 실패: ${result.message}")
-                }
-            }
-
-            when (val result = participationDeferred.await()) {
-                is ApiResult.Success -> {
-                    val sorted = result.data.sortedByDescending { it.rate }
-                    _state.update { it.copy(participationRates = sorted) }
-                }
-
-                is ApiResult.Failure -> Log.e(TAG, "참여율 로드 실패: ${result.message}")
-            }
-
-            when (val result = feedbacksDeferred.await()) {
-                is ApiResult.Success -> {
-                    val ui = result.data.map {
-                        FeedbackUi(
-                            comment = it.comment,
-                            timestamp = DateTimeUtils.getElapsedString(
-                                startMillis,
-                                it.generatedDateTime
-                            ),
-                            isRead = false
-                        )
-                    }
-                    _state.update {
-                        it.copy(
-                            feedbacks = ui,
-                            feedbacksPage = 0,
-                            hasMoreFeedbacks = false // 전체 로드이므로 더 이상 없음
-                        )
-                    }
-                }
-
-                is ApiResult.Failure -> Log.e(TAG, "피드백 로드 실패: ${result.message}")
-            }
+//
+//            var startMillis: Long? = null
+//            var endMillis: Long? = null
+//
+//            try {
+//                val snapshot = FirebaseFirestore.getInstance()
+//                    .collection("meetings")
+//                    .document(meetingId.toString())
+//                    .get()
+//                    .await()
+//                startMillis = snapshot.getLong("startMillis")
+//            } catch (e: Exception) {
+//                Log.e(TAG, "startMillis 조회 실패: ${e.message}", e)
+//            }
+//
+//            try {
+//                val snapshot = FirebaseFirestore.getInstance()
+//                    .collection("meetings")
+//                    .document(meetingId.toString())
+//                    .get()
+//                    .await()
+//                endMillis = snapshot.getLong("endMillis")
+//            } catch (e: Exception) {
+//                Log.e(TAG, "endMillis 조회 실패: ${e.message}", e)
+//            }
+//
+//            when (val result = detailDeferred.await()) {
+//                is ApiResult.Success -> {
+//                    val meeting = result.data
+//                    val date = DateTimeUtils.localIsoToDateString(meeting.scheduledStartTime)
+//                    val location = meeting.location
+//
+//                    _state.update {
+//                        it.copy(
+//                            meetingTitle = meeting.title,
+//                            meetingDateAndLocation = "$date, $location",
+//                            scheduledStartTime = DateTimeUtils.localIsoToTimeString(meeting.scheduledStartTime),
+//                            targetTime = meeting.targetTime,
+//                        )
+//                    }
+//                    Log.d(TAG, "회의 상세 로드 성공: ${meeting}")
+//                }
+//
+//                is ApiResult.Failure -> {
+//                    Log.e(TAG, "회의 상세 로드 실패: ${result.message}")
+//                }
+//            }
+//
+//            when (val result = agendasDeferred.await()) {
+//                is ApiResult.Success -> _state.update { it.copy(agendas = result.data) }
+//                is ApiResult.Failure -> Log.e(TAG, "아젠다 로드 실패: ${result.message}")
+//            }
+//
+//            val currentUserId = userStore.user.first()?.id
+//
+//            when (val result = segmentsDeferred.await()) {
+//                is ApiResult.Success -> {
+//                    val ui = result.data.mapIndexed { index, seg ->
+//                        val prevUserId = if (index > 0) result.data[index - 1].userId else null
+//                        val nextUserId =
+//                            if (index < result.data.lastIndex) result.data[index + 1].userId else null
+//                        val isSameAsPrevious = prevUserId != null && prevUserId == seg.userId
+//                        val isSameAsNext = nextUserId != null && nextUserId == seg.userId
+//                        SegmentUi(
+//                            timestamp = DateTimeUtils.getElapsedString(startMillis, seg.timestamp),
+//                            text = seg.text,
+//                            nickname = "사용자 ${seg.userId}",
+//                            profileImage = "",
+//                            isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
+//                            isSameAsPrevious = isSameAsPrevious,
+//                            isSameAsNext = isSameAsNext
+//                        )
+//                    }
+//                    _state.update {
+//                        it.copy(
+//                            segments = ui,
+//                            segmentsPage = 0,
+//                            hasMoreSegments = false // 전체 로드이므로 더 이상 없음
+//                        )
+//                    }
+//                }
+//
+//                is ApiResult.Failure -> Log.e(TAG, "세그먼트 로드 실패: ${result.message}")
+//            }
+//
+//            when (val result = summariesDeferred.await()) {
+//                is ApiResult.Success -> {
+//                    val ui = result.data.map {
+//                        SummaryUi(
+//                            content = it.content,
+//                            timestamp = DateTimeUtils.getElapsedString(
+//                                startMillis,
+//                                it.generatedDateTime
+//                            )
+//                        )
+//                    }
+//                    _state.update {
+//                        it.copy(
+//                            summaries = ui,
+//                            summariesPage = 0,
+//                            hasMoreSummaries = false // 전체 로드이므로 더 이상 없음
+//                        )
+//                    }
+//                }
+//
+//                is ApiResult.Failure -> Log.e(TAG, "요약 로드 실패: ${result.message}")
+//            }
+//
+//            when (val result = recapDeferred.await()) {
+//                is ApiResult.Success -> {
+//                    val recap: String = result.data.first().content
+//                    // generatedDateTime이 null이어도 recapSummary는 설정
+//                    _state.update { it.copy(recapSummary = recap) }
+//                    Log.d(TAG, "리캡 요약 로드 성공: ${recap}")
+//                }
+//
+//                is ApiResult.Failure -> {
+//                    Log.e(TAG, "리캡 요약 로드 실패: ${result.message}")
+//                }
+//            }
+//
+//            when (val result = participationDeferred.await()) {
+//                is ApiResult.Success -> {
+//                    val sorted = result.data.sortedByDescending { it.rate }
+//                    _state.update { it.copy(participationRates = sorted) }
+//                }
+//
+//                is ApiResult.Failure -> Log.e(TAG, "참여율 로드 실패: ${result.message}")
+//            }
+//
+//            when (val result = feedbacksDeferred.await()) {
+//                is ApiResult.Success -> {
+//                    val ui = result.data.map {
+//                        FeedbackUi(
+//                            comment = it.comment,
+//                            timestamp = DateTimeUtils.getElapsedString(
+//                                startMillis,
+//                                it.generatedDateTime
+//                            ),
+//                            isRead = false
+//                        )
+//                    }
+//                    _state.update {
+//                        it.copy(
+//                            feedbacks = ui,
+//                            feedbacksPage = 0,
+//                            hasMoreFeedbacks = false // 전체 로드이므로 더 이상 없음
+//                        )
+//                    }
+//                }
+//
+//                is ApiResult.Failure -> Log.e(TAG, "피드백 로드 실패: ${result.message}")
+//            }
 
             when (val result = audioDeferred.await()) {
                 is ApiResult.Success -> {

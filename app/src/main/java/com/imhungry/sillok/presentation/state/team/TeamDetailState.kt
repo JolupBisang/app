@@ -1,4 +1,15 @@
 package com.imhungry.sillok.presentation.state.team
 
-class TeamDetailState {
-}
+data class TeamMember(
+    val id: Long,
+    val nickname: String,
+    val profileImage: String? = null
+)
+
+data class TeamDetailState(
+    val teamName: String = "",
+    val teamDescription: String = "",
+    val members: List<TeamMember> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)

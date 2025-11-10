@@ -28,6 +28,8 @@ fun TeamCard(
     teamName: String,
     memberCount: Int,
     date: String,
+    meetingTitle: String = "cho비상회의",
+    meetingState: String = "",
     timeRange: String,
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -67,11 +69,19 @@ fun TeamCard(
                     text = "${memberCount}명",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
-                    fontSize = 12.sp
+                    fontSize = 13.sp
                 )
             }
 
             Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                text = meetingTitle,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -82,14 +92,14 @@ fun TeamCard(
                     text = date,
                     style = MaterialTheme.typography.labelSmall,
                     color = gray200,
-                    fontWeight = FontWeight.Normal,
+                    fontWeight = FontWeight.Medium,
                     fontSize = 11.sp
                 )
                 Text(
                     text = timeRange,
                     style = MaterialTheme.typography.labelSmall,
                     color = gray200,
-                    fontWeight = FontWeight.Normal,
+                    fontWeight = FontWeight.Medium,
                     fontSize = 11.sp
                 )
             }

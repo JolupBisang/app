@@ -55,7 +55,7 @@ fun ScreenHeaderWithNotification(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -76,7 +76,7 @@ fun ScreenHeaderWithNotification(
         )
         Spacer(Modifier.weight(1f))
         Image(
-            painter = painterResource(id = R.drawable.alarm),
+            painter = painterResource(id = R.drawable.alarm2),
             contentDescription = "알림",
             modifier = Modifier
                 .size(20.dp)
