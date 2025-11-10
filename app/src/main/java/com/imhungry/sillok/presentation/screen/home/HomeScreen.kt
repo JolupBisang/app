@@ -44,8 +44,8 @@ import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.state.home.HomeState
 import com.imhungry.sillok.presentation.state.home.MeetingUi
 import com.imhungry.sillok.presentation.viewmodel.home.HomeViewModel
+import com.imhungry.sillok.ui.components.BasicBoxWithGradientBurshBackground
 import com.imhungry.sillok.ui.components.ExitDialog
-import com.imhungry.sillok.ui.components.HomeBasicBox
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.components.SillokInfoDialog
 import com.imhungry.sillok.ui.theme.gradientBrush2
@@ -91,6 +91,38 @@ fun HomeScreen(
         onNavigateToMeetingMinutes = onNavigateToMeetingMinutes
     )
 
+    // drawerContent에 전달할 값들을 추출하여 불필요한 재구성 방지
+    val userName = homeState.userName
+    val profileImage = homeState.profileImage
+    
+    // 콜백들을 메모이제이션
+    val onNewMeetingClick = remember(scope, materialDrawerState, onNavigateToCreateMeeting) {
+        {
+            scope.launch { materialDrawerState.close() }
+            onNavigateToCreateMeeting()
+        }
+    }
+    
+    val onTeamManagementClick = remember(scope, materialDrawerState, onNavigateToTeamList) {
+        {
+            scope.launch { materialDrawerState.close() }
+            onNavigateToTeamList()
+        }
+    }
+    
+    val onFeedbackHistoryClick = remember(scope, materialDrawerState) {
+        {
+            scope.launch { materialDrawerState.close() }
+        }
+    }
+    
+    val onMeetingFolderClick = remember(scope, materialDrawerState, onNavigateToMeetingMinutesFolder) {
+        {
+            scope.launch { materialDrawerState.close() }
+            onNavigateToMeetingMinutesFolder()
+        }
+    }
+
     ExitDialog(
         visible = homeState.showExitDialog,
         onConfirm = {
@@ -127,23 +159,12 @@ fun HomeScreen(
         drawerState = materialDrawerState,
         drawerContent = {
             Sidebar(
-                userName = homeState.userName,
-                profileImage = homeState.profileImage,
-                onNewMeeting = {
-                    scope.launch { materialDrawerState.close() }
-                    onNavigateToCreateMeeting()
-                },
-                onTeamManagement = {
-                    scope.launch { materialDrawerState.close() }
-                    onNavigateToTeamList()
-                },
-                onFeedbackHistory = {
-                    scope.launch { materialDrawerState.close() }
-                },
-                onMeetingFolder = {
-                    scope.launch { materialDrawerState.close() }
-                    onNavigateToMeetingMinutesFolder()
-                }
+                userName = userName,
+                profileImage = profileImage,
+                onNewMeeting = onNewMeetingClick,
+                onTeamManagement = onTeamManagementClick,
+                //onFeedbackHistory = onFeedbackHistoryClick,
+                onMeetingFolder = onMeetingFolderClick
             )
         }
     ) {
@@ -330,7 +351,7 @@ private fun HomeContent(
         upcomingList = upcomingList
     )
 
-    HomeBasicBox(
+    BasicBoxWithGradientBurshBackground(
         statusBarColor = primaryBackground,
         navigationBarColor = primaryBackground,
         backgroundColor = primaryBackground,

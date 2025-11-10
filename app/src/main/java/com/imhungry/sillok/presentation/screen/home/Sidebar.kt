@@ -39,9 +39,9 @@ fun Sidebar(
     Column(
         modifier = Modifier
             .fillMaxHeight()
+            .width(280.dp)
             .background(sideBar)
             .windowInsetsPadding(WindowInsets.systemBars)
-            .width(280.dp)
             .padding(24.dp)
     ) {
         // 프로필 이미지
