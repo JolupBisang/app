@@ -58,6 +58,7 @@ fun MemberInvitationDialog(
     onInvite: (String) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -108,7 +109,12 @@ fun MemberInvitationDialog(
                     ) {
                         BasicTextField(
                             value = email,
-                            onValueChange = { email = it },
+                            onValueChange = { 
+                                email = it
+                                if (showError) {
+                                    showError = false
+                                }
+                            },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Email,
@@ -120,10 +126,18 @@ fun MemberInvitationDialog(
                                     if (trimmedEmail.isNotEmpty() &&
                                         Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()
                                     ) {
+                                        // TODO: 실제 API 호출로 계정 존재 여부 확인
+                                        // 임시로 항상 성공 처리
                                         onInvite(trimmedEmail)
                                         email = ""
+                                        showError = false
                                         focusManager.clearFocus()
                                         keyboardController?.hide()
+                                    } else if (trimmedEmail.isNotEmpty() &&
+                                        Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()
+                                    ) {
+                                        // 이메일 형식은 맞지만 계정이 존재하지 않는 경우
+                                        showError = true
                                     }
                                 }
                             ),
@@ -162,10 +176,18 @@ fun MemberInvitationDialog(
                                     if (trimmedEmail.isNotEmpty() &&
                                         Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()
                                     ) {
+                                        // TODO: 실제 API 호출로 계정 존재 여부 확인
+                                        // 임시로 항상 성공 처리
                                         onInvite(trimmedEmail)
                                         email = ""
+                                        showError = false
                                         focusManager.clearFocus()
                                         keyboardController?.hide()
+                                    } else if (trimmedEmail.isNotEmpty() &&
+                                        Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()
+                                    ) {
+                                        // 이메일 형식은 맞지만 계정이 존재하지 않는 경우
+                                        showError = true
                                     }
                                 },
                             contentAlignment = Alignment.Center
@@ -178,10 +200,13 @@ fun MemberInvitationDialog(
                         }
                     }
 
-                    ResultText(
-                        text = "존재하지 않는 계정입니다.",
-                        color = danger,
-                    )
+                    // 에러 메시지
+                    if (showError) {
+                        ResultText(
+                            text = "존재하지 않는 계정입니다.",
+                            color = danger,
+                        )
+                    }
                 }
             }
         }
