@@ -45,6 +45,7 @@ import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.screen.home.SearchBar
 import com.imhungry.sillok.presentation.viewmodel.meetingminutesfolder.FolderListViewModel
 import com.imhungry.sillok.ui.components.BasicBox
+import com.imhungry.sillok.ui.components.ScreenHeaderWithNotification
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.theme.primaryBackground
 
@@ -96,78 +97,61 @@ fun FolderListScreen(
                         }
                     }
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.prev),
-                        contentDescription = "뒤로가기",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { onBackClick() }
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        text = "회의록 폴더",
-                        style = MaterialTheme.typography.headlineMedium,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Image(
-                        painter = painterResource(id = R.drawable.alarm),
-                        contentDescription = "알림",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { onNavigateToNotificationHistory() }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                SearchBar(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    focusRequester = focusRequester,
-                    text = searchText,
-                    innerText = "회의 제목, 참석자로 검색",
-                    onTextChange = { searchText = it },
-                    onFocusChange = { isSearchFocused = it },
-                    onImeAction = {
-                        clearSearchFocus(focusManager, keyboardController) {
-                            isSearchFocused = false
-                        }
-                    }
+                ScreenHeaderWithNotification(
+                    title = "회의록 폴더",
+                    onBackClick = onBackClick,
+                    onNavigateToNotificationHistory = onNavigateToNotificationHistory
                 )
 
-                if (!isSearchFocused && searchText.isEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(state.folders) { folder ->
-                            MeetingMinutesCard(
-                                folderName = folder.name,
-                                date = folder.date,
-                                timeRange = folder.timeRange,
-                                onClick = { onNavigateToFolderDetail(folder.id) },
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                // 검색바는 폴더가 있을 때만 표시
+                if (state.folders.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SearchBar(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        focusRequester = focusRequester,
+                        text = searchText,
+                        innerText = "회의 제목, 참석자로 검색",
+                        onTextChange = { searchText = it },
+                        onFocusChange = { isSearchFocused = it },
+                        onImeAction = {
+                            clearSearchFocus(focusManager, keyboardController) {
+                                isSearchFocused = false
+                            }
                         }
-                    }
-                } else {
-                    // 검색 결과 영역 (추후 구현)
+                    )
                 }
 
+                // 리스트 영역과 버튼을 분리하여 버튼이 항상 하단에 위치하도록
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    if (!isSearchFocused && searchText.isEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.weight(1f),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(state.folders) { folder ->
+                                FolderCard(
+                                    folderName = folder.name,
+                                    date = folder.date,
+                                    timeRange = folder.timeRange,
+                                    onClick = { onNavigateToFolderDetail(folder.id) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    } else {
+                        // 검색 결과 영역 (추후 구현)
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+
+                // 버튼은 항상 하단에 고정
                 if (!(!isSearchFocused && searchText.isEmpty() && state.folders.isEmpty())) {
                     Spacer(modifier = Modifier.height(16.dp))
                     SillokButton(

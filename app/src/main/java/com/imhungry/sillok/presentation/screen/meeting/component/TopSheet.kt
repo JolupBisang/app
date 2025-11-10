@@ -126,6 +126,7 @@ fun CheckItem(
             Checkbox(
                 checked = checked,
                 onCheckedChange = null,
+                enabled = false,
                 modifier = Modifier
                     .size(21.dp)
                     .border(
@@ -147,7 +148,7 @@ fun CheckItem(
             )
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(10.dp))
 
         val textStyle = MaterialTheme.typography.bodyMedium.copy(
             fontWeight = if (isFocused) FontWeight.ExtraBold else FontWeight.Medium,

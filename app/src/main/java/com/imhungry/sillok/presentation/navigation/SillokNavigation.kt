@@ -20,6 +20,7 @@ import com.imhungry.sillok.presentation.screen.meetingminutes.MeetingMinutesScre
 import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderDetailScreen
 import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderFormScreen
 import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderListScreen
+import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderMeetingAddScreen
 import com.imhungry.sillok.presentation.screen.notification.NotificationHistoryScreen
 import com.imhungry.sillok.presentation.screen.splash.SplashScreen
 import com.imhungry.sillok.presentation.screen.team.TeamDetailScreen
@@ -67,10 +68,17 @@ sealed class Screen(val route: String) {
     object NotificationHistory : Screen("notification_history")
     object TeamList : Screen("team_list")
     object TeamForm : Screen("team_form")
-    object TeamDetail : Screen("team_detail")
+    object TeamDetail : Screen("team_detail/{teamId}") {
+        fun createRoute(teamId: Long) = "team_detail/$teamId"
+    }
     object FolderList : Screen("folder_list")
     object FolderForm : Screen("folder_form")
-    object FolderDetail : Screen("folder_detail")
+    object FolderDetail : Screen("folder_detail/{folderId}") {
+        fun createRoute(folderId: Long) = "folder_detail/$folderId"
+    }
+    object FolderMeetingAdd : Screen("folder_meeting_add/{folderId}") {
+        fun createRoute(folderId: Long) = "folder_meeting_add/$folderId"
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -360,10 +368,10 @@ fun SillokNavigation(
                     navController.popBackStack()
                 },
                 onNavigateToCreateTeam = {
-                    //navController.navigate(Screen.TeamForm.route)
+                    navController.navigate(Screen.TeamForm.route)
                 },
                 onNavigateToTeamDetail = { teamId ->
-                    //navController.navigate(Screen.TeamDetail.createRoute(teamId))
+                    navController.navigate(Screen.TeamDetail.createRoute(teamId))
                 },
                 onNavigateToNotificationHistory = {
                     navController.navigate(Screen.NotificationHistory.route)
@@ -373,12 +381,46 @@ fun SillokNavigation(
 
         // 팀 생성 화면
         composable(Screen.TeamForm.route) {
-            TeamFormScreen()
+            TeamFormScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onComplete = { teamName, memberEmails ->
+                    // 팀 생성 완료 후 팀 목록으로 이동
+                    navController.navigate(Screen.TeamList.route) {
+                        popUpTo(Screen.TeamList.route) { inclusive = true }
+                    }
+                }
+            )
         }
 
         // 팀 상세 화면
-        composable(Screen.TeamDetail.route) {
-            TeamDetailScreen()
+        composable(
+            route = Screen.TeamDetail.route,
+            arguments = listOf(navArgument("teamId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val teamId = backStackEntry.arguments?.getLong("teamId") ?: 1L
+            TeamDetailScreen(
+                teamId = teamId,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onNotificationClick = {
+                    navController.navigate(Screen.NotificationHistory.route)
+                },
+                onEditTeamName = {
+                    // TODO: 팀 이름 편집 화면으로 이동
+                },
+                onEditDescription = {
+                    // TODO: 팀 설명 편집 화면으로 이동
+                },
+                onManageMembers = {
+                    // TODO: 멤버 관리 화면으로 이동
+                },
+                onInviteClick = {
+                    // TODO: 멤버 초대 처리
+                }
+            )
         }
 
         // 회의록 폴더 화면
@@ -388,10 +430,10 @@ fun SillokNavigation(
                     navController.popBackStack()
                 },
                 onNavigateToCreateFolder = {
-                    //navController.navigate(Screen.TeamForm.route)
+                    navController.navigate(Screen.FolderForm.route)
                 },
                 onNavigateToFolderDetail = { folderId ->
-                    //navController.navigate(Screen.TeamDetail.createRoute(teamId))
+                    navController.navigate(Screen.FolderDetail.createRoute(folderId))
                 },
                 onNavigateToNotificationHistory = {
                     navController.navigate(Screen.NotificationHistory.route)
@@ -401,12 +443,56 @@ fun SillokNavigation(
 
         // 회의록 폴더 생성 화면
         composable(Screen.FolderForm.route) {
-            FolderFormScreen()
+            FolderFormScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onComplete = { folderName ->
+                    // 폴더 생성 완료 후 폴더 목록으로 이동
+                    navController.navigate(Screen.FolderList.route) {
+                        popUpTo(Screen.FolderList.route) { inclusive = true }
+                    }
+                }
+            )
         }
 
         // 회의록 폴더 상세 화면
-        composable(Screen.FolderDetail.route) {
-            FolderDetailScreen()
+        composable(
+            route = Screen.FolderDetail.route,
+            arguments = listOf(navArgument("folderId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val folderId = backStackEntry.arguments?.getLong("folderId") ?: 1L
+            FolderDetailScreen(
+                folderId = folderId,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onMeetingToggle = { meetingId, isSelected ->
+                    // TODO: 회의 선택/해제 처리
+                },
+                onAddClick = {
+                    navController.navigate(Screen.FolderMeetingAdd.createRoute(folderId))
+                }
+            )
+        }
+
+        // 회의록 폴더 회의 추가 화면
+        composable(
+            route = Screen.FolderMeetingAdd.route,
+            arguments = listOf(navArgument("folderId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val folderId = backStackEntry.arguments?.getLong("folderId") ?: 1L
+            FolderMeetingAddScreen(
+                folderId = folderId,
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onComplete = {
+                    navController.navigate(Screen.FolderDetail.createRoute(folderId)) {
+                        popUpTo(Screen.FolderDetail.route) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }
