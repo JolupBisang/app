@@ -6,6 +6,8 @@ data class WaitingRoomState(
     val meetingId: Long = 1L,
     val agendas: List<Agenda> = emptyList(),
     val targetTimeDisplay: String = "00:00:00",
+    val isHost: Boolean = false,
+    val showNotHostDialog: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null
 )

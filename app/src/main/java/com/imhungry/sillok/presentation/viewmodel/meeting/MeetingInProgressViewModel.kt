@@ -319,12 +319,13 @@ class MeetingInProgressViewModel @Inject constructor(
                         TAG,
                         "[2-3 완료] Meeting Detail 조회 성공: targetTime=${meeting.targetTime}, restInterval=${meeting.restInterval}, restDuration=${meeting.restDuration}, participants=${meeting.participants.size}명"
                     )
-                    // targetTime, restInterval, restDuration 저장
+                    // targetTime, restInterval, restDuration, isHost 저장
                     _state.update {
                         it.copy(
                             targetTime = meeting.targetTime,
                             restInterval = meeting.restInterval,
-                            restDuration = meeting.restDuration
+                            restDuration = meeting.restDuration,
+                            isHost = meeting.isHost
                         )
                     }
 

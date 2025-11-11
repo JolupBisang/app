@@ -39,6 +39,7 @@ import com.imhungry.sillok.presentation.state.meeting.MeetingInProgressEvent
 import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewModel
 import com.imhungry.sillok.ui.components.MeetingBasicBox
 import com.imhungry.sillok.ui.components.SillokDialog
+import com.imhungry.sillok.ui.components.SillokInfoDialog
 import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.orange100
 import com.imhungry.sillok.ui.theme.pagerIndicatorBackground
@@ -90,6 +91,7 @@ fun MeetingInProgressScreen(
     val pagerState = rememberPagerState(initialPage = 1)
     var showCompleteDialog by remember { mutableStateOf(false) }
     var showLeaveDialog by remember { mutableStateOf(false) }
+    var showNotHostDialog by remember { mutableStateOf(false) }
 
     // ViewModel state 관찰
     val state by meetingInProgressViewModel.state.collectAsState()
@@ -191,13 +193,28 @@ fun MeetingInProgressScreen(
             confirmText = "예",
             cancelText = "취소",
             onConfirm = {
-                // 회의 상태를 COMPLETED로 변경
-                meetingInProgressViewModel.completeMeeting()
-                //onCompleteMeeting()
                 showCompleteDialog = false
+                // 호스트 여부 확인
+                if (state.isHost) {
+                    // 회의 상태를 COMPLETED로 변경
+                    meetingInProgressViewModel.completeMeeting()
+                    //onCompleteMeeting()
+                } else {
+                    // 호스트가 아니면 안내 다이얼로그 표시
+                    showNotHostDialog = true
+                }
             },
             onDismiss = {
                 showCompleteDialog = false
+            }
+        )
+
+        SillokInfoDialog(
+            visible = showNotHostDialog,
+            message = "호스트만 회의를 종료할 수 있습니다.",
+            confirmText = "확인",
+            onConfirm = {
+                showNotHostDialog = false
             }
         )
 

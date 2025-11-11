@@ -161,7 +161,11 @@ fun WaitingRoomScreen(
                         SillokTextButton(
                             text = "시작하기",
                             onClick = {
-                                waitingRoomViewModel.startMeeting()
+                                if (state.isHost) {
+                                    waitingRoomViewModel.startMeeting()
+                                } else {
+                                    waitingRoomViewModel.showNotHostDialog()
+                                }
                             },
                             modifier = Modifier.padding(top = 28.dp),
                             textColor = primarySurface,
@@ -194,7 +198,7 @@ fun WaitingRoomScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "00:00:00",
+                            text = state.targetTimeDisplay,
                             style = MaterialTheme.typography.titleMedium,
                             color = disabled,
                             modifier = Modifier.align(Alignment.Center)
@@ -256,11 +260,11 @@ fun WaitingRoomScreen(
         }
 
         SillokInfoDialog(
-            visible = state.error != null,
-            message = state.error ?: "오류가 발생했습니다.",
+            visible = state.showNotHostDialog,
+            message = "호스트만 회의를 시작할 수 있습니다.",
             confirmText = "확인",
             onConfirm = {
-                waitingRoomViewModel.clearError()
+                waitingRoomViewModel.dismissNotHostDialog()
             }
         )
     }

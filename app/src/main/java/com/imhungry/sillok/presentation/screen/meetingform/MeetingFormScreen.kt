@@ -618,7 +618,9 @@ fun MeetingFormScreen(
                                 SillokButton(
                                     text = "취소",
                                     onClick = {
-                                        viewModel.onEvent(MeetingFormEvent.CancelClicked)
+                                        if (!state.isLoading) {
+                                            viewModel.onEvent(MeetingFormEvent.CancelClicked)
+                                        }
                                     },
                                     modifier = Modifier.weight(1f),
                                     backgroundColor = gray500,
@@ -630,7 +632,9 @@ fun MeetingFormScreen(
                                 SillokButton(
                                     text = "저장",
                                     onClick = {
-                                        viewModel.onEvent(MeetingFormEvent.ValidateForm)
+                                        if (!state.isLoading) {
+                                            viewModel.onEvent(MeetingFormEvent.ValidateForm)
+                                        }
                                     },
                                     modifier = Modifier.weight(1f)
                                 )
@@ -640,7 +644,9 @@ fun MeetingFormScreen(
                             SillokButton(
                                 text = "새 회의 등록",
                                 onClick = {
-                                    viewModel.onEvent(MeetingFormEvent.ValidateForm)
+                                    if (!state.isLoading) {
+                                        viewModel.onEvent(MeetingFormEvent.ValidateForm)
+                                    }
                                 }
                             )
                         }

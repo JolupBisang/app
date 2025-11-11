@@ -96,8 +96,6 @@ fun EmailInputFieldWithAutocomplete(
                                     !participantEmails.contains(trimmedValue)) {
                                     onEmailSubmitted(trimmedValue)
                                 }
-                                focusManager.clearFocus()
-                                keyboardController?.hide()
                             }
                         ),
                         textStyle = MaterialTheme.typography.bodyMedium.copy(

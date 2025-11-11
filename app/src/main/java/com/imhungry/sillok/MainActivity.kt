@@ -24,6 +24,7 @@ import com.imhungry.sillok.presentation.navigation.SillokNavigation
 import com.imhungry.sillok.ui.theme.SillokTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -49,6 +50,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // 진행 중인 회의, 예정된 회의 알림 초기화 (앱 시작 시 한 번만)
+        if (savedInstanceState == null) {
+            runBlocking {
+                dismissedMeetingStore.clearNotificationDismissals()
+            }
+        }
+
         setContent {
             SillokTheme {
                 Surface(
@@ -63,11 +71,6 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
-        }
-
-        // 앱 시작 시 숨긴 회의 목록 초기화
-        lifecycleScope.launch {
-            dismissedMeetingStore.clearAll()
         }
 
         // FCM 토큰 가져오기 (자동으로 FcmService.onNewToken 호출됨)

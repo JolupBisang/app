@@ -15,6 +15,7 @@ import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.domain.model.meeting.MeetingStatus
+import com.imhungry.sillok.domain.model.user.User
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingSummaryListUseCase
 import com.imhungry.sillok.presentation.state.home.HomeState
@@ -63,17 +64,13 @@ class HomeViewModel @Inject constructor(
     private fun observeUserChanges() {
         viewModelScope.launch {
             userStore.user.collect { user ->
-                Log.d(
-                    TAG,
-                    "observeUserChanges: user=${if (user != null) "id=${user.id}, email=${user.email}" else "null"}"
-                )
                 updateUserInfo(user)
                 handleUserAuthState(user)
             }
         }
     }
 
-    private fun updateUserInfo(user: com.imhungry.sillok.domain.model.user.User?) {
+    private fun updateUserInfo(user: User?) {
         _state.update { current ->
             current.copy(
                 userName = user?.nickname ?: current.userName,
@@ -82,7 +79,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun handleUserAuthState(user: com.imhungry.sillok.domain.model.user.User?) {
+    private fun handleUserAuthState(user: User?) {
         val uid = user?.id?.toString()
         if (!uid.isNullOrBlank()) {
             attachFirestoreListeners(uid)
@@ -181,9 +178,7 @@ class HomeViewModel @Inject constructor(
     // ========================================
 
     fun showExitDialog() {
-        Log.d(TAG, "종료 다이얼로그 표시 요청")
         _state.update { it.copy(showExitDialog = true) }
-        Log.d(TAG, "종료 다이얼로그 상태: ${_state.value.showExitDialog}")
     }
 
     fun dismissExitDialog() {
@@ -295,20 +290,16 @@ class HomeViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun loadHomeDataForMonth(year: Int, month: Int) {
-        Log.d(TAG, "loadHomeDataForMonth 호출: year=$year, month=$month")
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
                 currentYearMonth = year to month
-                Log.d(TAG, "getMeetingSummaryListUseCase 호출 시작")
                 when (val result = getMeetingSummaryListUseCase(year, month)) {
                     is ApiResult.Success -> {
-                        Log.d(TAG, "API 호출 성공: 회의 수=${result.data.size}")
                         handleSuccessResult(result.data, year, month)
                     }
 
                     is ApiResult.Failure -> {
-                        Log.e(TAG, "API 호출 실패: ${result.message}")
                         handleFailureResult(result.message)
                     }
                 }
@@ -325,30 +316,13 @@ class HomeViewModel @Inject constructor(
         year: Int,
         month: Int
     ) {
-        Log.d(TAG, "handleSuccessResult 호출: year=$year, month=$month, 총 회의 수=${summaries.size}")
-        summaries.forEach { summary ->
-            Log.d(TAG, "  - 회의 ID: ${summary.id}, 제목: ${summary.title}, 상태: ${summary.status}")
-        }
-
         // DataStore에서 숨긴 회의 ID 가져오기
         val dismissedMeetingIds = dismissedMeetingStore.getDismissedMeetingIds()
-        Log.d(TAG, "숨긴 회의 ID 개수: ${dismissedMeetingIds.size}, IDs: $dismissedMeetingIds")
 
         // 숨긴 회의 제외
         val filteredSummaries = summaries.filter { !dismissedMeetingIds.contains(it.id) }
-        Log.d(TAG, "필터링 후 회의 수: ${filteredSummaries.size}")
-        filteredSummaries.forEach { summary ->
-            Log.d(
-                TAG,
-                "  - 필터링 후 회의 ID: ${summary.id}, 제목: ${summary.title}, 상태: ${summary.status}"
-            )
-        }
 
         val (ongoing, upcoming, meetings) = categorizeMeetings(filteredSummaries)
-        Log.d(
-            TAG,
-            "카테고리화: ongoing=${ongoing.size}, upcoming=${upcoming.size}, meetings=${meetings.size}"
-        )
 
         logMeetingLoadResult(year, month, summaries.size, ongoing.size, upcoming.size)
 
@@ -364,10 +338,6 @@ class HomeViewModel @Inject constructor(
             dismissedScheduledIds
         )
 
-        Log.d(
-            TAG,
-            "handleSuccessResult 완료: ongoing=${meetingUis.ongoing.size}, upcoming=${meetingUis.upcoming.size}, all=${meetingUis.all.size}"
-        )
         updateStateWithMeetings(meetingUis)
     }
 
@@ -416,20 +386,9 @@ class HomeViewModel @Inject constructor(
         upcoming: Int
     ) {
         val past = total - ongoing - upcoming
-        Log.d(TAG, "${year}-${month} 달 로드 성공: 전체=$total, 예정=$upcoming, 진행=$ongoing, 종료=$past")
     }
 
     private fun updateStateWithMeetings(meetingUis: MeetingUis) {
-        Log.d(
-            TAG,
-            "updateStateWithMeetings 호출: meetings=${meetingUis.all.size}, ongoing=${meetingUis.ongoing.size}, upcoming=${meetingUis.upcoming.size}"
-        )
-        meetingUis.all.forEach { meeting ->
-            Log.d(
-                TAG,
-                "  - State에 추가될 회의: ID=${meeting.id}, 제목=${meeting.title}, 상태=${meeting.status}, dismissed=${meeting.dismissed}"
-            )
-        }
         _state.update {
             it.copy(
                 isLoading = false,
@@ -439,7 +398,6 @@ class HomeViewModel @Inject constructor(
                 error = null
             )
         }
-        Log.d(TAG, "updateStateWithMeetings 완료: state.meetings.size=${_state.value.meetings.size}")
     }
 
     private fun handleFailureResult(message: String?) {

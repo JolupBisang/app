@@ -35,6 +35,7 @@ data class MeetingInProgressState(
     val targetTime: Int = 0, // 목표 시간 (분)
     val restInterval: Int = 0, // 휴식 간격 (분)
     val restDuration: Int = 0, // 휴식 시간 (분)
+    val isHost: Boolean = false,
     val isLoading: Boolean = false,
     val isMicLoading: Boolean = false, // 마이크 켜지는 중 로딩 상태
     val error: String? = null

@@ -225,7 +225,7 @@ fun TimeInputField(
                 // 분 단위 표시 필드 (읽기 전용, 자동 계산)
                 Box(
                     modifier = Modifier
-                        .weight(1f)
+                        .width(52.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .border(1.dp, border, RoundedCornerShape(4.dp))
                         .background(primaryBackground)
@@ -233,9 +233,7 @@ fun TimeInputField(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (duration.isNotEmpty()) {
-                            duration
-                        } else {
+                        text = duration.ifEmpty {
                             durationPlaceholder
                         },
                         style = MaterialTheme.typography.bodyMedium,

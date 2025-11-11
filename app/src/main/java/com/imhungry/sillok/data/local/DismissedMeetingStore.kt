@@ -138,5 +138,12 @@ class DismissedMeetingStore @Inject constructor(
             preferences.remove(DISMISSED_MEETINGS_KEY)
         }
     }
+
+    suspend fun clearNotificationDismissals() {
+        dataStore.edit { preferences ->
+            preferences.remove(DISMISSED_ONGOING_MEETINGS_KEY)
+            preferences.remove(DISMISSED_SCHEDULED_MEETINGS_KEY)
+        }
+    }
 }
 

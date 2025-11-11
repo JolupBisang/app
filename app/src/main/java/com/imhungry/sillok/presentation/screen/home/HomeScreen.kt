@@ -372,6 +372,7 @@ private fun HomeContent(
                 upcomingList = upcomingList,
                 notificationState = notificationState,
                 viewModel = viewModel,
+                isLoading = homeState.isLoading,
                 onMenuClick = onMenuClick,
                 onNotificationClick = onNotificationClick,
                 onJoinOngoingMeeting = onJoinOngoingMeeting,
@@ -419,6 +420,7 @@ private fun TopContent(
     upcomingList: List<MeetingUi>,
     notificationState: NotificationState,
     viewModel: HomeViewModel,
+    isLoading: Boolean,
     onMenuClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onJoinOngoingMeeting: (MeetingUi) -> Unit,
@@ -444,6 +446,7 @@ private fun TopContent(
             upcomingList = upcomingList,
             notificationState = notificationState,
             viewModel = viewModel,
+            isLoading = isLoading,
             onJoinOngoingMeeting = onJoinOngoingMeeting,
             onJoinScheduledMeeting = onJoinScheduledMeeting
         )
@@ -510,6 +513,7 @@ private fun NotificationArea(
     upcomingList: List<MeetingUi>,
     notificationState: NotificationState,
     viewModel: HomeViewModel,
+    isLoading: Boolean,
     onJoinOngoingMeeting: (MeetingUi) -> Unit,
     onJoinScheduledMeeting: (MeetingUi) -> Unit
 ) {
@@ -517,16 +521,24 @@ private fun NotificationArea(
     val availableOngoing = ongoingList.filter { !it.dismissed }
     val availableUpcoming = upcomingList.filter { !it.dismissed }
 
-    // 리스트가 비어있으면 알림 숨기기
-    LaunchedEffect(availableOngoing.isEmpty()) {
-        if (availableOngoing.isEmpty() && notificationState.showOngoingMeeting.value) {
-            notificationState.showOngoingMeeting.value = false
+    // 로딩이 완료된 후에만 알림 표시/숨김 처리
+    LaunchedEffect(isLoading, availableOngoing.size) {
+        if (!isLoading) {
+            if (availableOngoing.isEmpty() && notificationState.showOngoingMeeting.value) {
+                notificationState.showOngoingMeeting.value = false
+            } else if (availableOngoing.isNotEmpty() && !notificationState.showOngoingMeeting.value) {
+                notificationState.showOngoingMeeting.value = true
+            }
         }
     }
 
-    LaunchedEffect(availableUpcoming.isEmpty()) {
-        if (availableUpcoming.isEmpty() && notificationState.showScheduledMeeting.value) {
-            notificationState.showScheduledMeeting.value = false
+    LaunchedEffect(isLoading, availableUpcoming.size) {
+        if (!isLoading) {
+            if (availableUpcoming.isEmpty() && notificationState.showScheduledMeeting.value) {
+                notificationState.showScheduledMeeting.value = false
+            } else if (availableUpcoming.isNotEmpty() && !notificationState.showScheduledMeeting.value) {
+                notificationState.showScheduledMeeting.value = true
+            }
         }
     }
 

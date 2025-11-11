@@ -72,11 +72,13 @@ class WaitingRoomViewModel @Inject constructor(
                         is ApiResult.Success -> {
                             val minutes = detailResult.data.targetTime
                             val display = formatDurationForDisplay(minutes)
+                            val isHost = detailResult.data.isHost
                             _state.update {
                                 it.copy(
                                     isLoading = false,
                                     agendas = agendas,
                                     targetTimeDisplay = display,
+                                    isHost = isHost,
                                     error = null
                                 )
                             }
@@ -239,6 +241,14 @@ class WaitingRoomViewModel @Inject constructor(
 
     fun clearError() {
         _state.update { it.copy(error = null) }
+    }
+
+    fun showNotHostDialog() {
+        _state.update { it.copy(showNotHostDialog = true) }
+    }
+
+    fun dismissNotHostDialog() {
+        _state.update { it.copy(showNotHostDialog = false) }
     }
 
     public override fun onCleared() {

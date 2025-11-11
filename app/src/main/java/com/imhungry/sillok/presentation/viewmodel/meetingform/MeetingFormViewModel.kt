@@ -131,9 +131,11 @@ class MeetingFormViewModel @Inject constructor(
                                 duration = meeting.targetTime.toString(),
                                 location = meetingData.location,
                                 locationTextFieldValue = TextFieldValue(meetingData.location),
-                                agendas = if (meetingData.agendas.isNotEmpty()) meetingData.agendas else listOf(
-                                    ""
-                                ),
+                                agendas = meetingData.agendas.ifEmpty {
+                                    listOf(
+                                        ""
+                                    )
+                                },
                                 breakInterval = meetingData.breakInterval,
                                 breakDuration = meetingData.breakDuration,
                                 participantEmails = meetingData.participants,
@@ -149,9 +151,11 @@ class MeetingFormViewModel @Inject constructor(
                             endTime = endDigits,
                             duration = meeting.targetTime.toString(),
                             location = meetingData.location,
-                            agendas = (if (meetingData.agendas.isNotEmpty()) meetingData.agendas else listOf(
-                                ""
-                            )),
+                            agendas = (meetingData.agendas.ifEmpty {
+                                listOf(
+                                    ""
+                                )
+                            }),
                             participantEmails = meetingData.participants
                         )
                     } catch (e: Exception) {
@@ -518,9 +522,7 @@ class MeetingFormViewModel @Inject constructor(
                                 val data = hashMapOf(
                                     "meetingId" to meetingId,
                                     "title" to s.title,
-                                    "participants" to emails,
-                                    "startMillis" to null,
-                                    "endMillis" to null
+                                    "participants" to emails
                                 )
                                 db.collection("meetings").document(meetingId.toString())
                                     .set(data)

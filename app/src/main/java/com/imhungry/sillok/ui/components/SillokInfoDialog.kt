@@ -60,8 +60,7 @@ fun SillokInfoDialog(
 
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = primaryButton,
-                        modifier = Modifier.fillMaxWidth()
+                        color = primaryButton
                     ) {
                         Text(
                             text = confirmText,
@@ -69,8 +68,7 @@ fun SillokInfoDialog(
                             color = inverse,
                             textAlign = TextAlign.Center,
                             modifier = Modifier
-                                .padding(horizontal = 20.dp, vertical = 4.dp)
-                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
                                 .clickable { onConfirm() }
                         )
                     }
