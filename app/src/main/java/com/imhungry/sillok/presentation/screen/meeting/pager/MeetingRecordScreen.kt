@@ -191,7 +191,7 @@ fun MeetingRecordScreen(
                         .onGloballyPositioned { coordinates ->
                             topSheetHeightPx.value = coordinates.size.height
                         }
-                        .padding(top = 20.dp, start = 20.dp, end = 20.dp, bottom = 4.dp)
+                        .padding(top = 20.dp, start = 28.dp, end = 20.dp, bottom = 4.dp)
                 )
 
             }

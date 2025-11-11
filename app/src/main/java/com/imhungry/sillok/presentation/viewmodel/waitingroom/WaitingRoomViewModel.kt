@@ -1,5 +1,6 @@
 package com.imhungry.sillok.presentation.viewmodel.waitingroom
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.DocumentSnapshot
@@ -28,7 +29,6 @@ import javax.inject.Inject
 @HiltViewModel
 class WaitingRoomViewModel @Inject constructor(
     private val userStore: UserStore,
-    private val getAgendasUseCase: GetAgendasUseCase,
     private val changeAgendaStatusUseCase: ChangeAgendaStatusUseCase,
     private val updateMeetingStatusUseCase: UpdateMeetingStatusUseCase,
     private val getMeetingDetailUseCase: GetMeetingDetailUseCase
@@ -62,42 +62,31 @@ class WaitingRoomViewModel @Inject constructor(
     fun loadAgendasAndMeetingDetail(meetingId: Long) {
         _state.update { it.copy(isLoading = true, error = null, meetingId = meetingId) }
         viewModelScope.launch {
-            val agendasResult = getAgendasUseCase(meetingId)
-            val detailResult = getMeetingDetailUseCase(meetingId)
-
-            when (agendasResult) {
+            when (val detailResult = getMeetingDetailUseCase(meetingId)) {
                 is ApiResult.Success -> {
-                    val agendas = agendasResult.data
-                    when (detailResult) {
-                        is ApiResult.Success -> {
-                            val minutes = detailResult.data.targetTime
-                            val display = formatDurationForDisplay(minutes)
-                            val isHost = detailResult.data.isHost
-                            _state.update {
-                                it.copy(
-                                    isLoading = false,
-                                    agendas = agendas,
-                                    targetTimeDisplay = display,
-                                    isHost = isHost,
-                                    error = null
-                                )
-                            }
-                        }
-
-                        is ApiResult.Failure -> {
-                            _state.update {
-                                it.copy(
-                                    isLoading = false,
-                                    agendas = agendas,
-                                    error = detailResult.message
-                                )
-                            }
-                        }
+                    val minutes = detailResult.data.targetTime
+                    val display = formatDurationForDisplay(minutes)
+                    val isHost = detailResult.data.isHost
+                    val agendas = detailResult.data.agendas
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            agendas = agendas,
+                            targetTimeDisplay = display,
+                            isHost = isHost,
+                            error = null
+                        )
                     }
                 }
 
                 is ApiResult.Failure -> {
-                    _state.update { it.copy(isLoading = false, error = agendasResult.message) }
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            isHost = false, // 실패 시 기본값으로 설정
+                            error = detailResult.message
+                        )
+                    }
                 }
             }
         }
@@ -105,11 +94,16 @@ class WaitingRoomViewModel @Inject constructor(
 
     // 분 단위 시간을 "HH:MM:SS" 형식으로 변환
     private fun formatDurationForDisplay(totalMinutes: Int): String {
+        if (totalMinutes <= 0) {
+            return "00:00:00"
+        }
         val hours = totalMinutes / 60
         val minutes = totalMinutes % 60
         val seconds = 0
         fun two(n: Int) = n.toString().padStart(2, '0')
-        return "${two(hours)}:${two(minutes)}:${two(seconds)}"
+        val result = "${two(hours)}:${two(minutes)}:${two(seconds)}"
+        Log.d("WaitingRoomViewModel", "formatDurationForDisplay - totalMinutes: $totalMinutes, result: $result")
+        return result
     }
 
     // 아젠다 체크 상태를 낙관적 업데이트하고 서버 요청 실패 시 롤백.

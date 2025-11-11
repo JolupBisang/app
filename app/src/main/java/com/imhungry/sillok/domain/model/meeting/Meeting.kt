@@ -1,6 +1,7 @@
 package com.imhungry.sillok.domain.model.meeting
 
 import com.imhungry.sillok.data.model.meeting.MeetingRole
+import com.imhungry.sillok.domain.model.agenda.Agenda
 
 data class Meeting(
     val meetingId: Long,
@@ -12,6 +13,7 @@ data class Meeting(
     val restDuration: Int,
     val meetingStatus: String,
     val participants: List<Participant>,
+    val agendas: List<Agenda> = emptyList(),
     val isHost: Boolean
 ) {
     data class Participant(

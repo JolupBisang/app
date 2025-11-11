@@ -161,10 +161,14 @@ fun WaitingRoomScreen(
                         SillokTextButton(
                             text = "시작하기",
                             onClick = {
-                                if (state.isHost) {
-                                    waitingRoomViewModel.startMeeting()
-                                } else {
-                                    waitingRoomViewModel.showNotHostDialog()
+                                // 로딩이 완료된 후에만 체크
+                                if (!state.isLoading) {
+                                    android.util.Log.d("WaitingRoomScreen", "시작하기 클릭 - isHost: ${state.isHost}, isLoading: ${state.isLoading}")
+                                    if (state.isHost) {
+                                        waitingRoomViewModel.startMeeting()
+                                    } else {
+                                        waitingRoomViewModel.showNotHostDialog()
+                                    }
                                 }
                             },
                             modifier = Modifier.padding(top = 28.dp),
@@ -198,7 +202,7 @@ fun WaitingRoomScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = state.targetTimeDisplay,
+                            text = "00:00:00",
                             style = MaterialTheme.typography.titleMedium,
                             color = disabled,
                             modifier = Modifier.align(Alignment.Center)

@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.imhungry.sillok.data.local.DismissedMeetingStore
 import com.imhungry.sillok.data.model.meeting.MeetingRole
 import com.imhungry.sillok.data.util.ApiResult
-import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.presentation.state.meetingdetail.MeetingDetailState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +22,6 @@ import javax.inject.Inject
 @HiltViewModel
 class MeetingDetailViewModel @Inject constructor(
     private val getMeetingDetailUseCase: GetMeetingDetailUseCase,
-    private val getAgendasUseCase: GetAgendasUseCase,
     private val dismissedMeetingStore: DismissedMeetingStore
 ) : ViewModel() {
 
@@ -47,11 +45,8 @@ class MeetingDetailViewModel @Inject constructor(
                         val endDigits = ldt.plusMinutes(meeting.targetTime.toLong())
                             .format(DateTimeFormatter.ofPattern("HHmm"))
 
-                        // agendas
-                        val agendas = when (val ag = getAgendasUseCase(meetingId)) {
-                            is ApiResult.Success -> ag.data.map { it.content }
-                            is ApiResult.Failure -> emptyList()
-                        }
+                        // 아젠다는 회의 상세 응답에서 가져오기
+                        val agendas = meeting.agendas.map { it.content }
 
                         // hostEmail from participants role
                         val hostEmail = meeting.participants

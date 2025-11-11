@@ -140,7 +140,7 @@ fun MeetingInProgressScreen(
         MeetingBasicBox(
             navigationBarColor = whiteBackground,
             backgroundColor = primaryBackground,
-            isLoading = (state.isLoading || state.isMicLoading) && !showCompleteDialog && !showLeaveDialog
+            isLoading = state.isLoading && !showCompleteDialog && !showLeaveDialog
         ) {
             Column(
                 modifier = Modifier

@@ -16,7 +16,6 @@ import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.usecase.agenda.AddAgendaUseCase
 import com.imhungry.sillok.domain.usecase.agenda.DeleteAgendaUseCase
-import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
 import com.imhungry.sillok.domain.usecase.agenda.UpdateAgendaUseCase
 import com.imhungry.sillok.domain.usecase.meeting.CreateMeetingUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
@@ -49,7 +48,6 @@ class MeetingFormViewModel @Inject constructor(
     private val removeMeetingUserUseCase: RemoveMeetingUserUseCase,
     private val getMeetingDetailUseCase: GetMeetingDetailUseCase,
     private val updateMeetingUseCase: UpdateMeetingUseCase,
-    private val getAgendasUseCase: GetAgendasUseCase,
     private val addAgendaUseCase: AddAgendaUseCase,
     private val deleteAgendaUseCase: DeleteAgendaUseCase,
     private val updateAgendaUseCase: UpdateAgendaUseCase
@@ -80,16 +78,9 @@ class MeetingFormViewModel @Inject constructor(
                         val endDigits = ldt.plusMinutes(meeting.targetTime.toLong())
                             .format(DateTimeFormatter.ofPattern("HHmm"))
 
-                        // 아젠다 불러오기
-                        val agendas =
-                            when (val agendasResult = getAgendasUseCase(meeting.meetingId)) {
-                                is ApiResult.Success -> {
-                                    loadedAgendas = agendasResult.data
-                                    agendasResult.data.map { it.content }.ifEmpty { listOf("") }
-                                }
-
-                                is ApiResult.Failure -> listOf("")
-                            }
+                        // 아젠다는 회의 상세 응답에서 가져오기
+                        loadedAgendas = meeting.agendas
+                        val agendas = meeting.agendas.map { it.content }.ifEmpty { listOf("") }
 
                         val filteredParticipants = meeting.participants
                             .map { it.email }
@@ -726,11 +717,13 @@ class MeetingFormViewModel @Inject constructor(
                                 s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }
                             }
                         }
+                    // 자기 자신(호스트) 제외
+                    val participantsWithoutHost = latestParticipantEmails.filter { it != hostEmail }
                     db.collection("meetings").document(meetingId.toString())
                         .update(
                             mapOf(
                                 "title" to s.title,
-                                "participants" to latestParticipantEmails
+                                "participants" to participantsWithoutHost
                             )
                         )
                         .await()

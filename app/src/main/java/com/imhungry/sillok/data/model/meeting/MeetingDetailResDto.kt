@@ -10,12 +10,19 @@ data class MeetingDetailResDto(
     val restDuration: Int,
     val meetingStatus: String,
     val participants: List<ParticipantDto>,
+    val agendas: List<AgendaDto>? = null,
     val isHost: Boolean
 ) {
     data class ParticipantDto(
         val userId: Long,
         val email: String,
         val role: MeetingRole,
+    )
+    
+    data class AgendaDto(
+        val agendaId: Long,
+        val content: String,
+        val isCompleted: Boolean
     )
 }
 

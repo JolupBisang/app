@@ -21,7 +21,6 @@ import com.imhungry.sillok.data.model.realtime.RealtimeSegmentDto
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.participation.UserParticipationRate
 import com.imhungry.sillok.domain.usecase.agenda.ChangeAgendaStatusUseCase
-import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
 import com.imhungry.sillok.domain.usecase.feedback.GetFeedbacksUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.meeting.UpdateMeetingStatusUseCase
@@ -61,7 +60,6 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MeetingInProgressViewModel @Inject constructor(
-    private val getAgendasUseCase: GetAgendasUseCase,
     private val changeAgendaStatusUseCase: ChangeAgendaStatusUseCase,
     private val getSegmentsUseCase: GetSegmentsUseCase,
     private val getSummariesUseCase: GetSummariesUseCase,
@@ -202,14 +200,11 @@ class MeetingInProgressViewModel @Inject constructor(
                         handleError(event.error)
                     }
 
-                    is ServiceEvent.MicEnabled -> {
-                        _state.update { it.copy(isMicLoading = false) }
-                        Log.d(TAG, "마이크 활성화 완료")
-                    }
-
                     is ServiceEvent.AgendaUpdated -> {
                         handleAgendaUpdated(event.agendaId, event.isCompleted)
                     }
+
+                    else -> {}
                 }
             }
         }
@@ -319,13 +314,14 @@ class MeetingInProgressViewModel @Inject constructor(
                         TAG,
                         "[2-3 완료] Meeting Detail 조회 성공: targetTime=${meeting.targetTime}, restInterval=${meeting.restInterval}, restDuration=${meeting.restDuration}, participants=${meeting.participants.size}명"
                     )
-                    // targetTime, restInterval, restDuration, isHost 저장
+                    // targetTime, restInterval, restDuration, isHost, agendas 저장
                     _state.update {
                         it.copy(
                             targetTime = meeting.targetTime,
                             restInterval = meeting.restInterval,
                             restDuration = meeting.restDuration,
-                            isHost = meeting.isHost
+                            isHost = meeting.isHost,
+                            agendas = meeting.agendas // 아젠다는 회의 상세 응답에서 가져오기
                         )
                     }
 
@@ -366,9 +362,6 @@ class MeetingInProgressViewModel @Inject constructor(
                 }
             }
 
-            Log.d(TAG, "[2-4] 아젠다 조회 시작 (비동기)")
-            val agendasDeferred = async { getAgendasUseCase(meetingId) }
-
             var startMillis: Long? = null
 
             Log.d(TAG, "[2-5] Firebase startMillis 조회 시작")
@@ -401,16 +394,6 @@ class MeetingInProgressViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "[2-5 실패] Firebase startMillis 조회 실패: ${e.message}", e)
-            }
-
-            Log.d(TAG, "[2-4 대기] 아젠다 조회 결과 대기 중")
-            when (val result = agendasDeferred.await()) {
-                is ApiResult.Success -> {
-                    Log.d(TAG, "[2-4 완료] 아젠다 조회 성공: ${result.data.size}개")
-                    _state.update { it.copy(agendas = result.data) }
-                }
-
-                is ApiResult.Failure -> Log.e(TAG, "[2-4 실패] 아젠다 조회 실패: ${result.message}")
             }
 
             val currentUserId = userStore.user.first()?.id
@@ -569,6 +552,7 @@ class MeetingInProgressViewModel @Inject constructor(
                     } catch (e: Exception) {
                         Log.e(TAG, "Firebase endMillis 업데이트 실패: ${e.message}", e)
                     }
+                    // 홈으로 이동은 COMPLETION_SCHEDULED 이벤트를 받을 때 수행
                 }
 
                 is ApiResult.Failure -> {
@@ -593,15 +577,6 @@ class MeetingInProgressViewModel @Inject constructor(
         app.startService(intent)
 
         _micEnabled.value = newState
-
-        // 마이크를 켤 때 (꺼져있었다가 켜질 때) 로딩 상태 설정
-        if (!wasEnabled && newState) {
-            _state.update { it.copy(isMicLoading = true) }
-            Log.d(TAG, "마이크 켜는 중... (로딩 시작)")
-        } else {
-            _state.update { it.copy(isMicLoading = false) }
-        }
-
         Log.d(TAG, "마이크 토글: ${if (newState) "켜짐" else "꺼짐"}")
     }
 
@@ -748,7 +723,7 @@ class MeetingInProgressViewModel @Inject constructor(
 
                 Log.d(TAG, "Firebase generatingMeetingNoteId 제거 완료: meetingId=$meetingId")
 
-                // WebSocket 연결과 Service 종료
+                // 웹소켓과 Service 종료
                 disconnectAll()
                 Log.d(TAG, "회의록 생성 완료 후 연결 해제 및 Service 종료 완료")
             } catch (e: Exception) {

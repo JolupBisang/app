@@ -50,13 +50,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // 진행 중인 회의, 예정된 회의 알림 초기화 (앱 시작 시 한 번만)
-        if (savedInstanceState == null) {
-            runBlocking {
-                dismissedMeetingStore.clearNotificationDismissals()
-            }
-        }
-
         setContent {
             SillokTheme {
                 Surface(

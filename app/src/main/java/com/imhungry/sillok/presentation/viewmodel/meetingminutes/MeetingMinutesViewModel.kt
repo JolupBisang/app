@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
-import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
 import com.imhungry.sillok.domain.usecase.audio.GetAudioListUseCase
 import com.imhungry.sillok.domain.usecase.feedback.GetFeedbacksUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
@@ -34,7 +33,6 @@ import javax.inject.Inject
 @HiltViewModel
 class MeetingMinutesViewModel @Inject constructor(
     private val getMeetingDetailUseCase: GetMeetingDetailUseCase,
-    private val getAgendasUseCase: GetAgendasUseCase,
     private val getSegmentsUseCase: GetSegmentsUseCase,
     private val getSummariesUseCase: GetSummariesUseCase,
     private val getParticipationRateHistoryUseCase: GetParticipationRateHistoryUseCase,
@@ -76,7 +74,6 @@ class MeetingMinutesViewModel @Inject constructor(
             val meetingId = state.value.meetingId
 
             val detailDeferred = async { getMeetingDetailUseCase(meetingId) }
-            val agendasDeferred = async { getAgendasUseCase(meetingId) }
             // 전체 데이터를 한 번에 로드 (충분히 큰 size 사용)
             val segmentsDeferred = async { getSegmentsUseCase(meetingId, page = 0, size = 1000) }
             val summariesDeferred = async { getSummariesUseCase(meetingId, page = 0, size = 500) }
@@ -126,6 +123,7 @@ class MeetingMinutesViewModel @Inject constructor(
                             meetingDateAndLocation = "$date, $location",
                             scheduledStartTime = DateTimeUtils.localIsoToTimeString(meeting.scheduledStartTime),
                             targetTime = meeting.targetTime,
+                            agendas = meeting.agendas
                         )
                     }
                     Log.d(TAG, "회의 상세 로드 성공: ${meeting}")
@@ -134,11 +132,6 @@ class MeetingMinutesViewModel @Inject constructor(
                 is ApiResult.Failure -> {
                     Log.e(TAG, "회의 상세 로드 실패: ${result.message}")
                 }
-            }
-
-            when (val result = agendasDeferred.await()) {
-                is ApiResult.Success -> _state.update { it.copy(agendas = result.data) }
-                is ApiResult.Failure -> Log.e(TAG, "아젠다 로드 실패: ${result.message}")
             }
 
             val currentUserId = userStore.user.first()?.id
@@ -198,10 +191,16 @@ class MeetingMinutesViewModel @Inject constructor(
 
             when (val result = recapDeferred.await()) {
                 is ApiResult.Success -> {
-                    val recap: String = result.data.first().content
-                    // generatedDateTime이 null이어도 recapSummary는 설정
-                    _state.update { it.copy(recapSummary = recap) }
-                    Log.d(TAG, "리캡 요약 로드 성공: ${recap}")
+                    val recapItem = result.data.firstOrNull()
+                    if (recapItem != null) {
+                        val recap: String = recapItem.content
+                        // generatedDateTime이 null이어도 recapSummary는 설정
+                        _state.update { it.copy(recapSummary = recap) }
+                        Log.d(TAG, "리캡 요약 로드 성공: ${recap}")
+                    } else {
+                        Log.d(TAG, "리캡 요약이 없음")
+                        _state.update { it.copy(recapSummary = "") }
+                    }
                 }
 
                 is ApiResult.Failure -> {

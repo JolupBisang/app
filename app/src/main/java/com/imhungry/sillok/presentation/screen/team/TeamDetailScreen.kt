@@ -226,14 +226,14 @@ fun TeamDetailScreen(
                                         }
                                     )
                                 } else {
-                                    Text(
+                                Text(
                                         text = state.teamDescription.ifEmpty { "한줄소개(50자)" },
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Medium,
-                                        fontSize = 14.sp,
-                                        color = gray200,
-                                        modifier = Modifier.weight(1f)
-                                    )
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 14.sp,
+                                    color = gray200,
+                                    modifier = Modifier.weight(1f)
+                                )
                                 }
                                 Box(
                                     modifier = Modifier.size(30.dp),

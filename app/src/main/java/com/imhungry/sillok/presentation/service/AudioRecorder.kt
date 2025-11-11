@@ -124,12 +124,12 @@ class AudioRecorder(
                 audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING &&
                 coroutineContext.isActive
             ) {
+                // 항상 오디오 데이터 읽기 (버퍼 오버플로우 방지)
+                val bytesRead = audioRecord?.read(buffer, 0, buffer.size) ?: 0
 
-                // 마이크가 켜져있을 때만 오디오 데이터 읽기
-                if (micEnabled) {
-                    val bytesRead = audioRecord?.read(buffer, 0, buffer.size) ?: 0
-
-                    if (bytesRead > 0) {
+                if (bytesRead > 0) {
+                    // 마이크가 켜져있을 때만 패킷 생성 및 전송
+                    if (micEnabled) {
                         val audioChunk = buffer.copyOf(bytesRead)
                         sendAudioChunk(webSocket, audioChunk)
                         chunkCount++
@@ -140,12 +140,10 @@ class AudioRecorder(
                             Log.d(TAG, "[Audio-2] 음성 패킷 전송 중: 총 ${chunkCount}개 전송됨 (마지막 5초간)")
                             lastLogTime = currentTime
                         }
-                    } else if (bytesRead < 0) {
-                        Log.w(TAG, "[Audio-경고] 오디오 읽기 실패: bytesRead=$bytesRead")
                     }
-                } else {
-                    // 마이크가 꺼져있으면 오디오 데이터를 읽지 않고 대기
-                    delay(100) // CPU 사용량을 줄이기 위한 짧은 딜레이
+                    // micEnabled가 false일 때는 읽은 데이터를 버리고 패킷 생성/전송하지 않음
+                } else if (bytesRead < 0) {
+                    Log.w(TAG, "[Audio-경고] 오디오 읽기 실패: bytesRead=$bytesRead")
                 }
             }
             Log.d(TAG, "[Audio-1 완료] 오디오 데이터 읽기 및 전송 종료: 총 ${chunkCount}개 전송됨")

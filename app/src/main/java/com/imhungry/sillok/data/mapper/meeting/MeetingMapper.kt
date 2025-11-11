@@ -35,6 +35,13 @@ class MeetingMapper @Inject constructor() {
             participants = dto.participants.map {
                 Meeting.Participant(it.userId, it.email, it.role)
             },
+            agendas = dto.agendas?.map {
+                com.imhungry.sillok.domain.model.agenda.Agenda(
+                    agendaId = it.agendaId,
+                    content = it.content,
+                    isCompleted = it.isCompleted
+                )
+            } ?: emptyList(),
             isHost = dto.isHost
         )
     }

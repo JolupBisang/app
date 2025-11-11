@@ -163,17 +163,7 @@ class MeetingInProgressService : Service() {
 
             ACTION_TOGGLE_MIC -> {
                 if (::audioRecorder.isInitialized) {
-                    val wasEnabled = audioRecorder.micEnabled
                     audioRecorder.toggleMic()
-
-                    // 마이크를 켤 때 (꺼져있었다가 켜질 때) 이벤트 발행
-                    if (!wasEnabled && audioRecorder.micEnabled) {
-                        serviceScope.launch {
-                            // 마이크가 켜지는 동안 짧은 딜레이 (로딩 표시용)
-                            delay(300)
-                            _serviceEvents.emit(ServiceEvent.MicEnabled)
-                        }
-                    }
                 }
             }
         }
@@ -322,9 +312,7 @@ class MeetingInProgressService : Service() {
         if (::webSocketManager.isInitialized) {
             webSocketManager.close()
         }
-        if (::chunkRetransmitter.isInitialized) {
-            chunkRetransmitter.deleteChunkFiles()
-        }
+        // 청크 파일 삭제는 회의 완료 시에만 수행 (onMeetingCompleted 콜백에서 처리)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
