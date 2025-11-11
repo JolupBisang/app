@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.presentation.screen.meeting.component.Notification
 import com.imhungry.sillok.presentation.screen.meetingminutes.components.MeetingTabRow
+import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.presentation.viewmodel.meetingminutes.MeetingMinutesViewModel
 import com.imhungry.sillok.ui.components.Divider
 
@@ -50,7 +51,14 @@ fun MeetingMinutesFeedbackScreen(
                 }
                 Notification(
                     feedback = feedback,
-                    isRead = true
+                    isRead = true,
+                    onTimeClick = {
+                        // 피드백의 timestamp를 밀리초로 변환하여 오디오 재생 위치로 이동
+                        val seekMillis = DateTimeUtils.timeStringToMillis(feedback.timestamp)
+                        if (seekMillis != null) {
+                            onTimeClick(seekMillis.coerceAtLeast(0L))
+                        }
+                    }
                 )
                 if (index == feedbacks.lastIndex) {
                     Spacer(modifier = Modifier.height(48.dp))

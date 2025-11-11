@@ -47,7 +47,7 @@ fun BasicBox(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.systemBars)
-                .padding(20.dp)
+                .padding(start = 20.dp, end = 20.dp, bottom = 20.dp, top = 12.dp)
         ) {
             content()
         }

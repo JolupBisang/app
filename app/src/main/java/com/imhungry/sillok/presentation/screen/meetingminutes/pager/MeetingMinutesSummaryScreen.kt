@@ -37,6 +37,7 @@ import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.screen.meeting.component.ConversationSummaryBar
 import com.imhungry.sillok.presentation.screen.meeting.component.SummaryListItem
 import com.imhungry.sillok.presentation.screen.meetingminutes.components.MeetingTabRow
+import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.presentation.viewmodel.meetingminutes.MeetingMinutesViewModel
 import com.imhungry.sillok.ui.components.Divider
 import com.imhungry.sillok.ui.components.HighlightText
@@ -59,16 +60,15 @@ fun MeetingMinutesSummaryScreen(
     var isExpanded4 by rememberSaveable { mutableStateOf(true) }
 
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
     ) {
+        MeetingTabRow(selectedTab = selectedTab, onTabClick = onTabClick)
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp)
         ) {
-            item {
-                MeetingTabRow(selectedTab = selectedTab, onTabClick = onTabClick)
-            }
             item {
                 SectionWithToggle(
                     title = "진행 시간",
@@ -166,7 +166,14 @@ fun MeetingMinutesSummaryScreen(
                         ) {
                             summaries.forEachIndexed { index, summary ->
                                 SummaryListItem(
-                                    summary = summary
+                                    summary = summary,
+                                    onClick = {
+                                        // 중간 요약의 timestamp를 밀리초로 변환하여 오디오 재생 위치로 이동
+                                        val seekMillis = DateTimeUtils.timeStringToMillis(summary.timestamp)
+                                        if (seekMillis != null) {
+                                            onTimeClick(seekMillis.coerceAtLeast(0L))
+                                        }
+                                    }
                                 )
                                 Spacer(Modifier.height(16.dp))
                                 if (index == summaries.lastIndex) {

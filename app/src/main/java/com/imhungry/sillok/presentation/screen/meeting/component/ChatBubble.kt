@@ -34,8 +34,10 @@ import com.imhungry.sillok.presentation.state.meeting.SegmentUi
 import com.imhungry.sillok.ui.theme.brown200
 import com.imhungry.sillok.ui.theme.brown500
 import com.imhungry.sillok.ui.theme.green300
+import com.imhungry.sillok.ui.theme.green400
 import com.imhungry.sillok.ui.theme.green500
 import com.imhungry.sillok.ui.theme.placeHolder
+import com.imhungry.sillok.ui.theme.primaryTextColor
 import com.imhungry.sillok.ui.theme.tertiary
 
 @Composable
@@ -93,6 +95,7 @@ private fun MyMessage(segment: SegmentUi, highlighted: Boolean) {
                     bottomStart = 10.dp,
                     bottomEnd = 4.dp
                 ),
+                highlighted = highlighted
             )
         }
     }
@@ -128,13 +131,14 @@ private fun OthersMessage(
                 Row(verticalAlignment = Alignment.Bottom) {
                     ChatBox(
                         text = segment.text,
-                        backgroundColor = if (highlighted) brown200 else brown500,
+                        backgroundColor = if (highlighted) green300 else brown500,
                         shape = RoundedCornerShape(
                             topStart = 10.dp,
                             topEnd = 10.dp,
                             bottomStart = 4.dp,
                             bottomEnd = 10.dp
                         ),
+                        highlighted = highlighted
                     )
                     if (!segment.isSameAsNext) {
                         Spacer(modifier = Modifier.width(2.dp))
@@ -154,13 +158,14 @@ private fun OthersMessage(
             ) {
                 ChatBox(
                     text = segment.text,
-                    backgroundColor = brown500,
+                    backgroundColor = if (highlighted) green300 else brown500,
                     shape = RoundedCornerShape(
                         topStart = 14.dp,
                         topEnd = 14.dp,
                         bottomStart = 4.dp,
                         bottomEnd = 14.dp
                     ),
+                    highlighted = highlighted
                 )
                 if (!segment.isSameAsNext) {
                     Spacer(modifier = Modifier.width(4.dp))
@@ -182,6 +187,7 @@ private fun ChatBox(
     backgroundColor: Color,
     shape: RoundedCornerShape,
     modifier: Modifier = Modifier,
+    highlighted: Boolean = false
 ) {
     Box(
         modifier = modifier
@@ -193,7 +199,8 @@ private fun ChatBox(
             text = text,
             fontSize = 14.sp,
             style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Normal
+            fontWeight = FontWeight.Normal,
+            color = if (highlighted) Color.White else primaryTextColor,
         )
     }
 }

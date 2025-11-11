@@ -32,6 +32,7 @@ fun CustomSeekBar(
     currentPosition: Float,
     duration: Float,
     onValueChange: (Float) -> Unit,
+    onValueChangeFinished: ((Float) -> Unit)? = null,
 ) {
     val thumbRadius = 6.dp
     val trackHeight = 2.dp
@@ -41,6 +42,7 @@ fun CustomSeekBar(
     val trackHeightPx = with(density) { trackHeight.toPx() }
 
     var barWidth by remember { mutableStateOf(1f) }
+    var lastDragValue by remember { mutableStateOf(0f) }
 
     Column {
         Box(
@@ -49,8 +51,12 @@ fun CustomSeekBar(
                 .wrapContentHeight()
                 .pointerInput(duration) {
                     detectTapGestures { offset ->
-                        val newValue = (offset.x / barWidth) * duration
-                        onValueChange(newValue.coerceIn(0f, duration))
+                        if (barWidth > 0f && duration > 0f) {
+                            val newValue = (offset.x / barWidth) * duration
+                            val finalValue = newValue.coerceIn(0f, duration)
+                            onValueChange(finalValue)
+                            onValueChangeFinished?.invoke(finalValue)
+                        }
                     }
                 }
         ) {
@@ -72,14 +78,31 @@ fun CustomSeekBar(
                     .fillMaxWidth()
                     .height(12.dp)
                     .pointerInput(duration) {
-                        detectDragGestures { change, _ ->
-                            val newValue = (change.position.x / barWidth) * duration
-                            onValueChange(newValue.coerceIn(0f, duration))
-                        }
+                        detectDragGestures(
+                            onDrag = { change, _ ->
+                                if (barWidth > 0f && duration > 0f) {
+                                    val newValue = (change.position.x / barWidth) * duration
+                                    val clampedValue = newValue.coerceIn(0f, duration)
+                                    lastDragValue = clampedValue
+                                    onValueChange(clampedValue)
+                                }
+                            },
+                            onDragEnd = {
+                                if (duration > 0f) {
+                                    onValueChangeFinished?.invoke(lastDragValue)
+                                }
+                            }
+                        )
                     }
             ) {
                 barWidth = size.width
 
+                // duration이 0이거나 너무 작으면 그리지 않음
+                if (duration <= 0f || size.width <= 0f) {
+                    return@Canvas
+                }
+
+                // 배경 트랙 그리기
                 drawRoundRect(
                     color = pagerIndicatorBackground,
                     topLeft = Offset(0f, size.height / 2 - trackHeightPx / 2),
@@ -87,18 +110,27 @@ fun CustomSeekBar(
                     cornerRadius = CornerRadius(trackHeightPx / 2, trackHeightPx / 2)
                 )
 
-                val progressWidth = (currentPosition / duration) * size.width
-                drawRoundRect(
-                    color = green300,
-                    topLeft = Offset(0f, size.height / 2 - trackHeightPx / 2),
-                    size = Size(progressWidth, trackHeightPx),
-                    cornerRadius = CornerRadius(trackHeightPx / 2, trackHeightPx / 2)
-                )
+                // 진행률 계산 (안전하게)
+                val safeDuration = duration.coerceAtLeast(1f)
+                val progressRatio = (currentPosition / safeDuration).coerceIn(0f, 1f)
+                val progressWidth = progressRatio * size.width
 
+                // 진행률 트랙 그리기
+                if (progressWidth > 0f) {
+                    drawRoundRect(
+                        color = green300,
+                        topLeft = Offset(0f, size.height / 2 - trackHeightPx / 2),
+                        size = Size(progressWidth, trackHeightPx),
+                        cornerRadius = CornerRadius(trackHeightPx / 2, trackHeightPx / 2)
+                    )
+                }
+
+                // 썸(thumb) 그리기
+                val thumbX = progressWidth.coerceIn(thumbRadiusPx, size.width - thumbRadiusPx)
                 drawCircle(
                     color = green300,
                     radius = thumbRadiusPx,
-                    center = Offset(progressWidth, size.height / 2)
+                    center = Offset(thumbX, size.height / 2)
                 )
             }
         }

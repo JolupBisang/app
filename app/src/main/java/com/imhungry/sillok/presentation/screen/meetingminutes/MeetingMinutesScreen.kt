@@ -124,6 +124,7 @@ fun MeetingMinutesScreen(
                                 playbackPosition = playbackPosition,
                                 isPlaying = isPlaying,
                                 onSeekToPosition = { newPosition ->
+                                    // 세그먼트 클릭 시 오디오 위치 업데이트
                                     playbackPosition = newPosition
                                 },
                                 meetingMinutesViewModel = meetingMinutesViewModel
@@ -152,8 +153,12 @@ fun MeetingMinutesScreen(
             }
             AudioPlayerBar(
                 meetingMinutesViewModel = meetingMinutesViewModel,
-                currentPosition = playbackPosition,
-                onPositionChange = { playbackPosition = it },
+                currentPosition = playbackPosition, // 외부 시크 요청용 (세그먼트 클릭 등)
+                onPositionChange = { newPosition ->
+                    // ExoPlayer의 실제 재생 위치 업데이트 (UI 동기화용)
+                    // currentPosition은 변경하지 않음 (순환 참조 방지)
+                    playbackPosition = newPosition
+                },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
@@ -162,7 +167,8 @@ fun MeetingMinutesScreen(
                     },
                 onPlayingChanged = { isPlaying = it },
                 onExternalSeek = { seekToMillis ->
-                    // AudioPlayerBar 외부에서 seekTo 요청이 왔을 때 처리
+                    // 외부에서 시크 요청이 있을 때만 처리 (세그먼트 클릭 등)
+                    playbackPosition = seekToMillis
                 }
             )
         }

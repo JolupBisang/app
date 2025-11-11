@@ -74,23 +74,39 @@ fun MeetingMinutesRecordScreen(
     var isCollapsed by rememberSaveable { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
     var isScrolling by remember { mutableStateOf(false) }
-    // 1. 재생 위치에 해당하는 segment index 찾기
-    val currentSegmentIndex = segments.indexOfLast { segment ->
-        val elapsed = DateTimeUtils.isoToMillis(segment.timestamp)
-        elapsed <= playbackPosition
-    }.coerceAtLeast(0)
+    // 1. 재생 위치에 가장 가까운 segment index 찾기
+    val currentSegmentIndex = remember(playbackPosition, segments) {
+        if (segments.isEmpty()) 0
+        else {
+            segments.mapIndexedNotNull { index, segment ->
+                val elapsed = DateTimeUtils.timeStringToMillis(segment.timestamp)
+                if (elapsed != null) {
+                    index to kotlin.math.abs(elapsed - playbackPosition)
+                } else null
+            }.minByOrNull { it.second }?.first ?: 0
+        }
+    }
 
     // 2. 재생 위치 바뀔 때마다 해당 index로 scroll
     var lastScrolledIndex by rememberSaveable { mutableStateOf(-1) }
     LaunchedEffect(currentSegmentIndex) {
+        if (segments.isEmpty()) return@LaunchedEffect
+        
         val first = listState.firstVisibleItemIndex
-        val last = (first + listState.layoutInfo.visibleItemsInfo.size - 3).coerceAtLeast(first)
-        if (
-            segments.isNotEmpty() &&
-            currentSegmentIndex != lastScrolledIndex &&
-            (currentSegmentIndex < first || currentSegmentIndex > last)
-        ) {
-            listState.animateScrollToItem(currentSegmentIndex)
+        val visibleItemCount = listState.layoutInfo.visibleItemsInfo.size
+        val last = (first + visibleItemCount - 1).coerceAtLeast(first)
+        
+        // 화면 하단에서 2개 아이템 이내에 있으면 스크롤하지 않음 (더 여유있게)
+        val scrollThreshold = 2
+        val shouldScroll = currentSegmentIndex != lastScrolledIndex && (
+            currentSegmentIndex < first || 
+            currentSegmentIndex > (last - scrollThreshold)
+        )
+        
+        if (shouldScroll) {
+            // 세그먼트를 화면에 보이도록 스크롤
+            val targetIndex = currentSegmentIndex.coerceIn(0, segments.lastIndex)
+            listState.animateScrollToItem(targetIndex)
             lastScrolledIndex = currentSegmentIndex
         }
     }
@@ -126,33 +142,14 @@ fun MeetingMinutesRecordScreen(
 
                 ChatBubble(
                     segment = segment,
-                    highlighted = false,
+                    highlighted = (isPlaying || playbackPosition > 0) && index == currentSegmentIndex,
                     onSegmentClick = { clickedTimestamp ->
-                        val seekMillis = DateTimeUtils.isoToMillis(clickedTimestamp)
-                        onSeekToPosition(seekMillis.coerceAtLeast(0L))
+                        val seekMillis = DateTimeUtils.timeStringToMillis(clickedTimestamp)
+                        if (seekMillis != null) {
+                            onSeekToPosition(seekMillis.coerceAtLeast(0L))
+                        }
                     }
                 )
-//                ChatBubble(
-//                    diarizedSegment = Segment(
-//                        timestamp = segment.timestamp,
-//                        userId = segment.userId,
-//                        text = segment.text,
-//                        segmentOrder = segment.segmentOrder,
-//                        id = segment.id,
-//                        userName = segment.userName,
-//                        lang = segment.lang
-//                    ),
-//                    nickname = segment.userName,
-//                    isMe = (segment.userId == currentUserId),
-//                    time = DateTimeUtils.getElapsedString(startMillis, segment.timestamp),
-//                    prevId = prevId,
-//                    nextId = nextId,
-//                    highlighted = (index == currentSegmentIndex) && isPlaying,
-//                    onSegmentClick = { clickedTimestamp ->
-//                        val seekMillis = DateTimeUtils.isoToMillis(clickedTimestamp)
-//                        onSeekToPosition(seekMillis.coerceAtLeast(0L))
-//                    }
-//                )
                 if (index == segments.lastIndex) {
                     Spacer(modifier = Modifier.padding(bottom = 30.dp))
                 }
@@ -202,7 +199,6 @@ fun HeaderSection(
                             Column {
                                 Text(
                                     text = location,
-                                    //text = DateTimeUtils.localIsoToDateString(scheduledStartTime) + ", $location",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Medium,
                                     color = tertiary,

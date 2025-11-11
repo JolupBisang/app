@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
+import com.imhungry.sillok.domain.model.audio.AudioInfo
 import com.imhungry.sillok.domain.usecase.audio.GetAudioListUseCase
 import com.imhungry.sillok.domain.usecase.feedback.GetFeedbacksUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
@@ -479,6 +480,7 @@ class MeetingMinutesViewModel @Inject constructor(
      * 더미 데이터를 사용하여 회의록 화면의 상태를 채웁니다.
      */
     fun loadDummyMeetingMinutesState() {
+        viewModelScope.launch {
         val dummyAgendas = listOf(
             com.imhungry.sillok.domain.model.agenda.Agenda(
                 agendaId = 1L,
@@ -517,7 +519,7 @@ class MeetingMinutesViewModel @Inject constructor(
 
         val dummySegments = listOf(
             SegmentUi(
-                timestamp = "00:01:10",
+                timestamp = "00:00:10",
                 text = "안녕하세요, 오늘 아젠다는...",
                 nickname = "홍길동",
                 profileImage = "",
@@ -526,7 +528,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = true
             ),
             SegmentUi(
-                timestamp = "00:01:35",
+                timestamp = "00:00:30",
                 text = "첫 번째로 목표 범위를 정하면...",
                 nickname = "홍길동",
                 profileImage = "",
@@ -535,7 +537,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = false
             ),
             SegmentUi(
-                timestamp = "00:02:10",
+                timestamp = "00:00:50",
                 text = "디자인 관점에서 보면...",
                 nickname = "김디자",
                 profileImage = "",
@@ -544,7 +546,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = false
             ),
             SegmentUi(
-                timestamp = "00:03:45",
+                timestamp = "00:01:00",
                 text = "백엔드 API는...",
                 nickname = "이개발",
                 profileImage = "",
@@ -571,7 +573,115 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = false
             ),
             SegmentUi(
+                timestamp = "00:01:50",
+                text = "디자인 관점에서 보면...",
+                nickname = "김디자",
+                profileImage = "",
+                isFromCurrentUser = false,
+                isSameAsPrevious = false,
+                isSameAsNext = false
+            ),
+            SegmentUi(
+                timestamp = "00:02:00",
+                text = "백엔드 API는...",
+                nickname = "이개발",
+                profileImage = "",
+                isFromCurrentUser = true,
+                isSameAsPrevious = false,
+                isSameAsNext = false
+            ),
+            SegmentUi(
                 timestamp = "00:02:10",
+                text = "안녕하세요, 오늘 아젠다는...",
+                nickname = "홍길동",
+                profileImage = "",
+                isFromCurrentUser = false,
+                isSameAsPrevious = false,
+                isSameAsNext = true
+            ),
+            SegmentUi(
+                timestamp = "00:02:15",
+                text = "첫 번째로 목표 범위를 정하면...",
+                nickname = "홍길동",
+                profileImage = "",
+                isFromCurrentUser = false,
+                isSameAsPrevious = true,
+                isSameAsNext = false
+            ),
+            SegmentUi(
+                timestamp = "00:02:20",
+                text = "디자인 관점에서 보면...",
+                nickname = "김디자",
+                profileImage = "",
+                isFromCurrentUser = false,
+                isSameAsPrevious = false,
+                isSameAsNext = false
+            ),
+            SegmentUi(
+                timestamp = "00:02:22",
+                text = "백엔드 API는...",
+                nickname = "이개발",
+                profileImage = "",
+                isFromCurrentUser = true,
+                isSameAsPrevious = false,
+                isSameAsNext = false
+            ),
+            SegmentUi(
+                timestamp = "00:02:30",
+                text = "안녕하세요, 오늘 아젠다는...",
+                nickname = "홍길동",
+                profileImage = "",
+                isFromCurrentUser = false,
+                isSameAsPrevious = false,
+                isSameAsNext = true
+            ),
+            SegmentUi(
+                timestamp = "00:02:42",
+                text = "첫 번째로 목표 범위를 정하면...",
+                nickname = "홍길동",
+                profileImage = "",
+                isFromCurrentUser = false,
+                isSameAsPrevious = true,
+                isSameAsNext = false
+            ),
+            SegmentUi(
+                timestamp = "00:02:55",
+                text = "디자인 관점에서 보면...",
+                nickname = "김디자",
+                profileImage = "",
+                isFromCurrentUser = false,
+                isSameAsPrevious = false,
+                isSameAsNext = false
+            ),
+            SegmentUi(
+                timestamp = "00:03:00",
+                text = "백엔드 API는...",
+                nickname = "이개발",
+                profileImage = "",
+                isFromCurrentUser = true,
+                isSameAsPrevious = false,
+                isSameAsNext = false
+            ),
+            SegmentUi(
+                timestamp = "00:03:10",
+                text = "안녕하세요, 오늘 아젠다는...",
+                nickname = "홍길동",
+                profileImage = "",
+                isFromCurrentUser = false,
+                isSameAsPrevious = false,
+                isSameAsNext = true
+            ),
+            SegmentUi(
+                timestamp = "00:03:13",
+                text = "첫 번째로 목표 범위를 정하면...",
+                nickname = "홍길동",
+                profileImage = "",
+                isFromCurrentUser = false,
+                isSameAsPrevious = true,
+                isSameAsNext = false
+            ),
+            SegmentUi(
+                timestamp = "00:03:23",
                 text = "디자인 관점에서 보면...",
                 nickname = "김디자",
                 profileImage = "",
@@ -589,7 +699,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = false
             ),
             SegmentUi(
-                timestamp = "00:01:10",
+                timestamp = "00:03:55",
                 text = "안녕하세요, 오늘 아젠다는...",
                 nickname = "홍길동",
                 profileImage = "",
@@ -598,7 +708,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = true
             ),
             SegmentUi(
-                timestamp = "00:01:35",
+                timestamp = "00:03:59",
                 text = "첫 번째로 목표 범위를 정하면...",
                 nickname = "홍길동",
                 profileImage = "",
@@ -607,7 +717,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = false
             ),
             SegmentUi(
-                timestamp = "00:02:10",
+                timestamp = "00:04:10",
                 text = "디자인 관점에서 보면...",
                 nickname = "김디자",
                 profileImage = "",
@@ -616,7 +726,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = false
             ),
             SegmentUi(
-                timestamp = "00:03:45",
+                timestamp = "00:04:20",
                 text = "백엔드 API는...",
                 nickname = "이개발",
                 profileImage = "",
@@ -625,7 +735,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = false
             ),
             SegmentUi(
-                timestamp = "00:01:10",
+                timestamp = "00:04:22",
                 text = "안녕하세요, 오늘 아젠다는...",
                 nickname = "홍길동",
                 profileImage = "",
@@ -634,7 +744,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = true
             ),
             SegmentUi(
-                timestamp = "00:01:35",
+                timestamp = "00:04:30",
                 text = "첫 번째로 목표 범위를 정하면...",
                 nickname = "홍길동",
                 profileImage = "",
@@ -643,7 +753,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = false
             ),
             SegmentUi(
-                timestamp = "00:02:10",
+                timestamp = "00:04:34",
                 text = "디자인 관점에서 보면...",
                 nickname = "김디자",
                 profileImage = "",
@@ -652,115 +762,7 @@ class MeetingMinutesViewModel @Inject constructor(
                 isSameAsNext = false
             ),
             SegmentUi(
-                timestamp = "00:03:45",
-                text = "백엔드 API는...",
-                nickname = "이개발",
-                profileImage = "",
-                isFromCurrentUser = true,
-                isSameAsPrevious = false,
-                isSameAsNext = false
-            ),
-            SegmentUi(
-                timestamp = "00:01:10",
-                text = "안녕하세요, 오늘 아젠다는...",
-                nickname = "홍길동",
-                profileImage = "",
-                isFromCurrentUser = false,
-                isSameAsPrevious = false,
-                isSameAsNext = true
-            ),
-            SegmentUi(
-                timestamp = "00:01:35",
-                text = "첫 번째로 목표 범위를 정하면...",
-                nickname = "홍길동",
-                profileImage = "",
-                isFromCurrentUser = false,
-                isSameAsPrevious = true,
-                isSameAsNext = false
-            ),
-            SegmentUi(
-                timestamp = "00:02:10",
-                text = "디자인 관점에서 보면...",
-                nickname = "김디자",
-                profileImage = "",
-                isFromCurrentUser = false,
-                isSameAsPrevious = false,
-                isSameAsNext = false
-            ),
-            SegmentUi(
-                timestamp = "00:03:45",
-                text = "백엔드 API는...",
-                nickname = "이개발",
-                profileImage = "",
-                isFromCurrentUser = true,
-                isSameAsPrevious = false,
-                isSameAsNext = false
-            ),
-            SegmentUi(
-                timestamp = "00:01:10",
-                text = "안녕하세요, 오늘 아젠다는...",
-                nickname = "홍길동",
-                profileImage = "",
-                isFromCurrentUser = false,
-                isSameAsPrevious = false,
-                isSameAsNext = true
-            ),
-            SegmentUi(
-                timestamp = "00:01:35",
-                text = "첫 번째로 목표 범위를 정하면...",
-                nickname = "홍길동",
-                profileImage = "",
-                isFromCurrentUser = false,
-                isSameAsPrevious = true,
-                isSameAsNext = false
-            ),
-            SegmentUi(
-                timestamp = "00:02:10",
-                text = "디자인 관점에서 보면...",
-                nickname = "김디자",
-                profileImage = "",
-                isFromCurrentUser = false,
-                isSameAsPrevious = false,
-                isSameAsNext = false
-            ),
-            SegmentUi(
-                timestamp = "00:03:45",
-                text = "백엔드 API는...",
-                nickname = "이개발",
-                profileImage = "",
-                isFromCurrentUser = true,
-                isSameAsPrevious = false,
-                isSameAsNext = false
-            ),
-            SegmentUi(
-                timestamp = "00:01:10",
-                text = "안녕하세요, 오늘 아젠다는...",
-                nickname = "홍길동",
-                profileImage = "",
-                isFromCurrentUser = false,
-                isSameAsPrevious = false,
-                isSameAsNext = true
-            ),
-            SegmentUi(
-                timestamp = "00:01:35",
-                text = "첫 번째로 목표 범위를 정하면...",
-                nickname = "홍길동",
-                profileImage = "",
-                isFromCurrentUser = false,
-                isSameAsPrevious = true,
-                isSameAsNext = false
-            ),
-            SegmentUi(
-                timestamp = "00:02:10",
-                text = "디자인 관점에서 보면...",
-                nickname = "김디자",
-                profileImage = "",
-                isFromCurrentUser = false,
-                isSameAsPrevious = false,
-                isSameAsNext = false
-            ),
-            SegmentUi(
-                timestamp = "00:03:45",
+                timestamp = "00:04:37",
                 text = "백엔드 API는...",
                 nickname = "이개발",
                 profileImage = "",
@@ -773,47 +775,87 @@ class MeetingMinutesViewModel @Inject constructor(
         val dummySummaries = listOf(
             com.imhungry.sillok.presentation.state.meeting.SummaryUi(
                 content = "프로젝트 목표와 범위 합의 완료.",
-                timestamp = "00:05:00"
+                timestamp = "00:00:03"
             ),
             com.imhungry.sillok.presentation.state.meeting.SummaryUi(
                 content = "1차 마일스톤: 로그인/회원/기본 목록.",
-                timestamp = "00:12:40"
+                timestamp = "00:00:07"
             ),
             com.imhungry.sillok.presentation.state.meeting.SummaryUi(
                 content = "프로젝트 목표와 범위 합의 완료.",
-                timestamp = "00:05:00"
+                timestamp = "00:00:12"
             ),
             com.imhungry.sillok.presentation.state.meeting.SummaryUi(
                 content = "1차 마일스톤: 로그인/회원/기본 목록.",
-                timestamp = "00:12:40"
+                timestamp = "00:00:15"
             ),
             com.imhungry.sillok.presentation.state.meeting.SummaryUi(
                 content = "프로젝트 목표와 범위 합의 완료.",
-                timestamp = "00:05:00"
+                timestamp = "00:00:18"
             ),
             com.imhungry.sillok.presentation.state.meeting.SummaryUi(
                 content = "1차 마일스톤: 로그인/회원/기본 목록.",
-                timestamp = "00:12:40"
+                timestamp = "00:00:40"
             ),
             com.imhungry.sillok.presentation.state.meeting.SummaryUi(
                 content = "프로젝트 목표와 범위 합의 완료.",
-                timestamp = "00:05:00"
+                timestamp = "00:00:57"
             ),
             com.imhungry.sillok.presentation.state.meeting.SummaryUi(
                 content = "1차 마일스톤: 로그인/회원/기본 목록.",
-                timestamp = "00:12:40"
+                timestamp = "00:01:14"
             ),
             com.imhungry.sillok.presentation.state.meeting.SummaryUi(
                 content = "프로젝트 목표와 범위 합의 완료.",
-                timestamp = "00:05:00"
+                timestamp = "00:01:24"
             ),
             com.imhungry.sillok.presentation.state.meeting.SummaryUi(
                 content = "1차 마일스톤: 로그인/회원/기본 목록.",
-                timestamp = "00:12:40"
+                timestamp = "00:01:40"
             )
         )
 
         val dummyFeedbacks = listOf(
+            com.imhungry.sillok.presentation.state.meeting.FeedbackUi(
+                comment = "회의 종료까지 10분 남았습니다.",
+                timestamp = "00:02:00",
+                isRead = true
+            ),
+            com.imhungry.sillok.presentation.state.meeting.FeedbackUi(
+                comment = "다음 안건으로 넘어가 주세요.",
+                timestamp = "00:02:20",
+                isRead = true
+            ),
+            com.imhungry.sillok.presentation.state.meeting.FeedbackUi(
+                comment = "회의 종료까지 10분 남았습니다.",
+                timestamp = "00:02:40",
+                isRead = true
+            ),
+            com.imhungry.sillok.presentation.state.meeting.FeedbackUi(
+                comment = "다음 안건으로 넘어가 주세요.",
+                timestamp = "00:03:10",
+                isRead = true
+            ),
+            com.imhungry.sillok.presentation.state.meeting.FeedbackUi(
+                comment = "회의 종료까지 10분 남았습니다.",
+                timestamp = "00:03:20",
+                isRead = true
+            ),
+            com.imhungry.sillok.presentation.state.meeting.FeedbackUi(
+                comment = "다음 안건으로 넘어가 주세요.",
+                timestamp = "00:25:30",
+                isRead = true
+            ),
+            com.imhungry.sillok.presentation.state.meeting.FeedbackUi(
+                comment = "회의 종료까지 10분 남았습니다.",
+                timestamp = "01:20:00",
+                isRead = true
+            ),
+            com.imhungry.sillok.presentation.state.meeting.FeedbackUi(
+                comment = "다음 안건으로 넘어가 주세요.",
+                timestamp = "00:25:30",
+                isRead = true
+            ),
             com.imhungry.sillok.presentation.state.meeting.FeedbackUi(
                 comment = "회의 종료까지 10분 남았습니다.",
                 timestamp = "01:20:00",
@@ -882,9 +924,11 @@ class MeetingMinutesViewModel @Inject constructor(
                 segments = dummySegments,
                 summaries = dummySummaries,
                 recapSummary = "목표/범위 합의, 1차 마일스톤 정의",
+                audio = AudioInfo(1, "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"),
                 isLoading = false,
                 error = null
             )
+        }
         }
     }
 }

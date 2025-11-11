@@ -41,6 +41,8 @@ import com.imhungry.sillok.presentation.viewmodel.meetingminutes.MeetingMinutesV
 import com.imhungry.sillok.ui.theme.primaryButton
 import com.imhungry.sillok.ui.theme.whiteBackground
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlin.math.abs
 
 @Composable
@@ -55,6 +57,7 @@ fun AudioPlayerBar(
     val context = LocalContext.current
     val state by meetingMinutesViewModel.state.collectAsState()
     val audio = state.audio
+    val coroutineScope = rememberCoroutineScope()
 
     // ExoPlayer 생성 및 관리
     val exoPlayer = remember {
@@ -80,6 +83,7 @@ fun AudioPlayerBar(
     var playbackSpeed by remember { mutableStateOf(1.0f) }
     var showSpeedSheet by remember { mutableStateOf(false) }
     var isPlayingState by remember { mutableStateOf(false) }
+    var isSeeking by remember { mutableStateOf(false) } // 시크 중인지 추적
     // ExoPlayer 상태 업데이트용
     LaunchedEffect(Unit) {
         // duration 세팅
@@ -87,23 +91,35 @@ fun AudioPlayerBar(
             duration = exoPlayer.duration.coerceAtLeast(0L)
             delay(100L)
         }
-        // 재생 위치 계속 갱신
+        // 재생 위치 계속 갱신 및 콜백 호출
         while (true) {
-            playbackPosition = exoPlayer.currentPosition
-            delay(200L)
-        }
-    }
-    LaunchedEffect(Unit) {
-        while (true) {
-            playbackPosition = exoPlayer.currentPosition
-            onPositionChange(playbackPosition)
+            // 시크 중이 아닐 때만 업데이트 (시크 완료 후 안정화 시간)
+            if (!isSeeking) {
+                playbackPosition = exoPlayer.currentPosition
+                onPositionChange(playbackPosition)
+            }
             delay(500L)
         }
     }
+    // currentPosition 변경 감지 (세그먼트 클릭 등 외부 시크 요청만 처리)
+    // onPositionChange로 인한 자동 업데이트는 무시하기 위해 lastSeekedPosition 추적
+    var lastSeekedPosition by remember { mutableStateOf(0L) }
     LaunchedEffect(currentPosition) {
-        if (abs(playbackPosition - currentPosition) > 300) {
+        // onPositionChange로 인한 자동 업데이트는 무시
+        // currentPosition이 실제로 외부에서 변경되었고, ExoPlayer 위치와 차이가 클 때만 시크
+        val positionDiff = abs(exoPlayer.currentPosition - currentPosition)
+        if (positionDiff > 500 && currentPosition != lastSeekedPosition) {
+            // 시크 실행
+            isSeeking = true
             exoPlayer.seekTo(currentPosition)
             playbackPosition = currentPosition
+            onPositionChange(currentPosition)
+            lastSeekedPosition = currentPosition
+            // 시크 완료 후 안정화 시간 (300ms)
+            coroutineScope.launch {
+                delay(300L)
+                isSeeking = false
+            }
         }
     }
 
@@ -136,16 +152,29 @@ fun AudioPlayerBar(
         CustomSeekBar(
             currentPosition = playbackPosition.toFloat(),
             duration = duration.toFloat().coerceAtLeast(1f),
-            onValueChange = {
-                playbackPosition = it.toLong()
-                exoPlayer.seekTo(it.toLong())
+            onValueChange = { newPosition ->
+                // 드래그 중에는 UI만 업데이트 (시크는 드래그 종료 시에만)
+                playbackPosition = newPosition.toLong()
+            },
+            onValueChangeFinished = { finalPosition ->
+                // 드래그 종료 시에만 시크 실행
+                isSeeking = true
+                val seekPosition = finalPosition.toLong().coerceIn(0L, duration)
+                exoPlayer.seekTo(seekPosition)
+                playbackPosition = seekPosition
+                onPositionChange(seekPosition)
+                // 시크 완료 후 안정화 시간 (300ms)
+                coroutineScope.launch {
+                    delay(300L)
+                    isSeeking = false
+                }
             }
         )
         Row(
             Modifier
                 .fillMaxWidth()
                 .background(whiteBackground)
-                .padding(horizontal = 20.dp),
+                .padding(start = 12.dp, end = 12.dp, top = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -206,46 +235,85 @@ fun AudioPlayerBar(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
                             ) {
+                                isSeeking = true
                                 val seek = (exoPlayer.currentPosition - 5000).coerceAtLeast(0)
                                 exoPlayer.seekTo(seek)
                                 playbackPosition = seek
+                                onPositionChange(seek)
+                                // 시크 완료 후 안정화 시간 (300ms)
+                                coroutineScope.launch {
+                                    delay(300L)
+                                    isSeeking = false
+                                }
                             }
                     )
-                    Spacer(Modifier.width(40.dp))
+                    Spacer(Modifier.width(34.dp))
                     Image(
                         painter = painterResource(
                             id = if (isPlaying) R.drawable.playstop else R.drawable.play
                         ),
                         contentDescription = if (isPlaying) "pause" else "play",
                         modifier = Modifier
-                            .size(34.dp)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) {
-                                if (exoPlayer.playbackState == ExoPlayer.STATE_ENDED) {
-                                    exoPlayer.seekTo(0)
-                                    exoPlayer.play()
-                                } else if (exoPlayer.isPlaying) {
-                                    exoPlayer.pause()
-                                } else {
-                                    exoPlayer.play()
-                                }
-                            }
-                    )
-                    Spacer(Modifier.width(37.dp))
-                    Image(
-                        painter = painterResource(R.drawable.forward),
-                        contentDescription = "5초 앞으로",
-                        modifier = Modifier
                             .size(37.dp)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
                             ) {
+                                when (exoPlayer.playbackState) {
+                                    ExoPlayer.STATE_ENDED -> {
+                                        // 재생이 끝난 경우 처음부터 다시 재생
+                                        exoPlayer.seekTo(0)
+                                        exoPlayer.play()
+                                        // 즉시 UI 업데이트
+                                        isPlaying = true
+                                        onPlayingChanged(true)
+                                    }
+                                    ExoPlayer.STATE_IDLE -> {
+                                        // 준비되지 않은 경우 재생 시도 (자동으로 prepare 후 재생)
+                                        if (!exoPlayer.isPlaying) {
+                                            exoPlayer.play()
+                                            // 즉시 UI 업데이트
+                                            isPlaying = true
+                                            onPlayingChanged(true)
+                                        }
+                                    }
+                                    ExoPlayer.STATE_BUFFERING, ExoPlayer.STATE_READY -> {
+                                        // 준비 중이거나 준비 완료된 경우 재생/일시정지 토글
+                                        if (exoPlayer.isPlaying) {
+                                            exoPlayer.pause()
+                                            // 즉시 UI 업데이트
+                                            isPlaying = false
+                                            onPlayingChanged(false)
+                                        } else {
+                                            exoPlayer.play()
+                                            // 즉시 UI 업데이트
+                                            isPlaying = true
+                                            onPlayingChanged(true)
+                                        }
+                                    }
+                                }
+                            }
+                    )
+                    Spacer(Modifier.width(34.dp))
+                    Image(
+                        painter = painterResource(R.drawable.forward),
+                        contentDescription = "5초 앞으로",
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                isSeeking = true
                                 val seek = (exoPlayer.currentPosition + 5000).coerceAtMost(duration)
                                 exoPlayer.seekTo(seek)
                                 playbackPosition = seek
+                                onPositionChange(seek)
+                                // 시크 완료 후 안정화 시간 (300ms)
+                                coroutineScope.launch {
+                                    delay(300L)
+                                    isSeeking = false
+                                }
                             }
                     )
                 }
@@ -275,8 +343,5 @@ fun formatTime(ms: Long): String {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
-    return if (hours > 0)
-        String.format("%02d:%02d:%02d", hours, minutes, seconds)
-    else
-        String.format("%02d:%02d", minutes, seconds)
+    return String.format("%02d:%02d:%02d", hours, minutes, seconds)
 }

@@ -160,4 +160,22 @@ object DateTimeUtils {
         }
     }
 
+    fun timeStringToMillis(timeString: String): Long? {
+        return try {
+            val parts = timeString.split(":")
+
+            if (parts.size != 3) {
+                return null
+            }
+
+            val hours = parts[0].toLong()
+            val minutes = parts[1].toLong()
+            val seconds = parts[2].toLong()
+
+            (hours * 3600 + minutes * 60 + seconds) * 1000
+
+        } catch (e: NumberFormatException) {
+            null
+        }
+    }
 }
