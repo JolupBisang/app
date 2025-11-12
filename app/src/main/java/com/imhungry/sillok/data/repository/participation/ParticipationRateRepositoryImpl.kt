@@ -22,7 +22,8 @@ class ParticipationRateRepositoryImpl @Inject constructor(
             if (res.isSuccessful) {
                 val dto = res.body()
                 if (dto != null) {
-                    val users = dto.userParticipationRates.map { mapper.toDomain(it) }
+                    val userRates = dto.userParticipantRates ?: emptyList()
+                    val users = userRates.map { mapper.toDomain(it) }
                     ApiResult.Success(users)
                 } else {
                     ApiResult.Failure("응답 파싱 오류")

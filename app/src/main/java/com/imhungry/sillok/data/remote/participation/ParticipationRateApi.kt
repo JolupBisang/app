@@ -6,7 +6,7 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 
 interface ParticipationRateApi {
-    @GET("/api/v1/meeting/{meetingId}/participation-rate")
+    @GET("/api/v1/meetings/{meetingId}/participation-rate")
     suspend fun getParticipationRateHistory(
         @Path("meetingId") meetingId: Long
     ): Response<ParticipationRateHistoryResDto>

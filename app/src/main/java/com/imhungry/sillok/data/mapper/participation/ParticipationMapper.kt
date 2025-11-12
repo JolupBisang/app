@@ -8,8 +8,8 @@ class ParticipationMapper @Inject constructor() {
     fun toDomain(dto: UserParticipationRateDto): UserParticipationRate {
         return UserParticipationRate(
             userId = dto.userId,
-            rate = dto.rate ?: 0.0,
-            totalParticipationChunk = dto.totalParticipationChunk ?: 0L
+            nickname = dto.nickname,
+            rate = dto.rate,
         )
     }
 }
