@@ -10,6 +10,7 @@ data class TeamDetailState(
     val teamName: String = "",
     val teamDescription: String = "",
     val members: List<TeamMember> = emptyList(),
+    val currentUserId: Long? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )

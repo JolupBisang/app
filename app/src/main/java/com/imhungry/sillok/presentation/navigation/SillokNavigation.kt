@@ -407,18 +407,6 @@ fun SillokNavigation(
                 },
                 onNotificationClick = {
                     navController.navigate(Screen.NotificationHistory.route)
-                },
-                onEditTeamName = {
-                    // TODO: 팀 이름 편집 화면으로 이동
-                },
-                onEditDescription = {
-                    // TODO: 팀 설명 편집 화면으로 이동
-                },
-                onManageMembers = {
-                    // TODO: 멤버 관리 화면으로 이동
-                },
-                onInviteClick = {
-                    // TODO: 멤버 초대 처리
                 }
             )
         }

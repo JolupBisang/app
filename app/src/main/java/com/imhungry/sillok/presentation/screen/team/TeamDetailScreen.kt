@@ -62,13 +62,10 @@ fun TeamDetailScreen(
     teamId: Long,
     onBackClick: () -> Unit,
     onNotificationClick: () -> Unit = {},
-    onEditTeamName: () -> Unit = {},
-    onEditDescription: () -> Unit = {},
-    onManageMembers: () -> Unit = {},
-    onInviteClick: () -> Unit = {},
     viewModel: TeamDetailViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val currentUserId = state.currentUserId
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     var isEditMode by remember { mutableStateOf(false) }
@@ -80,7 +77,7 @@ fun TeamDetailScreen(
 
     // teamId가 변경될 때 데이터 로드
     LaunchedEffect(teamId) {
-        //viewModel.loadTeamDetail(teamId)
+        viewModel.loadTeamDetail(teamId)
     }
 
     // state의 members가 변경될 때 editableMembers 업데이트 (편집 모드가 아닐 때만)
@@ -273,7 +270,7 @@ fun TeamDetailScreen(
 
                         // 멤버 섹션
                         item {
-                            Spacer(Modifier.height(24.dp))
+                            Spacer(Modifier.height(28.dp))
                             Column {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -318,7 +315,7 @@ fun TeamDetailScreen(
                                 // 멤버 리스트
                                 if (editableMembers.isNotEmpty()) {
                                     Column(
-                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)
                                     ) {
                                         editableMembers.forEach { member ->
                                             MemberItem(
@@ -326,6 +323,7 @@ fun TeamDetailScreen(
                                                 profileImage = member.profileImage,
                                                 userId = member.id,
                                                 isEditMode = isEditMode,
+                                                canRemove = currentUserId != null && member.id != currentUserId,
                                                 onRemove = {
                                                     editableMembers = editableMembers.filter { it.id != member.id }
                                                     viewModel.removeMember(member.id)
@@ -356,9 +354,8 @@ fun TeamDetailScreen(
             onDismiss = {
                 showInviteDialog = false
             },
-            onInvite = { email ->
-                onInviteClick()
-                showInviteDialog = false
+            onInvite = { email, onResult ->
+                viewModel.addTeamMember(email, onResult)
             }
         )
     }

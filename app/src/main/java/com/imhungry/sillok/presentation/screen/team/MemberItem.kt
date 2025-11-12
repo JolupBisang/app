@@ -35,6 +35,7 @@ fun MemberItem(
     profileImage: String? = null,
     userId: Long? = null,
     isEditMode: Boolean = false,
+    canRemove: Boolean = true,
     onRemove: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -65,8 +66,8 @@ fun MemberItem(
             modifier = Modifier.weight(1f)
         )
 
-        // 편집 모드일 때 삭제 버튼 표시
-        if (isEditMode) {
+        // 편집 모드이고 삭제 가능할 때만 삭제 버튼 표시
+        if (isEditMode && canRemove) {
             Box(
                 modifier = Modifier.size(30.dp),
                 contentAlignment = Alignment.Center
