@@ -66,16 +66,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // FCM 토큰 가져오기 (자동으로 FcmService.onNewToken 호출됨)
-//        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-//            if (task.isSuccessful) {
-//                val token = task.result
-//                Log.d(TAG, "FCM 토큰: $token")
-//            } else {
-//                Log.e(TAG, "FCM 토큰 가져오기 실패", task.exception)
-//            }
-//        }
-
         // User 데이터 로그 출력
         lifecycleScope.launch {
             userStore.user.collect { user ->
@@ -99,12 +89,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
-        // 알림 클릭 시 회의 상세 화면으로 이동
-        intent?.getLongExtra("meetingId", -1L)?.takeIf { it != -1L }?.let { meetingId ->
-            notificationMeetingId = meetingId
-        }
-
-        // 기존 토큰 처리
         intent?.data?.getQueryParameter("token")?.let { token ->
             loginToken = token
         }

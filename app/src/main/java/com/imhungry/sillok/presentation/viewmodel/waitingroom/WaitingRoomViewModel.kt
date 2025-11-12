@@ -1,16 +1,10 @@
 package com.imhungry.sillok.presentation.viewmodel.waitingroom
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
-import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.model.meeting.TargetMeetingStatus
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.usecase.agenda.ChangeAgendaStatusUseCase
-import com.imhungry.sillok.domain.usecase.agenda.GetAgendasUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.meeting.UpdateMeetingStatusUseCase
 import com.imhungry.sillok.presentation.state.waitingroom.WaitingRoomEvent
@@ -23,12 +17,10 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
 class WaitingRoomViewModel @Inject constructor(
-    private val userStore: UserStore,
     private val changeAgendaStatusUseCase: ChangeAgendaStatusUseCase,
     private val updateMeetingStatusUseCase: UpdateMeetingStatusUseCase,
     private val getMeetingDetailUseCase: GetMeetingDetailUseCase
@@ -39,25 +31,6 @@ class WaitingRoomViewModel @Inject constructor(
 
     private val _events = MutableSharedFlow<WaitingRoomEvent>()
     val events = _events.asSharedFlow()
-
-    private var currentUserEmail: String? = null
-    private var currentUserId: String? = null
-    private var meetingStartedListener: ListenerRegistration? = null
-
-    init {
-        viewModelScope.launch {
-            userStore.user.collect { user ->
-                currentUserEmail = user?.email
-                currentUserId = user?.id?.toString()
-                // 사용자 정보가 있으면 리스너 등록
-                if (!currentUserId.isNullOrBlank()) {
-                    attachMeetingStartedListener(currentUserId!!)
-                } else {
-                    detachMeetingStartedListener()
-                }
-            }
-        }
-    }
 
     fun loadAgendasAndMeetingDetail(meetingId: Long) {
         _state.update { it.copy(isLoading = true, error = null, meetingId = meetingId) }
@@ -125,7 +98,7 @@ class WaitingRoomViewModel @Inject constructor(
         }
     }
 
-    // 회의를 시작: 상태 변경 → 상세 조회 → Firestore 사용자들에게 시작 알림 플래그 업데이트 → 이벤트 발행
+    // 회의를 시작: 상태 변경 → 상세 조회 → 이벤트 발행
     fun startMeeting() {
         val meetingId = state.value.meetingId
         _state.update { it.copy(isLoading = true, error = null) }
@@ -149,87 +122,11 @@ class WaitingRoomViewModel @Inject constructor(
                 }
 
                 is ApiResult.Success -> {
-                    try {
-                        val db = FirebaseFirestore.getInstance()
-                        val me = currentUserEmail
-                        val emails = detailRes.data.participants.map { it.email }
-                            .filter { email ->
-                                email.isNotBlank() && (me.isNullOrBlank() || !email.equals(
-                                    me,
-                                    ignoreCase = true
-                                ))
-                            }
-                            .toSet()
-                        for (email in emails) {
-                            val snapshot = db.collection("users")
-                                .whereEqualTo("email", email)
-                                .limit(1)
-                                .get()
-                                .await()
-                            if (!snapshot.isEmpty) {
-                                val docRef = snapshot.documents.first().reference
-                                docRef.update(
-                                    mapOf(
-                                        "meetingStarted" to true,
-                                        "startedMeetingId" to meetingId
-                                    )
-                                ).await()
-                            }
-                        }
-                        _state.update { it.copy(isLoading = false, error = null) }
-                        _events.emit(WaitingRoomEvent.MeetingStarted)
-                    } catch (e: Exception) {
-                        _state.update { it.copy(isLoading = false, error = e.message) }
-                        _events.emit(WaitingRoomEvent.StartFailed(e.message))
-                    }
+                    _state.update { it.copy(isLoading = false, error = null) }
+                    _events.emit(WaitingRoomEvent.MeetingStarted)
                 }
             }
         }
-    }
-
-    // ========================================
-    // Firestore 리스너 관리
-    // ========================================
-
-    private fun attachMeetingStartedListener(uid: String) {
-        meetingStartedListener?.remove()
-        val db = FirebaseFirestore.getInstance()
-        meetingStartedListener = db.collection("users").document(uid)
-            .addSnapshotListener { snapshot, _ ->
-                val meetingStarted = snapshot?.getBoolean("meetingStarted") ?: false
-                if (meetingStarted) {
-                    handleMeetingStartedDetected(db, uid, snapshot)
-                }
-            }
-    }
-
-    private fun handleMeetingStartedDetected(
-        db: FirebaseFirestore,
-        uid: String,
-        snapshot: DocumentSnapshot
-    ) {
-        val startedMeetingId = snapshot.getLong("startedMeetingId") ?: 0L
-        val currentMeetingId = state.value.meetingId
-
-        // 현재 대기실의 meetingId와 시작된 meetingId가 같으면 회의 중 화면으로 이동
-        if (startedMeetingId > 0L && currentMeetingId > 0L && startedMeetingId == currentMeetingId) {
-            viewModelScope.launch {
-                // meetingStarted 플래그 리셋
-                resetMeetingStartedFlag(db, uid)
-                // 회의 중 화면으로 이동 이벤트 발행
-                _events.emit(WaitingRoomEvent.MeetingStarted)
-            }
-        }
-    }
-
-    private fun resetMeetingStartedFlag(db: FirebaseFirestore, uid: String) {
-        db.collection("users").document(uid)
-            .update(mapOf("meetingStarted" to false, "updatedAt" to System.currentTimeMillis()))
-    }
-
-    private fun detachMeetingStartedListener() {
-        meetingStartedListener?.remove()
-        meetingStartedListener = null
     }
 
     fun clearError() {
@@ -242,11 +139,6 @@ class WaitingRoomViewModel @Inject constructor(
 
     fun dismissNotHostDialog() {
         _state.update { it.copy(showNotHostDialog = false) }
-    }
-
-    public override fun onCleared() {
-        super.onCleared()
-        detachMeetingStartedListener()
     }
 
     // 디버깅/시연을 위한 더미 데이터 주입

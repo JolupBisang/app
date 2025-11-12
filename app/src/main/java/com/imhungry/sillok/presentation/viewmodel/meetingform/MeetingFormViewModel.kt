@@ -7,7 +7,6 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.firestore.FirebaseFirestore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
 import com.imhungry.sillok.data.util.ApiResult
@@ -34,7 +33,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -384,40 +382,13 @@ class MeetingFormViewModel @Inject constructor(
         viewModelScope.launch {
             if (query.length >= 2) {
                 _state.update { it.copy(isSearching = true) }
-                try {
-                    // Firestore에서 이메일 검색 로직
-                    val db = FirebaseFirestore.getInstance()
-                    val firestoreQuery = db.collection("users")
-                        .whereGreaterThanOrEqualTo("email", query)
-                        .whereLessThanOrEqualTo("email", query + '\uf8ff')
-                        .limit(10)
-                        .get()
-                        .await()
-
-                    val suggestions = firestoreQuery.documents
-                        .mapNotNull { doc -> doc.getString("email") }
-                        .filter {
-                            it.isNotBlank() && !it.equals(
-                                currentUserEmail,
-                                ignoreCase = true
-                            )
-                        }
-
-                    _state.update {
-                        it.copy(
-                            emailSuggestions = suggestions,
-                            showEmailSuggestions = suggestions.isNotEmpty(),
-                            isSearching = false
-                        )
-                    }
-                } catch (e: Exception) {
-                    _state.update {
-                        it.copy(
-                            emailSuggestions = emptyList(),
-                            showEmailSuggestions = false,
-                            isSearching = false
-                        )
-                    }
+                // Firebase 제거로 인해 이메일 자동완성 기능 비활성화
+                _state.update {
+                    it.copy(
+                        emailSuggestions = emptyList(),
+                        showEmailSuggestions = false,
+                        isSearching = false
+                    )
                 }
             } else {
                 _state.update {
@@ -517,39 +488,6 @@ class MeetingFormViewModel @Inject constructor(
                         }
 
                         if (addOk) {
-                            // 파이어베이스에 회의 정보 저장 및 사용자 hasNewMeeting 플래그 업데이트
-                            try {
-                                val db = FirebaseFirestore.getInstance()
-                                val hostEmail = currentUserEmail
-                                val data = hashMapOf(
-                                    "meetingId" to meetingId,
-                                    "title" to s.title,
-                                    "participants" to emails
-                                )
-                                db.collection("meetings").document(meetingId.toString())
-                                    .set(data)
-                                    .await()
-
-                                val emailsToUpdate = mutableSetOf<String>()
-                                hostEmail?.let { emailsToUpdate.add(it) }
-                                emailsToUpdate.addAll(emails)
-                                for (email in emailsToUpdate) {
-                                    val snapshot = db.collection("users")
-                                        .whereEqualTo("email", email)
-                                        .limit(1)
-                                        .get()
-                                        .await()
-                                    if (!snapshot.isEmpty) {
-                                        val docRef = snapshot.documents.first().reference
-                                        docRef.update(
-                                            mapOf("hasNewMeeting" to true)
-                                        ).await()
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                _state.update { it.copy(error = e.message) }
-                            }
-
                             _state.update { it.copy(isLoading = false) }
                             // 생성 성공 이벤트 전파
                             _events.emit(MeetingFormEvent.MeetingCreated(meetingId))
@@ -710,55 +648,6 @@ class MeetingFormViewModel @Inject constructor(
                             is ApiResult.Success -> {}
                         }
                     }
-                }
-
-                // 4) 파이어베이스 회의 문서 업데이트
-                try {
-                    val db = FirebaseFirestore.getInstance()
-                    val hostEmail = currentUserEmail
-                    // 서버에서 최신 참석자 목록 조회 (삭제 후 반영된 상태)
-                    val latestParticipantEmails =
-                        when (val detailResult = getMeetingDetailUseCase(meetingId)) {
-                            is ApiResult.Success -> {
-                                detailResult.data.participants.map { it.email }
-                            }
-
-                            is ApiResult.Failure -> {
-                                // 조회 실패 시 폼 상태 사용
-                                s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }
-                            }
-                        }
-                    // 자기 자신(호스트) 제외
-                    val participantsWithoutHost = latestParticipantEmails.filter { it != hostEmail }
-                    db.collection("meetings").document(meetingId.toString())
-                        .update(
-                            mapOf(
-                                "title" to s.title,
-                                "participants" to participantsWithoutHost
-                            )
-                        )
-                        .await()
-
-                    val emailsToUpdate = mutableSetOf<String>()
-                    hostEmail?.let { emailsToUpdate.add(it) }
-                    emailsToUpdate.addAll(latestParticipantEmails)
-                    // 제거된 참가자들도 hasNewMeeting = true로 유지
-                    emailsToUpdate.addAll(emailsToRemove)
-                    for (email in emailsToUpdate) {
-                        val snapshot = db.collection("users")
-                            .whereEqualTo("email", email)
-                            .limit(1)
-                            .get()
-                            .await()
-                        if (!snapshot.isEmpty) {
-                            val docRef = snapshot.documents.first().reference
-                            docRef.update(
-                                mapOf("hasNewMeeting" to true)
-                            ).await()
-                        }
-                    }
-                } catch (e: Exception) {
-                    _state.update { it.copy(error = e.message) }
                 }
 
                 _state.update { it.copy(isLoading = false) }

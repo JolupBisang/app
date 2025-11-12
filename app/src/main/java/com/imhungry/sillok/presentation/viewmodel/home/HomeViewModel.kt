@@ -6,17 +6,12 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
 import com.imhungry.sillok.data.local.DismissedMeetingStore
 import com.imhungry.sillok.data.local.GeneratingMeetingNoteStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.domain.model.meeting.MeetingStatus
 import com.imhungry.sillok.domain.model.user.User
-import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingSummaryListUseCase
 import com.imhungry.sillok.domain.usecase.user.GetMyProfileUseCase
 import com.imhungry.sillok.presentation.state.home.HomeState
@@ -28,7 +23,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 import javax.inject.Inject
 
@@ -36,7 +30,6 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getMeetingSummaryListUseCase: GetMeetingSummaryListUseCase,
-    private val getMeetingDetailUseCase: GetMeetingDetailUseCase,
     private val getMyProfileUseCase: GetMyProfileUseCase,
     private val dismissedMeetingStore: DismissedMeetingStore,
     private val generatingMeetingNoteStore: GeneratingMeetingNoteStore,
@@ -45,17 +38,12 @@ class HomeViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "HomeViewModel"
-        private const val SEARCH_LIMIT = 25L
-        private const val COLLECTION_USERS = "users"
-        private const val COLLECTION_MEETINGS = "meetings"
     }
 
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
     private var currentYearMonth: Pair<Int, Int>? = null
-    private var hasNewMeetingListener: ListenerRegistration? = null
-    private var meetingStartedListener: ListenerRegistration? = null
 
     init {
         loadUserProfile()
@@ -70,19 +58,16 @@ class HomeViewModel @Inject constructor(
                         val user = result.data
                         Log.d(TAG, "사용자 프로필 로드 성공: id=${user.id}, nickname=${user.nickname}, pictureURL=${user.pictureURL}")
                         updateUserInfo(user)
-                        handleUserAuthState(user)
                     }
                     is ApiResult.Failure -> {
                         Log.e(TAG, "사용자 프로필 로드 실패: ${result.message}")
                         // 실패 시 빈 상태로 처리
                         updateUserInfo(null)
-                        handleUserAuthState(null)
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "사용자 프로필 로드 예외 발생: ${e.message}", e)
                 updateUserInfo(null)
-                handleUserAuthState(null)
             }
         }
     }
@@ -91,29 +76,9 @@ class HomeViewModel @Inject constructor(
         _state.update { current ->
             current.copy(
                 userName = user?.nickname?.takeIf { it.isNotBlank() } ?: current.userName,
-                // 빈 문자열을 null로 변환하여 UI에서 placeholder가 표시되도록 함
                 profileImage = user?.pictureURL?.takeIf { it.isNotBlank() } ?: ""
             )
         }
-    }
-
-    private fun handleUserAuthState(user: User?) {
-        val uid = user?.id?.toString()
-        if (!uid.isNullOrBlank()) {
-            attachFirestoreListeners(uid)
-        } else {
-            detachAllListeners()
-        }
-    }
-
-    private fun attachFirestoreListeners(uid: String) {
-        attachHasNewMeetingListener(uid)
-        attachMeetingStartedListener(uid)
-    }
-
-    private fun detachAllListeners() {
-        detachHasNewMeetingListener()
-        detachMeetingStartedListener()
     }
 
     private fun loadInitialData() {
@@ -125,75 +90,6 @@ class HomeViewModel @Inject constructor(
     fun refresh() {
         loadUserProfile()
         loadInitialData()
-    }
-
-    // ========================================
-    // Firestore 리스너 관리
-    // ========================================
-
-    private fun attachHasNewMeetingListener(uid: String) {
-        hasNewMeetingListener?.remove()
-        val db = FirebaseFirestore.getInstance()
-        hasNewMeetingListener = db.collection(COLLECTION_USERS).document(uid)
-            .addSnapshotListener { snapshot, _ ->
-                val hasNewMeeting = snapshot?.getBoolean("hasNewMeeting") ?: false
-                if (hasNewMeeting) {
-                    handleNewMeetingDetected(db, uid)
-                }
-            }
-    }
-
-    private fun handleNewMeetingDetected(db: FirebaseFirestore, uid: String) {
-        loadHomeData()
-        resetHasNewMeetingFlag(db, uid)
-        _state.update { it.copy(hasNewMeeting = false) }
-    }
-
-    private fun resetHasNewMeetingFlag(db: FirebaseFirestore, uid: String) {
-        db.collection(COLLECTION_USERS).document(uid)
-            .update(mapOf("hasNewMeeting" to false, "updatedAt" to System.currentTimeMillis()))
-    }
-
-    private fun detachHasNewMeetingListener() {
-        hasNewMeetingListener?.remove()
-        hasNewMeetingListener = null
-    }
-
-    private fun attachMeetingStartedListener(uid: String) {
-        meetingStartedListener?.remove()
-        val db = FirebaseFirestore.getInstance()
-        meetingStartedListener = db.collection(COLLECTION_USERS).document(uid)
-            .addSnapshotListener { snapshot, _ ->
-                val meetingStarted = snapshot?.getBoolean("meetingStarted") ?: false
-                if (meetingStarted) {
-                    handleMeetingStarted(db, uid, snapshot)
-                }
-            }
-    }
-
-    private fun handleMeetingStarted(
-        db: FirebaseFirestore,
-        uid: String,
-        snapshot: DocumentSnapshot
-    ) {
-        val startedMeetingId = snapshot.getLong("startedMeetingId") ?: 0L
-        if (startedMeetingId > 0L) {
-            Log.d(TAG, "회의 시작 감지: meetingId=$startedMeetingId")
-            // 홈 데이터 새로고침
-            loadHomeData()
-            // 플래그 리셋
-            resetMeetingStartedFlag(db, uid)
-        }
-    }
-
-    private fun resetMeetingStartedFlag(db: FirebaseFirestore, uid: String) {
-        db.collection(COLLECTION_USERS).document(uid)
-            .update(mapOf("meetingStarted" to false, "updatedAt" to System.currentTimeMillis()))
-    }
-
-    private fun detachMeetingStartedListener() {
-        meetingStartedListener?.remove()
-        meetingStartedListener = null
     }
 
     // ========================================
@@ -235,11 +131,6 @@ class HomeViewModel @Inject constructor(
     // ========================================
     // 생명주기 관리
     // ========================================
-
-    public override fun onCleared() {
-        super.onCleared()
-        //detachAllListeners()
-    }
 
     // ========================================
     // 공개 메서드
@@ -441,7 +332,7 @@ class HomeViewModel @Inject constructor(
 
     private fun performSearch(rawText: String) {
         viewModelScope.launch {
-            val normalizedText = normalize(rawText)
+            val normalizedText = rawText.trim().lowercase()
             _state.update { it.copy(isSearching = true) }
             try {
                 val searchResults = searchMeetings(normalizedText)
@@ -453,98 +344,8 @@ class HomeViewModel @Inject constructor(
     }
 
     private suspend fun searchMeetings(query: String): List<MeetingUi> {
-        val db = FirebaseFirestore.getInstance()
-        val (start, end) = buildPrefixRange(query)
 
-        // Firestore에서 회의 ID만 수집
-        val titleResultIds = searchByTitleIds(db, start, end)
-        val participantResultIds = searchByParticipantsIds(db, query)
-
-        val mergedIds = (titleResultIds + participantResultIds).distinct()
-
-        // 숨긴 회의 제외
-        val dismissedMeetingIds = dismissedMeetingStore.getDismissedMeetingIds()
-        val filteredIds = mergedIds.filter { !dismissedMeetingIds.contains(it) }
-
-        // 각 회의 ID에 대해 GetMeetingDetailUseCase 호출하여 완전한 정보 가져오기
-        val meetingSummaries = filteredIds.mapNotNull { meetingId ->
-            when (val result = getMeetingDetailUseCase(meetingId)) {
-                is ApiResult.Success -> {
-                    val meeting = result.data
-                    MeetingDetailSummary(
-                        id = meeting.meetingId,
-                        title = meeting.title,
-                        scheduledStartTime = meeting.scheduledStartTime,
-                        targetTime = meeting.targetTime,
-                        status = meeting.meetingStatus
-                    )
-                }
-
-                is ApiResult.Failure -> {
-                    Log.e(TAG, "회의 상세 정보 조회 실패: meetingId=$meetingId, error=${result.message}")
-                    null
-                }
-            }
-        }
-
-        return meetingSummaries.map { MeetingUi.from(it) }
-    }
-
-    private suspend fun searchByTitleIds(
-        db: FirebaseFirestore,
-        start: String,
-        end: String
-    ): List<Long> {
-        val snapshot = db.collection(COLLECTION_MEETINGS)
-            .orderBy("title")
-            .startAt(start)
-            .endAt(end)
-            .limit(SEARCH_LIMIT)
-            .get()
-            .await()
-
-        return snapshot.documents.mapNotNull {
-            (it.data?.get("meetingId") as? Number)?.toLong()
-        }
-    }
-
-    private suspend fun searchByParticipantsIds(
-        db: FirebaseFirestore,
-        query: String
-    ): List<Long> {
-        val (start, end) = buildPrefixRange(query)
-
-        val userSnapshot = db.collection(COLLECTION_USERS)
-            .orderBy("email")
-            .startAt(start)
-            .endAt(end)
-            .limit(SEARCH_LIMIT)
-            .get()
-            .await()
-
-        val candidateEmails = userSnapshot.documents.mapNotNull { it.getString("email") }.toSet()
-
-        val participantResultIds = mutableSetOf<Long>()
-        for (email in candidateEmails) {
-            val meetingSnapshot = db.collection(COLLECTION_MEETINGS)
-                .whereArrayContains("participants", email)
-                .limit(SEARCH_LIMIT)
-                .get()
-                .await()
-            meetingSnapshot.documents.forEach { doc ->
-                (doc.data?.get("meetingId") as? Number)?.toLong()?.let {
-                    participantResultIds.add(it)
-                }
-            }
-        }
-
-        return participantResultIds.toList()
-    }
-
-    private fun normalize(text: String): String = text.trim().lowercase()
-
-    private fun buildPrefixRange(query: String): Pair<String, String> {
-        return query to (query + "\uf8ff")
+        return emptyList()
     }
 
     // ========================================
