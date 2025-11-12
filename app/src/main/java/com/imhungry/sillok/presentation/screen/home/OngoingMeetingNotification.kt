@@ -143,7 +143,7 @@ fun OngoingMeetingNotification(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 SmallSillokButton(
-                    text = "접기",
+                    text = "불참하기",
                     backgroundColor = Color.White,
                     textColor = green200,
                     onClick = { onDismiss(meeting) },

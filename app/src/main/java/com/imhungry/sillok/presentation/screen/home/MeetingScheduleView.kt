@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +49,8 @@ fun MeetingScheduleView(
     onMeetingItemClick: (MeetingUi) -> Unit = {},
     onMonthChanged: (Int, Int) -> Unit = { _, _ -> }, // year, month
     meetings: List<MeetingUi> = emptyList(),
+    onRefresh: () -> Unit = {},
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var isCalendarView by remember { mutableStateOf(false) }
@@ -78,6 +83,8 @@ fun MeetingScheduleView(
                 selectedDate = selectedDate,
                 meetings = meetings,
                 onMeetingItemClick = onMeetingItemClick,
+                onRefresh = onRefresh,
+                isLoading = isLoading,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -118,60 +125,64 @@ fun MeetingScheduleView(
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun SelectedDateMeetingList(
     selectedDate: LocalDate?,
     meetings: List<MeetingUi>,
     onMeetingItemClick: (MeetingUi) -> Unit,
+    onRefresh: () -> Unit,
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.padding(top = 8.dp)
-    ) {
-        if (selectedDate == null) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "예정된 회의가 없습니다!",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 14.sp
-                )
-            }
-        } else {
-            val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val selectedDateString = selectedDate.format(dateFormatter)
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isLoading,
+        onRefresh = onRefresh
+    )
 
-            val meetingsOnSelectedDate = meetings.filter { meeting ->
+    Box(
+        modifier = modifier
+            .pullRefresh(pullRefreshState)
+    ) {
+        val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        val selectedDateString = selectedDate?.format(dateFormatter) ?: ""
+        
+        val meetingsOnSelectedDate = if (selectedDate != null) {
+            meetings.filter { meeting ->
                 meeting.scheduledStartTime.startsWith(selectedDateString)
             }
+        } else {
+            emptyList()
+        }
 
-            // WAITING이나 IN_PROGRESS 상태인 회의가 있는지 확인
-            val hasActiveMeetings = meetingsOnSelectedDate.any { meeting ->
-                meeting.status == "WAITING" || meeting.status == "IN_PROGRESS"
-            }
-
-            if (meetingsOnSelectedDate.isEmpty()) {
-                // 회의가 아예 없을 때
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "예정된 회의가 없습니다!",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Normal
-                    )
+        // 항상 LazyColumn을 사용하여 스크롤 가능하게 만듦
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            if (selectedDate == null || meetingsOnSelectedDate.isEmpty()) {
+                // 날짜가 선택되지 않았거나 회의가 없을 때
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillParentMaxSize()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "예정된 회의가 없습니다!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Normal,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             } else {
                 // 회의가 있을 때
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    items(meetingsOnSelectedDate) { meeting ->
+                items(meetingsOnSelectedDate) { meeting ->
                         val backgroundColor: Color
                         val borderColor: Color
                         val borderWith: Dp
@@ -207,35 +218,15 @@ private fun SelectedDateMeetingList(
                             }
                         }
 
-                        MeetingListItem(
-                            meeting = meeting,
-                            onClick = { onMeetingItemClick(meeting) },
-                            backgroundColor = backgroundColor,
-                            borderColor = borderColor,
-                            borderWith = borderWith,
-                            titleColor = titleColor,
-                            timeColor = timeColor
-                        )
-                    }
-
-//                    // WAITING이나 IN_PROGRESS 상태인 회의가 없을 때 메시지 표시
-//                    if (!hasActiveMeetings) {
-//                        item {
-//                            Box(
-//                                modifier = Modifier
-//                                    .fillMaxSize()
-//                                    .background(Color.Yellow)
-//                                    .padding(vertical = 16.dp),
-//                                contentAlignment = Alignment.Center
-//                            ) {
-//                                Text(
-//                                    text = "예정된 회의가 없습니다!",
-//                                    style = MaterialTheme.typography.bodyMedium,
-//                                    fontWeight = FontWeight.Normal
-//                                )
-//                            }
-//                        }
-//                    }
+                    MeetingListItem(
+                        meeting = meeting,
+                        onClick = { onMeetingItemClick(meeting) },
+                        backgroundColor = backgroundColor,
+                        borderColor = borderColor,
+                        borderWith = borderWith,
+                        titleColor = titleColor,
+                        timeColor = timeColor
+                    )
                 }
             }
         }

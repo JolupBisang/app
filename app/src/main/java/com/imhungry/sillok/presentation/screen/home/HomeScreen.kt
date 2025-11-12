@@ -468,7 +468,9 @@ private fun TopContent(
             isSearching = isSearching,
             meetings = meetings,
             onMeetingItemClick = onMeetingItemClick,
-            onMonthChanged = onMonthChanged
+            onMonthChanged = onMonthChanged,
+            onRefresh = { viewModel.refresh() },
+            isLoading = isLoading
         )
     }
 }
@@ -587,7 +589,9 @@ private fun MeetingListArea(
     isSearching: Boolean,
     meetings: List<MeetingUi>,
     onMeetingItemClick: (MeetingUi) -> Unit,
-    onMonthChanged: (Int, Int) -> Unit
+    onMonthChanged: (Int, Int) -> Unit,
+    onRefresh: () -> Unit,
+    isLoading: Boolean
 ) {
     if (searchText.isNotBlank()) {
         SearchResultList(
@@ -596,14 +600,14 @@ private fun MeetingListArea(
             onItemClick = onMeetingItemClick
         )
     } else {
-        Column {
-            MeetingScheduleView(
-                onMeetingItemClick = onMeetingItemClick,
-                onMonthChanged = onMonthChanged,
-                meetings = meetings,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
+        MeetingScheduleView(
+            onMeetingItemClick = onMeetingItemClick,
+            onMonthChanged = onMonthChanged,
+            meetings = meetings,
+            onRefresh = onRefresh,
+            isLoading = isLoading,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -617,17 +621,17 @@ private fun BottomButtons(
     Column(modifier = Modifier.fillMaxWidth()) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (ongoingList.isNotEmpty() && showOngoingMeeting) {
-            // 항상 첫 번째 요소 사용
-            val current = ongoingList.firstOrNull()
-            current?.let { meeting ->
-                SillokButton(
-                    text = "현재 진행 중인 회의 참여하기",
-                    onClick = { onJoinOngoingMeeting(meeting) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
+//        if (ongoingList.isNotEmpty() && showOngoingMeeting) {
+//            // 항상 첫 번째 요소 사용
+//            val current = ongoingList.firstOrNull()
+//            current?.let { meeting ->
+//                SillokButton(
+//                    text = "현재 진행 중인 회의 참여하기",
+//                    onClick = { onJoinOngoingMeeting(meeting) },
+//                    modifier = Modifier.fillMaxWidth()
+//                )
+//            }
+//        }
 
         Spacer(modifier = Modifier.height(8.dp))
 

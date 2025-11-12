@@ -136,7 +136,7 @@ fun ScheduledMeetingNotification(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 SmallSillokButton(
-                    text = "상세 보기",
+                    text = "상세보기",
                     backgroundColor = green300,
                     onClick = { onJoinMeeting(meeting) }
                 )
@@ -144,7 +144,7 @@ fun ScheduledMeetingNotification(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 SmallSillokButton(
-                    text = "접기",
+                    text = "접어두기",
                     backgroundColor = Color.White,
                     textColor = green200,
                     onClick = { onDismiss(meeting) },

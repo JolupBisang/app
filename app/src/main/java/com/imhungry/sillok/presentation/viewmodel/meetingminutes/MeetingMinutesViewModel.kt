@@ -561,18 +561,18 @@ class MeetingMinutesViewModel @Inject constructor(
         val dummyParticipation = listOf(
             com.imhungry.sillok.domain.model.participation.UserParticipationRate(
                 userId = 1L,
+                nickname = "",
                 rate = 0.32,
-                totalParticipationChunk = 100L
             ),
             com.imhungry.sillok.domain.model.participation.UserParticipationRate(
                 userId = 2L,
+                nickname = "",
                 rate = 0.27,
-                totalParticipationChunk = 85L
             ),
             com.imhungry.sillok.domain.model.participation.UserParticipationRate(
                 userId = 3L,
+                nickname = "",
                 rate = 0.18,
-                totalParticipationChunk = 55L
             ),
         )
 

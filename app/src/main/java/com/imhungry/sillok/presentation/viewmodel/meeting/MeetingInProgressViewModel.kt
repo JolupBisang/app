@@ -755,8 +755,8 @@ class MeetingInProgressViewModel @Inject constructor(
                     existing.copy(rate = rate)
                 } ?: UserParticipationRate(
                     userId = userId,
+                    nickname = userNicknameCache[userId] ?: "사용자 $userId",
                     rate = rate,
-                    totalParticipationChunk = 0L
                 )
             }
 
@@ -1286,11 +1286,11 @@ class MeetingInProgressViewModel @Inject constructor(
         )
 
         val dummyParticipation = listOf(
-            UserParticipationRate(userId = 1L, rate = 0.45, totalParticipationChunk = 150L),
-            UserParticipationRate(userId = 2L, rate = 0.35, totalParticipationChunk = 120L),
-            UserParticipationRate(userId = 3L, rate = 0.15, totalParticipationChunk = 50L),
-            UserParticipationRate(userId = 4L, rate = 0.08, totalParticipationChunk = 25L),
-            UserParticipationRate(userId = 5L, rate = 0.07, totalParticipationChunk = 20L)
+            UserParticipationRate(userId = 1L, nickname = "홍길동", rate = 0.45),
+            UserParticipationRate(userId = 2L, nickname = "김디자", rate = 0.35),
+            UserParticipationRate(userId = 3L, nickname = "이개발", rate = 0.15),
+            UserParticipationRate(userId = 4L, nickname = "박기획", rate = 0.08),
+            UserParticipationRate(userId = 5L, nickname = "최운영", rate = 0.07)
         )
 
         val dummyFeedbacks = listOf(

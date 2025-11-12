@@ -65,7 +65,7 @@ fun ConversationSummaryBar(
                 ) {
                     range.forEach { i ->
                         LegendItem(
-                            name = "사용자 ${participationRates[i].userId}",
+                            name = participationRates[i].nickname,
                             color = colors.getOrElse(i) { green500 })
                     }
                 }

@@ -120,6 +120,11 @@ class HomeViewModel @Inject constructor(
         //loadDummyHomeState()
     }
 
+    fun refresh() {
+        loadUserProfile()
+        loadInitialData()
+    }
+
     // ========================================
     // Firestore 리스너 관리
     // ========================================
