@@ -2,11 +2,13 @@ package com.imhungry.sillok.data.mapper.meeting
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.imhungry.sillok.data.model.meeting.DuplicationCheckRes
 import com.imhungry.sillok.data.model.meeting.MeetingDetailResDto
 import com.imhungry.sillok.data.model.meeting.MeetingDetailSummaryResDto
 import com.imhungry.sillok.data.model.meeting.MeetingReqDto
 import com.imhungry.sillok.domain.model.agenda.Agenda
 import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
+import com.imhungry.sillok.domain.model.meeting.DuplicatedMeeting
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.presentation.util.DateTimeUtils
@@ -61,5 +63,15 @@ class MeetingMapper @Inject constructor() {
             targetTime = dto.targetTime / 60,
             status = dto.status
         )
+    }
+
+    fun toDuplicatedMeetings(dto: DuplicationCheckRes): List<DuplicatedMeeting> {
+        return dto.meetings.map { meetingDetail ->
+            DuplicatedMeeting(
+                title = meetingDetail.title,
+                scheduledStartTime = meetingDetail.scheduledStartTime,
+                scheduledEndTime = meetingDetail.scheduledEndTime
+            )
+        }
     }
 }

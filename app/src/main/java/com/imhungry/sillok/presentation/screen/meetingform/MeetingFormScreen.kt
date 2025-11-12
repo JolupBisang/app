@@ -620,9 +620,15 @@ fun MeetingFormScreen(
                 }
             }
 
-            // 시스템 뒤로가기 → 취소 동작과 동일하게 처리
+            // 시스템 뒤로가기 처리
             BackHandler {
-                viewModel.onEvent(MeetingFormEvent.CancelClicked)
+                if (state.showDuplicationDialog) {
+                    // 중복 다이얼로그가 열려있으면 다이얼로그 닫기
+                    viewModel.onEvent(MeetingFormEvent.DuplicationDialogDismissed)
+                } else {
+                    // 그 외에는 취소 동작과 동일하게 처리
+                    viewModel.onEvent(MeetingFormEvent.CancelClicked)
+                }
             }
         }
 
@@ -642,6 +648,25 @@ fun MeetingFormScreen(
             },
             onDismiss = {
                 viewModel.onEvent(MeetingFormEvent.CancelDismissed)
+            }
+        )
+
+        // 중복 시간 체크 다이얼로그
+        val duplicationDialogMessage = if (isEditMode) {
+            "기존 회의와 겹치는 일정이 있습니다\n그래도 회의를 수정하시겠습니까?"
+        } else {
+            "기존 회의와 겹치는 일정이 있습니다\n그래도 회의를 생성하시겠습니까?"
+        }
+        SillokDialog(
+            visible = state.showDuplicationDialog,
+            message = duplicationDialogMessage,
+            confirmText = "취소",
+            cancelText = "네",
+            onConfirm = {
+                viewModel.onEvent(MeetingFormEvent.DuplicationDialogDismissed)
+            },
+            onDismiss = {
+                viewModel.onEvent(MeetingFormEvent.DuplicationDialogConfirmed)
             }
         )
     }

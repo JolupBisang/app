@@ -1,5 +1,6 @@
 package com.imhungry.sillok.data.remote.meeting
 
+import com.imhungry.sillok.data.model.meeting.DuplicationCheckRes
 import com.imhungry.sillok.data.model.meeting.MeetingCreationResDto
 import com.imhungry.sillok.data.model.meeting.MeetingDetailResDto
 import com.imhungry.sillok.data.model.meeting.MeetingDetailSummaryResDto
@@ -44,4 +45,10 @@ interface MeetingApi {
         @Path("meetingId") meetingId: Long,
         @Body request: MeetingUpdateReqDto
     ): Response<MeetingDetailUpdateResDto>
+
+    @GET("/api/v1/meetings/duplicated")
+    suspend fun checkDuplicatedTime(
+        @Query("startTime") startTime: String,
+        @Query("targetMinutes") targetMinutes: Long
+    ): Response<DuplicationCheckRes>
 }

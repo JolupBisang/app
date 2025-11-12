@@ -17,6 +17,7 @@ import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.usecase.agenda.AddAgendaUseCase
 import com.imhungry.sillok.domain.usecase.agenda.DeleteAgendaUseCase
 import com.imhungry.sillok.domain.usecase.agenda.UpdateAgendaUseCase
+import com.imhungry.sillok.domain.usecase.meeting.CheckDuplicatedTimeUseCase
 import com.imhungry.sillok.domain.usecase.meeting.CreateMeetingUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.meeting.UpdateMeetingUseCase
@@ -50,7 +51,8 @@ class MeetingFormViewModel @Inject constructor(
     private val updateMeetingUseCase: UpdateMeetingUseCase,
     private val addAgendaUseCase: AddAgendaUseCase,
     private val deleteAgendaUseCase: DeleteAgendaUseCase,
-    private val updateAgendaUseCase: UpdateAgendaUseCase
+    private val updateAgendaUseCase: UpdateAgendaUseCase,
+    private val checkDuplicatedTimeUseCase: CheckDuplicatedTimeUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MeetingFormState())
@@ -356,11 +358,20 @@ class MeetingFormViewModel @Inject constructor(
                     }
 
                     is MeetingFormEvent.FormValidationSuccess -> {
+                        checkDuplicationAndProceed()
+                    }
+
+                    is MeetingFormEvent.DuplicationDialogConfirmed -> {
+                        _state.update { it.copy(showDuplicationDialog = false) }
                         if (_state.value.isEditMode) {
                             updateMeeting()
                         } else {
                             createMeeting()
                         }
+                    }
+
+                    is MeetingFormEvent.DuplicationDialogDismissed -> {
+                        _state.update { it.copy(showDuplicationDialog = false) }
                     }
 
                     else -> {}
@@ -802,6 +813,59 @@ class MeetingFormViewModel @Inject constructor(
     // 이메일 형식 유효성 검사 함수
     private fun isValidEmail(email: String): Boolean {
         return Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun checkDuplicationAndProceed() {
+        viewModelScope.launch {
+            val s = _state.value
+            try {
+                // 시작 시간과 목표 시간(분) 계산
+                val dateDigits = s.date.filter { it.isDigit() }.padStart(8, '0')
+                val timeDigits = s.startTime.filter { it.isDigit() }.padStart(4, '0')
+                val datePart = "${dateDigits.substring(0, 4)}-${
+                    dateDigits.substring(
+                        4,
+                        6
+                    )
+                }-${dateDigits.substring(6, 8)}"
+                val timePart = "${timeDigits.substring(0, 2)}:${timeDigits.substring(2, 4)}:00"
+                val scheduledStartTime = "${datePart}T${timePart}"
+                val targetMinutes = s.duration.toIntOrNull()?.toLong() ?: 0L
+
+                // 중복 체크
+                when (val result = checkDuplicatedTimeUseCase(scheduledStartTime, targetMinutes)) {
+                    is ApiResult.Success -> {
+                        if (result.data.isNotEmpty()) {
+                            // 중복된 회의가 있으면 다이얼로그 표시
+                            _state.update { it.copy(showDuplicationDialog = true) }
+                        } else {
+                            // 중복이 없으면 바로 진행
+                            if (s.isEditMode) {
+                                updateMeeting()
+                            } else {
+                                createMeeting()
+                            }
+                        }
+                    }
+                    is ApiResult.Failure -> {
+                        // 중복 체크 실패 시에도 진행 (에러는 무시하고 계속)
+                        if (s.isEditMode) {
+                            updateMeeting()
+                        } else {
+                            createMeeting()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // 예외 발생 시에도 진행
+                if (s.isEditMode) {
+                    updateMeeting()
+                } else {
+                    createMeeting()
+                }
+            }
+        }
     }
 
     // 폼 검증 메서드

@@ -38,6 +38,7 @@ data class MeetingFormState(
     val error: String? = null,
     val showTimePicker: Boolean = false,
     val showCancelDialog: Boolean = false,
+    val showDuplicationDialog: Boolean = false,
 
     // 필수 항목 검증 상태
     val validationErrors: Map<String, String> = emptyMap(),

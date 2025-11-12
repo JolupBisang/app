@@ -4,6 +4,7 @@ import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
 import com.imhungry.sillok.data.model.meeting.TargetMeetingStatus
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
+import com.imhungry.sillok.domain.model.meeting.DuplicatedMeeting
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 
@@ -17,4 +18,5 @@ interface MeetingRepository {
     ): ApiResult<Unit>
 
     suspend fun updateMeeting(meetingId: Long, request: MeetingUpdateReqDto): ApiResult<Unit>
+    suspend fun checkDuplicatedTime(startTime: String, targetMinutes: Long): ApiResult<List<DuplicatedMeeting>>
 }

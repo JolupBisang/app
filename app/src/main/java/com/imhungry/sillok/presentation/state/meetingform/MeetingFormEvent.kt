@@ -40,4 +40,8 @@ sealed class MeetingFormEvent {
     // API 성공 이벤트
     data class MeetingCreated(val meetingId: Long) : MeetingFormEvent()
     object MeetingUpdated : MeetingFormEvent()
+
+    // 중복 시간 체크 관련 이벤트
+    object DuplicationDialogConfirmed : MeetingFormEvent()
+    object DuplicationDialogDismissed : MeetingFormEvent()
 }

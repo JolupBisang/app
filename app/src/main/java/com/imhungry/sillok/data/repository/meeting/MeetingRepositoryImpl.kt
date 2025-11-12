@@ -1,6 +1,8 @@
 package com.imhungry.sillok.data.repository.meeting
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.imhungry.sillok.data.mapper.meeting.MeetingMapper
 import com.imhungry.sillok.data.model.meeting.MeetingStatusUpdateReqDto
 import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
@@ -8,6 +10,7 @@ import com.imhungry.sillok.data.model.meeting.TargetMeetingStatus
 import com.imhungry.sillok.data.remote.meeting.MeetingApi
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
+import com.imhungry.sillok.domain.model.meeting.DuplicatedMeeting
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.domain.repository.meeting.MeetingRepository
@@ -34,6 +37,7 @@ class MeetingRepositoryImpl @Inject constructor(
             }
         }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getMeetingDetail(meetingId: Long): ApiResult<Meeting> =
         withContext(Dispatchers.IO) {
             try {
@@ -93,6 +97,28 @@ class MeetingRepositoryImpl @Inject constructor(
             val res = api.updateMeeting(meetingId, request)
             if (res.isSuccessful) {
                 ApiResult.Success(Unit)
+            } else {
+                ApiResult.Failure(res.message())
+            }
+        } catch (e: Exception) {
+            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
+        }
+    }
+
+    override suspend fun checkDuplicatedTime(
+        startTime: String,
+        targetMinutes: Long
+    ): ApiResult<List<DuplicatedMeeting>> = withContext(Dispatchers.IO) {
+        try {
+            val res = api.checkDuplicatedTime(startTime, targetMinutes)
+            if (res.isSuccessful) {
+                val dto = res.body()
+                if (dto != null) {
+                    val duplicatedMeetings = mapper.toDuplicatedMeetings(dto)
+                    ApiResult.Success(duplicatedMeetings)
+                } else {
+                    ApiResult.Success(emptyList())
+                }
             } else {
                 ApiResult.Failure(res.message())
             }
