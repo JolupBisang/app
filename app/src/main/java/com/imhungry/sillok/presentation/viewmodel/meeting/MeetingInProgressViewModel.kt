@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
 import com.imhungry.sillok.BuildConfig
 import com.imhungry.sillok.data.local.FeedbackReadStore
+import com.imhungry.sillok.data.local.GeneratingMeetingNoteStore
 import com.imhungry.sillok.data.local.TokenStore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.model.meeting.TargetMeetingStatus
@@ -71,6 +72,7 @@ class MeetingInProgressViewModel @Inject constructor(
     private val userStore: UserStore,
     private val tokenStore: TokenStore,
     private val feedbackReadStore: FeedbackReadStore,
+    private val generatingMeetingNoteStore: GeneratingMeetingNoteStore,
     private val app: Application,
 ) : AndroidViewModel(app) {
     companion object {
@@ -675,7 +677,6 @@ class MeetingInProgressViewModel @Inject constructor(
 
     /**
      * COMPLETION_SCHEDULED 수신 시 처리
-     * Firebase에 generatingMeetingNoteId 저장
      * (녹음과 SSE 연결은 Service에서 이미 해제됨)
      */
     @RequiresApi(Build.VERSION_CODES.O)
@@ -688,19 +689,14 @@ class MeetingInProgressViewModel @Inject constructor(
             try {
                 val meetingId = state.value.meetingId
 
-                // Firebase에 generatingMeetingNoteId 저장
-                FirebaseFirestore.getInstance()
-                    .collection("meetings")
-                    .document(meetingId.toString())
-                    .update("generatingMeetingNoteId", meetingId)
-                    .await()
-
-                Log.d(TAG, "Firebase generatingMeetingNoteId 업데이트 완료: meetingId=$meetingId")
+                // DataStore에 generatingMeetingNoteId 저장
+                generatingMeetingNoteStore.setGeneratingMeetingNoteId(meetingId)
+                Log.d(TAG, "DataStore generatingMeetingNoteId 저장 완료: meetingId=$meetingId")
 
                 // 홈으로 이동 이벤트 발생
                 _events.emit(MeetingInProgressEvent.NavigateToHome)
             } catch (e: Exception) {
-                Log.e(TAG, "Firebase 업데이트 실패: ${e.message}", e)
+                Log.e(TAG, "DataStore 저장 실패: ${e.message}", e)
             }
         }
     }
@@ -720,20 +716,15 @@ class MeetingInProgressViewModel @Inject constructor(
             try {
                 val meetingId = state.value.meetingId
 
-                // Firebase에 회의록 생성 완료 상태 업데이트 (generatingMeetingNoteId 제거)
-                FirebaseFirestore.getInstance()
-                    .collection("meetings")
-                    .document(meetingId.toString())
-                    .update("generatingMeetingNoteId", null)
-                    .await()
-
-                Log.d(TAG, "Firebase generatingMeetingNoteId 제거 완료: meetingId=$meetingId")
+                // DataStore에서 회의록 생성 완료 상태 업데이트 (generatingMeetingNoteId 제거)
+                generatingMeetingNoteStore.clearGeneratingMeetingNoteId()
+                Log.d(TAG, "DataStore generatingMeetingNoteId 제거 완료: meetingId=$meetingId")
 
                 // 웹소켓과 Service 종료
                 disconnectAll()
                 Log.d(TAG, "회의록 생성 완료 후 연결 해제 및 Service 종료 완료")
             } catch (e: Exception) {
-                Log.e(TAG, "Firebase generatingMeetingNoteId 제거 실패: ${e.message}", e)
+                Log.e(TAG, "DataStore generatingMeetingNoteId 제거 실패: ${e.message}", e)
             }
         }
     }

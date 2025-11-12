@@ -11,6 +11,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.imhungry.sillok.data.local.DismissedMeetingStore
+import com.imhungry.sillok.data.local.GeneratingMeetingNoteStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.domain.model.meeting.MeetingStatus
@@ -38,6 +39,7 @@ class HomeViewModel @Inject constructor(
     private val getMeetingDetailUseCase: GetMeetingDetailUseCase,
     private val getMyProfileUseCase: GetMyProfileUseCase,
     private val dismissedMeetingStore: DismissedMeetingStore,
+    private val generatingMeetingNoteStore: GeneratingMeetingNoteStore,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -213,15 +215,9 @@ class HomeViewModel @Inject constructor(
     fun onMeetingClick(meetingId: Long, onNavigate: (Long) -> Unit) {
         viewModelScope.launch {
             try {
-                val db = FirebaseFirestore.getInstance()
-                val meetingDoc = db.collection(COLLECTION_MEETINGS)
-                    .document(meetingId.toString())
-                    .get()
-                    .await()
+                val generatingMeetingNoteId = generatingMeetingNoteStore.getGeneratingMeetingNoteId()
 
-                val generatingMeetingNoteId = meetingDoc.getLong("generatingMeetingNoteId")
-
-                if (generatingMeetingNoteId != null && generatingMeetingNoteId > 0L) {
+                if (generatingMeetingNoteId != null && generatingMeetingNoteId == meetingId) {
                     // 회의록 생성 중이면 다이얼로그 표시
                     _state.update { it.copy(showGeneratingMeetingNoteDialog = true) }
                 } else {

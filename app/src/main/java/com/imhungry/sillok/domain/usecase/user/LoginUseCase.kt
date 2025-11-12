@@ -57,9 +57,9 @@ class LoginUseCase @Inject constructor(
                         )
                         
                         // FCM 토큰이 있으면 추가
-                        fcmToken?.let {
-                            updateData["fcmToken"] = it
-                        }
+//                        fcmToken?.let {
+//                            updateData["fcmToken"] = it
+//                        }
                         
                         db.collection("users").document(uid).set(updateData)
                         Log.d(TAG, "파이어베이스 사용자 정보 업데이트 완료: userId=$uid, fcmToken=${fcmToken != null}")
