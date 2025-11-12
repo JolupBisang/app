@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.imhungry.sillok.domain.model.team.TeamDetailSummary
 import com.imhungry.sillok.ui.theme.gray200
 import com.imhungry.sillok.ui.theme.gray500
 import com.imhungry.sillok.ui.theme.green300
@@ -40,12 +41,7 @@ import com.imhungry.sillok.ui.theme.inverse
 
 @Composable
 fun TeamCard(
-    teamName: String,
-    memberCount: Int,
-    date: String,
-    meetingTitle: String = "cho비상회의",
-    meetingState: String = "",
-    timeRange: String,
+    team: TeamDetailSummary,
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     borderColor: Color = gray500.copy(alpha = 0.7f)
@@ -83,7 +79,7 @@ fun TeamCard(
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 1.dp
             ),
-            border = BorderStroke(1.dp, if (isInteracting) green300 else borderColor)
+            border = BorderStroke(2.dp, if (isInteracting || (!team.isPast && team.date != null)) green300 else borderColor)
         ) {
             Column(
                 modifier = Modifier
@@ -96,13 +92,13 @@ fun TeamCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = teamName,
+                        text = team.name,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.ExtraBold,
                         color = if (isInteracting) inverse else Color.Unspecified
                     )
                     Text(
-                        text = "${memberCount}명",
+                        text = "${team.memberCount}명",
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
                         fontSize = 13.sp,
@@ -112,34 +108,44 @@ fun TeamCard(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Text(
-                    text = meetingTitle,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    color = if (isInteracting) green500 else Color.Unspecified
-                )
-                Spacer(modifier = Modifier.height(4.dp))
+                // 회의명이 있을 때만 표시
+                team.meetingName?.let { meetingName ->
+                    Text(
+                        text = meetingName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        color = if (isInteracting) green500 else Color.Unspecified
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = date,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (isInteracting) gray500 else gray200,
-                        fontWeight = if (isInteracting) FontWeight.Normal else FontWeight.Medium,
-                        fontSize = 11.sp
-                    )
-                    Text(
-                        text = timeRange,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (isInteracting) gray500 else gray200,
-                        fontWeight = if (isInteracting) FontWeight.Normal else FontWeight.Medium,
-                        fontSize = 11.sp
-                    )
+                // 날짜와 시간이 있을 때만 표시
+                if (team.date != null || team.timeRange != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        team.date?.let { date ->
+                            Text(
+                                text = date,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isInteracting) gray500 else gray200,
+                                fontWeight = if (isInteracting) FontWeight.Normal else FontWeight.Medium,
+                                fontSize = 11.sp
+                            )
+                        }
+                        team.timeRange?.let { timeRange ->
+                            Text(
+                                text = timeRange,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isInteracting) gray500 else gray200,
+                                fontWeight = if (isInteracting) FontWeight.Normal else FontWeight.Medium,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
                 }
             }
         }

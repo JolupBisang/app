@@ -1,13 +1,15 @@
 package com.imhungry.sillok.presentation.screen.team
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +19,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +38,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,11 +49,11 @@ import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.screen.home.SearchBar
 import com.imhungry.sillok.presentation.viewmodel.team.TeamListViewModel
 import com.imhungry.sillok.ui.components.BasicBox
-import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.components.ScreenHeaderWithNotification
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.theme.primaryBackground
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TeamListScreen(
     onBackClick: () -> Unit,
@@ -113,7 +117,7 @@ fun TeamListScreen(
                             .fillMaxWidth(),
                         focusRequester = focusRequester,
                         text = searchText,
-                        innerText = "팀 이름, 멤버로 검색",
+                        innerText = "팀 이름으로 검색",
                         onTextChange = { searchText = it },
                         onFocusChange = { isSearchFocused = it },
                         onImeAction = {
@@ -127,27 +131,12 @@ fun TeamListScreen(
                 // 콘텐츠 영역
                 Box(modifier = Modifier.weight(1f)) {
                     if (!isSearchFocused && searchText.isEmpty()) {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                                top = 12.dp,
-                                bottom = 16.dp
-                            ),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(state.teams) { team ->
-                                TeamCard(
-                                    teamName = team.name,
-                                    memberCount = team.memberCount,
-                                    date = team.date,
-                                    timeRange = team.timeRange,
-                                    onClick = { onNavigateToTeamDetail(team.id) },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
+                        TeamListContent(
+                            teams = state.teams,
+                            isLoading = state.isLoading,
+                            onRefresh = { viewModel.refresh() },
+                            onNavigateToTeamDetail = onNavigateToTeamDetail
+                        )
                     } else {
                         // 검색 결과 영역 (추후 구현)
                         Spacer(modifier = Modifier.height(12.dp))
@@ -240,6 +229,45 @@ private fun HandleBackPress(
 
             else -> {
                 onBackClick()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun TeamListContent(
+    teams: List<com.imhungry.sillok.domain.model.team.TeamDetailSummary>,
+    isLoading: Boolean,
+    onRefresh: () -> Unit,
+    onNavigateToTeamDetail: (Long) -> Unit
+) {
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isLoading,
+        onRefresh = onRefresh
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                top = 12.dp,
+                bottom = 16.dp
+            ),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(teams) { team ->
+                TeamCard(
+                    team = team,
+                    onClick = { onNavigateToTeamDetail(team.id) },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

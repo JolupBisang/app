@@ -33,8 +33,8 @@ class TeamMapper @Inject constructor() {
             teamId = dto.teamId,
             teamName = dto.teamName,
             meetingName = dto.meetingName,
-            scheduledStartTime = dto.scheduledStartTime.take(19),
-            scheduledEndTime = dto.scheduledEndTime.take(19)
+            scheduledStartTime = dto.scheduledStartTime?.take(19),
+            scheduledEndTime = dto.scheduledEndTime?.take(19)
         )
     }
 
