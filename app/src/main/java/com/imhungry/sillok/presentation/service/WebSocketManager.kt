@@ -6,6 +6,7 @@ import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
+import com.imhungry.sillok.data.model.realtime.AgendaStatusChangedMessage
 import com.imhungry.sillok.data.model.realtime.ErrorResponse
 import com.imhungry.sillok.data.model.realtime.RealtimeSegmentDto
 import com.imhungry.sillok.data.model.realtime.SocketResponse
@@ -143,28 +144,21 @@ class WebSocketManager(
                 }
 
                 SocketResponseType.AGENDA_UPDATED -> {
-                    val response = gson.fromJson<SocketResponse<Map<String, Any>>>(
+                    val response = gson.fromJson<SocketResponse<AgendaStatusChangedMessage>>(
                         jsonString,
-                        object : TypeToken<SocketResponse<Map<String, Any>>>() {}.type
+                        object : TypeToken<SocketResponse<AgendaStatusChangedMessage>>() {}.type
                     )
                     response.data?.let { data ->
-                        val agendaId = (data["agendaId"] as? Number)?.toLong()
-                        val isCompleted = data["isCompleted"] as? Boolean
-                        if (agendaId != null && isCompleted != null) {
-                            serviceScope.launch {
-                                serviceEvents.emit(
-                                    ServiceEvent.AgendaUpdated(
-                                        agendaId,
-                                        isCompleted
-                                    )
+                        serviceScope.launch {
+                            serviceEvents.emit(
+                                ServiceEvent.AgendaUpdated(
+                                    data.agendaId,
+                                    data.isCompleted
                                 )
-                            }
-                        } else {
-                            Log.w(
-                                TAG,
-                                "AGENDA_UPDATED 데이터 형식 오류: agendaId=$agendaId, isCompleted=$isCompleted"
                             )
                         }
+                    } ?: run {
+                        Log.w(TAG, "AGENDA_UPDATED 데이터가 null입니다")
                     }
                 }
 

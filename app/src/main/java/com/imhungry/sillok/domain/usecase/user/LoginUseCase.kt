@@ -50,16 +50,18 @@ class LoginUseCase @Inject constructor(
                             "email" to email,
                             "hasNewMeeting" to false, // meeting이 추가되었으면 홈 새로고침
                             "newMeetingId" to -1L,
+                            "hasMeetingUpdate" to false,
                             "hasNewTeam" to false,
+                            "hasTeamUpdate" to false,
                             "newTeamId" to -1L,
                             "meetingStarted" to false, // meeting 시작되면 바로 회의 중 화면으로 이동
                             "startedMeetingId" to -1L // 시작된 회의 ID
                         )
                         
                         // FCM 토큰이 있으면 추가
-//                        fcmToken?.let {
-//                            updateData["fcmToken"] = it
-//                        }
+                        fcmToken?.let {
+                            updateData["fcmToken"] = it
+                        }
                         
                         db.collection("users").document(uid).set(updateData)
                         Log.d(TAG, "파이어베이스 사용자 정보 업데이트 완료: userId=$uid, fcmToken=${fcmToken != null}")

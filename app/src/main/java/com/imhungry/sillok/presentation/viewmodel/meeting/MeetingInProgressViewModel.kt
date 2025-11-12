@@ -20,6 +20,7 @@ import com.imhungry.sillok.data.model.realtime.LiveFeedbackDto
 import com.imhungry.sillok.data.model.realtime.LiveSummaryDto
 import com.imhungry.sillok.data.model.realtime.RealtimeSegmentDto
 import com.imhungry.sillok.data.util.ApiResult
+import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.participation.UserParticipationRate
 import com.imhungry.sillok.domain.usecase.agenda.ChangeAgendaStatusUseCase
 import com.imhungry.sillok.domain.usecase.feedback.GetFeedbacksUseCase
@@ -222,77 +223,73 @@ class MeetingInProgressViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val meetingId = state.value.meetingId
-                val currentTimeMillis = System.currentTimeMillis()
                 Log.d(TAG, "[6-1] 회의 시작 시간 확인: meetingId=$meetingId")
 
-                // Firebase에서 기존 startMillis 조회
-                try {
-                    Log.d(TAG, "[6-2] Firebase startMillis 조회 시작")
-                    val snapshot = FirebaseFirestore.getInstance()
-                        .collection("meetings")
-                        .document(meetingId.toString())
-                        .get()
-                        .await()
-                    val existingStartMillis = snapshot.getLong("startMillis")
+                // GetMeetingDetailUseCase를 통해 actualStartTime 조회
+                Log.d(TAG, "[6-2] Meeting Detail 조회 시작 (actualStartTime 확인용)")
+                when (val meetingDetailResult = getMeetingDetailUseCase(meetingId)) {
+                    is ApiResult.Success -> {
+                        val meeting = meetingDetailResult.data
+                        Log.d(TAG, "[6-2 완료] Meeting Detail 조회 성공")
 
-                    val startMillisToUse = if (existingStartMillis != null) {
-                        Log.d(
-                            TAG,
-                            "[6-2 완료] Firebase에 이미 startMillis가 존재: $existingStartMillis (업데이트하지 않음)"
-                        )
-                        existingStartMillis
-                    } else {
-                        Log.d(TAG, "[6-2-1] Firebase에 startMillis가 없음, 새로 저장: $currentTimeMillis")
-                        FirebaseFirestore.getInstance()
-                            .collection("meetings")
-                            .document(meetingId.toString())
-                            .update("startMillis", currentTimeMillis)
-                            .await()
-                        Log.d(TAG, "[6-2 완료] Firebase startMillis 저장 성공: $currentTimeMillis")
-                        currentTimeMillis
-                    }
+                        if (meeting.actualStartTime != null) {
+                            val koreanTime = DateTimeUtils.utcToKoreaTime(meeting.actualStartTime)
+                            val startMillis = DateTimeUtils.isoLocalDateTimeToMillis(koreanTime)
 
-                    // state 업데이트
-                    withContext(Dispatchers.Main) {
-                        Log.d(TAG, "[6-3] State 업데이트 시작")
-                        _state.update { it.copy(startTime = startMillisToUse) }
+                            // state 업데이트
+                            withContext(Dispatchers.Main) {
+                                Log.d(TAG, "[6-3] State 업데이트 시작")
+                                _state.update { 
+                                    it.copy(
+                                        startTime = startMillis,
+                                        // targetTime이 설정되지 않았으면 설정
+                                        targetTime = if (it.targetTime == 0) meeting.targetTime else it.targetTime
+                                    ) 
+                                }
 
-                        // 휴식 시간 피드백 스케줄링
-                        val currentState = state.value
-                        if (currentState.targetTime > 0 && currentState.restInterval > 0 && currentState.restDuration > 0) {
-                            Log.d(
-                                TAG,
-                                "[6-4] 휴식 시간 피드백 스케줄링 시작: targetTime=${currentState.targetTime}, restInterval=${currentState.restInterval}, restDuration=${currentState.restDuration}"
-                            )
-                            scheduleRestBreakFeedbacks(
-                                startMillisToUse,
-                                currentState.targetTime,
-                                currentState.restInterval,
-                                currentState.restDuration
-                            )
-                            Log.d(TAG, "[6-4 완료] 휴식 시간 피드백 스케줄링 완료")
+                                // 휴식 시간 피드백 스케줄링
+                                val currentState = state.value
+                                if (currentState.targetTime > 0 && currentState.restInterval > 0 && currentState.restDuration > 0) {
+                                    Log.d(
+                                        TAG,
+                                        "[6-4] 휴식 시간 피드백 스케줄링 시작: targetTime=${currentState.targetTime}, restInterval=${currentState.restInterval}, restDuration=${currentState.restDuration}"
+                                    )
+                                    scheduleRestBreakFeedbacks(
+                                        startMillis,
+                                        currentState.targetTime,
+                                        currentState.restInterval,
+                                        currentState.restDuration
+                                    )
+                                    Log.d(TAG, "[6-4 완료] 휴식 시간 피드백 스케줄링 완료")
+                                } else {
+                                    Log.d(TAG, "[6-4 스킵] 휴식 시간 설정이 없어 스케줄링을 건너뜁니다")
+                                }
+
+                                // 회의 종료 10분 전 피드백 스케줄링
+                                if (currentState.targetTime > 0) {
+                                    Log.d(
+                                        TAG,
+                                        "[6-5] 회의 종료 피드백 스케줄링 시작: targetTime=${currentState.targetTime}"
+                                    )
+                                    scheduleMeetingEndFeedback(startMillis, currentState.targetTime)
+                                    Log.d(TAG, "[6-5 완료] 회의 종료 피드백 스케줄링 완료")
+                                } else {
+                                    Log.d(TAG, "[6-5 스킵] 목표 시간이 없어 스케줄링을 건너뜁니다")
+                                }
+                                Log.d(TAG, "[6-3 완료] State 업데이트 완료")
+                            }
                         } else {
-                            Log.d(TAG, "[6-4 스킵] 휴식 시간 설정이 없어 스케줄링을 건너뜁니다")
+                            Log.w(TAG, "[6-2 경고] actualStartTime이 null입니다. startTime을 설정하지 않습니다.")
                         }
 
-                        // 회의 종료 10분 전 피드백 스케줄링
-                        if (currentState.targetTime > 0) {
-                            Log.d(
-                                TAG,
-                                "[6-5] 회의 종료 피드백 스케줄링 시작: targetTime=${currentState.targetTime}"
-                            )
-                            scheduleMeetingEndFeedback(startMillisToUse, currentState.targetTime)
-                            Log.d(TAG, "[6-5 완료] 회의 종료 피드백 스케줄링 완료")
-                        } else {
-                            Log.d(TAG, "[6-5 스킵] 목표 시간이 없어 스케줄링을 건너뜁니다")
-                        }
-                        Log.d(TAG, "[6-3 완료] State 업데이트 완료")
+                        Log.d(TAG, "========================================")
+                        Log.d(TAG, "[6단계 완료] 연결 확립 처리 완료")
+                        Log.d(TAG, "========================================")
                     }
-                    Log.d(TAG, "========================================")
-                    Log.d(TAG, "[6단계 완료] 연결 확립 처리 완료")
-                    Log.d(TAG, "========================================")
-                } catch (e: Exception) {
-                    Log.e(TAG, "[6-2 실패] Firebase startMillis 조회/저장 실패: ${e.message}", e)
+
+                    is ApiResult.Failure -> {
+                        Log.e(TAG, "[6-2 실패] Meeting Detail 조회 실패: ${meetingDetailResult.message}")
+                    }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "[6단계 실패] 연결 확립 처리 중 오류: ${e.message}", e)
@@ -308,194 +305,190 @@ class MeetingInProgressViewModel @Inject constructor(
         Log.d(TAG, "[2-2] meetingId: $meetingId")
 
         coroutineScope {
-            // 1. Meeting Detail 가져오기 (participants 정보 포함)
-            Log.d(TAG, "[2-3] Meeting Detail 조회 시작")
-            when (val meetingDetailResult = getMeetingDetailUseCase(meetingId)) {
-                is ApiResult.Success -> {
-                    val meeting = meetingDetailResult.data
-                    Log.d(
-                        TAG,
-                        "[2-3 완료] Meeting Detail 조회 성공: targetTime=${meeting.targetTime}, restInterval=${meeting.restInterval}, restDuration=${meeting.restDuration}, participants=${meeting.participants.size}명"
-                    )
-                    // targetTime, restInterval, restDuration, isHost, agendas 저장
-                    _state.update {
-                        it.copy(
-                            targetTime = meeting.targetTime,
-                            restInterval = meeting.restInterval,
-                            restDuration = meeting.restDuration,
-                            isHost = meeting.isHost,
-                            agendas = meeting.agendas
-                        )
-                    }
-
-                    // participants의 email로 사용자 정보 미리 로드 (병렬 처리)
-                    meeting.participants.forEach { participant ->
-                        launch(Dispatchers.IO) {
-                            try {
-                                when (val userResult = getUserInfoUseCase(participant.email)) {
-                                    is ApiResult.Success -> {
-                                        userNicknameCache[participant.userId] =
-                                            userResult.data.nickname
-                                        userProfileImageCache[participant.userId] =
-                                            userResult.data.pictureURL
-                                    }
-
-                                    is ApiResult.Failure -> {
-                                        Log.w(
-                                            TAG,
-                                            "사용자 정보 조회 실패 (userId: ${participant.userId}, email: ${participant.email}): ${userResult.message}"
-                                        )
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                Log.e(
-                                    TAG,
-                                    "사용자 정보 조회 예외 (userId: ${participant.userId}, email: ${participant.email}): ${e.message}",
-                                    e
-                                )
-                            }
-                        }
-                    }
-                }
-
-                is ApiResult.Failure -> {
-                    Log.e(TAG, "[2-3 실패] Meeting Detail 조회 실패: ${meetingDetailResult.message}")
-                }
-            }
-
-            var startMillis: Long? = null
-
-            Log.d(TAG, "[2-5] Firebase startMillis 조회 시작")
-            try {
-                val snapshot = FirebaseFirestore.getInstance()
-                    .collection("meetings")
-                    .document(meetingId.toString())
-                    .get()
-                    .await()
-                startMillis = snapshot.getLong("startMillis")
-                Log.d(TAG, "[2-5 완료] Firebase startMillis 조회 완료: $startMillis")
-                if (startMillis != null) {
-                    _state.update { it.copy(startTime = startMillis) }
-
-                    // 휴식 시간 피드백 스케줄링
-                    val currentState = state.value
-                    if (currentState.targetTime > 0 && currentState.restInterval > 0 && currentState.restDuration > 0) {
-                        scheduleRestBreakFeedbacks(
-                            startMillis,
-                            currentState.targetTime,
-                            currentState.restInterval,
-                            currentState.restDuration
-                        )
-                    }
-
-                    // 회의 종료 10분 전 피드백 스케줄링
-                    if (currentState.targetTime > 0) {
-                        scheduleMeetingEndFeedback(startMillis, currentState.targetTime)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "[2-5 실패] Firebase startMillis 조회 실패: ${e.message}", e)
-            }
-
-            val currentUserId = userStore.user.first()?.id
-
+            val meeting = loadMeetingDetail(meetingId) ?: return@coroutineScope
+            loadUserInfoForParticipants(meeting.participants)
+            
+            val startMillis = updateStartTimeIfAvailable(meeting)
             if (startMillis != null) {
-                val segmentsDeferred = async { getSegmentsUseCase(meetingId) }
-                val summariesDeferred = async { getSummariesUseCase(meetingId) }
-                val participationDeferred = async { getParticipationRateHistoryUseCase(meetingId) }
-                val feedbacksDeferred = async { getFeedbacksUseCase(meetingId) }
+                loadMeetingData(meetingId, startMillis)
+            }
+        }
+    }
 
-                when (val result = segmentsDeferred.await()) {
-                    is ApiResult.Success -> {
-                        val ui = result.data.mapIndexed { index, seg ->
-                            val prevUserId = if (index > 0) result.data[index - 1].userId else null
-                            val nextUserId =
-                                if (index < result.data.lastIndex) result.data[index + 1].userId else null
-                            val isSameAsPrevious = prevUserId != null && prevUserId == seg.userId
-                            val isSameAsNext = nextUserId != null && nextUserId == seg.userId
-                            val millis = DateTimeUtils.isoLocalDateTimeToMillis(seg.timestamp)
-                            SegmentUi(
-                                timestamp = DateTimeUtils.getElapsedStringFromMillis(
-                                    startMillis,
-                                    millis
-                                ),
-                                text = seg.text,
-                                nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
-                                profileImage = userProfileImageCache[seg.userId] ?: "",
-                                isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
-                                isSameAsPrevious = isSameAsPrevious,
-                                isSameAsNext = isSameAsNext
-                            )
-                        }
-                        _state.update { it.copy(segments = ui) }
-                    }
-
-                    is ApiResult.Failure -> Log.e(TAG, "세그먼트 로드 실패: ${result.message}")
+    @RequiresApi(Build.VERSION_CODES.O)
+    private suspend fun loadMeetingDetail(meetingId: Long): Meeting? {
+        Log.d(TAG, "[2-3] Meeting Detail 조회 시작")
+        return when (val result = getMeetingDetailUseCase(meetingId)) {
+            is ApiResult.Success -> {
+                val meeting = result.data
+                Log.d(
+                    TAG,
+                    "[2-3 완료] Meeting Detail 조회 성공: targetTime=${meeting.targetTime}, restInterval=${meeting.restInterval}, restDuration=${meeting.restDuration}, participants=${meeting.participants.size}명"
+                )
+                _state.update {
+                    it.copy(
+                        targetTime = meeting.targetTime,
+                        restInterval = meeting.restInterval,
+                        restDuration = meeting.restDuration,
+                        isHost = meeting.isHost,
+                        agendas = meeting.agendas
+                    )
                 }
+                meeting
+            }
+            is ApiResult.Failure -> {
+                Log.e(TAG, "[2-3 실패] Meeting Detail 조회 실패: ${result.message}")
+                null
+            }
+        }
+    }
 
-                when (val result = summariesDeferred.await()) {
-                    is ApiResult.Success -> {
-                        val ui = result.data.map {
-                            val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
-                            SummaryUi(
-                                content = it.content,
-                                timestamp = DateTimeUtils.getElapsedStringFromMillis(
-                                    startMillis,
-                                    millis
-                                )
-                            )
-                        }
-                        _state.update { it.copy(summaries = ui) }
-                    }
-
-                    is ApiResult.Failure -> Log.e(TAG, "요약 로드 실패: ${result.message}")
-                }
-
-                when (val result = participationDeferred.await()) {
-                    is ApiResult.Success -> {
-                        val sorted = result.data.sortedByDescending { it.rate }
-                        _state.update { it.copy(participationRates = sorted) }
-                    }
-
-                    is ApiResult.Failure -> Log.e(TAG, "참여율 로드 실패: ${result.message}")
-                }
-
-                when (val result = feedbacksDeferred.await()) {
-                    is ApiResult.Success -> {
-                        val ui = result.data.map {
-                            val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
-                            FeedbackUi(
-                                comment = it.comment,
-                                timestamp = DateTimeUtils.getElapsedStringFromMillis(
-                                    startMillis,
-                                    millis
-                                ),
-                                isRead = false
-                            )
-                        }
-
-                        // 저장된 마지막 읽은 피드백 인덱스 조회
-                        val lastReadIndex = feedbackReadStore.getLastReadFeedbackIndex(meetingId)
-
-                        // 저장된 인덱스까지는 읽음 처리
-                        val finalUi = if (lastReadIndex != null && lastReadIndex >= 0) {
-                            ui.mapIndexed { index, feedback ->
-                                if (index <= lastReadIndex) {
-                                    feedback.copy(isRead = true)
-                                } else {
-                                    feedback
-                                }
+    private suspend fun loadUserInfoForParticipants(participants: List<Meeting.Participant>) {
+        coroutineScope {
+            participants.forEach { participant ->
+                launch(Dispatchers.IO) {
+                    try {
+                        when (val userResult = getUserInfoUseCase(participant.email)) {
+                            is ApiResult.Success -> {
+                                userNicknameCache[participant.userId] = userResult.data.nickname
+                                userProfileImageCache[participant.userId] = userResult.data.pictureURL
                             }
-                        } else {
-                            ui
+                            is ApiResult.Failure -> {
+                                Log.w(
+                                    TAG,
+                                    "사용자 정보 조회 실패 (userId: ${participant.userId}, email: ${participant.email}): ${userResult.message}"
+                                )
+                            }
                         }
-
-                        _state.update { it.copy(feedbacks = finalUi) }
+                    } catch (e: Exception) {
+                        Log.e(
+                            TAG,
+                            "사용자 정보 조회 예외 (userId: ${participant.userId}, email: ${participant.email}): ${e.message}",
+                            e
+                        )
                     }
-
-                    is ApiResult.Failure -> Log.e(TAG, "피드백 로드 실패: ${result.message}")
                 }
             }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private suspend fun updateStartTimeIfAvailable(meeting: Meeting): Long? {
+        return meeting.actualStartTime?.let { actualStartTime ->
+            val koreanTime = DateTimeUtils.utcToKoreaTime(actualStartTime)
+            val startMillis = DateTimeUtils.isoLocalDateTimeToMillis(koreanTime)
+            _state.update { it.copy(startTime = startMillis) }
+            startMillis
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private suspend fun loadMeetingData(meetingId: Long, startMillis: Long) {
+        coroutineScope {
+            val currentUserId = userStore.user.first()?.id
+            val segmentsDeferred = async { getSegmentsUseCase(meetingId) }
+            val summariesDeferred = async { getSummariesUseCase(meetingId) }
+            val participationDeferred = async { getParticipationRateHistoryUseCase(meetingId) }
+            val feedbacksDeferred = async { getFeedbacksUseCase(meetingId) }
+
+            loadSegments(segmentsDeferred.await(), startMillis, currentUserId)
+            loadSummaries(summariesDeferred.await(), startMillis)
+            loadParticipationRates(participationDeferred.await())
+            loadFeedbacks(feedbacksDeferred.await(), meetingId, startMillis)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun loadSegments(
+        result: ApiResult<List<com.imhungry.sillok.domain.model.segment.Segment>>,
+        startMillis: Long,
+        currentUserId: Long?
+    ) {
+        when (result) {
+            is ApiResult.Success -> {
+                val ui = result.data.mapIndexed { index, seg ->
+                    val prevUserId = if (index > 0) result.data[index - 1].userId else null
+                    val nextUserId = if (index < result.data.lastIndex) result.data[index + 1].userId else null
+                    val isSameAsPrevious = prevUserId != null && prevUserId == seg.userId
+                    val isSameAsNext = nextUserId != null && nextUserId == seg.userId
+                    val millis = DateTimeUtils.isoLocalDateTimeToMillis(seg.timestamp)
+                    SegmentUi(
+                        timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
+                        text = seg.text,
+                        nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
+                        profileImage = userProfileImageCache[seg.userId] ?: "",
+                        isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
+                        isSameAsPrevious = isSameAsPrevious,
+                        isSameAsNext = isSameAsNext
+                    )
+                }
+                _state.update { it.copy(segments = ui) }
+            }
+            is ApiResult.Failure -> Log.e(TAG, "세그먼트 로드 실패: ${result.message}")
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun loadSummaries(
+        result: ApiResult<List<com.imhungry.sillok.domain.model.summary.Summary>>,
+        startMillis: Long
+    ) {
+        when (result) {
+            is ApiResult.Success -> {
+                val ui = result.data.map {
+                    val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
+                    SummaryUi(
+                        content = it.content,
+                        timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis)
+                    )
+                }
+                _state.update { it.copy(summaries = ui) }
+            }
+            is ApiResult.Failure -> Log.e(TAG, "요약 로드 실패: ${result.message}")
+        }
+    }
+
+    private fun loadParticipationRates(
+        result: ApiResult<List<UserParticipationRate>>
+    ) {
+        when (result) {
+            is ApiResult.Success -> {
+                val sorted = result.data.sortedByDescending { it.rate }
+                _state.update { it.copy(participationRates = sorted) }
+            }
+            is ApiResult.Failure -> Log.e(TAG, "참여율 로드 실패: ${result.message}")
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private suspend fun loadFeedbacks(
+        result: ApiResult<List<com.imhungry.sillok.domain.model.feedback.Feedback>>,
+        meetingId: Long,
+        startMillis: Long
+    ) {
+        when (result) {
+            is ApiResult.Success -> {
+                val ui = result.data.map {
+                    val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
+                    FeedbackUi(
+                        comment = it.comment,
+                        timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
+                        isRead = false
+                    )
+                }
+
+                val lastReadIndex = feedbackReadStore.getLastReadFeedbackIndex(meetingId)
+                val finalUi = if (lastReadIndex != null && lastReadIndex >= 0) {
+                    ui.mapIndexed { index, feedback ->
+                        if (index <= lastReadIndex) feedback.copy(isRead = true) else feedback
+                    }
+                } else {
+                    ui
+                }
+
+                _state.update { it.copy(feedbacks = finalUi) }
+            }
+            is ApiResult.Failure -> Log.e(TAG, "피드백 로드 실패: ${result.message}")
         }
     }
 
@@ -543,20 +536,6 @@ class MeetingInProgressViewModel @Inject constructor(
                 updateMeetingStatusUseCase(meetingId, TargetMeetingStatus.COMPLETED)) {
                 is ApiResult.Success -> {
                     Log.d(TAG, "회의 완료 처리 성공: meetingId=$meetingId")
-
-                    // Firebase에 endMillis 업데이트
-                    try {
-                        val endMillis = System.currentTimeMillis()
-                        FirebaseFirestore.getInstance()
-                            .collection("meetings")
-                            .document(meetingId.toString())
-                            .update("endMillis", endMillis)
-                            .await()
-                        Log.d(TAG, "Firebase endMillis 업데이트 완료: $endMillis")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Firebase endMillis 업데이트 실패: ${e.message}", e)
-                    }
-                    // 홈으로 이동은 COMPLETION_SCHEDULED 이벤트를 받을 때 수행
                 }
 
                 is ApiResult.Failure -> {

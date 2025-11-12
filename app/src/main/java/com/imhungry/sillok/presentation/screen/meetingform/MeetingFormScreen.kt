@@ -60,40 +60,6 @@ import com.imhungry.sillok.ui.theme.primaryTextColor
 import java.time.LocalDate
 import java.time.LocalTime
 
-// YYYYMMDD 형식의 문자열을 LocalDate로 파싱하는 헬퍼 함수
-@RequiresApi(Build.VERSION_CODES.O)
-private fun parseDateFromYYYYMMDD(dateString: String): LocalDate {
-    return try {
-        if (dateString.length == 8) {
-            val year = dateString.substring(0, 4).toInt()
-            val month = dateString.substring(4, 6).toInt()
-            val day = dateString.substring(6, 8).toInt()
-            LocalDate.of(year, month, day)
-        } else {
-            LocalDate.now() // 기본값으로 현재 날짜 반환
-        }
-    } catch (e: Exception) {
-        LocalDate.now() // 파싱 실패 시 현재 날짜 반환
-    }
-}
-
-// HHMM 형식의 문자열을 LocalTime으로 파싱하는 헬퍼 함수
-@RequiresApi(Build.VERSION_CODES.O)
-private fun parseTimeFromHHMM(timeString: String): LocalTime {
-    return try {
-        if (timeString.length == 4) {
-            val hour = timeString.substring(0, 2).toInt()
-            val minute = timeString.substring(2, 4).toInt()
-            LocalTime.of(hour, minute)
-        } else {
-            LocalTime.now() // 기본값으로 현재 시간 반환
-        }
-    } catch (e: Exception) {
-        LocalTime.now() // 파싱 실패 시 현재 시간 반환
-    }
-}
-
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MeetingFormScreen(
