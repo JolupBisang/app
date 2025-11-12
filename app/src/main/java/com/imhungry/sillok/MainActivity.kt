@@ -67,14 +67,14 @@ class MainActivity : ComponentActivity() {
         }
 
         // FCM 토큰 가져오기 (자동으로 FcmService.onNewToken 호출됨)
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val token = task.result
-                Log.d(TAG, "FCM 토큰: $token")
-            } else {
-                Log.e(TAG, "FCM 토큰 가져오기 실패", task.exception)
-            }
-        }
+//        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+//            if (task.isSuccessful) {
+//                val token = task.result
+//                Log.d(TAG, "FCM 토큰: $token")
+//            } else {
+//                Log.e(TAG, "FCM 토큰 가져오기 실패", task.exception)
+//            }
+//        }
 
         // User 데이터 로그 출력
         lifecycleScope.launch {

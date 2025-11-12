@@ -95,40 +95,30 @@ class MeetingMinutesViewModel @Inject constructor(
 
             var startMillis: Long? = null
             var endMillis: Long? = null
-
-            try {
-                val snapshot = FirebaseFirestore.getInstance()
-                    .collection("meetings")
-                    .document(meetingId.toString())
-                    .get()
-                    .await()
-                startMillis = snapshot.getLong("startMillis")
-            } catch (e: Exception) {
-                Log.e(TAG, "startMillis 조회 실패: ${e.message}", e)
-            }
-
-            try {
-                val snapshot = FirebaseFirestore.getInstance()
-                    .collection("meetings")
-                    .document(meetingId.toString())
-                    .get()
-                    .await()
-                endMillis = snapshot.getLong("endMillis")
-            } catch (e: Exception) {
-                Log.e(TAG, "endMillis 조회 실패: ${e.message}", e)
-            }
+            var actualStartTime: String = ""
+            var actualEndTime: String = ""
+            var actualDurationMinutes: Long = 0L
 
             when (val result = detailDeferred.await()) {
                 is ApiResult.Success -> {
                     val meeting = result.data
                     val date = DateTimeUtils.localIsoToDateString(meeting.scheduledStartTime)
                     val location = meeting.location
+                    if (meeting.actualStartTime != null && meeting.scheduledEndTime != null) {
+                        startMillis = DateTimeUtils.isoLocalDateTimeToMillis(meeting.actualStartTime)
+                        endMillis = DateTimeUtils.isoLocalDateTimeToMillis(meeting.scheduledEndTime)
+                        actualStartTime = DateTimeUtils.localIsoToTimeString(meeting.actualStartTime)
+                        actualEndTime = DateTimeUtils.localIsoToTimeString(meeting.scheduledEndTime)
+                        actualDurationMinutes = DateTimeUtils.getDurationMinutes(startMillis, endMillis)!!
+                    }
 
                     _state.update {
                         it.copy(
                             meetingTitle = meeting.title,
                             meetingDateAndLocation = "$date, $location",
-                            scheduledStartTime = DateTimeUtils.localIsoToTimeString(meeting.scheduledStartTime),
+                            actualStartTime = actualStartTime,
+                            actualEndTime = actualEndTime,
+                            actualDurationMinutes = actualDurationMinutes,
                             targetTime = meeting.targetTime,
                             agendas = meeting.agendas
                         )
@@ -190,8 +180,10 @@ class MeetingMinutesViewModel @Inject constructor(
                             if (index < result.data.lastIndex) result.data[index + 1].userId else null
                         val isSameAsPrevious = prevUserId != null && prevUserId == seg.userId
                         val isSameAsNext = nextUserId != null && nextUserId == seg.userId
+
+                        val millis = DateTimeUtils.isoLocalDateTimeToMillis(seg.timestamp)
                         SegmentUi(
-                            timestamp = DateTimeUtils.getElapsedString(startMillis, seg.timestamp),
+                            timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
                             text = seg.text,
                             nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
                             profileImage = userProfileImageCache[seg.userId] ?: "",
@@ -215,11 +207,12 @@ class MeetingMinutesViewModel @Inject constructor(
             when (val result = summariesDeferred.await()) {
                 is ApiResult.Success -> {
                     val ui = result.data.map {
+                        val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
                         SummaryUi(
                             content = it.content,
-                            timestamp = DateTimeUtils.getElapsedString(
+                            timestamp = DateTimeUtils.getElapsedStringFromMillis(
                                 startMillis,
-                                it.generatedDateTime
+                                millis
                             )
                         )
                     }
@@ -266,11 +259,12 @@ class MeetingMinutesViewModel @Inject constructor(
             when (val result = feedbacksDeferred.await()) {
                 is ApiResult.Success -> {
                     val ui = result.data.map {
+                        val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
                         FeedbackUi(
                             comment = it.comment,
-                            timestamp = DateTimeUtils.getElapsedString(
+                            timestamp = DateTimeUtils.getElapsedStringFromMillis(
                                 startMillis,
-                                it.generatedDateTime
+                                millis
                             ),
                             isRead = false
                         )
@@ -308,237 +302,18 @@ class MeetingMinutesViewModel @Inject constructor(
     }
 
     /**
-     * 세그먼트 더 불러오기 (무한 스크롤)
-     */
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun loadMoreSegments() {
-        val currentState = state.value
-        if (!currentState.hasMoreSegments || currentState.isLoadingMoreSegments) {
-            return
-        }
-
-        viewModelScope.launch {
-            _state.update { it.copy(isLoadingMoreSegments = true) }
-
-            val meetingId = currentState.meetingId
-            val nextPage = currentState.segmentsPage + 1
-
-            // Firebase에서 startMillis 조회
-            var startMillis: Long? = null
-            try {
-                val snapshot = FirebaseFirestore.getInstance()
-                    .collection("meetings")
-                    .document(meetingId.toString())
-                    .get()
-                    .await()
-                startMillis = snapshot.getLong("startMillis")
-            } catch (e: Exception) {
-                Log.e(TAG, "startMillis 조회 실패: ${e.message}", e)
-            }
-
-            when (val result = getSegmentsUseCase(meetingId, page = nextPage, size = 40)) {
-                is ApiResult.Success -> {
-                    // 현재 사용자 ID 가져오기
-                    var currentUserId: Long? = null
-                    try {
-                        when (val profileResult = getMyProfileUseCase()) {
-                            is ApiResult.Success -> {
-                                currentUserId = profileResult.data.id
-                            }
-                            is ApiResult.Failure -> {
-                                Log.w(TAG, "현재 사용자 프로필 로드 실패: ${profileResult.message}")
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "현재 사용자 프로필 로드 예외: ${e.message}", e)
-                    }
-
-                    val existingSegments = currentState.segments
-
-                    // 기존 세그먼트의 마지막 userId 확인 (isSameAsNext 업데이트용)
-                    val lastSegment = existingSegments.lastOrNull()
-
-                    val newUi = result.data.mapIndexed { index, seg ->
-                        val prevUserId = if (index > 0) {
-                            result.data[index - 1].userId
-                        } else {
-                            // 첫 번째 새 세그먼트인 경우, 기존 마지막 세그먼트의 userId 추출
-                            lastSegment?.nickname?.removePrefix("사용자 ")?.toLongOrNull()
-                        }
-                        val nextUserId =
-                            if (index < result.data.lastIndex) result.data[index + 1].userId else null
-                        val isSameAsPrevious = prevUserId != null && prevUserId == seg.userId
-                        val isSameAsNext = nextUserId != null && nextUserId == seg.userId
-
-                        SegmentUi(
-                            timestamp = DateTimeUtils.getElapsedString(startMillis, seg.timestamp),
-                            text = seg.text,
-                            nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
-                            profileImage = userProfileImageCache[seg.userId] ?: "",
-                            isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
-                            isSameAsPrevious = isSameAsPrevious,
-                            isSameAsNext = isSameAsNext
-                        )
-                    }
-
-                    // 기존 마지막 세그먼트의 isSameAsNext 업데이트
-                    val updatedExistingSegments =
-                        if (existingSegments.isNotEmpty() && newUi.isNotEmpty()) {
-                            val lastIndex = existingSegments.lastIndex
-                            val lastExisting = existingSegments[lastIndex]
-                            val firstNew = newUi[0]
-                            if (lastExisting.nickname == firstNew.nickname) {
-                                existingSegments.toMutableList().apply {
-                                    this[lastIndex] = lastExisting.copy(isSameAsNext = true)
-                                }
-                            } else {
-                                existingSegments
-                            }
-                        } else {
-                            existingSegments
-                        }
-
-                    _state.update {
-                        it.copy(
-                            segments = updatedExistingSegments + newUi,
-                            segmentsPage = nextPage,
-                            hasMoreSegments = result.data.size >= 40,
-                            isLoadingMoreSegments = false
-                        )
-                    }
-                }
-
-                is ApiResult.Failure -> {
-                    Log.e(TAG, "세그먼트 더 불러오기 실패: ${result.message}")
-                    _state.update { it.copy(isLoadingMoreSegments = false) }
-                }
-            }
-        }
-    }
-
-    /**
-     * 요약 더 불러오기 (무한 스크롤)
-     */
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun loadMoreSummaries() {
-        val currentState = state.value
-        if (!currentState.hasMoreSummaries || currentState.isLoadingMoreSummaries) {
-            return
-        }
-
-        viewModelScope.launch {
-            _state.update { it.copy(isLoadingMoreSummaries = true) }
-
-            val meetingId = currentState.meetingId
-            val nextPage = currentState.summariesPage + 1
-
-            // Firebase에서 startMillis 조회
-            var startMillis: Long? = null
-            try {
-                val snapshot = FirebaseFirestore.getInstance()
-                    .collection("meetings")
-                    .document(meetingId.toString())
-                    .get()
-                    .await()
-                startMillis = snapshot.getLong("startMillis")
-            } catch (e: Exception) {
-                Log.e(TAG, "startMillis 조회 실패: ${e.message}", e)
-            }
-
-            when (val result = getSummariesUseCase(meetingId, page = nextPage, size = 30)) {
-                is ApiResult.Success -> {
-                    val newUi = result.data.map {
-                        SummaryUi(
-                            content = it.content,
-                            timestamp = DateTimeUtils.getElapsedString(
-                                startMillis,
-                                it.generatedDateTime
-                            )
-                        )
-                    }
-
-                    _state.update {
-                        it.copy(
-                            summaries = it.summaries + newUi,
-                            summariesPage = nextPage,
-                            hasMoreSummaries = result.data.size >= 30,
-                            isLoadingMoreSummaries = false
-                        )
-                    }
-                }
-
-                is ApiResult.Failure -> {
-                    Log.e(TAG, "요약 더 불러오기 실패: ${result.message}")
-                    _state.update { it.copy(isLoadingMoreSummaries = false) }
-                }
-            }
-        }
-    }
-
-    /**
-     * 피드백 더 불러오기 (무한 스크롤)
-     */
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun loadMoreFeedbacks() {
-        val currentState = state.value
-        if (!currentState.hasMoreFeedbacks || currentState.isLoadingMoreFeedbacks) {
-            return
-        }
-
-        viewModelScope.launch {
-            _state.update { it.copy(isLoadingMoreFeedbacks = true) }
-
-            val meetingId = currentState.meetingId
-            val nextPage = currentState.feedbacksPage + 1
-
-            // Firebase에서 startMillis 조회
-            var startMillis: Long? = null
-            try {
-                val snapshot = FirebaseFirestore.getInstance()
-                    .collection("meetings")
-                    .document(meetingId.toString())
-                    .get()
-                    .await()
-                startMillis = snapshot.getLong("startMillis")
-            } catch (e: Exception) {
-                Log.e(TAG, "startMillis 조회 실패: ${e.message}", e)
-            }
-
-            when (val result = getFeedbacksUseCase(meetingId, page = nextPage, size = 30)) {
-                is ApiResult.Success -> {
-                    val newUi = result.data.map {
-                        FeedbackUi(
-                            comment = it.comment,
-                            timestamp = DateTimeUtils.getElapsedString(
-                                startMillis,
-                                it.generatedDateTime
-                            ),
-                            isRead = false
-                        )
-                    }
-
-                    _state.update {
-                        it.copy(
-                            feedbacks = it.feedbacks + newUi,
-                            feedbacksPage = nextPage,
-                            hasMoreFeedbacks = result.data.size >= 30,
-                            isLoadingMoreFeedbacks = false
-                        )
-                    }
-                }
-
-                is ApiResult.Failure -> {
-                    Log.e(TAG, "피드백 더 불러오기 실패: ${result.message}")
-                    _state.update { it.copy(isLoadingMoreFeedbacks = false) }
-                }
-            }
-        }
-    }
-
-    /**
      * 더미 데이터를 사용하여 회의록 화면의 상태를 채웁니다.
      */
+    @RequiresApi(Build.VERSION_CODES.O)
     fun loadDummyMeetingMinutesState() {
+        val start = DateTimeUtils.utcToKoreaTime(DateTimeUtils.getCurrentUtcTime())
+        val end = DateTimeUtils.utcToKoreaTime(DateTimeUtils.getCurrentUtcTimePlusOneHour())
+        val startMillis = DateTimeUtils.isoLocalDateTimeToMillis(start)
+        val endMillis = DateTimeUtils.isoLocalDateTimeToMillis(end)
+        val actualStartTime = DateTimeUtils.localIsoToTimeString(start)
+        val actualEndTime = DateTimeUtils.localIsoToTimeString(end)
+        val actualDurationMinutes = DateTimeUtils.getDurationMinutes(startMillis, endMillis)!!
+
         viewModelScope.launch {
         val dummyAgendas = listOf(
             com.imhungry.sillok.domain.model.agenda.Agenda(
@@ -966,7 +741,6 @@ class MeetingMinutesViewModel @Inject constructor(
                 isRead = true
             )
         )
-
         _state.update { current ->
             current.copy(
                 meetingTitle = "프로젝트 킥오프 회의",
@@ -976,9 +750,9 @@ class MeetingMinutesViewModel @Inject constructor(
                 scheduledStartTime = "14:00",
                 scheduledEndTime = "15:30",
                 targetTime = 90,
-                actualStartTime = "14:05",
-                actualEndTime = "15:28",
-                actualDurationMinutes = 83,
+                actualStartTime = actualStartTime,
+                actualEndTime = actualEndTime,
+                actualDurationMinutes = actualDurationMinutes,
                 participationRates = dummyParticipation.sortedByDescending { it.rate },
                 segments = dummySegments,
                 summaries = dummySummaries,

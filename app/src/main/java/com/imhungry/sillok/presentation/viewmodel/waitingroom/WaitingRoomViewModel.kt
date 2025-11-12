@@ -102,7 +102,6 @@ class WaitingRoomViewModel @Inject constructor(
         val seconds = 0
         fun two(n: Int) = n.toString().padStart(2, '0')
         val result = "${two(hours)}:${two(minutes)}:${two(seconds)}"
-        Log.d("WaitingRoomViewModel", "formatDurationForDisplay - totalMinutes: $totalMinutes, result: $result")
         return result
     }
 

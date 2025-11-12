@@ -411,10 +411,11 @@ class MeetingInProgressViewModel @Inject constructor(
                                 if (index < result.data.lastIndex) result.data[index + 1].userId else null
                             val isSameAsPrevious = prevUserId != null && prevUserId == seg.userId
                             val isSameAsNext = nextUserId != null && nextUserId == seg.userId
+                            val millis = DateTimeUtils.isoLocalDateTimeToMillis(seg.timestamp)
                             SegmentUi(
-                                timestamp = DateTimeUtils.getElapsedString(
+                                timestamp = DateTimeUtils.getElapsedStringFromMillis(
                                     startMillis,
-                                    seg.timestamp
+                                    millis
                                 ),
                                 text = seg.text,
                                 nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
@@ -433,11 +434,12 @@ class MeetingInProgressViewModel @Inject constructor(
                 when (val result = summariesDeferred.await()) {
                     is ApiResult.Success -> {
                         val ui = result.data.map {
+                            val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
                             SummaryUi(
                                 content = it.content,
-                                timestamp = DateTimeUtils.getElapsedString(
+                                timestamp = DateTimeUtils.getElapsedStringFromMillis(
                                     startMillis,
-                                    it.generatedDateTime
+                                    millis
                                 )
                             )
                         }
@@ -459,11 +461,12 @@ class MeetingInProgressViewModel @Inject constructor(
                 when (val result = feedbacksDeferred.await()) {
                     is ApiResult.Success -> {
                         val ui = result.data.map {
+                            val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
                             FeedbackUi(
                                 comment = it.comment,
-                                timestamp = DateTimeUtils.getElapsedString(
+                                timestamp = DateTimeUtils.getElapsedStringFromMillis(
                                     startMillis,
-                                    it.generatedDateTime
+                                    millis
                                 ),
                                 isRead = false
                             )
@@ -644,8 +647,11 @@ class MeetingInProgressViewModel @Inject constructor(
                 val profileImage = userProfileImageCache[data.userId] ?: ""
                 val isSameAsPrevious = lastSegment != null && lastSegment.nickname == nickname
 
+                val koreaTime = DateTimeUtils.utcToKoreaTime(data.timestamp)
+                val millis = DateTimeUtils.isoLocalDateTimeToMillis(koreaTime)
+
                 val segmentUi = SegmentUi(
-                    timestamp = DateTimeUtils.getElapsedString(startMillis, data.timestamp),
+                    timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
                     text = data.text,
                     nickname = nickname,
                     profileImage = profileImage,
@@ -781,11 +787,12 @@ class MeetingInProgressViewModel @Inject constructor(
             val currentFeedbacks = currentState.feedbacks.toMutableList()
 
             if (startMillis > 0) {
-                val currentIsoTimestamp = getCurrentTimestamp()
+                val currentTime = DateTimeUtils.getCurrentTime()
+                val millis = DateTimeUtils.isoLocalDateTimeToMillis(currentTime)
 
                 val feedbackUi = FeedbackUi(
                     comment = feedback.comment,
-                    timestamp = DateTimeUtils.getElapsedString(startMillis, currentIsoTimestamp),
+                    timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
                     isRead = false
                 )
 
@@ -807,11 +814,12 @@ class MeetingInProgressViewModel @Inject constructor(
             val currentSummaries = currentState.summaries.toMutableList()
 
             if (startMillis > 0) {
-                val currentIsoTimestamp = getCurrentTimestamp()
+                val currentTime = DateTimeUtils.getCurrentTime()
+                val millis = DateTimeUtils.isoLocalDateTimeToMillis(currentTime)
 
                 val summaryUi = SummaryUi(
                     content = summary.summary,
-                    timestamp = DateTimeUtils.getElapsedString(startMillis, currentIsoTimestamp)
+                    timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis)
                 )
 
                 currentSummaries.add(summaryUi)
@@ -980,18 +988,6 @@ class MeetingInProgressViewModel @Inject constructor(
      */
     fun dismissScheduledFeedback() {
         _scheduledFeedback.value = null
-    }
-
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun getCurrentTimestamp(): String {
-        return try {
-            // Android API 26 이상
-            LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        } catch (e: Exception) {
-            // Android API 26 미만
-            System.currentTimeMillis().toString()
-        }
     }
 
 

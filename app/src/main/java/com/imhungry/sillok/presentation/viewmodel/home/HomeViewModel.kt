@@ -551,35 +551,6 @@ class HomeViewModel @Inject constructor(
         return query to (query + "\uf8ff")
     }
 
-    private fun mapMeetingDoc(data: Map<String, Any?>): MeetingDetailSummary? {
-        val id = (data["meetingId"] as? Number)?.toLong() ?: return null
-        val title = data["title"] as? String ?: ""
-        val scheduledStartTime = when (val timeValue = data["scheduledStartTime"]) {
-            is String -> if (timeValue.isNotBlank()) timeValue else ""
-            is Timestamp -> {
-                // Firestore Timestamp를 ISO 형식 문자열로 변환
-                val date = timeValue.toDate()
-                val formatter = java.text.SimpleDateFormat(
-                    "yyyy-MM-dd'T'HH:mm:ss",
-                    java.util.Locale.getDefault()
-                )
-                formatter.format(date)
-            }
-
-            else -> ""
-        }
-        val targetTime = (data["targetTime"] as? Number)?.toInt() ?: 0
-        val status = data["meetingStatus"] as? String ?: "WAITING"
-
-        return MeetingDetailSummary(
-            id = id,
-            title = title,
-            scheduledStartTime = scheduledStartTime,
-            targetTime = targetTime,
-            status = status
-        )
-    }
-
     // ========================================
     // 더미 데이터 (개발용)
     // ========================================

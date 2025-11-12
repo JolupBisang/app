@@ -11,6 +11,7 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.imhungry.sillok.R
+import com.imhungry.sillok.presentation.util.DateTimeUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -214,7 +215,7 @@ class MeetingInProgressService : Service() {
         // 매니저 클래스 초기화
         chunkRetransmitter = ChunkRetransmitter(
             packetDir = packetDir,
-            getCurrentTimestamp = { getCurrentTimestamp() }
+            getCurrentTimestamp = { DateTimeUtils.getCurrentUtcTime() }
         )
         audioRecorder = AudioRecorder(
             context = this,
@@ -313,15 +314,6 @@ class MeetingInProgressService : Service() {
             webSocketManager.close()
         }
         // 청크 파일 삭제는 회의 완료 시에만 수행 (onMeetingCompleted 콜백에서 처리)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun getCurrentTimestamp(): String {
-        return try {
-            LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        } catch (e: Exception) {
-            System.currentTimeMillis().toString()
-        }
     }
 }
 

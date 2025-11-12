@@ -23,7 +23,6 @@ class MeetingRepositoryImpl @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 val dto = mapper.toDto(request)
-                Log.d("MeetingRepositoryImpl", "createMeeting: $dto")
                 val res = api.createMeeting(dto)
                 if (res.isSuccessful) {
                     ApiResult.Success(res.body()?.meetingId ?: -1L)

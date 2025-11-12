@@ -14,7 +14,9 @@ data class Meeting(
     val meetingStatus: String,
     val participants: List<Participant>,
     val agendas: List<Agenda> = emptyList(),
-    val isHost: Boolean
+    val isHost: Boolean,
+    val actualStartTime: String? = null,
+    val scheduledEndTime: String? = null
 ) {
     data class Participant(
         val userId: Long,

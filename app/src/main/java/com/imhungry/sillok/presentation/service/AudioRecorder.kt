@@ -163,7 +163,7 @@ class AudioRecorder(
                 put("type", "AUDIO_CHUNK")
                 put("chunkId", chunkId)
                 put("encoding", "audio/pcm")
-                put("timestamp", DateTimeUtils.koreaToUtcTime(getCurrentTimestamp()))
+                put("timestamp", DateTimeUtils.getCurrentUtcTime())
             }
 
             val metaBytes = metaJson.toString().toByteArray(Charsets.UTF_8)
@@ -232,15 +232,6 @@ class AudioRecorder(
     fun toggleMic() {
         micEnabled = !micEnabled
         Log.d(TAG, "마이크 토글: ${if (micEnabled) "켜짐" else "꺼짐"}")
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun getCurrentTimestamp(): String {
-        return try {
-            LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        } catch (e: Exception) {
-            System.currentTimeMillis().toString()
-        }
     }
 }
 

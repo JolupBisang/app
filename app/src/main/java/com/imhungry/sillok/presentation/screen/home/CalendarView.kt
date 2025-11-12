@@ -355,7 +355,7 @@ private fun CalendarDateItem(
         if (isCurrentMonth && meetingCounts.isNotEmpty()) {
             Box(
                 modifier = Modifier
-                    .padding(top = 26.dp),
+                    .padding(top = 28.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Row(

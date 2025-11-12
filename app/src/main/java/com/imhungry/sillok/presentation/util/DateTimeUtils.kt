@@ -14,61 +14,46 @@ import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 object DateTimeUtils {
-    fun isoToMillis(isoTimestamp: String): Long {
+    fun utcToKoreaTime(utcTime: String): String {
         return try {
-            // 'yyyy-MM-dd'T'HH:mm:ss'까지만 자르기 (19자, 소수점 초나 타임존 정보 제거)
-            val baseTimestamp = isoTimestamp.take(19)
+            val baseTimestamp = utcTime.take(19)
             val localDateTime =
                 LocalDateTime.parse(baseTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             val utcZoned = localDateTime.atZone(ZoneOffset.UTC)
             val koreaZoned = utcZoned.withZoneSameInstant(ZoneId.of("Asia/Seoul"))
-            koreaZoned.toInstant().toEpochMilli()
+            koreaZoned.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         } catch (e: Exception) {
-            Log.e("DateTimeUtils", "isoToMillis 파싱 실패: $isoTimestamp", e)
-            0
+            ""
         }
     }
 
-//    fun isoToMillis(isoTimestamp: String): Long {
-//        val patterns = listOf(
-//            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS",
-//            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSS",
-//            "yyyy-MM-dd'T'HH:mm:ss.SSSSSSS",
-//            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
-//            "yyyy-MM-dd'T'HH:mm:ss.SSSSS",
-//            "yyyy-MM-dd'T'HH:mm:ss.SSSS",
-//            "yyyy-MM-dd'T'HH:mm:ss.SSS",
-//            "yyyy-MM-dd'T'HH:mm:ss.SS",
-//            "yyyy-MM-dd'T'HH:mm:ss.S",
-//        )
-//
-//        for (pattern in patterns) {
-//            try {
-//                val formatter = DateTimeFormatter.ofPattern(pattern)
-//                val localDateTime = LocalDateTime.parse(isoTimestamp, formatter)
-//                val utcZoned = localDateTime.atZone(ZoneOffset.UTC)
-//                val koreaZoned = utcZoned.withZoneSameInstant(ZoneId.of("Asia/Seoul"))
-//                return koreaZoned.toInstant().toEpochMilli()
-//            } catch (e: Exception) {
-//                // 패턴 불일치 → 다음 패턴 시도
-//            }
-//        }
-//        return 0
-//    }
-
-    fun getElapsedString(startMillis: Long?, isoTimestamp: String): String {
-        if (startMillis == null) return "00:00:00"
-        val millis = isoToMillis(isoTimestamp)
-        val elapsed = ((millis - startMillis) / 1000).coerceAtLeast(0)
-        val h = elapsed / 3600
-        val m = (elapsed % 3600) / 60
-        val s = elapsed % 60
-        return String.format("%02d:%02d:%02d", h, m, s)
+    fun isoLocalDateTimeToMillis(isoLocalDateTime: String?): Long {
+        if (isoLocalDateTime.isNullOrBlank()) return 0L
+        return try {
+            val localDateTime =
+                LocalDateTime.parse(isoLocalDateTime, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val koreaZoned = localDateTime.atZone(ZoneId.of("Asia/Seoul"))
+            koreaZoned.toInstant().toEpochMilli()
+        } catch (e: Exception) {
+            0L
+        }
     }
 
-    /**
-     * startMillis와 endMillis를 받아 경과 시간 문자열 반환 (HH:MM:SS 형식)
-     */
+    fun isoLocalDateTimeToTimeString(isoLocalDateTime: String?): String {
+        if (isoLocalDateTime.isNullOrBlank()) return "00:00:00"
+        return try {
+            val baseTimestamp = isoLocalDateTime.take(19)
+            val localDateTime =
+                LocalDateTime.parse(baseTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val hour = localDateTime.hour
+            val minute = localDateTime.minute
+            val second = localDateTime.second
+            String.format("%02d:%02d:%02d", hour, minute, second)
+        } catch (e: Exception) {
+            "00:00:00"
+        }
+    }
+
     fun getElapsedStringFromMillis(startMillis: Long?, endMillis: Long): String {
         if (startMillis == null || startMillis <= 0) return "00:00:00"
         val elapsed = ((endMillis - startMillis) / 1000).coerceAtLeast(0)
@@ -97,6 +82,7 @@ object DateTimeUtils {
         return try {
             val localDateTime =
                 LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            Log.d("DateTimeUtils", "파싱 성공: $localDateTime")
             localDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
         } catch (e: Exception) {
             Log.e("DateTimeUtils", "파싱 실패: $isoLocalTimestamp", e)
@@ -104,32 +90,13 @@ object DateTimeUtils {
         }
     }
 
-    fun localIsoToTimeStringPlusMinutes(isoLocalTimestamp: String?, targetTime: Int): String {
-        if (isoLocalTimestamp.isNullOrBlank()) return "-"
-        return try {
-            val localDateTime =
-                LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            val updatedDateTime = localDateTime.plusMinutes(targetTime.toLong())
-            updatedDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
-        } catch (e: Exception) {
-            Log.e("DateTimeUtils", "파싱 실패: $isoLocalTimestamp", e)
-            "-"
-        }
-    }
-
-    /**
-     * 회의 시작 시각(ISO_LOCAL_DATE_TIME)과 목표 시간(분)을 받아
-     * 종료 시각을 ISO_LOCAL_DATE_TIME 문자열로 반환합니다.
-     * 입력/출력 예: 2025-09-10T18:00:00
-     */
-    fun calcEndTimeIsoLocal(startIsoLocal: String?, targetMinutes: Int): String {
+    fun calcEndDate(startIsoLocal: String?, targetMinutes: Int): String {
         if (startIsoLocal.isNullOrBlank()) return ""
         return try {
             val start = LocalDateTime.parse(startIsoLocal, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             val end = start.plusMinutes(targetMinutes.toLong())
             end.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         } catch (e: Exception) {
-            Log.e("DateTimeUtils", "종료 시각 계산 실패: $startIsoLocal, target=$targetMinutes", e)
             ""
         }
     }
@@ -137,6 +104,16 @@ object DateTimeUtils {
     fun getMinutesBetweenMillis(startMillis: Long, endMillis: Long): Long {
         val diffMillis = endMillis - startMillis
         return diffMillis / 1000 / 60
+    }
+
+    fun getDurationMinutes(startMillis: Long?, endMillis: Long?): Long {
+        if (startMillis == null || endMillis == null || startMillis <= 0 || endMillis <= 0) {
+            return 0L
+        }
+        if (endMillis < startMillis) {
+            return 0L
+        }
+        return getMinutesBetweenMillis(startMillis, endMillis)
     }
 
     fun millisToHourMinute(millis: Long): String {
@@ -176,6 +153,50 @@ object DateTimeUtils {
 
         } catch (e: NumberFormatException) {
             null
+        }
+    }
+
+
+    fun getCurrentTime(): String {
+        return try {
+            val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
+            now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        } catch (e: Exception) {
+            Log.e("DateTimeUtils", "현재 시간 변환 실패", e)
+            ""
+        }
+    }
+
+    /**
+     * 현재 시간을 UTC 시간으로 변환하여 ISO_LOCAL_DATE_TIME 형식으로 반환합니다.
+     * 반환 형식: "yyyy-MM-dd'T'HH:mm:ss"
+     */
+    fun getCurrentUtcTime(): String {
+        return try {
+            val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
+            Log.d("DateTimeUtils", "현재 시간: $now")
+            val utcNow = now.withZoneSameInstant(ZoneId.of("UTC"))
+            Log.d("DateTimeUtils", "UTC 시간: $utcNow")
+            utcNow.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        } catch (e: Exception) {
+            Log.e("DateTimeUtils", "현재 UTC 시간 변환 실패", e)
+            ""
+        }
+    }
+
+    /**
+     * 현재 시간에 1시간을 더한 시간을 UTC 시간으로 변환하여 ISO_LOCAL_DATE_TIME 형식으로 반환합니다.
+     * 반환 형식: "yyyy-MM-dd'T'HH:mm:ss"
+     */
+    fun getCurrentUtcTimePlusOneHour(): String {
+        return try {
+            val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
+            val oneHourLater = now.plusHours(1)
+            val utcTime = oneHourLater.withZoneSameInstant(ZoneId.of("UTC"))
+            utcTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        } catch (e: Exception) {
+            Log.e("DateTimeUtils", "현재 UTC 시간 +1시간 변환 실패", e)
+            ""
         }
     }
 }

@@ -1,11 +1,15 @@
 package com.imhungry.sillok.data.mapper.meeting
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.imhungry.sillok.data.model.meeting.MeetingDetailResDto
 import com.imhungry.sillok.data.model.meeting.MeetingDetailSummaryResDto
 import com.imhungry.sillok.data.model.meeting.MeetingReqDto
+import com.imhungry.sillok.domain.model.agenda.Agenda
 import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
+import com.imhungry.sillok.presentation.util.DateTimeUtils
 import javax.inject.Inject
 
 class MeetingMapper @Inject constructor() {
@@ -13,7 +17,7 @@ class MeetingMapper @Inject constructor() {
         return MeetingReqDto(
             title = request.title,
             location = request.location,
-            scheduledStartTime = request.scheduledStartTime.take(19),
+            scheduledStartTime = request.scheduledStartTime,
             targetTime = request.targetTime,
             restInterval = request.restInterval,
             restDuration = request.restDuration,
@@ -22,12 +26,15 @@ class MeetingMapper @Inject constructor() {
         )
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun toDomain(dto: MeetingDetailResDto): Meeting {
         return Meeting(
             meetingId = dto.meetingId,
             title = dto.title,
             location = dto.location,
             scheduledStartTime = dto.scheduledStartTime.take(19),
+            actualStartTime = DateTimeUtils.utcToKoreaTime(dto.actualStartTime?: ""),
+            scheduledEndTime = DateTimeUtils.utcToKoreaTime(dto.scheduledEndTime?: ""),
             targetTime = dto.targetTime / 60,
             restInterval = dto.restInterval,
             restDuration = dto.restDuration,
@@ -35,13 +42,13 @@ class MeetingMapper @Inject constructor() {
             participants = dto.participants.map {
                 Meeting.Participant(it.userId, it.email, it.role)
             },
-            agendas = dto.agendas?.map {
-                com.imhungry.sillok.domain.model.agenda.Agenda(
+            agendas = dto.agendas.map {
+                Agenda(
                     agendaId = it.agendaId,
                     content = it.content,
                     isCompleted = it.isCompleted
                 )
-            } ?: emptyList(),
+            },
             isHost = dto.isHost
         )
     }
