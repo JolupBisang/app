@@ -11,6 +11,7 @@ import com.imhungry.sillok.data.remote.participation.ParticipationRateApi
 import com.imhungry.sillok.data.remote.places.PlacesApi
 import com.imhungry.sillok.data.remote.segment.SegmentApi
 import com.imhungry.sillok.data.remote.summary.SummaryApi
+import com.imhungry.sillok.data.remote.team.TeamApi
 import com.imhungry.sillok.data.remote.user.UserApi
 import dagger.Module
 import dagger.Provides
@@ -117,6 +118,12 @@ object AppModule {
     @Singleton
     fun provideMeetingUserApi(retrofit: Retrofit): MeetingUserApi {
         return retrofit.create(MeetingUserApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTeamApi(retrofit: Retrofit): TeamApi {
+        return retrofit.create(TeamApi::class.java)
     }
 
     @Provides

@@ -6,11 +6,15 @@ import com.imhungry.sillok.data.model.meeting.DuplicationCheckRes
 import com.imhungry.sillok.data.model.meeting.MeetingDetailResDto
 import com.imhungry.sillok.data.model.meeting.MeetingDetailSummaryResDto
 import com.imhungry.sillok.data.model.meeting.MeetingReqDto
+import com.imhungry.sillok.data.model.meeting.TeamTagAdditionReqDto
+import com.imhungry.sillok.data.model.meeting.TeamTagRemovalReqDto
 import com.imhungry.sillok.domain.model.agenda.Agenda
+import com.imhungry.sillok.domain.model.meeting.AddTeamTagRequest
 import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
 import com.imhungry.sillok.domain.model.meeting.DuplicatedMeeting
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
+import com.imhungry.sillok.domain.model.meeting.RemoveTeamTagRequest
 import com.imhungry.sillok.presentation.util.DateTimeUtils
 import javax.inject.Inject
 
@@ -24,7 +28,8 @@ class MeetingMapper @Inject constructor() {
             restInterval = request.restInterval,
             restDuration = request.restDuration,
             participants = request.participants,
-            agendas = request.agendas
+            agendas = request.agendas,
+            teams = request.teams
         )
     }
 
@@ -51,6 +56,7 @@ class MeetingMapper @Inject constructor() {
                     isCompleted = it.isCompleted
                 )
             },
+            teamNames = dto.teamNames,
             isHost = dto.isHost
         )
     }
@@ -73,5 +79,17 @@ class MeetingMapper @Inject constructor() {
                 scheduledEndTime = meetingDetail.scheduledEndTime
             )
         }
+    }
+
+    fun toDto(request: AddTeamTagRequest): TeamTagAdditionReqDto {
+        return TeamTagAdditionReqDto(
+            teamId = request.teamId
+        )
+    }
+
+    fun toDto(request: RemoveTeamTagRequest): TeamTagRemovalReqDto {
+        return TeamTagRemovalReqDto(
+            teamId = request.teamId
+        )
     }
 }

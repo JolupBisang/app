@@ -9,8 +9,13 @@ import com.imhungry.sillok.data.model.meeting.MeetingReqDto
 import com.imhungry.sillok.data.model.meeting.MeetingStatusChangeResDto
 import com.imhungry.sillok.data.model.meeting.MeetingStatusUpdateReqDto
 import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
+import com.imhungry.sillok.data.model.meeting.TeamTagAdditionReqDto
+import com.imhungry.sillok.data.model.meeting.TeamTagAdditionResDto
+import com.imhungry.sillok.data.model.meeting.TeamTagRemovalReqDto
+import com.imhungry.sillok.data.model.meeting.TeamTagRemovalResDto
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -51,4 +56,16 @@ interface MeetingApi {
         @Query("startTime") startTime: String,
         @Query("targetMinutes") targetMinutes: Long
     ): Response<DuplicationCheckRes>
+
+    @POST("/api/v1/meetings/{meetingId}/team-tags")
+    suspend fun addTeamTag(
+        @Path("meetingId") meetingId: Long,
+        @Body request: TeamTagAdditionReqDto
+    ): Response<TeamTagAdditionResDto>
+
+    @DELETE("/api/v1/meetings/{meetingId}/team-tags")
+    suspend fun removeTeamTag(
+        @Path("meetingId") meetingId: Long,
+        @Body request: TeamTagRemovalReqDto
+    ): Response<TeamTagRemovalResDto>
 }

@@ -9,10 +9,12 @@ import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
 import com.imhungry.sillok.data.model.meeting.TargetMeetingStatus
 import com.imhungry.sillok.data.remote.meeting.MeetingApi
 import com.imhungry.sillok.data.util.ApiResult
+import com.imhungry.sillok.domain.model.meeting.AddTeamTagRequest
 import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
 import com.imhungry.sillok.domain.model.meeting.DuplicatedMeeting
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
+import com.imhungry.sillok.domain.model.meeting.RemoveTeamTagRequest
 import com.imhungry.sillok.domain.repository.meeting.MeetingRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -119,6 +121,40 @@ class MeetingRepositoryImpl @Inject constructor(
                 } else {
                     ApiResult.Success(emptyList())
                 }
+            } else {
+                ApiResult.Failure(res.message())
+            }
+        } catch (e: Exception) {
+            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
+        }
+    }
+
+    override suspend fun addTeamTag(
+        meetingId: Long,
+        request: AddTeamTagRequest
+    ): ApiResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val dto = mapper.toDto(request)
+            val res = api.addTeamTag(meetingId, dto)
+            if (res.isSuccessful) {
+                ApiResult.Success(Unit)
+            } else {
+                ApiResult.Failure(res.message())
+            }
+        } catch (e: Exception) {
+            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
+        }
+    }
+
+    override suspend fun removeTeamTag(
+        meetingId: Long,
+        request: RemoveTeamTagRequest
+    ): ApiResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val dto = mapper.toDto(request)
+            val res = api.removeTeamTag(meetingId, dto)
+            if (res.isSuccessful) {
+                ApiResult.Success(Unit)
             } else {
                 ApiResult.Failure(res.message())
             }

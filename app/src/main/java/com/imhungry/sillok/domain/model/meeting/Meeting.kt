@@ -8,15 +8,16 @@ data class Meeting(
     val title: String,
     val location: String,
     val scheduledStartTime: String,
+    val actualStartTime: String? = null,
+    val scheduledEndTime: String? = null,
     val targetTime: Int,
     val restInterval: Int,
     val restDuration: Int,
     val meetingStatus: String,
     val participants: List<Participant>,
-    val agendas: List<Agenda> = emptyList(),
+    val agendas: List<Agenda>,
+    val teamNames: List<String>,
     val isHost: Boolean,
-    val actualStartTime: String? = null,
-    val scheduledEndTime: String? = null
 ) {
     data class Participant(
         val userId: Long,

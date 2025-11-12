@@ -5,15 +5,16 @@ data class MeetingDetailResDto(
     val title: String,
     val location: String,
     val scheduledStartTime: String,
+    val actualStartTime: String? = null,
+    val scheduledEndTime: String? = null,
     val targetTime: Int,
     val restInterval: Int,
     val restDuration: Int,
     val meetingStatus: String,
     val participants: List<ParticipantDto>,
     val agendas: List<AgendaDto>,
-    val isHost: Boolean,
-    val actualStartTime: String? = null,
-    val scheduledEndTime: String? = null,
+    val teamNames: List<String>,
+    val isHost: Boolean
 ) {
     data class ParticipantDto(
         val userId: Long,

@@ -3,10 +3,12 @@ package com.imhungry.sillok.domain.repository.meeting
 import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
 import com.imhungry.sillok.data.model.meeting.TargetMeetingStatus
 import com.imhungry.sillok.data.util.ApiResult
+import com.imhungry.sillok.domain.model.meeting.AddTeamTagRequest
 import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
 import com.imhungry.sillok.domain.model.meeting.DuplicatedMeeting
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
+import com.imhungry.sillok.domain.model.meeting.RemoveTeamTagRequest
 
 interface MeetingRepository {
     suspend fun createMeeting(request: CreateMeetingRequest): ApiResult<Long>
@@ -19,4 +21,6 @@ interface MeetingRepository {
 
     suspend fun updateMeeting(meetingId: Long, request: MeetingUpdateReqDto): ApiResult<Unit>
     suspend fun checkDuplicatedTime(startTime: String, targetMinutes: Long): ApiResult<List<DuplicatedMeeting>>
+    suspend fun addTeamTag(meetingId: Long, request: AddTeamTagRequest): ApiResult<Unit>
+    suspend fun removeTeamTag(meetingId: Long, request: RemoveTeamTagRequest): ApiResult<Unit>
 }

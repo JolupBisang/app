@@ -8,5 +8,6 @@ data class MeetingReqDto(
     val restInterval: Int,
     val restDuration: Int,
     val participants: List<String>,
-    val agendas: List<String>
+    val agendas: List<String>,
+    val teams: List<Long>
 )

@@ -9,6 +9,7 @@ import com.imhungry.sillok.data.repository.participation.ParticipationRateReposi
 import com.imhungry.sillok.data.repository.places.PlacesRepositoryImpl
 import com.imhungry.sillok.data.repository.segment.SegmentRepositoryImpl
 import com.imhungry.sillok.data.repository.summary.SummaryRepositoryImpl
+import com.imhungry.sillok.data.repository.team.TeamRepositoryImpl
 import com.imhungry.sillok.data.repository.user.UserRepositoryImpl
 import com.imhungry.sillok.domain.repository.agenda.AgendaRepository
 import com.imhungry.sillok.domain.repository.audio.AudioRepository
@@ -19,6 +20,7 @@ import com.imhungry.sillok.domain.repository.participation.ParticipationRateRepo
 import com.imhungry.sillok.domain.repository.places.PlacesRepository
 import com.imhungry.sillok.domain.repository.segment.SegmentRepository
 import com.imhungry.sillok.domain.repository.summary.SummaryRepository
+import com.imhungry.sillok.domain.repository.team.TeamRepository
 import com.imhungry.sillok.domain.repository.user.UserRepository
 import dagger.Binds
 import dagger.Module
@@ -88,4 +90,10 @@ abstract class RepositoryModule {
     abstract fun bindPlacesRepository(
         placesRepositoryImpl: PlacesRepositoryImpl
     ): PlacesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamRepository(
+        teamRepositoryImpl: TeamRepositoryImpl
+    ): TeamRepository
 } 
