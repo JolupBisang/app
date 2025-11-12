@@ -82,7 +82,7 @@ class MainActivity : ComponentActivity() {
                 if (user != null) {
                     Log.d(
                         TAG,
-                        "User 데이터: id=${user.id}, email=${user.email}, nickname=${user.nickname}, profileImage=${user.profileImage}"
+                        "User 데이터: id=${user.id}, email=${user.email}, nickname=${user.nickname}, profileImage=${user.pictureURL}"
                     )
                 } else {
                     Log.d(TAG, "User 데이터: null")

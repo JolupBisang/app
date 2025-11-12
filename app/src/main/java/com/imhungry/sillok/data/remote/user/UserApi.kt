@@ -6,9 +6,9 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 
 interface UserApi {
-    @GET("/api/users/{email}")
+    @GET("/api/v1/users/{email}")
     suspend fun getUserInfo(@Path("email") email: String): Response<UserInfoResDto>
 
-    @GET("/api/users/my-profile")
+    @GET("/api/v1/users/my-profile")
     suspend fun getMyProfile(): Response<UserInfoResDto>
 }

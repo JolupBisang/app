@@ -6,7 +6,6 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.FirebaseFirestore
-import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.audio.AudioInfo
 import com.imhungry.sillok.domain.usecase.audio.GetAudioListUseCase
@@ -15,17 +14,19 @@ import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.participation.GetParticipationRateHistoryUseCase
 import com.imhungry.sillok.domain.usecase.segment.GetSegmentsUseCase
 import com.imhungry.sillok.domain.usecase.summary.GetSummariesUseCase
+import com.imhungry.sillok.domain.usecase.user.GetMyProfileUseCase
+import com.imhungry.sillok.domain.usecase.user.GetUserInfoUseCase
 import com.imhungry.sillok.presentation.state.meeting.FeedbackUi
 import com.imhungry.sillok.presentation.state.meeting.SegmentUi
 import com.imhungry.sillok.presentation.state.meeting.SummaryUi
 import com.imhungry.sillok.presentation.state.meetingminutes.MeetingMinutesState
 import com.imhungry.sillok.presentation.util.DateTimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -39,7 +40,8 @@ class MeetingMinutesViewModel @Inject constructor(
     private val getParticipationRateHistoryUseCase: GetParticipationRateHistoryUseCase,
     private val getFeedbacksUseCase: GetFeedbacksUseCase,
     private val getAudioListUseCase: GetAudioListUseCase,
-    private val userStore: UserStore
+    private val getMyProfileUseCase: GetMyProfileUseCase,
+    private val getUserInfoUseCase: GetUserInfoUseCase
 ) : ViewModel() {
     companion object {
         private const val TAG = "MeetingMinutesViewModel"
@@ -47,6 +49,10 @@ class MeetingMinutesViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(MeetingMinutesState())
     val state: StateFlow<MeetingMinutesState> = _state.asStateFlow()
+
+    // 사용자 정보 캐시 (userId -> nickname, profileImage)
+    private val userNicknameCache = mutableMapOf<Long, String>()
+    private val userProfileImageCache = mutableMapOf<Long, String>()
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun initialize(meetingId: Long) {
@@ -128,6 +134,32 @@ class MeetingMinutesViewModel @Inject constructor(
                         )
                     }
                     Log.d(TAG, "회의 상세 로드 성공: ${meeting}")
+
+                    // participants의 email로 사용자 정보 미리 로드 (병렬 처리)
+                    meeting.participants.forEach { participant ->
+                        launch(Dispatchers.IO) {
+                            try {
+                                when (val userResult = getUserInfoUseCase(participant.email)) {
+                                    is ApiResult.Success -> {
+                                        userNicknameCache[participant.userId] = userResult.data.nickname
+                                        userProfileImageCache[participant.userId] = userResult.data.pictureURL
+                                    }
+                                    is ApiResult.Failure -> {
+                                        Log.w(
+                                            TAG,
+                                            "사용자 정보 조회 실패 (userId: ${participant.userId}, email: ${participant.email}): ${userResult.message}"
+                                        )
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.e(
+                                    TAG,
+                                    "사용자 정보 조회 예외 (userId: ${participant.userId}, email: ${participant.email}): ${e.message}",
+                                    e
+                                )
+                            }
+                        }
+                    }
                 }
 
                 is ApiResult.Failure -> {
@@ -135,7 +167,20 @@ class MeetingMinutesViewModel @Inject constructor(
                 }
             }
 
-            val currentUserId = userStore.user.first()?.id
+            // 현재 사용자 ID 가져오기
+            var currentUserId: Long? = null
+            try {
+                when (val result = getMyProfileUseCase()) {
+                    is ApiResult.Success -> {
+                        currentUserId = result.data.id
+                    }
+                    is ApiResult.Failure -> {
+                        Log.w(TAG, "현재 사용자 프로필 로드 실패: ${result.message}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "현재 사용자 프로필 로드 예외: ${e.message}", e)
+            }
 
             when (val result = segmentsDeferred.await()) {
                 is ApiResult.Success -> {
@@ -148,8 +193,8 @@ class MeetingMinutesViewModel @Inject constructor(
                         SegmentUi(
                             timestamp = DateTimeUtils.getElapsedString(startMillis, seg.timestamp),
                             text = seg.text,
-                            nickname = "사용자 ${seg.userId}",
-                            profileImage = "",
+                            nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
+                            profileImage = userProfileImageCache[seg.userId] ?: "",
                             isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
                             isSameAsPrevious = isSameAsPrevious,
                             isSameAsNext = isSameAsNext
@@ -293,7 +338,21 @@ class MeetingMinutesViewModel @Inject constructor(
 
             when (val result = getSegmentsUseCase(meetingId, page = nextPage, size = 40)) {
                 is ApiResult.Success -> {
-                    val currentUserId = userStore.user.first()?.id
+                    // 현재 사용자 ID 가져오기
+                    var currentUserId: Long? = null
+                    try {
+                        when (val profileResult = getMyProfileUseCase()) {
+                            is ApiResult.Success -> {
+                                currentUserId = profileResult.data.id
+                            }
+                            is ApiResult.Failure -> {
+                                Log.w(TAG, "현재 사용자 프로필 로드 실패: ${profileResult.message}")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "현재 사용자 프로필 로드 예외: ${e.message}", e)
+                    }
+
                     val existingSegments = currentState.segments
 
                     // 기존 세그먼트의 마지막 userId 확인 (isSameAsNext 업데이트용)
@@ -314,8 +373,8 @@ class MeetingMinutesViewModel @Inject constructor(
                         SegmentUi(
                             timestamp = DateTimeUtils.getElapsedString(startMillis, seg.timestamp),
                             text = seg.text,
-                            nickname = "사용자 ${seg.userId}",
-                            profileImage = "",
+                            nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
+                            profileImage = userProfileImageCache[seg.userId] ?: "",
                             isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
                             isSameAsPrevious = isSameAsPrevious,
                             isSameAsNext = isSameAsNext

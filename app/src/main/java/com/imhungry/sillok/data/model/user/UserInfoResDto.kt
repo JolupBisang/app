@@ -4,5 +4,5 @@ data class UserInfoResDto(
     val id: Long,
     val email: String,
     val nickname: String,
-    val profileImage: String? = null
+    val pictureURL: String
 )

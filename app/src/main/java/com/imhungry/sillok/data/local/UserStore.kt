@@ -34,11 +34,11 @@ class UserStore @Inject constructor(
         val id = preferences[USER_ID_KEY]
         val email = preferences[USER_EMAIL_KEY]
         val nickname = preferences[USER_NICKNAME_KEY]
-        val profileImage = preferences[USER_PROFILE_IMAGE_KEY] ?: ""
+        val pictureURL = preferences[USER_PROFILE_IMAGE_KEY] ?: ""
         val exists = (id != null && email != null && nickname != null)
 
         if (exists) {
-            User(id = id!!, email = email!!, nickname = nickname!!, profileImage = profileImage)
+            User(id = id!!, email = email!!, nickname = nickname!!, pictureURL = pictureURL!!)
         } else {
             null
         }
@@ -49,7 +49,7 @@ class UserStore @Inject constructor(
             preferences[USER_ID_KEY] = user.id
             preferences[USER_EMAIL_KEY] = user.email
             preferences[USER_NICKNAME_KEY] = user.nickname
-            preferences[USER_PROFILE_IMAGE_KEY] = user.profileImage
+            preferences[USER_PROFILE_IMAGE_KEY] = user.pictureURL
         }
     }
 

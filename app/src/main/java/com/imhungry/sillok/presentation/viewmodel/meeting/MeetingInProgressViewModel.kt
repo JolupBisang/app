@@ -96,6 +96,7 @@ class MeetingInProgressViewModel @Inject constructor(
 
     // 사용자 정보 캐시 (userId -> nickname)
     private val userNicknameCache = mutableMapOf<Long, String>()
+    private val userProfileImageCache = mutableMapOf<Long, String>()
 
     // 스케줄링 Job 추적 (중복 실행 방지)
     private var restBreakSchedulingJob: Job? = null
@@ -321,7 +322,7 @@ class MeetingInProgressViewModel @Inject constructor(
                             restInterval = meeting.restInterval,
                             restDuration = meeting.restDuration,
                             isHost = meeting.isHost,
-                            agendas = meeting.agendas // 아젠다는 회의 상세 응답에서 가져오기
+                            agendas = meeting.agendas
                         )
                     }
 
@@ -333,10 +334,8 @@ class MeetingInProgressViewModel @Inject constructor(
                                     is ApiResult.Success -> {
                                         userNicknameCache[participant.userId] =
                                             userResult.data.nickname
-                                        Log.d(
-                                            TAG,
-                                            "사용자 정보 캐시 저장: userId=${participant.userId}, nickname=${userResult.data.nickname}"
-                                        )
+                                        userProfileImageCache[participant.userId] =
+                                            userResult.data.pictureURL
                                     }
 
                                     is ApiResult.Failure -> {
@@ -419,7 +418,7 @@ class MeetingInProgressViewModel @Inject constructor(
                                 ),
                                 text = seg.text,
                                 nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
-                                profileImage = "",
+                                profileImage = userProfileImageCache[seg.userId] ?: "",
                                 isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
                                 isSameAsPrevious = isSameAsPrevious,
                                 isSameAsNext = isSameAsNext
@@ -642,13 +641,14 @@ class MeetingInProgressViewModel @Inject constructor(
 
                 // 캐시에서 nickname 가져오기 (없으면 기본값 사용)
                 val nickname = userNicknameCache[data.userId] ?: "사용자 ${data.userId}"
+                val profileImage = userProfileImageCache[data.userId] ?: ""
                 val isSameAsPrevious = lastSegment != null && lastSegment.nickname == nickname
 
                 val segmentUi = SegmentUi(
                     timestamp = DateTimeUtils.getElapsedString(startMillis, data.timestamp),
                     text = data.text,
                     nickname = nickname,
-                    profileImage = "",
+                    profileImage = profileImage,
                     isFromCurrentUser = currentUserId != null && data.userId == currentUserId,
                     isSameAsPrevious = isSameAsPrevious,
                     isSameAsNext = false // 다음 세그먼트는 아직 없으므로 false

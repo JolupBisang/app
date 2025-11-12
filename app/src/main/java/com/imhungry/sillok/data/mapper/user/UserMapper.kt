@@ -10,7 +10,7 @@ class UserMapper @Inject constructor() {
             id = dto.id,
             email = dto.email,
             nickname = dto.nickname,
-            profileImage = dto.profileImage ?: ""
+            pictureURL = dto.pictureURL
         )
     }
 }

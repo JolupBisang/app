@@ -11,13 +11,13 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.imhungry.sillok.data.local.DismissedMeetingStore
-import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.domain.model.meeting.MeetingStatus
 import com.imhungry.sillok.domain.model.user.User
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingSummaryListUseCase
+import com.imhungry.sillok.domain.usecase.user.GetMyProfileUseCase
 import com.imhungry.sillok.presentation.state.home.HomeState
 import com.imhungry.sillok.presentation.state.home.MeetingUi
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,7 +36,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val getMeetingSummaryListUseCase: GetMeetingSummaryListUseCase,
     private val getMeetingDetailUseCase: GetMeetingDetailUseCase,
-    private val userStore: UserStore,
+    private val getMyProfileUseCase: GetMyProfileUseCase,
     private val dismissedMeetingStore: DismissedMeetingStore,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -44,7 +44,6 @@ class HomeViewModel @Inject constructor(
     companion object {
         private const val TAG = "HomeViewModel"
         private const val SEARCH_LIMIT = 25L
-        private const val DEFAULT_MEETING_TITLE = "회의"
         private const val COLLECTION_USERS = "users"
         private const val COLLECTION_MEETINGS = "meetings"
     }
@@ -57,15 +56,31 @@ class HomeViewModel @Inject constructor(
     private var meetingStartedListener: ListenerRegistration? = null
 
     init {
-        observeUserChanges()
+        loadUserProfile()
         loadInitialData()
     }
 
-    private fun observeUserChanges() {
+    private fun loadUserProfile() {
         viewModelScope.launch {
-            userStore.user.collect { user ->
-                updateUserInfo(user)
-                handleUserAuthState(user)
+            try {
+                when (val result = getMyProfileUseCase()) {
+                    is ApiResult.Success -> {
+                        val user = result.data
+                        Log.d(TAG, "사용자 프로필 로드 성공: id=${user.id}, nickname=${user.nickname}, pictureURL=${user.pictureURL}")
+                        updateUserInfo(user)
+                        handleUserAuthState(user)
+                    }
+                    is ApiResult.Failure -> {
+                        Log.e(TAG, "사용자 프로필 로드 실패: ${result.message}")
+                        // 실패 시 빈 상태로 처리
+                        updateUserInfo(null)
+                        handleUserAuthState(null)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "사용자 프로필 로드 예외 발생: ${e.message}", e)
+                updateUserInfo(null)
+                handleUserAuthState(null)
             }
         }
     }
@@ -73,8 +88,9 @@ class HomeViewModel @Inject constructor(
     private fun updateUserInfo(user: User?) {
         _state.update { current ->
             current.copy(
-                userName = user?.nickname ?: current.userName,
-                profileImage = user?.profileImage ?: current.profileImage
+                userName = user?.nickname?.takeIf { it.isNotBlank() } ?: current.userName,
+                // 빈 문자열을 null로 변환하여 UI에서 placeholder가 표시되도록 함
+                profileImage = user?.pictureURL?.takeIf { it.isNotBlank() } ?: ""
             )
         }
     }
