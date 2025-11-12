@@ -66,6 +66,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // 앱 실행 시마다 알림 dismiss 목록 초기화
+        lifecycleScope.launch {
+            dismissedMeetingStore.initializeNotificationDismissals()
+            Log.d(TAG, "알림 dismiss 목록 초기화 완료")
+        }
+
         // User 데이터 로그 출력
         lifecycleScope.launch {
             userStore.user.collect { user ->

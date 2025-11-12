@@ -82,7 +82,6 @@ object DateTimeUtils {
         return try {
             val localDateTime =
                 LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            Log.d("DateTimeUtils", "파싱 성공: $localDateTime")
             localDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
         } catch (e: Exception) {
             Log.e("DateTimeUtils", "파싱 실패: $isoLocalTimestamp", e)
@@ -174,9 +173,7 @@ object DateTimeUtils {
     fun getCurrentUtcTime(): String {
         return try {
             val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
-            Log.d("DateTimeUtils", "현재 시간: $now")
             val utcNow = now.withZoneSameInstant(ZoneId.of("UTC"))
-            Log.d("DateTimeUtils", "UTC 시간: $utcNow")
             utcNow.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         } catch (e: Exception) {
             Log.e("DateTimeUtils", "현재 UTC 시간 변환 실패", e)

@@ -46,29 +46,35 @@ class HomeViewModel @Inject constructor(
     private var currentYearMonth: Pair<Int, Int>? = null
 
     init {
-        loadUserProfile()
-        loadInitialData()
+        viewModelScope.launch {
+            loadUserProfileInternal()
+            loadInitialData()
+        }
+    }
+
+    private suspend fun loadUserProfileInternal() {
+        try {
+            when (val result = getMyProfileUseCase()) {
+                is ApiResult.Success -> {
+                    val user = result.data
+                    Log.d(TAG, "사용자 프로필 로드 성공: id=${user.id}, nickname=${user.nickname}, pictureURL=${user.pictureURL}")
+                    updateUserInfo(user)
+                }
+                is ApiResult.Failure -> {
+                    Log.e(TAG, "사용자 프로필 로드 실패: ${result.message}")
+                    // 실패 시 빈 상태로 처리
+                    updateUserInfo(null)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "사용자 프로필 로드 예외 발생: ${e.message}", e)
+            updateUserInfo(null)
+        }
     }
 
     private fun loadUserProfile() {
         viewModelScope.launch {
-            try {
-                when (val result = getMyProfileUseCase()) {
-                    is ApiResult.Success -> {
-                        val user = result.data
-                        Log.d(TAG, "사용자 프로필 로드 성공: id=${user.id}, nickname=${user.nickname}, pictureURL=${user.pictureURL}")
-                        updateUserInfo(user)
-                    }
-                    is ApiResult.Failure -> {
-                        Log.e(TAG, "사용자 프로필 로드 실패: ${result.message}")
-                        // 실패 시 빈 상태로 처리
-                        updateUserInfo(null)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "사용자 프로필 로드 예외 발생: ${e.message}", e)
-                updateUserInfo(null)
-            }
+            loadUserProfileInternal()
         }
     }
 
@@ -146,7 +152,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun dismissOngoingMeeting(meetingId: Long) {
-        // 상태를 먼저 업데이트하여 즉시 UI 반영
+        // 상태를 먼저 업데이트하여 즉시 UI 반영 (알림에서만 숨김)
         _state.update { current ->
             current.copy(
                 ongoingMeetings = current.ongoingMeetings.map {
@@ -154,14 +160,14 @@ class HomeViewModel @Inject constructor(
                 }
             )
         }
-        // DataStore 저장은 백그라운드에서 처리
+        // DataStore 저장은 백그라운드에서 처리 (알림용 dismiss만 저장)
         viewModelScope.launch {
             dismissedMeetingStore.addDismissedOngoingMeeting(meetingId)
         }
     }
 
     fun dismissScheduledMeeting(meetingId: Long) {
-        // 상태를 먼저 업데이트하여 즉시 UI 반영
+        // 상태를 먼저 업데이트하여 즉시 UI 반영 (알림에서만 숨김)
         _state.update { current ->
             current.copy(
                 upcomingMeetings = current.upcomingMeetings.map {
@@ -169,7 +175,7 @@ class HomeViewModel @Inject constructor(
                 }
             )
         }
-        // DataStore 저장은 백그라운드에서 처리
+        // DataStore 저장은 백그라운드에서 처리 (알림용 dismiss만 저장)
         viewModelScope.launch {
             dismissedMeetingStore.addDismissedScheduledMeeting(meetingId)
         }
@@ -199,15 +205,18 @@ class HomeViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun loadHomeDataForMonth(year: Int, month: Int) {
         viewModelScope.launch {
+            Log.d(TAG, "loadHomeDataForMonth 시작: year=$year, month=$month")
             _state.update { it.copy(isLoading = true, error = null) }
             try {
                 currentYearMonth = year to month
                 when (val result = getMeetingSummaryListUseCase(year, month)) {
                     is ApiResult.Success -> {
+                        Log.d(TAG, "loadHomeDataForMonth 성공: 회의 수=${result.data.size}")
                         handleSuccessResult(result.data, year, month)
                     }
 
                     is ApiResult.Failure -> {
+                        Log.e(TAG, "loadHomeDataForMonth 실패: ${result.message}")
                         handleFailureResult(result.message)
                     }
                 }
@@ -226,9 +235,11 @@ class HomeViewModel @Inject constructor(
     ) {
         // DataStore에서 숨긴 회의 ID 가져오기
         val dismissedMeetingIds = dismissedMeetingStore.getDismissedMeetingIds()
+        Log.d(TAG, "handleSuccessResult: 전체 회의 수=${summaries.size}, 숨긴 회의 수=${dismissedMeetingIds.size}")
 
         // 숨긴 회의 제외
         val filteredSummaries = summaries.filter { !dismissedMeetingIds.contains(it.id) }
+        Log.d(TAG, "handleSuccessResult: 필터링 후 회의 수=${filteredSummaries.size}")
 
         val (ongoing, upcoming, meetings) = categorizeMeetings(filteredSummaries)
 
@@ -246,6 +257,7 @@ class HomeViewModel @Inject constructor(
             dismissedScheduledIds
         )
 
+        Log.d(TAG, "handleSuccessResult: 최종 meetings 수=${meetingUis.all.size}, ongoing=${meetingUis.ongoing.size}, upcoming=${meetingUis.upcoming.size}")
         updateStateWithMeetings(meetingUis)
     }
 

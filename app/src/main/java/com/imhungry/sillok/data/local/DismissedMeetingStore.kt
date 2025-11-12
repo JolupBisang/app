@@ -3,6 +3,7 @@ package com.imhungry.sillok.data.local
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -143,6 +144,19 @@ class DismissedMeetingStore @Inject constructor(
         dataStore.edit { preferences ->
             preferences.remove(DISMISSED_ONGOING_MEETINGS_KEY)
             preferences.remove(DISMISSED_SCHEDULED_MEETINGS_KEY)
+        }
+    }
+
+    /**
+     * 앱 실행 시마다 알림 dismiss 목록을 초기화합니다.
+     * dismissed_meetings는 초기화하지 않습니다 (한번 숨기면 영구적으로 숨김).
+     */
+    suspend fun initializeNotificationDismissals() {
+        dataStore.edit { preferences ->
+            // 앱 실행 시마다 알림용 dismiss 목록만 초기화
+            preferences.remove(DISMISSED_ONGOING_MEETINGS_KEY)
+            preferences.remove(DISMISSED_SCHEDULED_MEETINGS_KEY)
+            // dismissed_meetings는 초기화하지 않음 (영구적으로 유지)
         }
     }
 }

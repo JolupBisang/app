@@ -462,7 +462,8 @@ class MeetingFormViewModel @Inject constructor(
                     restInterval = restInterval,
                     restDuration = restDuration,
                     participants = emptyList(), // 생성 시 호스트만 등록, 참석자는 별도로 추가
-                    agendas = s.agendas.filter { it.isNotBlank() }
+                    agendas = s.agendas.filter { it.isNotBlank() },
+                    teams = TODO()
                 )
 
                 when (val result = createMeetingUseCase(request)) {

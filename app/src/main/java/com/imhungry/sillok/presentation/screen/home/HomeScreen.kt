@@ -188,7 +188,6 @@ fun HomeScreen(
                 viewModel.loadHomeDataForMonth(year, month)
             },
             onJoinOngoingMeeting = { meeting ->
-                viewModel.onCleared()
                 onNavigagteToMeetingInProgress(meeting.id)
             },
             onJoinScheduledMeeting = { meeting ->
