@@ -2,26 +2,45 @@ package com.imhungry.sillok.presentation.screen.meetingdetail
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.screen.meetingform.components.AgendaInputField
 import com.imhungry.sillok.presentation.screen.meetingform.components.BreakTimeInputField
 import com.imhungry.sillok.presentation.screen.meetingform.components.DateInputField
 import com.imhungry.sillok.presentation.screen.meetingform.components.EmailInputFieldWithAutocomplete
 import com.imhungry.sillok.presentation.screen.meetingform.components.InputField
+import com.imhungry.sillok.presentation.screen.meetingform.components.LabelText
+import com.imhungry.sillok.presentation.screen.meetingform.components.SelectedEmailsList
 import com.imhungry.sillok.presentation.screen.meetingform.components.TimeInputField
 import com.imhungry.sillok.presentation.viewmodel.meetingdetail.MeetingDetailViewModel
 import com.imhungry.sillok.ui.components.BasicBox
@@ -29,7 +48,11 @@ import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.components.SillokButtonRow
 import com.imhungry.sillok.ui.components.SillokDialog
+import com.imhungry.sillok.ui.theme.green300
+import com.imhungry.sillok.ui.theme.inverse
 import com.imhungry.sillok.ui.theme.primaryBackground
+import com.imhungry.sillok.ui.theme.secondaryButton
+import com.imhungry.sillok.ui.theme.tertiary
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,6 +116,41 @@ fun MeetingDetailScreen(
                                 isReadOnly = true,
                                 hostEmail = state.hostEmail
                             )
+                        }
+
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                LabelText(
+                                    text = "팀"
+                                )
+                                if (state.teamNames.isNotEmpty()) {
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        state.teamNames.forEach { teamName ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .border(1.dp, green300, RoundedCornerShape(12.dp))
+                                                    .background(green300)
+                                                    .padding(start = 12.dp, end = 12.dp, top = 3.dp, bottom = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = teamName,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = inverse
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         item {

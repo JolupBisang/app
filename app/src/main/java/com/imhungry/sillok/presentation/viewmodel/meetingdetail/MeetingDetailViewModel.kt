@@ -71,6 +71,7 @@ class MeetingDetailViewModel @Inject constructor(
                             agendas = agendas,
                             breakInterval = meeting.restInterval.toString(),
                             breakDuration = meeting.restDuration.toString(),
+                            teamNames = meeting.teamNames,
                             isHost = meeting.isHost,
                             isLoading = false,
                             error = null

@@ -13,6 +13,7 @@ data class MeetingDetailState(
     val agendas: List<String> = emptyList(),
     val breakInterval: String = "",
     val breakDuration: String = "",
+    val teamNames: List<String> = emptyList(),
     val isHost: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
