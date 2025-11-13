@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -34,9 +36,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.imhungry.sillok.R
+import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.theme.border
 import com.imhungry.sillok.ui.theme.gray400
 import com.imhungry.sillok.ui.theme.green300
+import com.imhungry.sillok.ui.theme.primaryBackground
+import com.imhungry.sillok.ui.theme.primaryButton
 import com.imhungry.sillok.ui.theme.primaryTextColor
 import com.imhungry.sillok.ui.theme.secondaryButton
 import com.imhungry.sillok.ui.theme.tertiary
@@ -183,7 +188,7 @@ fun SelectedEmailsList(
                     .clip(RoundedCornerShape(12.dp))
                     .border(1.dp, borderColor, RoundedCornerShape(12.dp))
                     .background(secondaryButton)
-                    .padding(horizontal = 16.dp, vertical = 5.dp),
+                    .padding(start = 12.dp, end = 12.dp, top = 3.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(

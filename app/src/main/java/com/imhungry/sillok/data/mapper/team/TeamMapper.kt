@@ -48,6 +48,7 @@ class TeamMapper @Inject constructor() {
         return TeamMember(
             id = dto.id,
             name = dto.name,
+            email = dto.email,
             pictureURL = dto.pictureURL
         )
     }

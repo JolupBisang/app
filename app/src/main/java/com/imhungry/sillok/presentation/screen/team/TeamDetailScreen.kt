@@ -314,9 +314,7 @@ fun TeamDetailScreen(
 
                                 // 멤버 리스트
                                 if (editableMembers.isNotEmpty()) {
-                                    Column(
-                                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                                    ) {
+                                    Column {
                                         editableMembers.forEach { member ->
                                             MemberItem(
                                                 nickname = member.nickname,

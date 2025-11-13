@@ -11,8 +11,10 @@ import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.agenda.Agenda
+import com.imhungry.sillok.domain.model.meeting.AddTeamTagRequest
 import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
 import com.imhungry.sillok.domain.model.meeting.Meeting
+import com.imhungry.sillok.domain.model.meeting.RemoveTeamTagRequest
 import com.imhungry.sillok.domain.usecase.agenda.AddAgendaUseCase
 import com.imhungry.sillok.domain.usecase.agenda.DeleteAgendaUseCase
 import com.imhungry.sillok.domain.usecase.agenda.UpdateAgendaUseCase
@@ -23,6 +25,13 @@ import com.imhungry.sillok.domain.usecase.meeting.UpdateMeetingUseCase
 import com.imhungry.sillok.domain.usecase.meetinguser.AddMeetingUserUseCase
 import com.imhungry.sillok.domain.usecase.meetinguser.RemoveMeetingUserUseCase
 import com.imhungry.sillok.domain.usecase.places.SearchPlacesUseCase
+import com.imhungry.sillok.domain.usecase.team.GetMyTeamsUseCase
+import com.imhungry.sillok.domain.usecase.team.GetTeamMembersUseCase
+import com.imhungry.sillok.domain.usecase.meeting.AddTeamTagUseCase
+import com.imhungry.sillok.domain.usecase.meeting.RemoveTeamTagUseCase
+import com.imhungry.sillok.presentation.state.meetingform.MemberInfo
+import com.imhungry.sillok.presentation.state.meetingform.SelectedTeamInfo
+import com.imhungry.sillok.presentation.state.meetingform.TeamInfo
 import com.imhungry.sillok.presentation.state.meetingform.MeetingData
 import com.imhungry.sillok.presentation.state.meetingform.MeetingFormEvent
 import com.imhungry.sillok.presentation.state.meetingform.MeetingFormState
@@ -31,10 +40,14 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -50,7 +63,11 @@ class MeetingFormViewModel @Inject constructor(
     private val addAgendaUseCase: AddAgendaUseCase,
     private val deleteAgendaUseCase: DeleteAgendaUseCase,
     private val updateAgendaUseCase: UpdateAgendaUseCase,
-    private val checkDuplicatedTimeUseCase: CheckDuplicatedTimeUseCase
+    private val checkDuplicatedTimeUseCase: CheckDuplicatedTimeUseCase,
+    private val getMyTeamsUseCase: GetMyTeamsUseCase,
+    private val getTeamMembersUseCase: GetTeamMembersUseCase,
+    private val addTeamTagUseCase: AddTeamTagUseCase,
+    private val removeTeamTagUseCase: RemoveTeamTagUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MeetingFormState())
@@ -62,7 +79,76 @@ class MeetingFormViewModel @Inject constructor(
 
     private var loadedParticipants: List<Meeting.Participant> = emptyList()
     private var loadedAgendas: List<Agenda> = emptyList()
+    private var loadedTeamIds: List<Long> = emptyList()
     private var initialSnapshot: FormSnapshot? = null
+
+    init {
+        loadTeamsAndMembers()
+    }
+
+    private fun loadTeamsAndMembers() {
+        viewModelScope.launch {
+            try {
+                // 현재 사용자 정보 가져오기
+                val currentUser = userStore.user.first()
+                val currentUserId = currentUser?.id
+
+                // 팀 리스트 가져오기
+                when (val teamsResult = getMyTeamsUseCase()) {
+                    is ApiResult.Success -> {
+                        val teams = teamsResult.data.map { teamListItem ->
+                            TeamInfo(id = teamListItem.teamId, name = teamListItem.teamName)
+                        }
+                        android.util.Log.d("MeetingFormViewModel", "팀 리스트 로드 성공: ${teams.size}개")
+
+                        // 각 팀의 멤버 가져오기 (id 기준 중복 제거)
+                        val memberMap = ConcurrentHashMap<Long, MemberInfo>()
+                        
+                        coroutineScope {
+                            // 각 팀의 멤버를 병렬로 가져오기
+                            teams.map { team ->
+                                async {
+                                    when (val membersResult = getTeamMembersUseCase(team.id)) {
+                                        is ApiResult.Success -> {
+                                            // 각 멤버에 대해 MemberInfo 생성
+                                            membersResult.data
+                                                .filter { it.id != currentUserId } // 본인 제외
+                                                .forEach { teamMember ->
+                                                    val memberInfo = MemberInfo(
+                                                        id = teamMember.id,
+                                                        name = teamMember.name,
+                                                        email = teamMember.email,
+                                                        profileImage = teamMember.pictureURL.takeIf { it.isNotBlank() }
+                                                    )
+                                                    // 중복 체크 및 추가 (id 기준)
+                                                    memberMap.putIfAbsent(memberInfo.id, memberInfo)
+                                                }
+                                        }
+                                        is ApiResult.Failure -> {
+                                            android.util.Log.e("MeetingFormViewModel", "팀 멤버 로드 실패: teamId=${team.id}, ${membersResult.message}")
+                                        }
+                                    }
+                                }
+                            }.forEach { it.await() }
+                        }
+
+                        android.util.Log.d("MeetingFormViewModel", "멤버 리스트 로드 성공: ${memberMap.size}명 (본인 제외, 중복 제외)")
+                        _state.update {
+                            it.copy(
+                                teams = teams,
+                                members = memberMap.values.toList()
+                            )
+                        }
+                    }
+                    is ApiResult.Failure -> {
+                        android.util.Log.e("MeetingFormViewModel", "팀 리스트 로드 실패: ${teamsResult.message}")
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MeetingFormViewModel", "팀 및 멤버 로드 예외 발생: ${e.message}", e)
+            }
+        }
+    }
 
     fun setEditMode(meetingId: Long) {
         viewModelScope.launch {
@@ -94,6 +180,12 @@ class MeetingFormViewModel @Inject constructor(
 
                         // 참석자 저장 (호스트 포함)
                         loadedParticipants = meeting.participants
+
+                        // 팀 정보 저장: teamNames를 기반으로 state.teams에서 팀 ID 찾기
+                        val currentTeams = _state.value.teams
+                        loadedTeamIds = meeting.teamNames.mapNotNull { teamName ->
+                            currentTeams.find { it.name == teamName }?.id
+                        }
 
                         val meetingData = MeetingData(
                             title = meeting.title,
@@ -372,6 +464,221 @@ class MeetingFormViewModel @Inject constructor(
                         _state.update { it.copy(showDuplicationDialog = false) }
                     }
 
+                    is MeetingFormEvent.ShowTeamSearchDialog -> {
+                        _state.update { it.copy(showTeamSearchDialog = true) }
+                    }
+
+                    is MeetingFormEvent.DismissTeamSearchDialog -> {
+                        _state.update { 
+                            it.copy(
+                                showTeamSearchDialog = false,
+                                teamSearchText = ""
+                            )
+                        }
+                    }
+
+                    is MeetingFormEvent.TeamSearchTextChanged -> {
+                        _state.update { it.copy(teamSearchText = event.text) }
+                    }
+
+                    is MeetingFormEvent.TeamSelected -> {
+                        _state.update { 
+                            it.copy(
+                                selectedTeam = event.team,
+                                teamSearchText = ""
+                            )
+                        }
+                    }
+
+                    is MeetingFormEvent.InviteTeamMembers -> {
+                        val selectedTeam = _state.value.selectedTeam
+                        if (selectedTeam != null) {
+                            viewModelScope.launch {
+                                // 선택된 팀의 멤버를 다시 로드
+                                when (val membersResult = getTeamMembersUseCase(selectedTeam.id)) {
+                                    is ApiResult.Success -> {
+                                        val currentUser = userStore.user.first()
+                                        val currentUserId = currentUser?.id
+                                        val teamMembers = membersResult.data
+                                            .filter { it.id != currentUserId } // 본인 제외
+                                            .map { teamMember ->
+                                                MemberInfo(
+                                                    id = teamMember.id,
+                                                    name = teamMember.name,
+                                                    email = teamMember.email,
+                                                    profileImage = teamMember.pictureURL.takeIf { it.isNotBlank() }
+                                                )
+                                            }
+                                        _state.update { 
+                                            it.copy(
+                                                showTeamSearchDialog = false,
+                                                showTeamMemberSelectionDialog = true,
+                                                teamMembersForSelection = teamMembers,
+                                                selectedTeamMembers = teamMembers.map { it.id }.toSet()
+                                            )
+                                        }
+                                    }
+                                    is ApiResult.Failure -> {
+                                        android.util.Log.e("MeetingFormViewModel", "팀 멤버 로드 실패: ${membersResult.message}")
+                                        // 실패해도 다이얼로그는 열기
+                                        _state.update { 
+                                            it.copy(
+                                                showTeamSearchDialog = false,
+                                                showTeamMemberSelectionDialog = true,
+                                                teamMembersForSelection = emptyList()
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    is MeetingFormEvent.ShowTeamMemberSelectionDialog -> {
+                        _state.update { it.copy(showTeamMemberSelectionDialog = true) }
+                    }
+
+                    is MeetingFormEvent.DismissTeamMemberSelectionDialog -> {
+                        _state.update { 
+                            it.copy(
+                                showTeamMemberSelectionDialog = false,
+                                selectedTeamMembers = emptySet(),
+                                selectedTeam = null,
+                                teamMembersForSelection = emptyList()
+                            )
+                        }
+                    }
+
+                    is MeetingFormEvent.TeamMemberToggled -> {
+                        val currentSelected = _state.value.selectedTeamMembers.toMutableSet()
+                        if (currentSelected.contains(event.memberId)) {
+                            currentSelected.remove(event.memberId)
+                        } else {
+                            currentSelected.add(event.memberId)
+                        }
+                        _state.update { it.copy(selectedTeamMembers = currentSelected) }
+                    }
+
+                    is MeetingFormEvent.SelectAllTeamMembers -> {
+                        val teamMembers = _state.value.teamMembersForSelection
+                        _state.update { 
+                            it.copy(
+                                selectedTeamMembers = teamMembers.map { it.id }.toSet()
+                            )
+                        }
+                    }
+
+                    is MeetingFormEvent.ConfirmTeamMemberSelection -> {
+                        val selectedMembers = _state.value.selectedTeamMembers
+                        val teamMembers = _state.value.teamMembersForSelection
+                        val selectedTeam = _state.value.selectedTeam
+                        
+                        if (selectedTeam != null) {
+                            // 선택된 멤버 정보
+                            val selectedMemberInfos = teamMembers
+                                .filter { selectedMembers.contains(it.id) }
+                            
+                            // 이미 같은 팀이 선택되어 있는지 확인
+                            val existingTeam = _state.value.selectedTeams.find { it.teamId == selectedTeam.id }
+                            
+                            // 기존 팀의 멤버 이메일들을 먼저 제거
+                            val emailsToRemove = existingTeam?.selectedMembers?.map { it.email }?.toSet() ?: emptySet()
+                            var updatedParticipantEmails = _state.value.participantEmails.filter { 
+                                !emailsToRemove.contains(it)
+                            }
+                            
+                            // 새로 선택된 멤버의 이메일 추가
+                            val emailsToAdd = selectedMemberInfos
+                                .map { it.email }
+                                .filter { email ->
+                                    !updatedParticipantEmails.contains(email)
+                                }
+                            updatedParticipantEmails = updatedParticipantEmails + emailsToAdd
+                            
+                            // 선택된 팀 정보 생성
+                            val newSelectedTeam = SelectedTeamInfo(
+                                teamId = selectedTeam.id,
+                                teamName = selectedTeam.name,
+                                selectedMembers = selectedMemberInfos
+                            )
+                            
+                            // 선택된 팀 목록 업데이트
+                            val updatedSelectedTeams = if (existingTeam != null) {
+                                // 기존 팀 정보 업데이트
+                                _state.value.selectedTeams.map { 
+                                    if (it.teamId == selectedTeam.id) newSelectedTeam else it
+                                }
+                            } else {
+                                // 새 팀 추가
+                                _state.value.selectedTeams + newSelectedTeam
+                            }
+                            
+                            _state.update {
+                                it.copy(
+                                    participantEmails = updatedParticipantEmails,
+                                    selectedTeams = updatedSelectedTeams,
+                                    showTeamMemberSelectionDialog = false,
+                                    selectedTeamMembers = emptySet(),
+                                    selectedTeam = null,
+                                    teamMembersForSelection = emptyList()
+                                )
+                            }
+                        }
+                    }
+
+                    is MeetingFormEvent.RemoveSelectedTeam -> {
+                        val teamToRemove = _state.value.selectedTeams.find { it.teamId == event.teamId }
+                        if (teamToRemove != null) {
+                            // 제거할 팀의 멤버 이메일 목록
+                            val teamEmailsToRemove = teamToRemove.selectedMembers.map { it.email }.toSet()
+                            
+                            // 다른 팀들에 속한 멤버 이메일 목록 (제거할 팀 제외)
+                            val otherTeamsEmails = _state.value.selectedTeams
+                                .filter { it.teamId != event.teamId }
+                                .flatMap { it.selectedMembers.map { member -> member.email } }
+                                .toSet()
+                            
+                            // 제거할 이메일 = 제거할 팀의 이메일 중에서 다른 팀에 속하지 않은 이메일만
+                            // (다른 팀에 속한 이메일은 유지, 수동으로 추가된 이메일도 유지)
+                            val emailsToRemove = teamEmailsToRemove - otherTeamsEmails
+                            
+                            val updatedParticipantEmails = _state.value.participantEmails.filter { 
+                                !emailsToRemove.contains(it)
+                            }
+                            
+                            // 선택된 팀 목록에서 제거
+                            val updatedSelectedTeams = _state.value.selectedTeams.filter { 
+                                it.teamId != event.teamId 
+                            }
+                            
+                            _state.update {
+                                it.copy(
+                                    participantEmails = updatedParticipantEmails,
+                                    selectedTeams = updatedSelectedTeams
+                                )
+                            }
+                        }
+                    }
+
+                    is MeetingFormEvent.ShowTeamMemberSelectionResultDialog -> {
+                        val team = _state.value.selectedTeams.find { it.teamId == event.teamId }
+                        _state.update {
+                            it.copy(
+                                showTeamMemberSelectionResultDialog = true,
+                                selectedTeamForResult = team
+                            )
+                        }
+                    }
+
+                    is MeetingFormEvent.DismissTeamMemberSelectionResultDialog -> {
+                        _state.update {
+                            it.copy(
+                                showTeamMemberSelectionResultDialog = false,
+                                selectedTeamForResult = null
+                            )
+                        }
+                    }
+
                     else -> {}
                 }
             }
@@ -380,13 +687,33 @@ class MeetingFormViewModel @Inject constructor(
 
     private fun searchEmails(query: String) {
         viewModelScope.launch {
-            if (query.length >= 2) {
+            val trimmedQuery = query.trim().lowercase()
+            val currentState = _state.value
+            
+            if (trimmedQuery.length >= 2) {
                 _state.update { it.copy(isSearching = true) }
-                // Firebase 제거로 인해 이메일 자동완성 기능 비활성화
+                
+                // 멤버 리스트에서 이메일 필터링
+                val suggestions = currentState.members
+                    .map { it.email }
+                    .filter { email ->
+                        // 이미 추가된 이메일은 제외
+                        !currentState.participantEmails.contains(email)
+                    }
+                    .filter { email ->
+                        // 쿼리로 시작하거나 포함하는 이메일
+                        val lowerEmail = email.lowercase()
+                        lowerEmail.startsWith(trimmedQuery) || lowerEmail.contains(trimmedQuery)
+                    }
+                    .sortedWith(compareBy<String> { !it.lowercase().startsWith(trimmedQuery) }
+                        .thenBy { it.lowercase() }) // 쿼리로 시작하는 것 우선, 그 다음 알파벳 순
+                    .distinct()
+                    .take(10) // 최대 10개까지만 표시
+                
                 _state.update {
                     it.copy(
-                        emailSuggestions = emptyList(),
-                        showEmailSuggestions = false,
+                        emailSuggestions = suggestions,
+                        showEmailSuggestions = suggestions.isNotEmpty(),
                         isSearching = false
                     )
                 }
@@ -394,7 +721,8 @@ class MeetingFormViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         emailSuggestions = emptyList(),
-                        showEmailSuggestions = false
+                        showEmailSuggestions = false,
+                        isSearching = false
                     )
                 }
             }
@@ -454,6 +782,9 @@ class MeetingFormViewModel @Inject constructor(
                 val targetTime = s.duration.toIntOrNull() ?: 0
                 val restInterval = s.breakInterval.toIntOrNull() ?: 0
                 val restDuration = s.breakDuration.toIntOrNull() ?: 0
+                // 선택된 팀 ID 리스트 (팀이 없으면 빈 리스트)
+                val teamIds = s.selectedTeams.map { it.teamId }
+
                 val request = CreateMeetingRequest(
                     title = s.title,
                     location = s.location,
@@ -463,7 +794,7 @@ class MeetingFormViewModel @Inject constructor(
                     restDuration = restDuration,
                     participants = emptyList(), // 생성 시 호스트만 등록, 참석자는 별도로 추가
                     agendas = s.agendas.filter { it.isNotBlank() },
-                    teams = TODO()
+                    teams = teamIds
                 )
 
                 when (val result = createMeetingUseCase(request)) {
@@ -648,6 +979,34 @@ class MeetingFormViewModel @Inject constructor(
 
                             is ApiResult.Success -> {}
                         }
+                    }
+                }
+
+                // 4) 팀 태그 동기화
+                val originalTeamIds = loadedTeamIds.toSet()
+                val desiredTeamIds = s.selectedTeams.map { it.teamId }.toSet()
+
+                // 추가할 팀 태그
+                val teamIdsToAdd = desiredTeamIds.subtract(originalTeamIds)
+                for (teamId in teamIdsToAdd) {
+                    when (val addRes = addTeamTagUseCase(meetingId, AddTeamTagRequest(teamId))) {
+                        is ApiResult.Failure -> {
+                            _state.update { it.copy(isLoading = false, error = addRes.message) }
+                            return@launch
+                        }
+                        is ApiResult.Success -> {}
+                    }
+                }
+
+                // 제거할 팀 태그
+                val teamIdsToRemove = originalTeamIds.subtract(desiredTeamIds)
+                for (teamId in teamIdsToRemove) {
+                    when (val removeRes = removeTeamTagUseCase(meetingId, RemoveTeamTagRequest(teamId))) {
+                        is ApiResult.Failure -> {
+                            _state.update { it.copy(isLoading = false, error = removeRes.message) }
+                            return@launch
+                        }
+                        is ApiResult.Success -> {}
                     }
                 }
 

@@ -44,4 +44,23 @@ sealed class MeetingFormEvent {
     // 중복 시간 체크 관련 이벤트
     object DuplicationDialogConfirmed : MeetingFormEvent()
     object DuplicationDialogDismissed : MeetingFormEvent()
+
+    // 팀 검색 다이얼로그 관련 이벤트
+    object ShowTeamSearchDialog : MeetingFormEvent()
+    object DismissTeamSearchDialog : MeetingFormEvent()
+    data class TeamSearchTextChanged(val text: String) : MeetingFormEvent()
+    data class TeamSelected(val team: TeamInfo) : MeetingFormEvent()
+    object InviteTeamMembers : MeetingFormEvent()
+
+    // 팀 멤버 선택 다이얼로그 관련 이벤트
+    object ShowTeamMemberSelectionDialog : MeetingFormEvent()
+    object DismissTeamMemberSelectionDialog : MeetingFormEvent()
+    data class TeamMemberToggled(val memberId: Long) : MeetingFormEvent()
+    object SelectAllTeamMembers : MeetingFormEvent()
+    object ConfirmTeamMemberSelection : MeetingFormEvent()
+    data class RemoveSelectedTeam(val teamId: Long) : MeetingFormEvent()
+
+    // 팀 멤버 선택 결과 다이얼로그 관련 이벤트
+    data class ShowTeamMemberSelectionResultDialog(val teamId: Long) : MeetingFormEvent()
+    object DismissTeamMemberSelectionResultDialog : MeetingFormEvent()
 }

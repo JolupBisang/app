@@ -3,6 +3,8 @@ package com.imhungry.sillok.presentation.screen.meetingform
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -31,32 +34,44 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.screen.meetingform.components.AgendaInputField
 import com.imhungry.sillok.presentation.screen.meetingform.components.BreakTimeInputField
 import com.imhungry.sillok.presentation.screen.meetingform.components.DateInputField
 import com.imhungry.sillok.presentation.screen.meetingform.components.EmailInputFieldWithAutocomplete
 import com.imhungry.sillok.presentation.screen.meetingform.components.ErrorText
 import com.imhungry.sillok.presentation.screen.meetingform.components.InputField
+import com.imhungry.sillok.presentation.screen.meetingform.components.SelectedTeamsList
+import com.imhungry.sillok.presentation.screen.meetingform.components.TeamMemberSelectionDialog
+import com.imhungry.sillok.presentation.screen.meetingform.components.TeamMemberSelectionResultDialog
+import com.imhungry.sillok.presentation.screen.meetingform.components.TeamSearchDialog
 import com.imhungry.sillok.presentation.screen.meetingform.components.TimeInputField
 import com.imhungry.sillok.presentation.state.meetingform.MeetingFormEvent
 import com.imhungry.sillok.presentation.viewmodel.meetingform.MeetingFormViewModel
 import com.imhungry.sillok.ui.components.BasicBox
+import com.imhungry.sillok.ui.components.MediumSillokButton
 import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.components.SillokDialog
 import com.imhungry.sillok.ui.theme.gray400
 import com.imhungry.sillok.ui.theme.gray500
 import com.imhungry.sillok.ui.theme.primaryBackground
+import com.imhungry.sillok.ui.theme.primaryButton
 import com.imhungry.sillok.ui.theme.primaryTextColor
+import com.imhungry.sillok.ui.theme.secondaryButton
+import com.imhungry.sillok.ui.theme.secondaryTextColor
+import com.imhungry.sillok.ui.theme.whiteBackground
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -178,7 +193,7 @@ fun MeetingFormScreen(
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(top = 38.dp, start = 65.dp)
+                                            .padding(top = 36.dp, start = 65.dp)
                                             .zIndex(999f)
                                     ) {
                                         Card(
@@ -187,9 +202,9 @@ fun MeetingFormScreen(
                                                 .border(
                                                     1.dp,
                                                     Color(0xFFE7E7E7),
-                                                    RoundedCornerShape(4.dp)
+                                                    RoundedCornerShape(8.dp)
                                                 ),
-                                            shape = RoundedCornerShape(4.dp),
+                                            shape = RoundedCornerShape(8.dp),
                                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                                             colors = CardDefaults.cardColors(containerColor = primaryBackground)
                                         ) {
@@ -202,6 +217,7 @@ fun MeetingFormScreen(
                                                     Row(
                                                         modifier = Modifier
                                                             .fillMaxWidth()
+                                                            .background(Color.White)
                                                             .clickable {
                                                                 viewModel.onEvent(
                                                                     MeetingFormEvent.ParticipantEmailSelected(
@@ -215,11 +231,20 @@ fun MeetingFormScreen(
                                                             ),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
-                                                        Text(
-                                                            text = email,
-                                                            style = MaterialTheme.typography.bodyMedium,
-                                                            fontWeight = FontWeight.Normal
-                                                        )
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .clip(RoundedCornerShape(12.dp))
+                                                                .border(1.dp, whiteBackground, RoundedCornerShape(12.dp))
+                                                                .background(secondaryButton)
+                                                                .padding(start = 12.dp, end = 12.dp, top = 3.dp, bottom = 4.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Text(
+                                                                text = email,
+                                                                style = MaterialTheme.typography.labelSmall,
+                                                                fontWeight = FontWeight.Normal
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }
@@ -275,6 +300,46 @@ fun MeetingFormScreen(
                                                     participantsFocusRequester
                                                 )
                                             )
+
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(start = 65.dp, top = 8.dp)
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(36.dp)
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .background(primaryBackground)
+                                                        .border(1.dp, primaryButton, RoundedCornerShape(4.dp))
+                                                        .clickable { viewModel.onEvent(MeetingFormEvent.ShowTeamSearchDialog) },
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    verticalArrangement = Arrangement.Center
+                                                ) {
+                                                    Text(
+                                                        text = "팀 추가",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Normal,
+                                                        color = primaryButton
+                                                    )
+                                                }
+                                            }
+
+                                            // 선택된 팀 목록 표시
+                                            if (state.selectedTeams.isNotEmpty()) {
+                                                SelectedTeamsList(
+                                                    teams = state.selectedTeams,
+                                                    onTeamRemoved = { teamId ->
+                                                        viewModel.onEvent(MeetingFormEvent.RemoveSelectedTeam(teamId))
+                                                    },
+                                                    onTeamClick = { teamId ->
+                                                        viewModel.onEvent(MeetingFormEvent.ShowTeamMemberSelectionResultDialog(teamId))
+                                                    },
+                                                    modifier = Modifier.padding(start = 65.dp, top = 8.dp)
+                                                )
+                                            }
+
                                             // 참석자 에러 메시지
                                             if (state.showValidationErrors && state.validationErrors.containsKey(
                                                     "participants"
@@ -377,7 +442,7 @@ fun MeetingFormScreen(
                                                 Box(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .padding(top = 38.dp, start = 65.dp)
+                                                        .padding(top = 36.dp, start = 65.dp)
                                                         .zIndex(999f)
                                                 ) {
                                                     Card(
@@ -386,9 +451,9 @@ fun MeetingFormScreen(
                                                             .border(
                                                                 1.dp,
                                                                 Color(0xFFE7E7E7),
-                                                                RoundedCornerShape(4.dp)
+                                                                RoundedCornerShape(8.dp)
                                                             ),
-                                                        shape = RoundedCornerShape(4.dp),
+                                                        shape = RoundedCornerShape(8.dp),
                                                         elevation = CardDefaults.cardElevation(
                                                             defaultElevation = 0.dp
                                                         ),
@@ -403,6 +468,7 @@ fun MeetingFormScreen(
                                                                 Row(
                                                                     modifier = Modifier
                                                                         .fillMaxWidth()
+                                                                        .background(Color.White)
                                                                         .clickable {
                                                                             viewModel.onEvent(
                                                                                 MeetingFormEvent.LocationSelected(
@@ -420,7 +486,8 @@ fun MeetingFormScreen(
                                                                         Text(
                                                                             text = place.name,
                                                                             style = MaterialTheme.typography.bodyMedium,
-                                                                            fontWeight = FontWeight.Normal
+                                                                            fontWeight = FontWeight.Normal,
+                                                                            color = secondaryTextColor
                                                                         )
                                                                         Text(
                                                                             text = place.address,
@@ -562,13 +629,6 @@ fun MeetingFormScreen(
                                 }
                             }
                         }
-                        item {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            // 장소 자동완성 드롭다운이 나타날 때만 Spacer 표시
-                            if (state.showLocationSuggestions) {
-                                Spacer(modifier = Modifier.height(220.dp))
-                            }
-                        }
                     }
 
                     Column(
@@ -667,6 +727,55 @@ fun MeetingFormScreen(
             },
             onDismiss = {
                 viewModel.onEvent(MeetingFormEvent.DuplicationDialogConfirmed)
+            }
+        )
+
+        // 팀 검색 다이얼로그
+        TeamSearchDialog(
+            visible = state.showTeamSearchDialog,
+            teams = state.teams,
+            searchText = state.teamSearchText,
+            selectedTeam = state.selectedTeam,
+            onDismiss = {
+                viewModel.onEvent(MeetingFormEvent.DismissTeamSearchDialog)
+            },
+            onSearchTextChange = { text ->
+                viewModel.onEvent(MeetingFormEvent.TeamSearchTextChanged(text))
+            },
+            onTeamSelected = { team ->
+                viewModel.onEvent(MeetingFormEvent.TeamSelected(team))
+            },
+            onInviteClick = {
+                viewModel.onEvent(MeetingFormEvent.InviteTeamMembers)
+            }
+        )
+
+        // 팀 멤버 선택 다이얼로그
+        TeamMemberSelectionDialog(
+            visible = state.showTeamMemberSelectionDialog,
+            team = state.selectedTeam,
+            members = state.teamMembersForSelection,
+            selectedMemberIds = state.selectedTeamMembers,
+            onDismiss = {
+                viewModel.onEvent(MeetingFormEvent.DismissTeamMemberSelectionDialog)
+            },
+            onMemberToggle = { memberId ->
+                viewModel.onEvent(MeetingFormEvent.TeamMemberToggled(memberId))
+            },
+            onSelectAll = {
+                viewModel.onEvent(MeetingFormEvent.SelectAllTeamMembers)
+            },
+            onConfirm = {
+                viewModel.onEvent(MeetingFormEvent.ConfirmTeamMemberSelection)
+            }
+        )
+
+        // 팀 멤버 선택 결과 다이얼로그
+        TeamMemberSelectionResultDialog(
+            visible = state.showTeamMemberSelectionResultDialog,
+            team = state.selectedTeamForResult,
+            onDismiss = {
+                viewModel.onEvent(MeetingFormEvent.DismissTeamMemberSelectionResultDialog)
             }
         )
     }

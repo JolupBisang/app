@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 val primaryTextColor = Color(0xFF121212)
+val secondaryTextColor = Color(0xFF313131)
 val beige = Color(0xFFF2EEE5)
 val outline = Color(0xFF747775)
 val googleButtonText = Color(0xFF1F1F1F)

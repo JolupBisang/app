@@ -35,7 +35,8 @@ fun SillokButton(
     backgroundColor: Color = primaryButton,
     textColor: Color = inverse,
     borderColor: Color? = null,
-    borderWith: Dp = 1.dp
+    borderWith: Dp = 1.dp,
+    enabled: Boolean = true
 ) {
     Button(
         onClick = onClick,
@@ -43,7 +44,8 @@ fun SillokButton(
             .fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(containerColor = backgroundColor),
         border = borderColor?.let { BorderStroke(borderWith, it) },
-        shape = MaterialTheme.shapes.small
+        shape = MaterialTheme.shapes.small,
+        enabled = enabled
     ) {
         Text(
             text,
@@ -63,7 +65,8 @@ fun SmallSillokButton(
     backgroundColor: Color = primaryButton,
     textColor: Color = whiteBackground,
     borderColor: Color? = null,
-    borderWith: Dp = 1.dp
+    borderWith: Dp = 1.dp,
+    enabled: Boolean = true
 ) {
     Button(
         onClick = onClick,
@@ -72,13 +75,45 @@ fun SmallSillokButton(
         colors = ButtonDefaults.buttonColors(containerColor = backgroundColor),
         border = borderColor?.let { BorderStroke(borderWith, it) },
         shape = MaterialTheme.shapes.small,
-        contentPadding = PaddingValues(horizontal = 36.dp, vertical = 4.dp)
+        contentPadding = PaddingValues(horizontal = 36.dp, vertical = 4.dp),
+        enabled = enabled
     ) {
         Text(
             text = text,
             color = textColor,
             style = MaterialTheme.typography.bodyMedium,
             fontSize = 13.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+fun MediumSillokButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = primaryButton,
+    textColor: Color = whiteBackground,
+    borderColor: Color? = null,
+    borderWith: Dp = 1.dp,
+    enabled: Boolean = true
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 36.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = backgroundColor),
+        border = borderColor?.let { BorderStroke(borderWith, it) },
+        shape = MaterialTheme.shapes.extraSmall,
+        enabled = enabled
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            style = MaterialTheme.typography.bodyMedium,
+            fontSize = 15.sp,
             fontWeight = FontWeight.Medium
         )
     }
