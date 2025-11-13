@@ -1,6 +1,6 @@
-package com.imhungry.sillok.presentation.state.meetingminutesfolder
+package com.imhungry.sillok.presentation.state.folder
 
-import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderMeetingItem
+import com.imhungry.sillok.presentation.screen.folder.FolderMeetingItem
 
 data class FolderDetailState(
     val folderName: String = "",

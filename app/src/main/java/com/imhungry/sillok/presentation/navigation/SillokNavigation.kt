@@ -17,10 +17,10 @@ import com.imhungry.sillok.presentation.screen.meeting.MeetingInProgressScreen
 import com.imhungry.sillok.presentation.screen.meetingdetail.MeetingDetailScreen
 import com.imhungry.sillok.presentation.screen.meetingform.MeetingFormScreen
 import com.imhungry.sillok.presentation.screen.meetingminutes.MeetingMinutesScreen
-import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderDetailScreen
-import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderFormScreen
-import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderListScreen
-import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderMeetingAddScreen
+import com.imhungry.sillok.presentation.screen.folder.FolderDetailScreen
+import com.imhungry.sillok.presentation.screen.folder.FolderFormScreen
+import com.imhungry.sillok.presentation.screen.folder.FolderListScreen
+import com.imhungry.sillok.presentation.screen.folder.FolderMeetingAddScreen
 import com.imhungry.sillok.presentation.screen.notification.NotificationHistoryScreen
 import com.imhungry.sillok.presentation.screen.splash.SplashScreen
 import com.imhungry.sillok.presentation.screen.team.TeamDetailScreen
@@ -123,7 +123,7 @@ fun SillokNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Splash.route
+        startDestination = Screen.FolderMeetingAdd.route
     ) {
         // 스플래시 화면
         composable(Screen.Splash.route) {

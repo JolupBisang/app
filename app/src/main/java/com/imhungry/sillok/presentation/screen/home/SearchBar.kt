@@ -40,7 +40,7 @@ fun SearchBar(
     onFocusChange: (Boolean) -> Unit = {},
     focusRequester: FocusRequester = remember { FocusRequester() },
     text: String = "",
-    innerText: String = "제목, 참석자로 검색",
+    innerText: String = "회의 제목으로 검색",
     onTextChange: (String) -> Unit = {},
     onImeAction: () -> Unit = {}
 ) {

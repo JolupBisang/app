@@ -1,4 +1,4 @@
-package com.imhungry.sillok.presentation.screen.meetingminutesfolder
+package com.imhungry.sillok.presentation.screen.folder
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -36,9 +35,7 @@ import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.theme.border
 import com.imhungry.sillok.ui.theme.gray400
-import com.imhungry.sillok.ui.theme.gray500
 import com.imhungry.sillok.ui.theme.primaryBackground
-import com.imhungry.sillok.ui.theme.primaryButton
 import com.imhungry.sillok.ui.theme.primaryTextColor
 
 @Composable

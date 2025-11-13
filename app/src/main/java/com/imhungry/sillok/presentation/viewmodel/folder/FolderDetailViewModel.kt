@@ -1,9 +1,9 @@
-package com.imhungry.sillok.presentation.viewmodel.meetingminutesfolder
+package com.imhungry.sillok.presentation.viewmodel.folder
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.imhungry.sillok.presentation.screen.meetingminutesfolder.FolderMeetingItem
-import com.imhungry.sillok.presentation.state.meetingminutesfolder.FolderDetailState
+import com.imhungry.sillok.presentation.screen.folder.FolderMeetingItem
+import com.imhungry.sillok.presentation.state.folder.FolderDetailState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

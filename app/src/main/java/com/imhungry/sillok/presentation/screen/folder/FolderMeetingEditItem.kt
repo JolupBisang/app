@@ -1,4 +1,4 @@
-package com.imhungry.sillok.presentation.screen.meetingminutesfolder
+package com.imhungry.sillok.presentation.screen.folder
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

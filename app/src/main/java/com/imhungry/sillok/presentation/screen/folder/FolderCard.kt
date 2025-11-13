@@ -1,4 +1,4 @@
-package com.imhungry.sillok.presentation.screen.meetingminutesfolder
+package com.imhungry.sillok.presentation.screen.folder
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable

@@ -1,4 +1,4 @@
-package com.imhungry.sillok.presentation.state.meetingminutesfolder
+package com.imhungry.sillok.presentation.state.folder
 
 import com.imhungry.sillok.domain.model.meetingminutesfolder.MeetingMinutesFolderDetailSummary
 
