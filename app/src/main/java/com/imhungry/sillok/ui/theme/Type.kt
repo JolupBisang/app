@@ -29,6 +29,8 @@ val Sunbatang = FontFamily(
     Font(R.font.sunbatang_bold, FontWeight.Bold)
 )
 
+val Monda = FontFamily(Font(R.font.monda_regular, FontWeight.Medium))
+
 val Typography = Typography(
     labelSmall = TextStyle(
         fontFamily = Pretend,

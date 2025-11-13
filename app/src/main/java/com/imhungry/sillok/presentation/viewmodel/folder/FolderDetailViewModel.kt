@@ -1,9 +1,18 @@
 package com.imhungry.sillok.presentation.viewmodel.folder
 
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.imhungry.sillok.data.util.ApiResult
+import com.imhungry.sillok.domain.model.folder.FolderMeetingInfo
+import com.imhungry.sillok.domain.model.folder.RemoveMeetingsFromFolderRequest
+import com.imhungry.sillok.domain.usecase.folder.GetFolderMeetingsUseCase
+import com.imhungry.sillok.domain.usecase.folder.RemoveMeetingsFromFolderUseCase
 import com.imhungry.sillok.presentation.screen.folder.FolderMeetingItem
 import com.imhungry.sillok.presentation.state.folder.FolderDetailState
+import com.imhungry.sillok.presentation.util.DateTimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,72 +21,71 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
-class FolderDetailViewModel @Inject constructor() : ViewModel() {
+class FolderDetailViewModel @Inject constructor(
+    private val getFolderMeetingsUseCase: GetFolderMeetingsUseCase,
+    private val removeMeetingsFromFolderUseCase: RemoveMeetingsFromFolderUseCase
+) : ViewModel() {
     private val _state = MutableStateFlow(FolderDetailState())
     val state: StateFlow<FolderDetailState> = _state.asStateFlow()
 
-    fun loadFolderDetail(folderId: Long) {
+    companion object {
+        private const val TAG = "FolderDetailViewModel"
+    }
+
+    private var currentFolderId: Long = 0L
+    private var currentFolderName: String = ""
+
+    fun loadFolderDetail(folderId: Long, folderName: String = "") {
+        currentFolderId = folderId
+        currentFolderName = folderName
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
             try {
-                // 임시 데이터 (추후 실제 API 호출로 대체)
-                val dummyData = getDummyFolderDetail(folderId)
-                _state.update {
-                    it.copy(
-                        folderName = dummyData.folderName,
-                        meetings = dummyData.meetings,
-                        isLoading = false,
-                        error = null
-                    )
+                when (val result = getFolderMeetingsUseCase(folderId)) {
+                    is ApiResult.Success -> {
+                        val meetings = convertToFolderMeetingItems(result.data.meetings)
+                        _state.update {
+                            it.copy(
+                                folderName = folderName.ifEmpty { "폴더 이름" },
+                                meetings = meetings,
+                                isLoading = false,
+                                error = null
+                            )
+                        }
+                    }
+                    is ApiResult.Failure -> {
+                        Log.e(TAG, "폴더 회의 목록 로드 실패: ${result.message}")
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = result.message
+                            )
+                        }
+                    }
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "폴더 회의 목록 로드 예외 발생: ${e.message}", e)
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "폴더 정보를 불러오는데 실패했습니다."
+                        error = e.localizedMessage ?: "폴더 정보를 불러오는데 실패했습니다."
                     )
                 }
             }
         }
     }
 
-    private fun getDummyFolderDetail(folderId: Long): FolderDetailData {
-        return when (folderId) {
-            1L -> FolderDetailData(
-                folderName = "cho비상회의",
-                meetings = listOf(
-                    FolderMeetingItem(id = 1L, title = "회의 제목", date = "2025.1.24", isSelected = true),
-                    FolderMeetingItem(id = 2L, title = "회의 제목", date = "2025.1.25", isSelected = true),
-                    FolderMeetingItem(id = 3L, title = "회의 제목", date = "2025.1.26", isSelected = true),
-                    FolderMeetingItem(id = 4L, title = "회의 제목", date = "2025.1.27", isSelected = true),
-                    FolderMeetingItem(id = 5L, title = "회의 제목", date = "2025.1.28", isSelected = false),
-                    FolderMeetingItem(id = 6L, title = "회의 제목", date = "2025.1.29", isSelected = false),
-                    FolderMeetingItem(id = 7L, title = "회의 제목", date = "2025.1.30", isSelected = true),
-                    FolderMeetingItem(id = 8L, title = "회의 제목", date = "2025.2.1", isSelected = false),
-                    FolderMeetingItem(id = 9L, title = "회의 제목", date = "2025.2.2", isSelected = false),
-                    FolderMeetingItem(id = 10L, title = "회의 제목", date = "2025.2.3", isSelected = false),
-                    FolderMeetingItem(id = 11L, title = "회의 제목", date = "2025.2.4", isSelected = false),
-                    FolderMeetingItem(id = 12L, title = "회의 제목", date = "2025.2.5", isSelected = false),
-                    FolderMeetingItem(id = 13L, title = "회의 제목", date = "2025.2.6", isSelected = false),
-                    FolderMeetingItem(id = 14L, title = "회의 제목", date = "2025.2.7", isSelected = false),
-                    FolderMeetingItem(id = 15L, title = "회의 제목", date = "2025.2.8", isSelected = false)
-                )
-            )
-            2L -> FolderDetailData(
-                folderName = "개발팀 주간회의",
-                meetings = listOf(
-                    FolderMeetingItem(id = 21L, title = "주간 회의 1", date = "2025.1.20", isSelected = false),
-                    FolderMeetingItem(id = 22L, title = "주간 회의 2", date = "2025.1.27", isSelected = false),
-                    FolderMeetingItem(id = 23L, title = "주간 회의 3", date = "2025.2.3", isSelected = false)
-                )
-            )
-            else -> FolderDetailData(
-                folderName = "폴더 이름",
-                meetings = listOf(
-                    FolderMeetingItem(id = 1L, title = "회의 제목", date = "2025.1.24", isSelected = false)
-                )
+    private fun convertToFolderMeetingItems(meetings: List<FolderMeetingInfo>): List<FolderMeetingItem> {
+        return meetings.map { meeting ->
+            val date = DateTimeUtils.localIsoToDateStringWithoutDayOfWeek(meeting.scheduledStartTime)
+            FolderMeetingItem(
+                id = meeting.meetingId,
+                title = meeting.title,
+                date = date,
+                isSelected = false
             )
         }
     }
@@ -96,12 +104,49 @@ class FolderDetailViewModel @Inject constructor() : ViewModel() {
         }
     }
 
+    fun removeMeetings(meetingIds: List<Long>, onSuccess: () -> Unit) {
+        if (meetingIds.isEmpty() || currentFolderId == 0L) {
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+
+            try {
+                val request = RemoveMeetingsFromFolderRequest(
+                    folderId = currentFolderId,
+                    meetingIds = meetingIds
+                )
+                when (val result = removeMeetingsFromFolderUseCase(request)) {
+                    is ApiResult.Success -> {
+                        Log.d(TAG, "회의 삭제 성공: ${result.data}")
+                        // 삭제 성공 후 회의 목록 새로고침
+                        loadFolderDetail(currentFolderId, currentFolderName)
+                        onSuccess()
+                    }
+                    is ApiResult.Failure -> {
+                        Log.e(TAG, "회의 삭제 실패: ${result.message}")
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = result.message
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "회의 삭제 예외 발생: ${e.message}", e)
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.localizedMessage ?: "회의 삭제 중 오류가 발생했습니다."
+                    )
+                }
+            }
+        }
+    }
+
     fun clearError() {
         _state.update { it.copy(error = null) }
     }
-
-    private data class FolderDetailData(
-        val folderName: String,
-        val meetings: List<FolderMeetingItem>
-    )
 }

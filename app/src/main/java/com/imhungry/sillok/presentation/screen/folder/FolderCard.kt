@@ -31,11 +31,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.imhungry.sillok.ui.theme.blackBackGround
+import com.imhungry.sillok.ui.theme.danger
 import com.imhungry.sillok.ui.theme.gray200
+import com.imhungry.sillok.ui.theme.gray400
 import com.imhungry.sillok.ui.theme.gray500
 import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.green500
 import com.imhungry.sillok.ui.theme.inverse
+import com.imhungry.sillok.ui.theme.primaryTextColor
+import com.imhungry.sillok.ui.theme.tertiary
 
 @Composable
 fun FolderCard(
@@ -45,7 +50,10 @@ fun FolderCard(
     timeRange: String,
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
-    borderColor: Color = gray500.copy(alpha = 0.7f)
+    borderColor: Color = gray500.copy(alpha = 0.7f),
+    editMode: Boolean = false,
+    isPast: Boolean = false,
+    isSelected: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -53,86 +61,170 @@ fun FolderCard(
     val isInteracting = isPressed || isHovered
     val cardShape = MaterialTheme.shapes.small
     val defaultRipple = rememberRipple(bounded = true)
+    val isScheduled = date != "" && !isPast
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(100.dp)
-            .padding(top = 4.dp)
-            .shadow(
-                elevation = 1.dp,
-                shape = cardShape
-            )
-            .clip(cardShape)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = defaultRipple,
-                onClick = onClick
-            )
-            .hoverable(interactionSource = interactionSource)
-    ) {
-        Card(
-            modifier = Modifier.fillMaxSize(),
-            shape = cardShape,
-            colors = CardDefaults.cardColors(
-                containerColor = if (isInteracting) green300 else Color.White
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 1.dp
-            ),
-            border = BorderStroke(1.dp, if (isInteracting) green300 else borderColor)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 14.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = folderName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = if (isInteracting) inverse else Color.Unspecified
-                    )
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Text(
-                    text = meetingTitle,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    color = if (isInteracting) green500 else Color.Unspecified
+    if (editMode) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .padding(top = 4.dp)
+                .shadow(
+                    elevation = 1.dp,
+                    shape = cardShape
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                .clip(cardShape)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = defaultRipple,
+                    onClick = onClick
+                )
+        ) {
+            Card(
+                modifier = Modifier.fillMaxSize(),
+                shape = cardShape,
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 1.dp
+                ),
+                border = BorderStroke(1.dp, if (isSelected) danger else borderColor)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 14.dp)
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = folderName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = primaryTextColor
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
                     Text(
-                        text = date,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (isInteracting) gray500 else gray200,
-                        fontWeight = if (isInteracting) FontWeight.Normal else FontWeight.Normal,
-                        fontSize = 11.sp
+                        text = meetingTitle,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        color = blackBackGround
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = date,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = blackBackGround,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 11.sp
+                        )
+                        Text(
+                            text = timeRange,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = blackBackGround,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .padding(top = 4.dp)
+                .shadow(
+                    elevation = 1.dp,
+                    shape = cardShape
+                )
+                .clip(cardShape)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = defaultRipple,
+                    onClick = onClick
+                )
+                .hoverable(interactionSource = interactionSource)
+        ) {
+            Card(
+                modifier = Modifier.fillMaxSize(),
+                shape = cardShape,
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isInteracting) green300 else Color.White
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 1.dp
+                ),
+                border = BorderStroke(1.dp, if (isInteracting || isScheduled) green300 else borderColor)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = folderName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (isInteracting) inverse else if (isScheduled) primaryTextColor else tertiary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
                     Text(
-                        text = timeRange,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (isInteracting) gray500 else gray200,
-                        fontWeight = if (isInteracting) FontWeight.Normal else FontWeight.Normal,
-                        fontSize = 11.sp
+                        text = meetingTitle,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        color = if (isInteracting) green500 else if (isScheduled) blackBackGround else gray400
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = date,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isInteracting) gray500 else if (isScheduled) blackBackGround else gray400,
+                            fontWeight = if (isInteracting) FontWeight.Normal else FontWeight.Medium,
+                            fontSize = 11.sp
+                        )
+                        Text(
+                            text = timeRange,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isInteracting) gray500 else if (isScheduled) blackBackGround else gray400,
+                            fontWeight = if (isInteracting) FontWeight.Normal else FontWeight.Medium,
+                            fontSize = 11.sp
+                        )
+                    }
                 }
             }
         }
     }
+
 }
 

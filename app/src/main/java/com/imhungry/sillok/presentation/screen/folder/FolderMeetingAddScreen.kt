@@ -34,7 +34,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.sillok.presentation.screen.folder.components.MonthPickerDialog
 import com.imhungry.sillok.presentation.screen.folder.components.YearPickerDialog
 import com.imhungry.sillok.presentation.screen.home.SearchBar
-import com.imhungry.sillok.presentation.viewmodel.folder.FolderMeetinngAddViewModel
+import com.imhungry.sillok.presentation.viewmodel.folder.FolderMeetingAddViewModel
 import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.components.SegmentedControl
@@ -43,9 +43,13 @@ import com.imhungry.sillok.ui.components.TimeFilterType
 import com.imhungry.sillok.ui.theme.border
 import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.primaryBackground
-import com.imhungry.sillok.ui.theme.primaryTextColor
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -56,7 +60,7 @@ fun FolderMeetingAddScreen(
     onBackClick: () -> Unit,
     onMeetingToggle: (Long, Boolean) -> Unit = { _, _ -> },
     onComplete: (String) -> Unit,
-    viewModel: FolderMeetinngAddViewModel = hiltViewModel(),
+    viewModel: FolderMeetingAddViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val focusRequester = remember { FocusRequester() }
@@ -76,8 +80,9 @@ fun FolderMeetingAddScreen(
     var showYearPicker by remember { mutableStateOf(false) }
     var showMonthPicker by remember { mutableStateOf(false) }
     
-    // 초기 로드 및 연도/월 변경 시 회의 목록 로드
-    LaunchedEffect(Unit) {
+    // 폴더 ID 설정 및 초기 로드
+    LaunchedEffect(folderId) {
+        viewModel.setFolderId(folderId)
         viewModel.loadMeetings(selectedYear, selectedMonth)
     }
     
@@ -170,7 +175,7 @@ fun FolderMeetingAddScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 32.dp),
+                            .padding(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.Start
                     ) {
                         Row(
@@ -273,15 +278,26 @@ fun FolderMeetingAddScreen(
                     )
                 }
             }
+            Spacer(Modifier.height(16.dp))
 
             // 하단 버튼
             SillokButton(
                 text = "추가하기",
                 onClick = { 
-                    // TODO: 선택된 회의록 추가 처리
-                    onComplete("")
+                    val selectedMeetingIds = state.meetings
+                        .filter { it.isSelected }
+                        .map { it.id }
+                    if (selectedMeetingIds.isNotEmpty()) {
+                        viewModel.addMeetings(
+                            meetingIds = selectedMeetingIds,
+                            onSuccess = {
+                                onComplete("")
+                            }
+                        )
+                    }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = state.meetings.any { it.isSelected } && !state.isLoading
             )
         }
     }

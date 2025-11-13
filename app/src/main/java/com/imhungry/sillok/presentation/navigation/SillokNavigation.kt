@@ -73,8 +73,13 @@ sealed class Screen(val route: String) {
     }
     object FolderList : Screen("folder_list")
     object FolderForm : Screen("folder_form")
-    object FolderDetail : Screen("folder_detail/{folderId}") {
-        fun createRoute(folderId: Long) = "folder_detail/$folderId"
+    object FolderDetail : Screen("folder_detail/{folderId}?folderName={folderName}") {
+        fun createRoute(folderId: Long, folderName: String = "") = 
+            if (folderName.isNotEmpty()) {
+                "folder_detail/$folderId?folderName=${java.net.URLEncoder.encode(folderName, "UTF-8")}"
+            } else {
+                "folder_detail/$folderId"
+            }
     }
     object FolderMeetingAdd : Screen("folder_meeting_add/{folderId}") {
         fun createRoute(folderId: Long) = "folder_meeting_add/$folderId"
@@ -123,7 +128,7 @@ fun SillokNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = Screen.FolderMeetingAdd.route
+        startDestination = Screen.Splash.route
     ) {
         // 스플래시 화면
         composable(Screen.Splash.route) {
@@ -420,8 +425,8 @@ fun SillokNavigation(
                 onNavigateToCreateFolder = {
                     navController.navigate(Screen.FolderForm.route)
                 },
-                onNavigateToFolderDetail = { folderId ->
-                    navController.navigate(Screen.FolderDetail.createRoute(folderId))
+                onNavigateToFolderDetail = { folderId, folderName ->
+                    navController.navigate(Screen.FolderDetail.createRoute(folderId, folderName))
                 },
                 onNavigateToNotificationHistory = {
                     navController.navigate(Screen.NotificationHistory.route)
@@ -435,7 +440,7 @@ fun SillokNavigation(
                 onBackClick = {
                     navController.popBackStack()
                 },
-                onComplete = { folderName ->
+                onComplete = {
                     // 폴더 생성 완료 후 폴더 목록으로 이동
                     navController.navigate(Screen.FolderList.route) {
                         popUpTo(Screen.FolderList.route) { inclusive = true }
@@ -447,11 +452,20 @@ fun SillokNavigation(
         // 회의록 폴더 상세 화면
         composable(
             route = Screen.FolderDetail.route,
-            arguments = listOf(navArgument("folderId") { type = NavType.LongType })
+            arguments = listOf(
+                navArgument("folderId") { type = NavType.LongType },
+                navArgument("folderName") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = true
+                }
+            )
         ) { backStackEntry ->
             val folderId = backStackEntry.arguments?.getLong("folderId") ?: 1L
+            val folderName = backStackEntry.arguments?.getString("folderName") ?: ""
             FolderDetailScreen(
                 folderId = folderId,
+                folderName = folderName,
                 onBackClick = {
                     navController.popBackStack()
                 },

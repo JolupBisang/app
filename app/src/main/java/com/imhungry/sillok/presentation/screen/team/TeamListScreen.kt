@@ -10,13 +10,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.ExperimentalMaterialApi
@@ -35,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
@@ -46,12 +53,17 @@ import coil.compose.rememberAsyncImagePainter
 import coil.decode.GifDecoder
 import coil.request.ImageRequest
 import com.imhungry.sillok.R
+import com.imhungry.sillok.domain.model.team.TeamDetailSummary
 import com.imhungry.sillok.presentation.screen.home.SearchBar
 import com.imhungry.sillok.presentation.viewmodel.team.TeamListViewModel
 import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.ScreenHeaderWithNotification
 import com.imhungry.sillok.ui.components.SillokButton
+import com.imhungry.sillok.ui.theme.danger
 import com.imhungry.sillok.ui.theme.primaryBackground
+import com.imhungry.sillok.ui.theme.primaryTextColor
+import com.imhungry.sillok.ui.theme.secondaryButton
+import com.imhungry.sillok.ui.theme.whiteBackground
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -60,6 +72,7 @@ fun TeamListScreen(
     onNavigateToCreateTeam: () -> Unit = {},
     onNavigateToTeamDetail: (Long) -> Unit = {},
     onNavigateToNotificationHistory: () -> Unit = {},
+    onSelectTeam: () -> Unit = {},
     viewModel: TeamListViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -68,14 +81,18 @@ fun TeamListScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     var isSearchFocused by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
+    var isEditMode by remember { mutableStateOf(false) }
+    var selectedTeamIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 
     HandleBackPress(
         searchText = searchText,
         isSearchFocused = isSearchFocused,
+        isEditMode = isEditMode,
         onSearchClose = {
             clearSearchFocus(focusManager, keyboardController) { isSearchFocused = false }
             searchText = ""
         },
+        onEditModeExit = { isEditMode = false },
         onBackClick = onBackClick
     )
 
@@ -134,8 +151,17 @@ fun TeamListScreen(
                         TeamListContent(
                             teams = state.teams,
                             isLoading = state.isLoading,
+                            editMode = isEditMode,
+                            selectedTeamIds = selectedTeamIds,
                             onRefresh = { viewModel.refresh() },
-                            onNavigateToTeamDetail = onNavigateToTeamDetail
+                            onNavigateToTeamDetail = onNavigateToTeamDetail,
+                            onTeamToggle = { teamId ->
+                                selectedTeamIds = if (selectedTeamIds.contains(teamId)) {
+                                    selectedTeamIds - teamId
+                                } else {
+                                    selectedTeamIds + teamId
+                                }
+                            }
                         )
                     } else {
                         // 검색 결과 영역 (추후 구현)
@@ -143,13 +169,72 @@ fun TeamListScreen(
                     }
                 }
 
-                // 팀 생성하기 버튼 (빈 상태가 아닐 때만 표시)
+                // 버튼 영역 (빈 상태가 아닐 때만 표시)
                 if (!(!isSearchFocused && searchText.isEmpty() && state.teams.isEmpty())) {
-                    SillokButton(
-                        text = "팀 생성하기",
-                        onClick = onNavigateToCreateTeam,
+                    val density = LocalDensity.current
+                    Box(
                         modifier = Modifier.fillMaxWidth()
-                    )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(32.dp)
+                                .background(
+                                    brush = Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.White.copy(alpha = 0f),
+                                            Color.White.copy(alpha = 0.3f),
+                                            Color.White.copy(alpha = 0.6f),
+                                            Color.White.copy(alpha = 0.9f)
+                                        ),
+                                        startY = 0f,
+                                        endY = with(density) { 32.dp.toPx() }
+                                    )
+                                )
+                                .offset(y = (-32).dp)
+                        )
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            if (isEditMode) {
+                                // Edit 모드: 이전으로, 삭제하기
+                                SillokButton(
+                                    text = "이전으로",
+                                    onClick = { isEditMode = false },
+                                    modifier = Modifier.weight(1f),
+                                    backgroundColor = primaryTextColor
+                                )
+                                SillokButton(
+                                    text = "삭제하기",
+                                    onClick = {
+                                        // TODO: 선택된 팀 삭제 처리
+                                        selectedTeamIds = emptySet()
+                                        isEditMode = false
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    backgroundColor = danger
+                                )
+                            } else {
+                                // 일반 모드: 팀 선택, 팀 생성
+                            SillokButton(
+                                text = "팀 선택",
+                                onClick = { 
+                                    selectedTeamIds = emptySet()
+                                    isEditMode = true 
+                                },
+                                modifier = Modifier.weight(1f),
+                                backgroundColor = primaryTextColor
+                            )
+                                SillokButton(
+                                    text = "팀 생성",
+                                    onClick = onNavigateToCreateTeam,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -218,15 +303,19 @@ private fun clearSearchFocus(
 private fun HandleBackPress(
     searchText: String,
     isSearchFocused: Boolean,
+    isEditMode: Boolean,
     onSearchClose: () -> Unit,
+    onEditModeExit: () -> Unit,
     onBackClick: () -> Unit
 ) {
     BackHandler {
         when {
+            isEditMode -> {
+                onEditModeExit()
+            }
             searchText.isNotBlank() || isSearchFocused -> {
                 onSearchClose()
             }
-
             else -> {
                 onBackClick()
             }
@@ -237,10 +326,13 @@ private fun HandleBackPress(
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun TeamListContent(
-    teams: List<com.imhungry.sillok.domain.model.team.TeamDetailSummary>,
+    teams: List<TeamDetailSummary>,
     isLoading: Boolean,
+    editMode: Boolean,
+    selectedTeamIds: Set<Long>,
     onRefresh: () -> Unit,
-    onNavigateToTeamDetail: (Long) -> Unit
+    onNavigateToTeamDetail: (Long) -> Unit,
+    onTeamToggle: (Long) -> Unit
 ) {
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isLoading,
@@ -263,9 +355,18 @@ private fun TeamListContent(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(teams) { team ->
+                val isSelected = selectedTeamIds.contains(team.id)
                 TeamCard(
                     team = team,
-                    onClick = { onNavigateToTeamDetail(team.id) },
+                    onClick = { 
+                        if (editMode) {
+                            onTeamToggle(team.id)
+                        } else {
+                            onNavigateToTeamDetail(team.id)
+                        }
+                    },
+                    editMode = editMode,
+                    isSelected = isSelected,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

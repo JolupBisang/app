@@ -3,6 +3,7 @@ package com.imhungry.sillok.di
 import com.imhungry.sillok.data.repository.agenda.AgendaRepositoryImpl
 import com.imhungry.sillok.data.repository.audio.AudioRepositoryImpl
 import com.imhungry.sillok.data.repository.feedback.FeedbackRepositoryImpl
+import com.imhungry.sillok.data.repository.folder.MeetingFolderRepositoryImpl
 import com.imhungry.sillok.data.repository.meeting.MeetingRepositoryImpl
 import com.imhungry.sillok.data.repository.meetinguser.MeetingUserRepositoryImpl
 import com.imhungry.sillok.data.repository.participation.ParticipationRateRepositoryImpl
@@ -15,6 +16,7 @@ import com.imhungry.sillok.domain.repository.agenda.AgendaRepository
 import com.imhungry.sillok.domain.repository.audio.AudioRepository
 import com.imhungry.sillok.domain.repository.feedback.FeedbackRepository
 import com.imhungry.sillok.domain.repository.meeting.MeetingRepository
+import com.imhungry.sillok.domain.repository.folder.MeetingMinutesFolderRepository
 import com.imhungry.sillok.domain.repository.meetinguser.MeetingUserRepository
 import com.imhungry.sillok.domain.repository.participation.ParticipationRateRepository
 import com.imhungry.sillok.domain.repository.places.PlacesRepository
@@ -96,4 +98,10 @@ abstract class RepositoryModule {
     abstract fun bindTeamRepository(
         teamRepositoryImpl: TeamRepositoryImpl
     ): TeamRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMeetingMinutesFolderRepository(
+        meetingFolderRepositoryImpl: MeetingFolderRepositoryImpl
+    ): MeetingMinutesFolderRepository
 } 

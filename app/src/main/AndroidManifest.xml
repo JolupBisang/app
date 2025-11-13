@@ -50,15 +50,6 @@
             android:name=".presentation.service.MeetingInProgressService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
-        
-        <!-- FCM 서비스 -->
-        <service
-            android:name=".presentation.service.FcmService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
 
         <!-- 알림 채널 메타데이터 -->
         <meta-data

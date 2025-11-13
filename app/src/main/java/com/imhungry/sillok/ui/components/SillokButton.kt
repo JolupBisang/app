@@ -33,7 +33,7 @@ fun SillokButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     backgroundColor: Color = primaryButton,
-    textColor: Color = inverse,
+    textColor: Color = whiteBackground,
     borderColor: Color? = null,
     borderWith: Dp = 1.dp,
     enabled: Boolean = true

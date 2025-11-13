@@ -1,6 +1,8 @@
 package com.imhungry.sillok.presentation.screen.folder
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,9 +54,11 @@ data class FolderMeetingItem(
     val isSelected: Boolean = false
 )
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun FolderDetailScreen(
     folderId: Long,
+    folderName: String = "",
     onBackClick: () -> Unit,
     onMeetingToggle: (Long, Boolean) -> Unit = { _, _ -> },
     onAddClick: () -> Unit = {},
@@ -68,8 +72,8 @@ fun FolderDetailScreen(
     var searchText by remember { mutableStateOf("") }
     var isEditMode by remember { mutableStateOf(false) }
 
-    LaunchedEffect(folderId) {
-        //viewModel.loadFolderDetail(folderId)
+    LaunchedEffect(folderId, folderName) {
+        viewModel.loadFolderDetail(folderId, folderName)
     }
 
     // 시스템 뒤로가기 버튼 처리
@@ -134,7 +138,7 @@ fun FolderDetailScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 ScreenHeader(
-                    title = state.folderName.ifEmpty { "폴더 이름" },
+                    title = folderName,
                     onBackClick = {
                         if (isEditMode) {
                             isEditMode = false
@@ -189,11 +193,21 @@ fun FolderDetailScreen(
                         SillokButton(
                             text = "삭제하기",
                             onClick = {
-                                // TODO: 선택된 회의록 삭제 처리
-                                isEditMode = false
+                                val selectedMeetingIds = state.meetings
+                                    .filter { it.isSelected }
+                                    .map { it.id }
+                                if (selectedMeetingIds.isNotEmpty()) {
+                                    viewModel.removeMeetings(
+                                        meetingIds = selectedMeetingIds,
+                                        onSuccess = {
+                                            isEditMode = false
+                                        }
+                                    )
+                                }
                             },
                             modifier = Modifier.weight(1f),
-                            backgroundColor = danger
+                            backgroundColor = danger,
+                            enabled = state.meetings.any { it.isSelected } && !state.isLoading
                         )
                     } else {
                         SillokButton(

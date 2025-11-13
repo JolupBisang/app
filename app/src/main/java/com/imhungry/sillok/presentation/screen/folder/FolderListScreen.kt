@@ -1,16 +1,21 @@
 package com.imhungry.sillok.presentation.screen.folder
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -28,7 +33,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
@@ -45,13 +53,16 @@ import com.imhungry.sillok.presentation.viewmodel.folder.FolderListViewModel
 import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.ScreenHeaderWithNotification
 import com.imhungry.sillok.ui.components.SillokButton
+import com.imhungry.sillok.ui.theme.danger
 import com.imhungry.sillok.ui.theme.primaryBackground
+import com.imhungry.sillok.ui.theme.primaryTextColor
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun FolderListScreen(
     onBackClick: () -> Unit,
     onNavigateToCreateFolder: () -> Unit = {},
-    onNavigateToFolderDetail: (Long) -> Unit = {},
+    onNavigateToFolderDetail: (Long, String) -> Unit = { _, _ -> },
     onNavigateToNotificationHistory: () -> Unit = {},
     viewModel: FolderListViewModel = hiltViewModel()
 ) {
@@ -61,13 +72,20 @@ fun FolderListScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     var isSearchFocused by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
+    var isEditMode by remember { mutableStateOf(false) }
+    var selectedFolderIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
 
     HandleBackPress(
         searchText = searchText,
         isSearchFocused = isSearchFocused,
+        isEditMode = isEditMode,
         onSearchClose = {
             clearSearchFocus(focusManager, keyboardController) { isSearchFocused = false }
             searchText = ""
+        },
+        onEditModeExit = { 
+            selectedFolderIds = emptySet()
+            isEditMode = false 
         },
         onBackClick = onBackClick
     )
@@ -121,12 +139,13 @@ fun FolderListScreen(
                     )
                 }
 
+                Spacer(Modifier.height(16.dp))
+
                 // 리스트 영역과 버튼을 분리하여 버튼이 항상 하단에 위치하도록
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
                     if (!isSearchFocused && searchText.isEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
                             modifier = Modifier.weight(1f),
@@ -134,11 +153,26 @@ fun FolderListScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(state.folders) { folder ->
+                                val isSelected = selectedFolderIds.contains(folder.id)
                                 FolderCard(
                                     folderName = folder.name,
                                     date = folder.date,
+                                    meetingTitle = folder.meetingName ?: "",
                                     timeRange = folder.timeRange,
-                                    onClick = { onNavigateToFolderDetail(folder.id) },
+                                    onClick = { 
+                                        if (isEditMode) {
+                                            selectedFolderIds = if (selectedFolderIds.contains(folder.id)) {
+                                                selectedFolderIds - folder.id
+                                            } else {
+                                                selectedFolderIds + folder.id
+                                            }
+                                        } else {
+                                            onNavigateToFolderDetail(folder.id, folder.name)
+                                        }
+                                    },
+                                    editMode = isEditMode,
+                                    isPast = folder.isPast,
+                                    isSelected = isSelected,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
@@ -148,15 +182,85 @@ fun FolderListScreen(
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
+                Spacer(Modifier.height(16.dp))
 
                 // 버튼은 항상 하단에 고정
                 if (!(!isSearchFocused && searchText.isEmpty() && state.folders.isEmpty())) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SillokButton(
-                        text = "폴더 생성하기",
-                        onClick = onNavigateToCreateFolder,
+                    val density = LocalDensity.current
+                    Box(
                         modifier = Modifier.fillMaxWidth()
-                    )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(32.dp)
+                                .background(
+                                    brush = Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.White.copy(alpha = 0f),
+                                            Color.White.copy(alpha = 0.3f),
+                                            Color.White.copy(alpha = 0.6f),
+                                            Color.White.copy(alpha = 0.9f)
+                                        ),
+                                        startY = 0f,
+                                        endY = with(density) { 32.dp.toPx() }
+                                    )
+                                )
+                                .offset(y = (-32).dp)
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            if (isEditMode) {
+                                // Edit 모드: 이전으로, 삭제하기
+                                SillokButton(
+                                    text = "이전으로",
+                                    onClick = { 
+                                        selectedFolderIds = emptySet()
+                                        isEditMode = false 
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    backgroundColor = primaryTextColor
+                                )
+                                SillokButton(
+                                    text = "삭제하기",
+                                    onClick = {
+                                        if (selectedFolderIds.isNotEmpty()) {
+                                            viewModel.deleteFolders(
+                                                folderIds = selectedFolderIds.toList(),
+                                                onSuccess = {
+                                                    selectedFolderIds = emptySet()
+                                                    isEditMode = false
+                                                }
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    backgroundColor = danger,
+                                    enabled = selectedFolderIds.isNotEmpty() && !state.isLoading
+                                )
+                            } else {
+                                // 일반 모드: 팀 선택, 팀 생성
+                                SillokButton(
+                                    text = "폴더 선택",
+                                    onClick = { 
+                                        selectedFolderIds = emptySet()
+                                        isEditMode = true 
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    backgroundColor = primaryTextColor
+                                )
+                                SillokButton(
+                                    text = "폴더 생성",
+                                    onClick = onNavigateToCreateFolder,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -225,7 +329,9 @@ private fun clearSearchFocus(
 private fun HandleBackPress(
     searchText: String,
     isSearchFocused: Boolean,
+    isEditMode: Boolean,
     onSearchClose: () -> Unit,
+    onEditModeExit: () -> Unit,
     onBackClick: () -> Unit
 ) {
     BackHandler {
@@ -233,7 +339,9 @@ private fun HandleBackPress(
             searchText.isNotBlank() || isSearchFocused -> {
                 onSearchClose()
             }
-
+            isEditMode -> {
+                onEditModeExit()
+            }
             else -> {
                 onBackClick()
             }

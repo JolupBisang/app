@@ -18,6 +18,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,7 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.sillok.presentation.screen.meetingform.components.ErrorText
+import com.imhungry.sillok.presentation.viewmodel.folder.FolderFormViewModel
 import com.imhungry.sillok.ui.components.BasicBox
 import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.components.SillokButton
@@ -41,17 +45,34 @@ import com.imhungry.sillok.ui.theme.primaryTextColor
 @Composable
 fun FolderFormScreen(
     onBackClick: () -> Unit,
-    onComplete: (String) -> Unit
+    onComplete: () -> Unit,
+    viewModel: FolderFormViewModel = hiltViewModel()
 ) {
     var folderName by remember { mutableStateOf("") }
     var showValidationErrors by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    val state by viewModel.state.collectAsState()
+
+    // 성공 시 콜백 호출
+    LaunchedEffect(state.isSuccess) {
+        if (state.isSuccess) {
+            viewModel.resetSuccess()
+            onComplete()
+        }
+    }
+
+    // 에러가 발생하면 로컬 에러 상태도 업데이트
+    LaunchedEffect(state.error) {
+        if (state.error != null) {
+            showValidationErrors = true
+        }
+    }
 
     BasicBox(
         statusBarColor = primaryBackground,
         navigationBarColor = primaryBackground,
         backgroundColor = primaryBackground,
-        isLoading = false
+        isLoading = state.isLoading
     ) {
         Column(
             modifier = Modifier
@@ -124,7 +145,7 @@ fun FolderFormScreen(
                         }
                     )
                     // 폴더 이름 에러 메시지
-                    if (showValidationErrors && folderName.trim().isEmpty()) {
+                    if ((showValidationErrors && folderName.trim().isEmpty()) || state.error != null) {
                         ErrorText(
                             text = "폴더 이름을 입력해주세요.",
                             modifier = Modifier.padding(top = 4.dp)
@@ -152,12 +173,14 @@ fun FolderFormScreen(
                         onClick = {
                             if (folderName.trim().isNotEmpty()) {
                                 showValidationErrors = false
-                                onComplete(folderName.trim())
+                                viewModel.clearError()
+                                viewModel.createFolder(folderName.trim())
                             } else {
                                 showValidationErrors = true
                             }
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        enabled = !state.isLoading
                     )
                 }
             }

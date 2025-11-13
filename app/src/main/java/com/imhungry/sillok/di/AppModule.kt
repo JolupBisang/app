@@ -4,6 +4,7 @@ import com.imhungry.sillok.BuildConfig
 import com.imhungry.sillok.data.remote.agenda.AgendaApi
 import com.imhungry.sillok.data.remote.audio.AudioApi
 import com.imhungry.sillok.data.remote.feedback.FeedbackApi
+import com.imhungry.sillok.data.remote.folder.MeetingFolderApi
 import com.imhungry.sillok.data.remote.interceptor.AuthInterceptor
 import com.imhungry.sillok.data.remote.meeting.MeetingApi
 import com.imhungry.sillok.data.remote.meetinguser.MeetingUserApi
@@ -134,5 +135,11 @@ object AppModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(PlacesApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMeetingFolderApi(retrofit: Retrofit): MeetingFolderApi {
+        return retrofit.create(MeetingFolderApi::class.java)
     }
 } 
