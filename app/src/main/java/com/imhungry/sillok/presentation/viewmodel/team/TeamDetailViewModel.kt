@@ -65,6 +65,7 @@ class TeamDetailViewModel @Inject constructor(
                                     TeamMember(
                                         id = domainMember.id,
                                         nickname = domainMember.name,
+                                        email = domainMember.email,
                                         profileImage = domainMember.pictureURL.takeIf { it.isNotBlank() }
                                     )
                                 }

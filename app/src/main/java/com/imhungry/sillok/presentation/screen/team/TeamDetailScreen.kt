@@ -318,6 +318,7 @@ fun TeamDetailScreen(
                                         editableMembers.forEach { member ->
                                             MemberItem(
                                                 nickname = member.nickname,
+                                                email = member.email,
                                                 profileImage = member.profileImage,
                                                 userId = member.id,
                                                 isEditMode = isEditMode,

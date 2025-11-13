@@ -32,6 +32,7 @@ import com.imhungry.sillok.ui.theme.placeHolder
 @Composable
 fun MemberItem(
     nickname: String,
+    email: String,
     profileImage: String? = null,
     userId: Long? = null,
     isEditMode: Boolean = false,
@@ -62,7 +63,14 @@ fun MemberItem(
         Text(
             text = nickname,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Text(
+            text = email,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Normal,
             modifier = Modifier.weight(1f)
         )
 

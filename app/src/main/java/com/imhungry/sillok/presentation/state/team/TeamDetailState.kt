@@ -3,7 +3,8 @@ package com.imhungry.sillok.presentation.state.team
 data class TeamMember(
     val id: Long,
     val nickname: String,
-    val profileImage: String? = null
+    val email: String,
+    val profileImage: String? = null,
 )
 
 data class TeamDetailState(
