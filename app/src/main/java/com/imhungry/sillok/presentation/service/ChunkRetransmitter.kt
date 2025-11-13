@@ -126,7 +126,7 @@ class ChunkRetransmitter(
                         val metaJson = JSONObject(metaFile.readText())
                         metaJson.optString(
                             "timestamp",
-                            DateTimeUtils.getCurrentUtcTime()
+                            DateTimeUtils.getCurrentTime()
                         )
                     } catch (e: Exception) {
                         getCurrentTimestamp()

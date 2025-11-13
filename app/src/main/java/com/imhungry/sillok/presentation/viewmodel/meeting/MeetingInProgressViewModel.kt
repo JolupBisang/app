@@ -229,8 +229,7 @@ class MeetingInProgressViewModel @Inject constructor(
                         Log.d(TAG, "[6-2 완료] Meeting Detail 조회 성공")
 
                         if (meeting.actualStartTime != null) {
-                            val koreanTime = DateTimeUtils.utcToKoreaTime(meeting.actualStartTime)
-                            val startMillis = DateTimeUtils.isoLocalDateTimeToMillis(koreanTime)
+                            val startMillis = DateTimeUtils.isoLocalDateTimeToMillis(meeting.actualStartTime)
 
                             // state 업데이트
                             withContext(Dispatchers.Main) {
@@ -371,8 +370,7 @@ class MeetingInProgressViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun updateStartTimeIfAvailable(meeting: Meeting): Long? {
         return meeting.actualStartTime?.let { actualStartTime ->
-            val koreanTime = DateTimeUtils.utcToKoreaTime(actualStartTime)
-            val startMillis = DateTimeUtils.isoLocalDateTimeToMillis(koreanTime)
+            val startMillis = DateTimeUtils.isoLocalDateTimeToMillis(actualStartTime)
             _state.update { it.copy(startTime = startMillis) }
             startMillis
         }
@@ -624,8 +622,7 @@ class MeetingInProgressViewModel @Inject constructor(
                 val profileImage = userProfileImageCache[data.userId] ?: ""
                 val isSameAsPrevious = lastSegment != null && lastSegment.nickname == nickname
 
-                val koreaTime = DateTimeUtils.utcToKoreaTime(data.timestamp)
-                val millis = DateTimeUtils.isoLocalDateTimeToMillis(koreaTime)
+                val millis = DateTimeUtils.isoLocalDateTimeToMillis(data.timestamp)
 
                 val segmentUi = SegmentUi(
                     timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),

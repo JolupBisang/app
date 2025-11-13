@@ -13,7 +13,7 @@ class FeedbackMapper @Inject constructor() {
         return Feedback(
             id = dto.id,
             comment = dto.comment,
-            generatedDateTime = DateTimeUtils.utcToKoreaTime(dto.generatedDateTime)
+            generatedDateTime = dto.generatedDateTime.take(19)
         )
     }
 }

@@ -14,7 +14,7 @@ class SegmentMapper @Inject constructor() {
             id = dto.id,
             userId = dto.userId,
             segmentOrder = dto.segmentOrder,
-            timestamp = DateTimeUtils.utcToKoreaTime(dto.timestamp),
+            timestamp = dto.timestamp.take(19),
             text = dto.text,
             lang = dto.lang
         )

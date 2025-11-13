@@ -31,7 +31,7 @@ object DateTimeUtils {
         if (isoLocalDateTime.isNullOrBlank()) return 0L
         return try {
             val localDateTime =
-                LocalDateTime.parse(isoLocalDateTime, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                LocalDateTime.parse(isoLocalDateTime.take(19), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             val koreaZoned = localDateTime.atZone(ZoneId.of("Asia/Seoul"))
             koreaZoned.toInstant().toEpochMilli()
         } catch (e: Exception) {
@@ -67,7 +67,7 @@ object DateTimeUtils {
         if (isoLocalTimestamp.isNullOrBlank()) return "-"
         return try {
             val localDateTime =
-                LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                LocalDateTime.parse(isoLocalTimestamp.take(19), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             val datePart = localDateTime.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
             val dayOfWeek = localDateTime.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN)
             "$datePart $dayOfWeek"
@@ -81,7 +81,7 @@ object DateTimeUtils {
         if (isoLocalTimestamp.isNullOrBlank()) return "-"
         return try {
             val localDateTime =
-                LocalDateTime.parse(isoLocalTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                LocalDateTime.parse(isoLocalTimestamp.take(19), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             localDateTime.format(DateTimeFormatter.ofPattern("HH:mm"))
         } catch (e: Exception) {
             Log.e("DateTimeUtils", "파싱 실패: $isoLocalTimestamp", e)
@@ -92,7 +92,7 @@ object DateTimeUtils {
     fun calcEndDate(startIsoLocal: String?, targetMinutes: Int): String {
         if (startIsoLocal.isNullOrBlank()) return ""
         return try {
-            val start = LocalDateTime.parse(startIsoLocal, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val start = LocalDateTime.parse(startIsoLocal.take(19), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
             val end = start.plusMinutes(targetMinutes.toLong())
             end.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         } catch (e: Exception) {
@@ -121,21 +121,6 @@ object DateTimeUtils {
         return formatter.format(Instant.ofEpochMilli(millis))
     }
 
-    fun koreaToUtcTime(koreaTime: String): String {
-        return try {
-            // 'yyyy-MM-dd'T'HH:mm:ss'까지만 자르기 (19자, 소수점 초 제거)
-            val baseTimestamp = koreaTime.take(19)
-            val localDateTime =
-                LocalDateTime.parse(baseTimestamp, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            val seoulZoned = ZonedDateTime.of(localDateTime, ZoneId.of("Asia/Seoul"))
-            val utcZoned = seoulZoned.withZoneSameInstant(ZoneId.of("UTC"))
-            utcZoned.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        } catch (e: Exception) {
-            Log.e("DateTimeUtils", "koreaToUtcTime 파싱 실패: $koreaTime", e)
-            ""
-        }
-    }
-
     fun timeStringToMillis(timeString: String): Long? {
         return try {
             val parts = timeString.split(":")
@@ -162,37 +147,6 @@ object DateTimeUtils {
             now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         } catch (e: Exception) {
             Log.e("DateTimeUtils", "현재 시간 변환 실패", e)
-            ""
-        }
-    }
-
-    /**
-     * 현재 시간을 UTC 시간으로 변환하여 ISO_LOCAL_DATE_TIME 형식으로 반환합니다.
-     * 반환 형식: "yyyy-MM-dd'T'HH:mm:ss"
-     */
-    fun getCurrentUtcTime(): String {
-        return try {
-            val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
-            val utcNow = now.withZoneSameInstant(ZoneId.of("UTC"))
-            utcNow.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        } catch (e: Exception) {
-            Log.e("DateTimeUtils", "현재 UTC 시간 변환 실패", e)
-            ""
-        }
-    }
-
-    /**
-     * 현재 시간에 1시간을 더한 시간을 UTC 시간으로 변환하여 ISO_LOCAL_DATE_TIME 형식으로 반환합니다.
-     * 반환 형식: "yyyy-MM-dd'T'HH:mm:ss"
-     */
-    fun getCurrentUtcTimePlusOneHour(): String {
-        return try {
-            val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
-            val oneHourLater = now.plusHours(1)
-            val utcTime = oneHourLater.withZoneSameInstant(ZoneId.of("UTC"))
-            utcTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        } catch (e: Exception) {
-            Log.e("DateTimeUtils", "현재 UTC 시간 +1시간 변환 실패", e)
             ""
         }
     }

@@ -304,8 +304,8 @@ class MeetingMinutesViewModel @Inject constructor(
      */
     @RequiresApi(Build.VERSION_CODES.O)
     fun loadDummyMeetingMinutesState() {
-        val start = DateTimeUtils.utcToKoreaTime(DateTimeUtils.getCurrentUtcTime())
-        val end = DateTimeUtils.utcToKoreaTime(DateTimeUtils.getCurrentUtcTimePlusOneHour())
+        val start = DateTimeUtils.getCurrentTime()
+        val end = DateTimeUtils.getCurrentTime()
         val startMillis = DateTimeUtils.isoLocalDateTimeToMillis(start)
         val endMillis = DateTimeUtils.isoLocalDateTimeToMillis(end)
         val actualStartTime = DateTimeUtils.localIsoToTimeString(start)

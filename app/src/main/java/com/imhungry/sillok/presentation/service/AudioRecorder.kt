@@ -160,7 +160,7 @@ class AudioRecorder(
                 put("type", "AUDIO_CHUNK")
                 put("chunkId", chunkId)
                 put("encoding", "audio/pcm")
-                put("timestamp", DateTimeUtils.getCurrentUtcTime())
+                put("timestamp", DateTimeUtils.getCurrentTime())
             }
 
             val metaBytes = metaJson.toString().toByteArray(Charsets.UTF_8)

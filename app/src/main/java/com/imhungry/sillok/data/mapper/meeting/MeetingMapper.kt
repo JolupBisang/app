@@ -17,6 +17,7 @@ import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.domain.model.meeting.RemoveTeamTagRequest
 import com.imhungry.sillok.presentation.util.DateTimeUtils
 import javax.inject.Inject
+import kotlin.text.take
 
 class MeetingMapper @Inject constructor() {
     fun toDto(request: CreateMeetingRequest): MeetingReqDto {
@@ -40,8 +41,8 @@ class MeetingMapper @Inject constructor() {
             title = dto.title,
             location = dto.location,
             scheduledStartTime = dto.scheduledStartTime.take(19),
-            actualStartTime = DateTimeUtils.utcToKoreaTime(dto.actualStartTime?: ""),
-            scheduledEndTime = DateTimeUtils.utcToKoreaTime(dto.scheduledEndTime?: ""),
+            actualStartTime = dto.actualStartTime?.take(19),
+            scheduledEndTime = dto.scheduledEndTime?.take(19),
             targetTime = dto.targetTime / 60,
             restInterval = dto.restInterval,
             restDuration = dto.restDuration,
@@ -75,8 +76,8 @@ class MeetingMapper @Inject constructor() {
         return dto.meetings.map { meetingDetail ->
             DuplicatedMeeting(
                 title = meetingDetail.title,
-                scheduledStartTime = meetingDetail.scheduledStartTime,
-                scheduledEndTime = meetingDetail.scheduledEndTime
+                scheduledStartTime = meetingDetail.scheduledStartTime.take(19),
+                scheduledEndTime = meetingDetail.scheduledEndTime.take(19)
             )
         }
     }

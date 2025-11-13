@@ -212,7 +212,7 @@ class MeetingInProgressService : Service() {
         // 매니저 클래스 초기화
         chunkRetransmitter = ChunkRetransmitter(
             packetDir = packetDir,
-            getCurrentTimestamp = { DateTimeUtils.getCurrentUtcTime() }
+            getCurrentTimestamp = { DateTimeUtils.getCurrentTime() }
         )
         audioRecorder = AudioRecorder(
             context = this,
