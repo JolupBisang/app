@@ -6,7 +6,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,8 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,8 +36,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import android.widget.NumberPicker
+import androidx.compose.foundation.layout.Arrangement
 import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.state.home.MeetingUi
+import com.imhungry.sillok.ui.components.MediumSillokButton
 import com.imhungry.sillok.ui.components.SillokTextButton
 import com.imhungry.sillok.ui.theme.cancledMeeting
 import com.imhungry.sillok.ui.theme.completedMeeting
@@ -51,6 +58,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarView(
     selectedDate: LocalDate? = null,
@@ -65,6 +73,8 @@ fun CalendarView(
     }
     var isInitialized by remember { mutableStateOf(false) }
     var isDateInitialized by remember { mutableStateOf(false) }
+    var showYearMonthPicker by remember { mutableStateOf(false) }
+    val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // 초기 로드 시 selectedDate가 null이면 오늘 날짜 선택
     LaunchedEffect(Unit) {
@@ -105,8 +115,24 @@ fun CalendarView(
                 onTodayClick = {
                     currentMonth = YearMonth.from(LocalDate.now())
                     onTodayClick()
+                },
+                onYearMonthClick = {
+                    showYearMonthPicker = true
                 }
             )
+            
+            if (showYearMonthPicker) {
+                YearMonthPickerBottomSheet(
+                    currentYearMonth = currentMonth,
+                    onYearMonthSelected = { yearMonth ->
+                        currentMonth = yearMonth
+                        showYearMonthPicker = false
+                    },
+                    onDismiss = {
+                        showYearMonthPicker = false
+                    }
+                )
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -130,7 +156,8 @@ private fun CalendarNavigationBar(
     currentMonth: YearMonth,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
-    onTodayClick: () -> Unit
+    onTodayClick: () -> Unit,
+    onYearMonthClick: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier.fillMaxWidth()
@@ -161,6 +188,11 @@ private fun CalendarNavigationBar(
                     )
                 }",
                 style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onYearMonthClick() }
             )
 
             Image(
@@ -395,6 +427,93 @@ private fun CalendarDateItem(
                     }
                 }
             }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun YearMonthPickerBottomSheet(
+    currentYearMonth: YearMonth,
+    onYearMonthSelected: (YearMonth) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selectedYear by remember { mutableStateOf(currentYearMonth.year) }
+    var selectedMonth by remember { mutableStateOf(currentYearMonth.monthValue) }
+    val currentYear = LocalDate.now().year
+    val minYear = currentYear - 10
+    val maxYear = currentYear + 10
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // 년도 선택
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    AndroidView(
+                        factory = { ctx ->
+                            NumberPicker(ctx).apply {
+                                minValue = minYear
+                                maxValue = maxYear
+                                value = selectedYear
+                                setOnValueChangedListener { _, _, newVal ->
+                                    selectedYear = newVal
+                                }
+                            }
+                        },
+                        update = { picker ->
+                            picker.value = selectedYear
+                        },
+                        //modifier = Modifier.height(200.dp)
+                    )
+                }
+
+                Spacer(Modifier.width(16.dp))
+                // 월 선택
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    AndroidView(
+                        factory = { ctx ->
+                            NumberPicker(ctx).apply {
+                                minValue = 1
+                                maxValue = 12
+                                value = selectedMonth
+                                setOnValueChangedListener { _, _, newVal ->
+                                    selectedMonth = newVal
+                                }
+                            }
+                        },
+                        update = { picker ->
+                            picker.value = selectedMonth
+                        },
+                        //modifier = Modifier.height(200.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 확인 버튼
+            MediumSillokButton(
+                text = "확인",
+                onClick = {
+                    onYearMonthSelected(YearMonth.of(selectedYear, selectedMonth))
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
