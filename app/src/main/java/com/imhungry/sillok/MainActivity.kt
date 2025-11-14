@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.firebase.messaging.FirebaseMessaging
 import com.imhungry.sillok.data.local.DismissedMeetingStore
 import com.imhungry.sillok.data.local.TokenExpirationManager
+import com.imhungry.sillok.data.local.TokenStore
 import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.presentation.navigation.SillokNavigation
 import com.imhungry.sillok.ui.theme.SillokTheme
@@ -34,6 +35,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var tokenExpirationManager: TokenExpirationManager
+
+    @Inject
+    lateinit var tokenStore: TokenStore
 
     @Inject
     lateinit var userStore: UserStore

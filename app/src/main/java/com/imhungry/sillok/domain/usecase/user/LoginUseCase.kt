@@ -19,11 +19,18 @@ class LoginUseCase @Inject constructor(
 
     suspend operator fun invoke(token: String): ApiResult<User> {
         return try {
+            // 기존 데이터 클리어 후 새로 저장
+            tokenStore.clearTokens()
+            userStore.clearUser()
+            
+            // 새 토큰 저장
             tokenStore.saveTokens(token)
+            
             val userResult = userRepository.getMyProfile()
 
             when (userResult) {
                 is ApiResult.Success -> {
+                    // 새 유저 정보 저장
                     userStore.saveUser(userResult.data)
                     ApiResult.Success(userResult.data)
                 }
@@ -37,6 +44,7 @@ class LoginUseCase @Inject constructor(
         } catch (e: Exception) {
             // 예외 발생 시 토큰 삭제
             tokenStore.clearTokens()
+            userStore.clearUser()
             ApiResult.Failure(e.localizedMessage ?: "로그인 처리 중 오류가 발생했습니다.")
         }
     }

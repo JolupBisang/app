@@ -8,6 +8,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.imhungry.sillok.data.local.DismissedMeetingStore
 import com.imhungry.sillok.data.local.GeneratingMeetingNoteStore
+import com.imhungry.sillok.data.local.TokenStore
+import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.domain.model.meeting.MeetingStatus
@@ -33,6 +35,8 @@ class HomeViewModel @Inject constructor(
     private val getMyProfileUseCase: GetMyProfileUseCase,
     private val dismissedMeetingStore: DismissedMeetingStore,
     private val generatingMeetingNoteStore: GeneratingMeetingNoteStore,
+    private val tokenStore: TokenStore,
+    private val userStore: UserStore,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -46,6 +50,38 @@ class HomeViewModel @Inject constructor(
     private var currentYearMonth: Pair<Int, Int>? = null
 
     init {
+//        viewModelScope.launch {
+//            // 기존 데이터 클리어
+//            tokenStore.clearTokens()
+//            userStore.clearUser()
+//            Log.d(TAG, "TokenStore와 UserStore 기존 데이터 클리어 완료")
+//        }
+//
+//        viewModelScope.launch {
+//            // TokenStore 초기화 및 토큰 데이터 로그 출력
+//            tokenStore.accessToken.collect { token ->
+//                if (token != null) {
+//                    Log.d(TAG, "Token 데이터: accessToken=${token.take(20)}...")
+//                } else {
+//                    Log.d(TAG, "Token 데이터: null")
+//                }
+//            }
+//        }
+
+        viewModelScope.launch {
+            // UserStore 초기화 및 유저 데이터 로그 출력
+            userStore.user.collect { user ->
+                if (user != null) {
+                    Log.d(
+                        TAG,
+                        "User 데이터: id=${user.id}, email=${user.email}, nickname=${user.nickname}, profileImage=${user.pictureURL}"
+                    )
+                } else {
+                    Log.d(TAG, "User 데이터: null")
+                }
+            }
+        }
+        
         viewModelScope.launch {
             loadUserProfileInternal()
             loadInitialData()
