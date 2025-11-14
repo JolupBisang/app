@@ -23,7 +23,7 @@ data class MeetingUi(
             return try {
                 val endTime = DateTimeUtils.calcEndDate(meeting.scheduledStartTime, meeting.targetTime)
 
-                val date = DateTimeUtils.localIsoToDateString(meeting.scheduledStartTime)
+                val date = DateTimeUtils.localIsoToDateStringWithoutDayOfWeek(meeting.scheduledStartTime)
                 val start = DateTimeUtils.localIsoToTimeString(meeting.scheduledStartTime)
                 val end = DateTimeUtils.localIsoToTimeString(endTime)
 

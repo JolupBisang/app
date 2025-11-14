@@ -82,7 +82,7 @@ object DateTimeUtils {
         return try {
             val localDateTime =
                 LocalDateTime.parse(isoLocalTimestamp.take(19), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            localDateTime.format(DateTimeFormatter.ofPattern("yyyy.M.d"))
+            localDateTime.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
         } catch (e: Exception) {
             Log.e("DateTimeUtils", "파싱 실패: $isoLocalTimestamp", e)
             "-"
