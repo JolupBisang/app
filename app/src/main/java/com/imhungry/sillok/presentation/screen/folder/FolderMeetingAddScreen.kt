@@ -26,16 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
@@ -48,8 +38,6 @@ import com.imhungry.sillok.ui.components.ScreenHeader
 import com.imhungry.sillok.ui.components.SegmentedControl
 import com.imhungry.sillok.ui.components.SillokButton
 import com.imhungry.sillok.ui.components.TimeFilterType
-import com.imhungry.sillok.ui.theme.border
-import com.imhungry.sillok.ui.theme.green300
 import com.imhungry.sillok.ui.theme.primaryBackground
 import android.os.Build
 import androidx.activity.compose.BackHandler
@@ -175,80 +163,18 @@ fun FolderMeetingAddScreen(
                 onTypeSelected = { selectedFilterType = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = 20.dp),
+                selectedYear = if (selectedFilterType == TimeFilterType.YEAR || selectedFilterType == TimeFilterType.MONTH) selectedYear else null,
+                selectedMonth = if (selectedFilterType == TimeFilterType.MONTH) selectedMonth else null,
+                onYearClick = {
+                    selectedFilterType = TimeFilterType.YEAR
+                    showYearPicker = true
+                },
+                onMonthClick = {
+                    selectedFilterType = TimeFilterType.MONTH
+                    showMonthPicker = true
+                }
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 연도/월 선택 버튼
-            when (selectedFilterType) {
-                TimeFilterType.YEAR -> {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .clickable { showYearPicker = true }
-                                .border(1.dp, border, RoundedCornerShape(8.dp))
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${selectedYear}년",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = green300,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-                TimeFilterType.MONTH -> {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .clickable { showYearPicker = true }
-                                .border(1.dp, border, RoundedCornerShape(8.dp))
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${selectedYear}년",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = green300,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.width(8.dp))
-                        
-                        Row(
-                            modifier = Modifier
-                                .clickable { showMonthPicker = true }
-                                .border(1.dp, border, RoundedCornerShape(8.dp))
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${selectedMonth}월",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = green300,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-                TimeFilterType.ALL -> {
-                    // 전체 선택 시에는 표시하지 않음
-                }
-            }
 
             Spacer(modifier = Modifier.height(16.dp))
 

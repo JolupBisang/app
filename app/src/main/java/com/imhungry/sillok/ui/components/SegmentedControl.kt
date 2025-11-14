@@ -33,7 +33,11 @@ enum class TimeFilterType {
 fun SegmentedControl(
     selectedType: TimeFilterType,
     onTypeSelected: (TimeFilterType) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selectedYear: Int? = null,
+    selectedMonth: Int? = null,
+    onYearClick: (() -> Unit)? = null,
+    onMonthClick: (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier
@@ -53,14 +57,38 @@ fun SegmentedControl(
                         .background(
                             if (isSelected) whiteBackground else Color.Transparent
                         )
-                        .clickable { onTypeSelected(type) }
+                        .clickable { 
+                            when (type) {
+                                TimeFilterType.YEAR -> {
+                                    if (onYearClick != null) {
+                                        onYearClick()
+                                    } else {
+                                        onTypeSelected(type)
+                                    }
+                                }
+                                TimeFilterType.MONTH -> {
+                                    if (onMonthClick != null) {
+                                        onMonthClick()
+                                    } else {
+                                        onTypeSelected(type)
+                                    }
+                                }
+                                TimeFilterType.ALL -> {
+                                    onTypeSelected(type)
+                                }
+                            }
+                        }
                         .padding(vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = when (type) {
-                            TimeFilterType.YEAR -> "년"
-                            TimeFilterType.MONTH -> "월"
+                            TimeFilterType.YEAR -> {
+                                if (selectedYear != null) "${selectedYear}년" else "년"
+                            }
+                            TimeFilterType.MONTH -> {
+                                if (selectedMonth != null) "${selectedMonth}월" else "월"
+                            }
                             TimeFilterType.ALL -> "전체"
                         },
                         style = MaterialTheme.typography.bodyMedium,
