@@ -8,24 +8,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.paging.PagingData
-import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.itemContentType
-import androidx.paging.compose.itemKey
-import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
-import kotlinx.coroutines.flow.Flow
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.runtime.Composable
@@ -41,9 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
@@ -68,7 +57,6 @@ import com.imhungry.sillok.ui.theme.primaryBackground
 import com.imhungry.sillok.ui.theme.primaryTextColor
 import com.imhungry.sillok.ui.theme.sideBar
 import com.imhungry.sillok.ui.theme.tertiary
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import androidx.compose.material3.rememberDrawerState as rememberMaterialDrawerState
 
@@ -104,45 +92,33 @@ fun HomeScreen(
         onNavigateToMeetingMinutes = onNavigateToMeetingMinutes
     )
 
-    // drawerContent에 전달할 값들을 추출하여 불필요한 재구성 방지
     val userName = homeState.userName
     val profileImage = homeState.profileImage
-    
-    // 콜백들을 메모이제이션
+
     val onNewMeetingClick = remember(scope, materialDrawerState, onNavigateToCreateMeeting) {
         {
             scope.launch { materialDrawerState.close() }
             onNavigateToCreateMeeting()
         }
     }
-    
+
     val onTeamManagementClick = remember(scope, materialDrawerState, onNavigateToTeamList) {
         {
             scope.launch { materialDrawerState.close() }
             onNavigateToTeamList()
         }
     }
-    
+
     val onFeedbackHistoryClick = remember(scope, materialDrawerState) {
         {
             scope.launch { materialDrawerState.close() }
         }
     }
-    
+
     val onMeetingFolderClick = remember(scope, materialDrawerState, onNavigateToMeetingMinutesFolder) {
         {
             scope.launch { materialDrawerState.close() }
             onNavigateToMeetingMinutesFolder()
-        }
-    }
-    
-    val onLogoutClick = remember(scope, materialDrawerState, onNavigateToLogin) {
-        {
-            scope.launch { 
-                materialDrawerState.close()
-                viewModel.logout()
-            }
-            onNavigateToLogin()
         }
     }
 
@@ -188,7 +164,7 @@ fun HomeScreen(
                 onTeamManagement = onTeamManagementClick,
                 //onFeedbackHistory = onFeedbackHistoryClick,
                 onMeetingFolder = onMeetingFolderClick,
-                onLogout = onLogoutClick
+                onLogout = onNavigateToLogin
             )
         }
     ) {
@@ -408,8 +384,7 @@ private fun HomeContent(
                 isSearching = homeState.isSearching,
                 meetings = homeState.meetings,
                 onMeetingItemClick = onMeetingItemClick,
-                onMonthChanged = onMonthChanged,
-                searchQuery = homeState.searchQuery
+                onMonthChanged = onMonthChanged
             )
 
             BottomButtons(
@@ -457,8 +432,7 @@ private fun TopContent(
     isSearching: Boolean,
     meetings: List<MeetingUi>,
     onMeetingItemClick: (MeetingUi) -> Unit,
-    onMonthChanged: (Int, Int) -> Unit,
-    searchQuery: String
+    onMonthChanged: (Int, Int) -> Unit
 ) {
     Column(modifier = modifier) {
         TopHeader(
@@ -482,16 +456,14 @@ private fun TopContent(
             focusRequester = focusRequester,
             onSearchFocusChange = onSearchFocusChange,
             searchText = searchText,
-            onSearchTextChange = onSearchTextChange,
-            onSearchSubmit = { viewModel.onSearchSubmit() }
+            onSearchTextChange = onSearchTextChange
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         MeetingListArea(
             searchText = searchText,
-            searchQuery = searchQuery,
-            searchPagingFlowState = viewModel.searchPagingFlow,
+            searchResults = searchResults,
             isSearching = isSearching,
             meetings = meetings,
             onMeetingItemClick = onMeetingItemClick,
@@ -598,16 +570,14 @@ private fun SearchArea(
     focusRequester: FocusRequester,
     onSearchFocusChange: (Boolean) -> Unit,
     searchText: String,
-    onSearchTextChange: (String) -> Unit,
-    onSearchSubmit: () -> Unit
+    onSearchTextChange: (String) -> Unit
 ) {
     SearchBar(
         modifier = Modifier.fillMaxWidth(),
         onFocusChange = onSearchFocusChange,
         focusRequester = focusRequester,
         text = searchText,
-        onTextChange = onSearchTextChange,
-        onImeAction = onSearchSubmit
+        onTextChange = onSearchTextChange
     )
 }
 
@@ -615,8 +585,7 @@ private fun SearchArea(
 @Composable
 private fun MeetingListArea(
     searchText: String,
-    searchQuery: String,
-    searchPagingFlowState: StateFlow<Flow<PagingData<MeetingDetailSummary>>?>,
+    searchResults: List<MeetingUi>,
     isSearching: Boolean,
     meetings: List<MeetingUi>,
     onMeetingItemClick: (MeetingUi) -> Unit,
@@ -624,11 +593,9 @@ private fun MeetingListArea(
     onRefresh: () -> Unit,
     isLoading: Boolean
 ) {
-    val searchPagingFlow by searchPagingFlowState.collectAsState()
-    
-    if (searchQuery.isNotBlank() && searchPagingFlow != null) {
+    if (searchText.isNotBlank()) {
         SearchResultList(
-            searchPagingFlow = searchPagingFlow!!,
+            results = searchResults,
             isLoading = isSearching,
             onItemClick = onMeetingItemClick
         )
@@ -677,28 +644,18 @@ private fun BottomButtons(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun SearchResultList(
-    searchPagingFlow: Flow<PagingData<MeetingDetailSummary>>,
+    results: List<MeetingUi>,
     isLoading: Boolean,
     onItemClick: (MeetingUi) -> Unit
 ) {
-    val pagingItems: LazyPagingItems<MeetingDetailSummary> = 
-        searchPagingFlow.collectAsLazyPagingItems()
+    if (isLoading || results.isEmpty()) return
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        items(
-            count = pagingItems.itemCount,
-            key = pagingItems.itemKey { it.id },
-            contentType = pagingItems.itemContentType { "meeting" }
-        ) { index ->
-            val meetingSummary = pagingItems[index] ?: return@items
-            
-            val meeting = MeetingUi.from(meetingSummary)
-            
+        items(results) { meeting ->
             val backgroundColor: Color
             val borderColor: Color
             val borderWith: Dp
