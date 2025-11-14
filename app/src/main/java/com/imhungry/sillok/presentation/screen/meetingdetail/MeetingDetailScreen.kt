@@ -242,7 +242,7 @@ fun MeetingDetailScreen(
 
         SillokDialog(
             visible = state.showDismissDialog,
-            message = "이 회의를 숨기시겠습니까?\n\n다른 참석자는 이 회의를 계속 볼 수 있습니다.",
+            message = "이 회의를 캘린더에서 숨기시겠습니까?\n\n다른 참석자는 계속 이 회의를 볼 수 있습니다.",
             confirmText = "예",
             cancelText = "취소",
             onConfirm = {
