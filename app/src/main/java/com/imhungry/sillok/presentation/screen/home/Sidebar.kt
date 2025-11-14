@@ -34,7 +34,8 @@ fun Sidebar(
     onNewMeeting: () -> Unit = {},
     onTeamManagement: () -> Unit = {},
     onFeedbackHistory: () -> Unit = {},
-    onMeetingFolder: () -> Unit = {}
+    onMeetingFolder: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -90,6 +91,16 @@ fun Sidebar(
         MenuItem(
             text = "회의록 폴더",
             onClick = onMeetingFolder
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+        
+        Divider()
+        Spacer(modifier = Modifier.height(24.dp))
+
+        MenuItem(
+            text = "로그아웃",
+            onClick = onLogout
         )
     }
 }

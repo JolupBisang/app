@@ -237,6 +237,11 @@ fun SillokNavigation(
                 },
                 onNavigateToMeetingMinutesFolder = {
                     navController.navigate(Screen.FolderList.route)
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }
