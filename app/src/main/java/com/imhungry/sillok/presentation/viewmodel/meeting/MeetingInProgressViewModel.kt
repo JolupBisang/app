@@ -376,10 +376,10 @@ class MeetingInProgressViewModel @Inject constructor(
     private suspend fun loadMeetingData(meetingId: Long, startMillis: Long) {
         coroutineScope {
             val currentUserId = userStore.user.first()?.id
-            val segmentsDeferred = async { getSegmentsUseCase(meetingId) }
-            val summariesDeferred = async { getSummariesUseCase(meetingId) }
+            val segmentsDeferred = async { getSegmentsUseCase(meetingId, page = 0, size = 10000) }
+            val summariesDeferred = async { getSummariesUseCase(meetingId, isRecap = false, page = 0, size = 10000) }
             val participationDeferred = async { getParticipationRateHistoryUseCase(meetingId) }
-            val feedbacksDeferred = async { getFeedbacksUseCase(meetingId) }
+            val feedbacksDeferred = async { getFeedbacksUseCase(meetingId, page = 0, size = 10000) }
 
             loadSegments(segmentsDeferred.await(), startMillis, currentUserId)
             loadSummaries(summariesDeferred.await(), startMillis)
