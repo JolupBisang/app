@@ -2,14 +2,25 @@ package com.imhungry.sillok.presentation.navigation
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.imhungry.sillok.ui.components.BottomNavigationBar
 import com.imhungry.sillok.data.local.TokenExpirationManager
 import com.imhungry.sillok.presentation.screen.home.HomeScreen
 import com.imhungry.sillok.presentation.screen.login.LoginScreen
@@ -126,10 +137,54 @@ fun SillokNavigation(
         }
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Splash.route
-    ) {
+    // 현재 라우트 확인
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    
+    // 하단 네비게이션을 표시할 라우트 목록
+    val showBottomNavigationRoutes = setOf(
+        Screen.Home.route,
+        //Screen.TeamList.route,
+        //Screen.FolderList.route
+    )
+    
+    // 현재 라우트가 하단 네비게이션을 표시해야 하는지 확인
+    // 정확히 일치하거나 라우트가 해당 경로로 시작하는 경우 (예: "home" 또는 "home/...")
+    val shouldShowBottomNavigation = currentRoute?.let { route ->
+        showBottomNavigationRoutes.any { 
+            route == it || route.startsWith("$it/") || route.startsWith("$it?")
+        }
+    } ?: false
+    
+    // 플로팅 버튼 클릭 시 동작 결정
+    val onFloatingButtonClick = remember(currentRoute) {
+        {
+            when {
+                currentRoute == Screen.Home.route || 
+                currentRoute?.startsWith("${Screen.Home.route}/") == true ||
+                currentRoute?.startsWith("${Screen.Home.route}?") == true -> {
+                    navController.navigate(Screen.MeetingForm.route)
+                }
+                currentRoute == Screen.TeamList.route || 
+                currentRoute?.startsWith("${Screen.TeamList.route}/") == true ||
+                currentRoute?.startsWith("${Screen.TeamList.route}?") == true -> {
+                    navController.navigate(Screen.TeamForm.route)
+                }
+                currentRoute == Screen.FolderList.route || 
+                currentRoute?.startsWith("${Screen.FolderList.route}/") == true ||
+                currentRoute?.startsWith("${Screen.FolderList.route}?") == true -> {
+                    navController.navigate(Screen.FolderForm.route)
+                }
+            }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Splash.route,
+            modifier = Modifier.fillMaxSize()
+        ) {
         // 스플래시 화면
         composable(Screen.Splash.route) {
             SplashScreen(
@@ -508,6 +563,34 @@ fun SillokNavigation(
                     }
                 }
             )
+        }
+    }
+    
+        // 하단 네비게이션 바 (NavHost 위에 배치)
+        if (shouldShowBottomNavigation) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.navigationBars),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                BottomNavigationBar(
+                    onHomeClick = {
+                        navController.navigate(Screen.Home.route)
+                    },
+                    onTeamClick = {
+                        navController.navigate(Screen.TeamList.route)
+                    },
+                    onFloatingButtonClick = onFloatingButtonClick,
+                    onFolderClick = {
+                        navController.navigate(Screen.FolderList.route)
+                    },
+                    onMyPageClick = {
+                        // 마이페이지
+                    },
+                    selectedRoute = currentRoute
+                )
+            }
         }
     }
 }
