@@ -118,34 +118,36 @@ fun MeetingDetailScreen(
                             )
                         }
 
-                        item {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                LabelText(
-                                    text = "팀"
-                                )
-                                if (state.teamNames.isNotEmpty()) {
-                                    Column(
-                                        modifier = Modifier
-                                            .weight(1f),
-                                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        state.teamNames.forEach { teamName ->
-                                            Row(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(12.dp))
-                                                    .border(1.dp, green300, RoundedCornerShape(12.dp))
-                                                    .background(green300)
-                                                    .padding(start = 12.dp, end = 12.dp, top = 3.dp, bottom = 4.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text(
-                                                    text = teamName,
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = inverse
-                                                )
+                        if (state.teamNames.isNotEmpty()) {
+                            item {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    LabelText(
+                                        text = "팀"
+                                    )
+                                    if (state.teamNames.isNotEmpty()) {
+                                        Column(
+                                            modifier = Modifier
+                                                .weight(1f),
+                                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            state.teamNames.forEach { teamName ->
+                                                Row(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .border(1.dp, green300, RoundedCornerShape(12.dp))
+                                                        .background(green300)
+                                                        .padding(start = 12.dp, end = 12.dp, top = 3.dp, bottom = 4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = teamName,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = inverse
+                                                    )
+                                                }
                                             }
                                         }
                                     }
