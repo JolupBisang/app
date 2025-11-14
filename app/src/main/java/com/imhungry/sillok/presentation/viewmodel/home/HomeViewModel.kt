@@ -50,41 +50,10 @@ class HomeViewModel @Inject constructor(
     private var currentYearMonth: Pair<Int, Int>? = null
 
     init {
-//        viewModelScope.launch {
-//            // 기존 데이터 클리어
-//            tokenStore.clearTokens()
-//            userStore.clearUser()
-//            Log.d(TAG, "TokenStore와 UserStore 기존 데이터 클리어 완료")
-//        }
-//
-//        viewModelScope.launch {
-//            // TokenStore 초기화 및 토큰 데이터 로그 출력
-//            tokenStore.accessToken.collect { token ->
-//                if (token != null) {
-//                    Log.d(TAG, "Token 데이터: accessToken=${token.take(20)}...")
-//                } else {
-//                    Log.d(TAG, "Token 데이터: null")
-//                }
-//            }
-//        }
-
-        viewModelScope.launch {
-            // UserStore 초기화 및 유저 데이터 로그 출력
-            userStore.user.collect { user ->
-                if (user != null) {
-                    Log.d(
-                        TAG,
-                        "User 데이터: id=${user.id}, email=${user.email}, nickname=${user.nickname}, profileImage=${user.pictureURL}"
-                    )
-                } else {
-                    Log.d(TAG, "User 데이터: null")
-                }
-            }
-        }
-        
         viewModelScope.launch {
             loadUserProfileInternal()
             loadInitialData()
+            loadOngoingAndUpcomingMeetings()
         }
     }
 
@@ -130,8 +99,12 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refresh() {
-        loadUserProfile()
-        loadInitialData()
+        viewModelScope.launch {
+            loadUserProfile()
+            loadInitialData()
+            // 진행 중/예정 회의는 달과 관계없이 별도로 로드
+            loadOngoingAndUpcomingMeetings()
+        }
     }
 
     // ========================================
@@ -181,6 +154,8 @@ class HomeViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun refreshData() {
         loadHomeData()
+        // 진행 중/예정 회의는 달과 관계없이 별도로 로드
+        loadOngoingAndUpcomingMeetings()
     }
 
     fun clearError() {
@@ -214,6 +189,8 @@ class HomeViewModel @Inject constructor(
         // DataStore 저장은 백그라운드에서 처리 (알림용 dismiss만 저장)
         viewModelScope.launch {
             dismissedMeetingStore.addDismissedScheduledMeeting(meetingId)
+            // dismiss 후에도 진행 중/예정 회의 목록을 다시 로드하여 최신 상태 유지
+            loadOngoingAndUpcomingMeetings()
         }
     }
 
@@ -264,6 +241,101 @@ class HomeViewModel @Inject constructor(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
+    fun loadHomeDataForMonth2(year: Int, month: Int) {
+        viewModelScope.launch {
+            Log.d(TAG, "loadHomeDataForMonth 시작: year=$year, month=$month")
+            try {
+                currentYearMonth = year to month
+                when (val result = getMeetingSummaryListUseCase(year, month)) {
+                    is ApiResult.Success -> {
+                        Log.d(TAG, "loadHomeDataForMonth 성공: 회의 수=${result.data.size}")
+                        handleSuccessResult(result.data, year, month)
+                    }
+
+                    is ApiResult.Failure -> {
+                        Log.e(TAG, "loadHomeDataForMonth 실패: ${result.message}")
+                        handleFailureResult(result.message)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "loadHomeDataForMonth 예외 발생: ${e.message}", e)
+                handleException(e)
+            }
+        }
+    }
+
+    /**
+     * 진행 중인 회의와 예정된 회의를 달과 관계없이 로드합니다.
+     * 현재 달과 다음 3개월의 데이터를 가져와서 진행 중/예정 회의만 필터링합니다.
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun loadOngoingAndUpcomingMeetings() {
+        viewModelScope.launch {
+            try {
+                val allOngoing = mutableListOf<MeetingDetailSummary>()
+                val allUpcoming = mutableListOf<MeetingDetailSummary>()
+
+                // 현재 달과 다음 3개월의 데이터를 가져옴
+                for (i in 0..3) {
+                    val targetCalendar = Calendar.getInstance().apply {
+                        add(Calendar.MONTH, i)
+                    }
+                    val year = targetCalendar.get(Calendar.YEAR)
+                    val month = targetCalendar.get(Calendar.MONTH) + 1
+
+                    when (val result = getMeetingSummaryListUseCase(year, month)) {
+                        is ApiResult.Success -> {
+                            val ongoing = result.data.filter { 
+                                MeetingStatus.from(it.status) == MeetingStatus.IN_PROGRESS 
+                            }
+                            val upcoming = result.data.filter { 
+                                MeetingStatus.from(it.status) == MeetingStatus.WAITING 
+                            }
+                            allOngoing.addAll(ongoing)
+                            allUpcoming.addAll(upcoming)
+                        }
+                        is ApiResult.Failure -> {
+                            Log.e(TAG, "loadOngoingAndUpcomingMeetings 실패 (year=$year, month=$month): ${result.message}")
+                        }
+                    }
+                }
+
+                // DataStore에서 숨긴 회의 ID 가져오기
+                val dismissedMeetingIds = dismissedMeetingStore.getDismissedMeetingIds()
+                val dismissedOngoingIds = dismissedMeetingStore.getDismissedOngoingMeetingIds()
+                val dismissedScheduledIds = dismissedMeetingStore.getDismissedScheduledMeetingIds()
+
+                // 숨긴 회의 제외
+                val filteredOngoing = allOngoing.filter { !dismissedMeetingIds.contains(it.id) }
+                val filteredUpcoming = allUpcoming.filter { !dismissedMeetingIds.contains(it.id) }
+
+                // 중복 제거 (같은 ID가 여러 달에 있을 수 있음)
+                val uniqueOngoing = filteredOngoing.distinctBy { it.id }
+                val uniqueUpcoming = filteredUpcoming.distinctBy { it.id }
+
+                val ongoingUis = uniqueOngoing.map {
+                    MeetingUi.from(it).copy(dismissed = dismissedOngoingIds.contains(it.id))
+                }
+                val upcomingUis = uniqueUpcoming.map {
+                    MeetingUi.from(it).copy(dismissed = dismissedScheduledIds.contains(it.id))
+                }
+
+                Log.d(TAG, "loadOngoingAndUpcomingMeetings 완료: ongoing=${ongoingUis.size}, upcoming=${upcomingUis.size}")
+
+                // 진행 중/예정 회의만 업데이트 (meetings는 변경하지 않음)
+                _state.update { current ->
+                    current.copy(
+                        ongoingMeetings = ongoingUis,
+                        upcomingMeetings = upcomingUis
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "loadOngoingAndUpcomingMeetings 예외 발생: ${e.message}", e)
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun handleSuccessResult(
         summaries: List<MeetingDetailSummary>,
         year: Int,
@@ -277,62 +349,25 @@ class HomeViewModel @Inject constructor(
         val filteredSummaries = summaries.filter { !dismissedMeetingIds.contains(it.id) }
         Log.d(TAG, "handleSuccessResult: 필터링 후 회의 수=${filteredSummaries.size}")
 
-        val (ongoing, upcoming, meetings) = categorizeMeetings(filteredSummaries)
+        // 달력 표시용 meetings만 업데이트 (ongoing/upcoming은 별도로 관리)
+        val meetingUis = filteredSummaries.map { summary ->
+            val isDismissed = dismissedMeetingIds.contains(summary.id)
+            MeetingUi.from(summary).copy(dismissed = isDismissed)
+        }
 
-        logMeetingLoadResult(year, month, summaries.size, ongoing.size, upcoming.size)
+        logMeetingLoadResult(year, month, summaries.size, 0, 0)
 
-        // DataStore에서 dismiss 정보 가져오기 (알림용)
-        val dismissedOngoingIds = dismissedMeetingStore.getDismissedOngoingMeetingIds()
-        val dismissedScheduledIds = dismissedMeetingStore.getDismissedScheduledMeetingIds()
-
-        val meetingUis = convertToMeetingUis(
-            ongoing,
-            upcoming,
-            meetings,
-            dismissedOngoingIds,
-            dismissedScheduledIds
-        )
-
-        Log.d(TAG, "handleSuccessResult: 최종 meetings 수=${meetingUis.all.size}, ongoing=${meetingUis.ongoing.size}, upcoming=${meetingUis.upcoming.size}")
-        updateStateWithMeetings(meetingUis)
+        Log.d(TAG, "handleSuccessResult: 최종 meetings 수=${meetingUis.size}")
+        // meetings만 업데이트 (ongoingMeetings, upcomingMeetings는 변경하지 않음)
+        _state.update { current ->
+            current.copy(
+                isLoading = false,
+                meetings = meetingUis,
+                error = null
+            )
+        }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun categorizeMeetings(summaries: List<MeetingDetailSummary>): Triple<List<MeetingDetailSummary>, List<MeetingDetailSummary>, List<MeetingDetailSummary>> {
-        val ongoing =
-            summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.IN_PROGRESS }
-        val upcoming = summaries.filter { MeetingStatus.from(it.status) == MeetingStatus.WAITING }
-        val meetings = summaries
-        return Triple(ongoing, upcoming, meetings)
-    }
-
-    private fun convertToMeetingUis(
-        ongoing: List<MeetingDetailSummary>,
-        upcoming: List<MeetingDetailSummary>,
-        meetings: List<MeetingDetailSummary>,
-        dismissedOngoingIds: Set<Long>,
-        dismissedScheduledIds: Set<Long>
-    ): MeetingUis {
-        return MeetingUis(
-            ongoing = ongoing.map {
-                MeetingUi.from(it).copy(dismissed = dismissedOngoingIds.contains(it.id))
-            },
-            upcoming = upcoming.map {
-                MeetingUi.from(it).copy(dismissed = dismissedScheduledIds.contains(it.id))
-            },
-            all = meetings.map {
-                val isDismissed = dismissedOngoingIds.contains(it.id) ||
-                        dismissedScheduledIds.contains(it.id)
-                MeetingUi.from(it).copy(dismissed = isDismissed)
-            }
-        )
-    }
-
-    private data class MeetingUis(
-        val ongoing: List<MeetingUi>,
-        val upcoming: List<MeetingUi>,
-        val all: List<MeetingUi>
-    )
 
     private fun logMeetingLoadResult(
         year: Int,
@@ -344,17 +379,6 @@ class HomeViewModel @Inject constructor(
         val past = total - ongoing - upcoming
     }
 
-    private fun updateStateWithMeetings(meetingUis: MeetingUis) {
-        _state.update {
-            it.copy(
-                isLoading = false,
-                meetings = meetingUis.all,
-                ongoingMeetings = meetingUis.ongoing,
-                upcomingMeetings = meetingUis.upcoming,
-                error = null
-            )
-        }
-    }
 
     private fun handleFailureResult(message: String?) {
         _state.update {
