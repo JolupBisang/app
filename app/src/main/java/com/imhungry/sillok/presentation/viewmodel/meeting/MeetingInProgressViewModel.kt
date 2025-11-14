@@ -110,6 +110,7 @@ class MeetingInProgressViewModel @Inject constructor(
         viewModelScope.launch {
             // refreshAll() 완료 후 Service 시작
             Log.d(TAG, "[2단계] 회의 데이터 로드 시작 (refreshAll)")
+            _state.update { it.copy(isLoading = true) }
             refreshAll()
             Log.d(TAG, "[2단계 완료] 회의 데이터 로드 완료")
 
@@ -129,6 +130,7 @@ class MeetingInProgressViewModel @Inject constructor(
                 meetingId = meetingId,
                 jwtToken = jwtToken
             )
+            _state.update { it.copy(isLoading = false) }
 
             // Service 이벤트 구독
             Log.d(TAG, "[5단계] Service 이벤트 구독 시작")
@@ -168,8 +170,9 @@ class MeetingInProgressViewModel @Inject constructor(
                             TAG,
                             "[5-3] ConnectionEstablished 이벤트 처리 시작: lastProcessedChunkId=${event.lastProcessedChunkId}"
                         )
-                        _state.update { it.copy(isLoading = false) }
+                        Log.d(TAG, "[5-3-1] handleConnectionEstablishedFromService 호출 전")
                         handleConnectionEstablishedFromService(event.lastProcessedChunkId)
+                        Log.d(TAG, "[5-3-2] handleConnectionEstablishedFromService 호출 후")
                     }
 
                     is ServiceEvent.DiarizedSegment -> {
@@ -222,59 +225,77 @@ class MeetingInProgressViewModel @Inject constructor(
                 Log.d(TAG, "[6-1] 회의 시작 시간 확인: meetingId=$meetingId")
 
                 // GetMeetingDetailUseCase를 통해 actualStartTime 조회
+                // CONNECTION_ESTABLISHED 이벤트를 받으면 무조건 actualStartTime 조회 및 스케줄링 수행
                 Log.d(TAG, "[6-2] Meeting Detail 조회 시작 (actualStartTime 확인용)")
+                Log.d(TAG, "[6-2-0] getMeetingDetailUseCase 호출: meetingId=$meetingId")
                 when (val meetingDetailResult = getMeetingDetailUseCase(meetingId)) {
                     is ApiResult.Success -> {
                         val meeting = meetingDetailResult.data
                         Log.d(TAG, "[6-2 완료] Meeting Detail 조회 성공")
+                        Log.d(TAG, "[6-2-1] meeting.actualStartTime: ${meeting.actualStartTime}")
+                        Log.d(TAG, "[6-2-2] meeting.targetTime: ${meeting.targetTime}")
+                        Log.d(TAG, "[6-2-3] meeting.restInterval: ${meeting.restInterval}")
+                        Log.d(TAG, "[6-2-4] meeting.restDuration: ${meeting.restDuration}")
 
-                        if (meeting.actualStartTime != null) {
-                            val startMillis = DateTimeUtils.isoLocalDateTimeToMillis(meeting.actualStartTime)
-
-                            // state 업데이트
-                            withContext(Dispatchers.Main) {
-                                Log.d(TAG, "[6-3] State 업데이트 시작")
-                                _state.update { 
-                                    it.copy(
-                                        startTime = startMillis,
-                                        // targetTime이 설정되지 않았으면 설정
-                                        targetTime = if (it.targetTime == 0) meeting.targetTime else it.targetTime
-                                    ) 
-                                }
-
-                                // 휴식 시간 피드백 스케줄링
-                                val currentState = state.value
-                                if (currentState.targetTime > 0 && currentState.restInterval > 0 && currentState.restDuration > 0) {
-                                    Log.d(
-                                        TAG,
-                                        "[6-4] 휴식 시간 피드백 스케줄링 시작: targetTime=${currentState.targetTime}, restInterval=${currentState.restInterval}, restDuration=${currentState.restDuration}"
-                                    )
-                                    scheduleRestBreakFeedbacks(
-                                        startMillis,
-                                        currentState.targetTime,
-                                        currentState.restInterval,
-                                        currentState.restDuration
-                                    )
-                                    Log.d(TAG, "[6-4 완료] 휴식 시간 피드백 스케줄링 완료")
-                                } else {
-                                    Log.d(TAG, "[6-4 스킵] 휴식 시간 설정이 없어 스케줄링을 건너뜁니다")
-                                }
-
-                                // 회의 종료 10분 전 피드백 스케줄링
-                                if (currentState.targetTime > 0) {
-                                    Log.d(
-                                        TAG,
-                                        "[6-5] 회의 종료 피드백 스케줄링 시작: targetTime=${currentState.targetTime}"
-                                    )
-                                    scheduleMeetingEndFeedback(startMillis, currentState.targetTime)
-                                    Log.d(TAG, "[6-5 완료] 회의 종료 피드백 스케줄링 완료")
-                                } else {
-                                    Log.d(TAG, "[6-5 스킵] 목표 시간이 없어 스케줄링을 건너뜁니다")
-                                }
-                                Log.d(TAG, "[6-3 완료] State 업데이트 완료")
-                            }
+                        // actualStartTime이 null이어도 state 업데이트는 수행
+                        val startMillis = if (meeting.actualStartTime != null) {
+                            Log.d(TAG, "[6-2-5] actualStartTime 원본 값: ${meeting.actualStartTime}")
+                            val calculated = DateTimeUtils.isoLocalDateTimeToMillis(meeting.actualStartTime)
+                            val startTimeFormatted = DateTimeUtils.millisToHourMinute(calculated)
+                            Log.d(TAG, "[6-2-6] startMillis 계산 결과: $calculated (${startTimeFormatted})")
+                            Log.d(TAG, "[6-2-7] 현재 시간: ${System.currentTimeMillis()} (${DateTimeUtils.millisToHourMinute(System.currentTimeMillis())})")
+                            calculated
                         } else {
-                            Log.w(TAG, "[6-2 경고] actualStartTime이 null입니다. startTime을 설정하지 않습니다.")
+                            Log.w(TAG, "[6-2-5 경고] actualStartTime이 null입니다. 현재 시간을 사용합니다.")
+                            val currentTime = System.currentTimeMillis()
+                            Log.d(TAG, "[6-2-6] 현재 시간을 startMillis로 사용: $currentTime (${DateTimeUtils.millisToHourMinute(currentTime)})")
+                            currentTime
+                        }
+
+                        // state 업데이트
+                        withContext(Dispatchers.Main) {
+                            Log.d(TAG, "[6-3] State 업데이트 시작")
+                            _state.update { 
+                                it.copy(
+                                    startTime = startMillis,
+                                    // targetTime이 설정되지 않았으면 설정
+                                    targetTime = if (it.targetTime == 0) meeting.targetTime else it.targetTime,
+                                    // restInterval, restDuration도 업데이트
+                                    restInterval = if (it.restInterval == 0) meeting.restInterval else it.restInterval,
+                                    restDuration = if (it.restDuration == 0) meeting.restDuration else it.restDuration
+                                ) 
+                            }
+
+                            // 휴식 시간 피드백 스케줄링
+                            val currentState = state.value
+                            if (currentState.targetTime > 0 && currentState.restInterval > 0 && currentState.restDuration > 0) {
+                                Log.d(
+                                    TAG,
+                                    "[6-4] 휴식 시간 피드백 스케줄링 시작: targetTime=${currentState.targetTime}분, restInterval=${currentState.restInterval}분, restDuration=${currentState.restDuration}분"
+                                )
+                                scheduleRestBreakFeedbacks(
+                                    startMillis,
+                                    currentState.targetTime,
+                                    currentState.restInterval,
+                                    currentState.restDuration
+                                )
+                                Log.d(TAG, "[6-4 완료] 휴식 시간 피드백 스케줄링 완료")
+                            } else {
+                                Log.d(TAG, "[6-4 스킵] 휴식 시간 설정이 없어 스케줄링을 건너뜁니다 (targetTime=${currentState.targetTime}, restInterval=${currentState.restInterval}, restDuration=${currentState.restDuration})")
+                            }
+
+                            // 회의 종료 10분 전 피드백 스케줄링
+                            if (currentState.targetTime > 0) {
+                                Log.d(
+                                    TAG,
+                                    "[6-5] 회의 종료 피드백 스케줄링 시작: targetTime=${currentState.targetTime}분"
+                                )
+                                scheduleMeetingEndFeedback(startMillis, currentState.targetTime)
+                                Log.d(TAG, "[6-5 완료] 회의 종료 피드백 스케줄링 완료")
+                            } else {
+                                Log.d(TAG, "[6-5 스킵] 목표 시간이 없어 스케줄링을 건너뜁니다 (targetTime=${currentState.targetTime})")
+                            }
+                            Log.d(TAG, "[6-3 완료] State 업데이트 완료")
                         }
 
                         Log.d(TAG, "========================================")
@@ -295,12 +316,13 @@ class MeetingInProgressViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     suspend fun refreshAll() {
         Log.d(TAG, "[2-1] refreshAll 시작: isLoading=true")
-        _state.update { it.copy(isLoading = true) }
+
         val meetingId = state.value.meetingId
         Log.d(TAG, "[2-2] meetingId: $meetingId")
 
         coroutineScope {
             val meeting = loadMeetingDetail(meetingId) ?: return@coroutineScope
+            // 참가자 정보를 먼저 로드하고 완료될 때까지 대기
             loadUserInfoForParticipants(meeting.participants)
             
             val startMillis = updateStartTimeIfAvailable(meeting)
@@ -387,6 +409,7 @@ class MeetingInProgressViewModel @Inject constructor(
 
             loadSegments(segmentsDeferred.await(), startMillis, currentUserId)
             loadSummaries(summariesDeferred.await(), startMillis)
+            // 참가자 정보가 로드된 후 participation rate 로드
             loadParticipationRates(participationDeferred.await())
             loadFeedbacks(feedbacksDeferred.await(), meetingId, startMillis)
         }
@@ -447,10 +470,42 @@ class MeetingInProgressViewModel @Inject constructor(
     ) {
         when (result) {
             is ApiResult.Success -> {
-                val sorted = result.data.sortedByDescending { it.rate }
-                _state.update { it.copy(participationRates = sorted) }
+                // API에서 가져온 참여율이 있으면 사용
+                if (result.data.isNotEmpty()) {
+                    val sorted = result.data.sortedByDescending { it.rate }
+                    _state.update { it.copy(participationRates = sorted) }
+                } else {
+                    // 참여율이 없으면 참가자 정보를 기반으로 초기값(0.0) 설정
+                    initializeParticipationRatesFromParticipants()
+                }
             }
-            is ApiResult.Failure -> Log.e(TAG, "참여율 로드 실패: ${result.message}")
+            is ApiResult.Failure -> {
+                Log.e(TAG, "참여율 로드 실패: ${result.message}")
+                // 실패 시에도 참가자 정보를 기반으로 초기값 설정
+                initializeParticipationRatesFromParticipants()
+            }
+        }
+    }
+    
+    /**
+     * 회의 참가자 정보를 기반으로 초기 participation rate 설정 (모두 0.0)
+     */
+    private fun initializeParticipationRatesFromParticipants() {
+        val currentState = state.value
+        // 참가자 정보는 이미 loadUserInfoForParticipants에서 userNicknameCache에 저장되어 있음
+        val initialRates = userNicknameCache.map { (userId, nickname) ->
+            UserParticipationRate(
+                userId = userId,
+                nickname = nickname,
+                rate = 0.0
+            )
+        }.sortedByDescending { it.rate }
+        
+        if (initialRates.isNotEmpty()) {
+            _state.update { it.copy(participationRates = initialRates) }
+            Log.d(TAG, "참가자 기반 초기 참여율 설정: ${initialRates.size}명")
+        } else {
+            Log.w(TAG, "참가자 정보가 없어 초기 참여율을 설정할 수 없습니다")
         }
     }
 
@@ -728,8 +783,7 @@ class MeetingInProgressViewModel @Inject constructor(
                     rate = rate,
                 )
             }
-
-            // 기존에 있던 사용자 중 업데이트되지 않은 사용자는 유지
+            
             val userIdsInUpdate = rates.keys
             val remainingRates = existingRatesMap.values.filter { it.userId !in userIdsInUpdate }
 
@@ -837,18 +891,38 @@ class MeetingInProgressViewModel @Inject constructor(
         restInterval: Int,
         restDuration: Int
     ) {
-        if (restInterval <= 0 || restDuration <= 0) return
+        Log.d(TAG, "[scheduleRestBreakFeedbacks] 호출됨")
+        Log.d(TAG, "  - startMillis: $startMillis")
+        Log.d(TAG, "  - targetTime: $targetTime")
+        Log.d(TAG, "  - restInterval: $restInterval")
+        Log.d(TAG, "  - restDuration: $restDuration")
+        
+        if (restInterval <= 0 || restDuration <= 0) {
+            Log.w(TAG, "[scheduleRestBreakFeedbacks] 스킵: restInterval=$restInterval, restDuration=$restDuration")
+            return
+        }
 
         // 기존 스케줄링 Job 취소 (중복 방지)
         restBreakSchedulingJob?.cancel()
+        Log.d(TAG, "[scheduleRestBreakFeedbacks] 기존 Job 취소 완료")
 
         // 쉬는 시간 범위 계산 및 저장
         viewModelScope.launch {
             val targetMillis = targetTime * 60 * 1000L
+            val endMillis = startMillis + targetMillis
             var restStartMillis = startMillis + restInterval * 60 * 1000L // 첫 번째 휴식 시작 시간
             val restBreakPeriodsList = mutableListOf<Pair<String, String>>()
+            
+            Log.d(TAG, "[휴식 시간 계산] 시작")
+            Log.d(TAG, "  - 회의 시작 시간: ${DateTimeUtils.millisToHourMinute(startMillis)} ($startMillis)")
+            Log.d(TAG, "  - 회의 종료 시간: ${DateTimeUtils.millisToHourMinute(endMillis)} ($endMillis)")
+            Log.d(TAG, "  - 목표 시간: ${targetTime}분 (${targetMillis}ms)")
+            Log.d(TAG, "  - 휴식 간격: ${restInterval}분")
+            Log.d(TAG, "  - 휴식 지속 시간: ${restDuration}분")
 
-            while (restStartMillis < startMillis + targetMillis) {
+            var restCount = 0
+            while (restStartMillis < endMillis) {
+                restCount++
                 val restEndMillis = restStartMillis + restDuration * 60 * 1000L // 휴식 종료 시간
 
                 // 쉬는 시간 범위를 경과 시간 문자열로 변환
@@ -856,12 +930,21 @@ class MeetingInProgressViewModel @Inject constructor(
                     DateTimeUtils.getElapsedStringFromMillis(startMillis, restStartMillis)
                 val restEndElapsed =
                     DateTimeUtils.getElapsedStringFromMillis(startMillis, restEndMillis)
+                
+                val restStartTime = DateTimeUtils.millisToHourMinute(restStartMillis)
+                val restEndTime = DateTimeUtils.millisToHourMinute(restEndMillis)
+
+                Log.d(TAG, "  [휴식 #$restCount]")
+                Log.d(TAG, "    - 시작: $restStartTime ($restStartMillis) - 경과: $restStartElapsed")
+                Log.d(TAG, "    - 종료: $restEndTime ($restEndMillis) - 경과: $restEndElapsed")
 
                 restBreakPeriodsList.add(Pair(restStartElapsed, restEndElapsed))
 
                 // 다음 휴식 시간으로 이동
                 restStartMillis += restInterval * 60 * 1000L
             }
+            
+            Log.d(TAG, "[휴식 시간 계산] 완료: 총 ${restCount}개의 휴식 시간 계산됨")
 
             _restBreakPeriods.value = restBreakPeriodsList
         }
@@ -911,18 +994,34 @@ class MeetingInProgressViewModel @Inject constructor(
      */
     @RequiresApi(Build.VERSION_CODES.O)
     private fun scheduleMeetingEndFeedback(startMillis: Long, targetTime: Int) {
-        if (targetTime <= 0) return
+        Log.d(TAG, "[scheduleMeetingEndFeedback] 호출됨")
+        Log.d(TAG, "  - startMillis: $startMillis")
+        Log.d(TAG, "  - targetTime: $targetTime")
+        
+        if (targetTime <= 0) {
+            Log.w(TAG, "[scheduleMeetingEndFeedback] 스킵: targetTime=$targetTime")
+            return
+        }
 
         // 기존 스케줄링 Job 취소 (중복 방지)
         meetingEndSchedulingJob?.cancel()
+        Log.d(TAG, "[scheduleMeetingEndFeedback] 기존 Job 취소 완료")
 
         meetingEndSchedulingJob = viewModelScope.launch(Dispatchers.IO) {
             // 회의 종료 시간 계산
             val endMillis = startMillis + targetTime * 60 * 1000L
             val feedbackTimeMillis = endMillis - 10 * 60 * 1000L // 종료 10분 전
+            
+            Log.d(TAG, "[회의 종료 시간 계산]")
+            Log.d(TAG, "  - 회의 시작 시간: ${DateTimeUtils.millisToHourMinute(startMillis)} ($startMillis)")
+            Log.d(TAG, "  - 목표 시간: ${targetTime}분 (${targetTime * 60 * 1000L}ms)")
+            Log.d(TAG, "  - 회의 종료 시간: ${DateTimeUtils.millisToHourMinute(endMillis)} ($endMillis)")
+            Log.d(TAG, "  - 피드백 알림 시간 (종료 10분 전): ${DateTimeUtils.millisToHourMinute(feedbackTimeMillis)} ($feedbackTimeMillis)")
+            Log.d(TAG, "  - 현재 시간: ${DateTimeUtils.millisToHourMinute(System.currentTimeMillis())} (${System.currentTimeMillis()})")
 
             // 현재 시간 이후의 피드백만 처리
             val delayMillis = feedbackTimeMillis - System.currentTimeMillis()
+            Log.d(TAG, "  - 피드백까지 남은 시간: ${delayMillis / 1000 / 60}분 ${(delayMillis / 1000) % 60}초 (${delayMillis}ms)")
             if (delayMillis > 0) {
                 delay(delayMillis)
 

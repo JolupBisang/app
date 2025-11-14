@@ -561,9 +561,19 @@ class MeetingFormViewModel @Inject constructor(
 
                     is MeetingFormEvent.SelectAllTeamMembers -> {
                         val teamMembers = _state.value.teamMembersForSelection
+                        val allMemberIds = teamMembers.map { it.id }.toSet()
+                        val currentSelected = _state.value.selectedTeamMembers
+                        
+                        // 모든 멤버가 선택되어 있으면 모두 해제, 그렇지 않으면 모두 선택
+                        val newSelected = if (currentSelected == allMemberIds) {
+                            emptySet<Long>()
+                        } else {
+                            allMemberIds
+                        }
+                        
                         _state.update { 
                             it.copy(
-                                selectedTeamMembers = teamMembers.map { it.id }.toSet()
+                                selectedTeamMembers = newSelected
                             )
                         }
                     }

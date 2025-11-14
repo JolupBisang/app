@@ -121,7 +121,7 @@ fun MeetingDetailScreen(
                         item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.Top
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 LabelText(
                                     text = "팀"

@@ -494,6 +494,7 @@ private fun TopHeader(
                 ) { onMenuClick() }
         )
         Spacer(Modifier.weight(1f))
+
         Image(
             painter = painterResource(id = R.drawable.alarm),
             contentDescription = "알림",

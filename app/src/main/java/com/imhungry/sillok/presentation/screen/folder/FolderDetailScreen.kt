@@ -62,6 +62,7 @@ fun FolderDetailScreen(
     onBackClick: () -> Unit,
     onMeetingToggle: (Long, Boolean) -> Unit = { _, _ -> },
     onAddClick: () -> Unit = {},
+    onMeetingClick: (Long) -> Unit = {},
     viewModel: FolderDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -170,7 +171,10 @@ fun FolderDetailScreen(
                         } else {
                             FolderMeetingItem(
                                 title = meeting.title,
-                                date = meeting.date
+                                date = meeting.date,
+                                onClick = {
+                                    onMeetingClick(meeting.id)
+                                }
                             )
                         }
                     }

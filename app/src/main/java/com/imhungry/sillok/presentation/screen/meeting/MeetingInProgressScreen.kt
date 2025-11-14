@@ -232,6 +232,7 @@ fun MeetingInProgressScreen(
                 showLeaveDialog = false
             }
         )
+
     }
 }
 

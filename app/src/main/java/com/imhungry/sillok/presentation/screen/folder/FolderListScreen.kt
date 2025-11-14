@@ -128,7 +128,7 @@ fun FolderListScreen(
                             .fillMaxWidth(),
                         focusRequester = focusRequester,
                         text = searchText,
-                        innerText = "회의 제목, 참석자로 검색",
+                        innerText = "폴더 이름으로 검색",
                         onTextChange = { searchText = it },
                         onFocusChange = { isSearchFocused = it },
                         onImeAction = {

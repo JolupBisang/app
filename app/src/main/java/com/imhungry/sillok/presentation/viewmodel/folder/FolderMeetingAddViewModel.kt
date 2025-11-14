@@ -47,7 +47,11 @@ class FolderMeetingAddViewModel @Inject constructor(
             
             when (val result = getMeetingSummaryListUseCase(year, month)) {
                 is ApiResult.Success -> {
-                    val meetings = result.data.map { summary ->
+                    // COMPLETED 상태인 회의만 필터링
+                    val completedMeetings = result.data.filter { summary ->
+                        summary.status == "COMPLETED"
+                    }
+                    val meetings = completedMeetings.map { summary ->
                         convertToFolderMeetingItem(summary)
                     }
                     _state.update {
@@ -141,7 +145,7 @@ class FolderMeetingAddViewModel @Inject constructor(
                 summary.scheduledStartTime.take(19),
                 DateTimeFormatter.ISO_LOCAL_DATE_TIME
             )
-            dateTime.format(DateTimeFormatter.ofPattern("yyyy.M.d"))
+            dateTime.format(DateTimeFormatter.ofPattern("yyyy.MM.d"))
         } catch (e: Exception) {
             ""
         }

@@ -87,7 +87,7 @@ fun TeamCard(
                 elevation = CardDefaults.cardElevation(
                     defaultElevation = 1.dp
                 ),
-                border = BorderStroke(2.dp, if (isSelected) danger else borderColor)
+                border = BorderStroke(1.dp, if (isSelected) danger else borderColor)
             ) {
                 Column(
                     modifier = Modifier
@@ -185,7 +185,7 @@ fun TeamCard(
                 elevation = CardDefaults.cardElevation(
                     defaultElevation = 1.dp
                 ),
-                border = BorderStroke(2.dp, if (isInteracting || isScheduled) green300 else borderColor)
+                border = BorderStroke(1.dp, if (isInteracting || isScheduled) green300 else borderColor)
             ) {
                 Column(
                     modifier = Modifier

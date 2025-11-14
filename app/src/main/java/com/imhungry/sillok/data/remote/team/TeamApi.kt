@@ -4,6 +4,7 @@ import com.imhungry.sillok.data.model.team.TeamCreationReqDto
 import com.imhungry.sillok.data.model.team.TeamCreationResDto
 import com.imhungry.sillok.data.model.team.TeamDetailResDto
 import com.imhungry.sillok.data.model.team.TeamListResDto
+import com.imhungry.sillok.data.model.team.TeamListWrapperDto
 import com.imhungry.sillok.data.model.team.TeamMemberAdditionReqDto
 import com.imhungry.sillok.data.model.team.TeamMemberAdditionResDto
 import com.imhungry.sillok.data.model.team.TeamMemberResDto
@@ -25,7 +26,7 @@ interface TeamApi {
     ): Response<TeamDetailResDto>
 
     @GET("/api/v1/teams")
-    suspend fun getMyTeams(): Response<List<TeamListResDto>>
+    suspend fun getMyTeams(): Response<TeamListWrapperDto>
 
     @POST("/api/v1/teams/{teamId}/members")
     suspend fun addTeamMember(

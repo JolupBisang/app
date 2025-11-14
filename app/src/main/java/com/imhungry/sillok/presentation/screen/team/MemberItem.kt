@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.imhungry.sillok.R
 import com.imhungry.sillok.presentation.util.ProfileUtils
@@ -71,11 +72,14 @@ fun MemberItem(
             text = email,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Normal,
+            fontSize = 13.sp,
             modifier = Modifier.weight(1f)
         )
 
         // 편집 모드이고 삭제 가능할 때만 삭제 버튼 표시
         if (isEditMode && canRemove) {
+            Spacer(modifier = Modifier.width(4.dp))
+
             Box(
                 modifier = Modifier.size(30.dp),
                 contentAlignment = Alignment.Center

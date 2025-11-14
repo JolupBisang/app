@@ -56,8 +56,9 @@ class TeamRepositoryImpl @Inject constructor(
             try {
                 val res = api.getMyTeams()
                 if (res.isSuccessful) {
-                    val dtoList = res.body()
-                    val teams = dtoList?.map { mapper.toTeamListItem(it) } ?: emptyList()
+                    val wrapper = res.body()
+                    val dtoList = wrapper?.teams ?: emptyList()
+                    val teams = dtoList.map { mapper.toTeamListItem(it) }
                     ApiResult.Success(teams)
                 } else {
                     ApiResult.Failure(res.message())

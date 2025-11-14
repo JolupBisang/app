@@ -238,7 +238,7 @@ fun MeetingRecordScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 20.dp,
+                    .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 68.dp,
                         start = 20.dp,
                         end = 20.dp)
             ) {

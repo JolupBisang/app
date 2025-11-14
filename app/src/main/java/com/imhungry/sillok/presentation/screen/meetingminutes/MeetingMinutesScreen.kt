@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 fun MeetingMinutesScreen(
     meetingId: Long,
     onBackClick: () -> Unit,
+    onNavigateToHome: () -> Unit,
     meetingMinutesViewModel: MeetingMinutesViewModel = hiltViewModel()
 ) {
     var playbackPosition by remember { mutableStateOf(0L) }
@@ -116,7 +117,7 @@ fun MeetingMinutesScreen(
 
                             1 -> MeetingMinutesRecordScreen(
                                 meetingId = meetingId,
-                                onBackClick = onBackClick,
+                                onBackClick = onNavigateToHome,
                                 selectedTab = pagerState.currentPage,
                                 onTabClick = { idx ->
                                     coroutineScope.launch { pagerState.animateScrollToPage(idx) }

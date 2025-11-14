@@ -45,7 +45,7 @@ class MeetingInProgressService : Service() {
         const val EXTRA_JWT_TOKEN = "EXTRA_JWT_TOKEN"
 
         // Service 이벤트를 ViewModel에 전달하기 위한 Flow
-        private val _serviceEvents = MutableSharedFlow<ServiceEvent>()
+        internal val _serviceEvents = MutableSharedFlow<ServiceEvent>()
         val serviceEvents: SharedFlow<ServiceEvent> = _serviceEvents.asSharedFlow()
 
         // Service 인스턴스 접근용
@@ -53,10 +53,14 @@ class MeetingInProgressService : Service() {
         private var instance: MeetingInProgressService? = null
 
         fun getInstance(): MeetingInProgressService? = instance
+        
+        // 이벤트 발행을 위한 함수
+        suspend fun emitEvent(event: ServiceEvent) {
+            _serviceEvents.emit(event)
+        }
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val _serviceEvents = MutableSharedFlow<ServiceEvent>()
 
     // 청크 ID 카운터
     private val chunkIdCounter = AtomicLong(0)
@@ -78,7 +82,7 @@ class MeetingInProgressService : Service() {
         // 매니저 클래스 초기화
         webSocketManager = WebSocketManager(
             serviceScope = serviceScope,
-            serviceEvents = _serviceEvents,
+            serviceEvents = Companion._serviceEvents,
             onConnectionEstablished = { lastProcessedChunkId, webSocket ->
                 handleConnectionEstablished(lastProcessedChunkId, webSocket)
             },
@@ -94,7 +98,7 @@ class MeetingInProgressService : Service() {
                 }
             }
         )
-        sseManager = SseManager(serviceScope, _serviceEvents)
+        sseManager = SseManager(serviceScope, Companion._serviceEvents)
 
         // Service 이벤트 관찰 (MeetingCompleted 이벤트 처리)
         observeServiceEvents()
@@ -243,39 +247,41 @@ class MeetingInProgressService : Service() {
 
         serviceScope.launch(Dispatchers.IO) {
             try {
-                // 재전송이 필요한 청크 확인 및 재전송
-                Log.d(TAG, "[Service-WebSocket-4-1] 재전송 필요한 청크 확인 시작")
-                val savedChunks = if (::chunkRetransmitter.isInitialized) {
-                    chunkRetransmitter.getSavedChunksForRetransmission(lastProcessedChunkId)
-                } else {
-                    emptyList()
-                }
-                Log.d(TAG, "[Service-WebSocket-4-1 완료] 재전송 필요한 청크: ${savedChunks.size}개")
+                // lastProcessedChunkId가 null이 아닐 때만 재전송 수행
+                if (lastProcessedChunkId != null) {
+                    // 재전송이 필요한 청크 확인 및 재전송
+                    Log.d(TAG, "[Service-WebSocket-4-1] 재전송 필요한 청크 확인 시작 (lastProcessedChunkId=$lastProcessedChunkId)")
+                    val savedChunks = if (::chunkRetransmitter.isInitialized) {
+                        chunkRetransmitter.getSavedChunksForRetransmission(lastProcessedChunkId)
+                    } else {
+                        emptyList()
+                    }
+                    Log.d(TAG, "[Service-WebSocket-4-1 완료] 재전송 필요한 청크: ${savedChunks.size}개")
 
-                // 재전송이 필요한 경우 먼저 재전송 완료 후 녹음 시작
-                if (savedChunks.isNotEmpty()) {
-                    Log.d(TAG, "[Service-WebSocket-4-2] 청크 재전송 시작 (녹음 시작 전)")
-                    chunkRetransmitter.retransmitMissingChunks(webSocket, savedChunks)
-                    Log.d(TAG, "[Service-WebSocket-4-2 완료] 청크 재전송 완료 - 이제 녹음 시작 가능")
+                    // 재전송이 필요한 경우 먼저 재전송 완료 후 녹음 시작
+                    if (savedChunks.isNotEmpty()) {
+                        Log.d(TAG, "[Service-WebSocket-4-2] 청크 재전송 시작 (녹음 시작 전)")
+                        chunkRetransmitter.retransmitMissingChunks(webSocket, savedChunks)
+                        Log.d(TAG, "[Service-WebSocket-4-2 완료] 청크 재전송 완료 - 이제 녹음 시작 가능")
 
-                    // 청크 ID 카운터를 재전송한 마지막 청크 다음으로 설정
-                    val lastRetransmittedId = savedChunks.maxOfOrNull { it.chunkId } ?: -1
-                    chunkIdCounter.set(lastRetransmittedId + 1)
-                    Log.d(TAG, "[Service-WebSocket-4-3] 청크 ID 카운터 설정: ${lastRetransmittedId + 1}")
-                } else {
-                    Log.d(TAG, "[Service-WebSocket-4-2 스킵] 재전송 필요한 청크 없음 - 바로 녹음 시작 가능")
-
-                    // 청크 ID 카운터 초기화
-                    if (lastProcessedChunkId != null) {
+                        // 청크 ID 카운터를 재전송한 마지막 청크 다음으로 설정
+                        val lastRetransmittedId = savedChunks.maxOfOrNull { it.chunkId } ?: -1
+                        chunkIdCounter.set(lastRetransmittedId + 1)
+                        Log.d(TAG, "[Service-WebSocket-4-3] 청크 ID 카운터 설정: ${lastRetransmittedId + 1}")
+                    } else {
+                        Log.d(TAG, "[Service-WebSocket-4-2 스킵] 재전송 필요한 청크 없음 - 바로 녹음 시작 가능")
+                        // 청크 ID 카운터를 서버 기준으로 설정
                         chunkIdCounter.set(lastProcessedChunkId + 1)
                         Log.d(
                             TAG,
                             "[Service-WebSocket-4-3] 청크 ID 카운터 설정: ${lastProcessedChunkId + 1} (서버 기준)"
                         )
-                    } else {
-                        chunkIdCounter.set(0)
-                        Log.d(TAG, "[Service-WebSocket-4-3] 청크 ID 카운터 설정: 0 (첫 연결)")
                     }
+                } else {
+                    // lastProcessedChunkId가 null이면 재전송 없이 바로 녹음 시작
+                    Log.d(TAG, "[Service-WebSocket-4-1 스킵] lastProcessedChunkId가 null이므로 재전송 없음 (첫 연결)")
+                    chunkIdCounter.set(0)
+                    Log.d(TAG, "[Service-WebSocket-4-3] 청크 ID 카운터 설정: 0 (첫 연결)")
                 }
 
                 // 재전송 완료 후 실시간 녹음 시작
@@ -288,8 +294,9 @@ class MeetingInProgressService : Service() {
                 Log.d(TAG, "[Service-WebSocket-4-4 완료] 실시간 녹음 시작 완료")
 
                 // ConnectionEstablished 이벤트 발생 (ViewModel에서 Firebase 업데이트 처리)
-                Log.d(TAG, "[Service-WebSocket-4-5] ConnectionEstablished 이벤트 발행")
-                _serviceEvents.emit(ServiceEvent.ConnectionEstablished(lastProcessedChunkId))
+                Log.d(TAG, "[Service-WebSocket-4-5] ConnectionEstablished 이벤트 발행 시작")
+                Log.d(TAG, "[Service-WebSocket-4-5-1] lastProcessedChunkId: $lastProcessedChunkId")
+                Companion.emitEvent(ServiceEvent.ConnectionEstablished(lastProcessedChunkId))
                 Log.d(TAG, "[Service-WebSocket-4-5 완료] ConnectionEstablished 이벤트 발행 완료")
                 Log.d(TAG, "========================================")
                 Log.d(TAG, "[Service-WebSocket-4 완료] 연결 확립 처리 완료")

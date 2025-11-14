@@ -353,6 +353,11 @@ fun SillokNavigation(
                 meetingId = meetingId,
                 onBackClick = {
                     navController.popBackStack()
+                },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.MeetingMinutes.route) { inclusive = true }
+                    }
                 }
             )
         }
@@ -474,6 +479,9 @@ fun SillokNavigation(
                 },
                 onAddClick = {
                     navController.navigate(Screen.FolderMeetingAdd.createRoute(folderId))
+                },
+                onMeetingClick = { meetingId ->
+                    navController.navigate(Screen.MeetingMinutes.createRoute(meetingId))
                 }
             )
         }

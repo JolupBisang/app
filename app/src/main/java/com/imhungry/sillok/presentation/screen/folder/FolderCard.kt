@@ -61,7 +61,7 @@ fun FolderCard(
     val isInteracting = isPressed || isHovered
     val cardShape = MaterialTheme.shapes.small
     val defaultRipple = rememberRipple(bounded = true)
-    val isScheduled = date != "" && !isPast
+    //val isScheduled = date != "" && !isPast
 
     if (editMode) {
         Box(
@@ -170,7 +170,7 @@ fun FolderCard(
                 elevation = CardDefaults.cardElevation(
                     defaultElevation = 1.dp
                 ),
-                border = BorderStroke(1.dp, if (isInteracting || isScheduled) green300 else borderColor)
+                border = BorderStroke(1.dp, if (isInteracting) green300 else borderColor)
             ) {
                 Column(
                     modifier = Modifier
@@ -186,7 +186,7 @@ fun FolderCard(
                             text = folderName,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.ExtraBold,
-                            color = if (isInteracting) inverse else if (isScheduled) primaryTextColor else tertiary
+                            color = if (isInteracting) inverse else tertiary
                         )
                     }
 
@@ -197,7 +197,7 @@ fun FolderCard(
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
-                        color = if (isInteracting) green500 else if (isScheduled) blackBackGround else gray400
+                        color = if (isInteracting) green500 else gray400
                     )
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -209,14 +209,14 @@ fun FolderCard(
                         Text(
                             text = date,
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (isInteracting) gray500 else if (isScheduled) blackBackGround else gray400,
+                            color = if (isInteracting) gray500 else gray400,
                             fontWeight = if (isInteracting) FontWeight.Normal else FontWeight.Medium,
                             fontSize = 11.sp
                         )
                         Text(
                             text = timeRange,
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (isInteracting) gray500 else if (isScheduled) blackBackGround else gray400,
+                            color = if (isInteracting) gray500 else gray400,
                             fontWeight = if (isInteracting) FontWeight.Normal else FontWeight.Medium,
                             fontSize = 11.sp
                         )

@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.imhungry.sillok.ui.theme.gray300
 import com.imhungry.sillok.ui.theme.green300
@@ -71,8 +72,10 @@ fun MemberEditItem(
             text = email,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Normal,
+            fontSize = 9.sp,
             modifier = Modifier.weight(1f)
         )
+        Spacer(modifier = Modifier.width(4.dp))
 
         Box(
             modifier = Modifier
