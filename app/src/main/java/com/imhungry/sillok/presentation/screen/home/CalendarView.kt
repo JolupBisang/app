@@ -480,7 +480,7 @@ private fun YearMonthPickerBottomSheet(
                     )
                 }
 
-                Spacer(Modifier.width(16.dp))
+                Spacer(Modifier.width(20.dp))
                 // 월 선택
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
