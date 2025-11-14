@@ -8,6 +8,7 @@ import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
 import com.imhungry.sillok.domain.model.meeting.DuplicatedMeeting
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
+import com.imhungry.sillok.domain.model.meeting.MeetingSearchSlice
 import com.imhungry.sillok.domain.model.meeting.RemoveTeamTagRequest
 
 interface MeetingRepository {
@@ -23,4 +24,5 @@ interface MeetingRepository {
     suspend fun checkDuplicatedTime(startTime: String, targetMinutes: Long): ApiResult<List<DuplicatedMeeting>>
     suspend fun addTeamTag(meetingId: Long, request: AddTeamTagRequest): ApiResult<Unit>
     suspend fun removeTeamTag(meetingId: Long, request: RemoveTeamTagRequest): ApiResult<Unit>
+    suspend fun searchMeetings(title: String, page: Int, size: Int): ApiResult<MeetingSearchSlice>
 }

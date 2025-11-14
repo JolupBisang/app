@@ -14,6 +14,7 @@ import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
 import com.imhungry.sillok.domain.model.meeting.DuplicatedMeeting
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
+import com.imhungry.sillok.domain.model.meeting.MeetingSearchSlice
 import com.imhungry.sillok.domain.model.meeting.RemoveTeamTagRequest
 import com.imhungry.sillok.domain.repository.meeting.MeetingRepository
 import kotlinx.coroutines.Dispatchers
@@ -155,6 +156,28 @@ class MeetingRepositoryImpl @Inject constructor(
             val res = api.removeTeamTag(meetingId, dto)
             if (res.isSuccessful) {
                 ApiResult.Success(Unit)
+            } else {
+                ApiResult.Failure(res.message())
+            }
+        } catch (e: Exception) {
+            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
+        }
+    }
+
+    override suspend fun searchMeetings(
+        title: String,
+        page: Int,
+        size: Int
+    ): ApiResult<MeetingSearchSlice> = withContext(Dispatchers.IO) {
+        try {
+            val res = api.searchMeetings(title, page, size)
+            if (res.isSuccessful) {
+                val dto = res.body()
+                if (dto != null) {
+                    ApiResult.Success(mapper.toMeetingSearchSlice(dto))
+                } else {
+                    ApiResult.Failure("응답 파싱 오류")
+                }
             } else {
                 ApiResult.Failure(res.message())
             }

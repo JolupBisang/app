@@ -15,11 +15,18 @@ import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
 import com.imhungry.sillok.domain.model.meeting.MeetingStatus
 import com.imhungry.sillok.domain.model.user.User
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingSummaryListUseCase
+import com.imhungry.sillok.domain.usecase.meeting.SearchMeetingsUseCase
 import com.imhungry.sillok.domain.usecase.user.GetMyProfileUseCase
 import com.imhungry.sillok.presentation.state.home.HomeState
 import com.imhungry.sillok.presentation.state.home.MeetingUi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import com.imhungry.sillok.data.paging.MeetingPagingSource
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +39,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getMeetingSummaryListUseCase: GetMeetingSummaryListUseCase,
+    private val searchMeetingsUseCase: SearchMeetingsUseCase,
     private val getMyProfileUseCase: GetMyProfileUseCase,
     private val dismissedMeetingStore: DismissedMeetingStore,
     private val generatingMeetingNoteStore: GeneratingMeetingNoteStore,
@@ -48,6 +56,10 @@ class HomeViewModel @Inject constructor(
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
     private var currentYearMonth: Pair<Int, Int>? = null
+    
+    // 검색 결과 Paging Flow
+    private val _searchPagingFlow = MutableStateFlow<Flow<PagingData<MeetingDetailSummary>>?>(null)
+    val searchPagingFlow: StateFlow<Flow<PagingData<MeetingDetailSummary>>?> = _searchPagingFlow.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -162,6 +174,18 @@ class HomeViewModel @Inject constructor(
         _state.update { it.copy(error = null) }
     }
 
+    fun logout() {
+        viewModelScope.launch {
+            try {
+                tokenStore.clearTokens()
+                userStore.clearUser()
+                Log.d(TAG, "로그아웃 완료: 토큰 및 사용자 정보 삭제")
+            } catch (e: Exception) {
+                Log.e(TAG, "로그아웃 중 오류 발생: ${e.message}", e)
+            }
+        }
+    }
+
     fun dismissOngoingMeeting(meetingId: Long) {
         // 상태를 먼저 업데이트하여 즉시 UI 반영 (알림에서만 숨김)
         _state.update { current ->
@@ -196,11 +220,22 @@ class HomeViewModel @Inject constructor(
 
     fun onSearchTextChange(text: String) {
         _state.update { it.copy(searchText = text) }
-        if (text.isBlank()) {
-            _state.update { it.copy(searchResults = emptyList(), isSearching = false) }
+    }
+    
+    fun onSearchSubmit() {
+        val query = _state.value.searchText.trim()
+        if (query.isBlank()) {
+            _state.update { 
+                it.copy(
+                    searchQuery = "",
+                    searchResults = emptyList(),
+                    isSearching = false
+                ) 
+            }
+            _searchPagingFlow.value = null
             return
         }
-        performSearch(text)
+        performSearch(query)
     }
 
     // ========================================
@@ -402,22 +437,31 @@ class HomeViewModel @Inject constructor(
     // 검색 기능
     // ========================================
 
-    private fun performSearch(rawText: String) {
-        viewModelScope.launch {
-            val normalizedText = rawText.trim().lowercase()
-            _state.update { it.copy(isSearching = true) }
-            try {
-                val searchResults = searchMeetings(normalizedText)
-                _state.update { it.copy(searchResults = searchResults, isSearching = false) }
-            } catch (e: Exception) {
-                _state.update { it.copy(isSearching = false, error = e.localizedMessage) }
-            }
+    private fun performSearch(query: String) {
+        _state.update { 
+            it.copy(
+                searchQuery = query,
+                isSearching = true,
+                searchResults = emptyList()
+            ) 
         }
-    }
-
-    private suspend fun searchMeetings(query: String): List<MeetingUi> {
-
-        return emptyList()
+        
+        // Paging Flow 생성
+        val pagingFlow = Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                MeetingPagingSource(
+                    searchMeetingsUseCase = searchMeetingsUseCase,
+                    query = query
+                )
+            }
+        ).flow.cachedIn(viewModelScope)
+        
+        _searchPagingFlow.value = pagingFlow
+        _state.update { it.copy(isSearching = false) }
     }
 
     // ========================================

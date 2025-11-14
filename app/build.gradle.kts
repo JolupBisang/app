@@ -100,6 +100,7 @@ dependencies {
     
     // Dependency Injection - Hilt
     implementation("com.google.dagger:hilt-android:2.48")
+    implementation(libs.androidx.foundation.layout)
     ksp("com.google.dagger:hilt-android-compiler:2.48")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
     
@@ -132,6 +133,10 @@ dependencies {
     // Pager
     implementation("com.google.accompanist:accompanist-pager-indicators:0.28.0")
     implementation("com.google.accompanist:accompanist-pager:0.28.0")
+    
+    // Paging 3
+    implementation("androidx.paging:paging-runtime-ktx:3.2.1")
+    implementation("androidx.paging:paging-compose:3.2.1")
 
     // Exoplayer
     implementation("androidx.media3:media3-exoplayer:1.2.0")

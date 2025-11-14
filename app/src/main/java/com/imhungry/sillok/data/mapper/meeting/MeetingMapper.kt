@@ -6,6 +6,7 @@ import com.imhungry.sillok.data.model.meeting.DuplicationCheckRes
 import com.imhungry.sillok.data.model.meeting.MeetingDetailResDto
 import com.imhungry.sillok.data.model.meeting.MeetingDetailSummaryResDto
 import com.imhungry.sillok.data.model.meeting.MeetingReqDto
+import com.imhungry.sillok.data.model.meeting.MeetingSearchSliceResDto
 import com.imhungry.sillok.data.model.meeting.TeamTagAdditionReqDto
 import com.imhungry.sillok.data.model.meeting.TeamTagRemovalReqDto
 import com.imhungry.sillok.domain.model.agenda.Agenda
@@ -14,6 +15,7 @@ import com.imhungry.sillok.domain.model.meeting.CreateMeetingRequest
 import com.imhungry.sillok.domain.model.meeting.DuplicatedMeeting
 import com.imhungry.sillok.domain.model.meeting.Meeting
 import com.imhungry.sillok.domain.model.meeting.MeetingDetailSummary
+import com.imhungry.sillok.domain.model.meeting.MeetingSearchSlice
 import com.imhungry.sillok.domain.model.meeting.RemoveTeamTagRequest
 import com.imhungry.sillok.presentation.util.DateTimeUtils
 import javax.inject.Inject
@@ -91,6 +93,19 @@ class MeetingMapper @Inject constructor() {
     fun toDto(request: RemoveTeamTagRequest): TeamTagRemovalReqDto {
         return TeamTagRemovalReqDto(
             teamId = request.teamId
+        )
+    }
+
+    fun toMeetingSearchSlice(dto: MeetingSearchSliceResDto): MeetingSearchSlice {
+        return MeetingSearchSlice(
+            content = dto.content.map { toMeetingSummary(it) },
+            number = dto.number,
+            size = dto.size,
+            numberOfElements = dto.numberOfElements,
+            first = dto.first,
+            last = dto.last,
+            hasNext = dto.hasNext,
+            hasPrevious = dto.hasPrevious
         )
     }
 }

@@ -56,6 +56,7 @@ data class HomeState(
     val ongoingMeetings: List<MeetingUi> = emptyList(),
     val upcomingMeetings: List<MeetingUi> = emptyList(),
     val searchText: String = "",
+    val searchQuery: String = "", // 실제 검색에 사용되는 쿼리
     val searchResults: List<MeetingUi> = emptyList(),
     val isSearching: Boolean = false,
     val hasNewMeeting: Boolean = false,

@@ -6,6 +6,7 @@ import com.imhungry.sillok.data.model.meeting.MeetingDetailResDto
 import com.imhungry.sillok.data.model.meeting.MeetingDetailSummaryResDto
 import com.imhungry.sillok.data.model.meeting.MeetingDetailUpdateResDto
 import com.imhungry.sillok.data.model.meeting.MeetingReqDto
+import com.imhungry.sillok.data.model.meeting.MeetingSearchSliceResDto
 import com.imhungry.sillok.data.model.meeting.MeetingStatusChangeResDto
 import com.imhungry.sillok.data.model.meeting.MeetingStatusUpdateReqDto
 import com.imhungry.sillok.data.model.meeting.MeetingUpdateReqDto
@@ -68,4 +69,11 @@ interface MeetingApi {
         @Path("meetingId") meetingId: Long,
         @Body request: TeamTagRemovalReqDto
     ): Response<TeamTagRemovalResDto>
+
+    @GET("/api/v1/meetings/search")
+    suspend fun searchMeetings(
+        @Query("title") title: String,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<MeetingSearchSliceResDto>
 }

@@ -293,11 +293,8 @@ class MeetingInProgressService : Service() {
                 }
                 Log.d(TAG, "[Service-WebSocket-4-4 완료] 실시간 녹음 시작 완료")
 
-                // ConnectionEstablished 이벤트 발생 (ViewModel에서 Firebase 업데이트 처리)
-                Log.d(TAG, "[Service-WebSocket-4-5] ConnectionEstablished 이벤트 발행 시작")
-                Log.d(TAG, "[Service-WebSocket-4-5-1] lastProcessedChunkId: $lastProcessedChunkId")
-                Companion.emitEvent(ServiceEvent.ConnectionEstablished(lastProcessedChunkId))
-                Log.d(TAG, "[Service-WebSocket-4-5 완료] ConnectionEstablished 이벤트 발행 완료")
+                // ConnectionEstablished 이벤트는 WebSocketManager에서 actualStartTime과 함께 발행됨
+                // (여기서는 발행하지 않음)
                 Log.d(TAG, "========================================")
                 Log.d(TAG, "[Service-WebSocket-4 완료] 연결 확립 처리 완료")
                 Log.d(TAG, "========================================")
