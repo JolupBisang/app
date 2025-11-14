@@ -168,10 +168,10 @@ class MeetingInProgressViewModel @Inject constructor(
                     is ServiceEvent.ConnectionEstablished -> {
                         Log.d(
                             TAG,
-                            "[5-3] ConnectionEstablished 이벤트 처리 시작: lastProcessedChunkId=${event.lastProcessedChunkId}"
+                            "[5-3] ConnectionEstablished 이벤트 처리 시작: lastProcessedChunkId=${event.lastProcessedChunkId}, actualStartTime=${event.actualStartTime}"
                         )
                         Log.d(TAG, "[5-3-1] handleConnectionEstablishedFromService 호출 전")
-                        handleConnectionEstablishedFromService(event.lastProcessedChunkId)
+                        handleConnectionEstablishedFromService(event.lastProcessedChunkId, event.actualStartTime)
                         Log.d(TAG, "[5-3-2] handleConnectionEstablishedFromService 호출 후")
                     }
 
@@ -214,99 +214,73 @@ class MeetingInProgressViewModel @Inject constructor(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun handleConnectionEstablishedFromService(lastProcessedChunkId: Long?) {
+    private fun handleConnectionEstablishedFromService(
+        lastProcessedChunkId: Long?,
+        actualStartTime: String?
+    ) {
         Log.d(TAG, "========================================")
         Log.d(TAG, "[6단계] 연결 확립 처리 시작")
         Log.d(TAG, "  - lastProcessedChunkId: $lastProcessedChunkId")
+        Log.d(TAG, "  - actualStartTime: $actualStartTime")
         Log.d(TAG, "========================================")
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val meetingId = state.value.meetingId
-                Log.d(TAG, "[6-1] 회의 시작 시간 확인: meetingId=$meetingId")
-
-                // GetMeetingDetailUseCase를 통해 actualStartTime 조회
-                // CONNECTION_ESTABLISHED 이벤트를 받으면 무조건 actualStartTime 조회 및 스케줄링 수행
-                Log.d(TAG, "[6-2] Meeting Detail 조회 시작 (actualStartTime 확인용)")
-                Log.d(TAG, "[6-2-0] getMeetingDetailUseCase 호출: meetingId=$meetingId")
-                when (val meetingDetailResult = getMeetingDetailUseCase(meetingId)) {
-                    is ApiResult.Success -> {
-                        val meeting = meetingDetailResult.data
-                        Log.d(TAG, "[6-2 완료] Meeting Detail 조회 성공")
-                        Log.d(TAG, "[6-2-1] meeting.actualStartTime: ${meeting.actualStartTime}")
-                        Log.d(TAG, "[6-2-2] meeting.targetTime: ${meeting.targetTime}")
-                        Log.d(TAG, "[6-2-3] meeting.restInterval: ${meeting.restInterval}")
-                        Log.d(TAG, "[6-2-4] meeting.restDuration: ${meeting.restDuration}")
-
-                        // actualStartTime이 null이어도 state 업데이트는 수행
-                        val startMillis = if (meeting.actualStartTime != null) {
-                            Log.d(TAG, "[6-2-5] actualStartTime 원본 값: ${meeting.actualStartTime}")
-                            val calculated = DateTimeUtils.isoLocalDateTimeToMillis(meeting.actualStartTime)
-                            val startTimeFormatted = DateTimeUtils.millisToHourMinute(calculated)
-                            Log.d(TAG, "[6-2-6] startMillis 계산 결과: $calculated (${startTimeFormatted})")
-                            Log.d(TAG, "[6-2-7] 현재 시간: ${System.currentTimeMillis()} (${DateTimeUtils.millisToHourMinute(System.currentTimeMillis())})")
-                            calculated
-                        } else {
-                            Log.w(TAG, "[6-2-5 경고] actualStartTime이 null입니다. 현재 시간을 사용합니다.")
-                            val currentTime = System.currentTimeMillis()
-                            Log.d(TAG, "[6-2-6] 현재 시간을 startMillis로 사용: $currentTime (${DateTimeUtils.millisToHourMinute(currentTime)})")
-                            currentTime
-                        }
-
-                        // state 업데이트
-                        withContext(Dispatchers.Main) {
-                            Log.d(TAG, "[6-3] State 업데이트 시작")
-                            _state.update { 
-                                it.copy(
-                                    startTime = startMillis,
-                                    // targetTime이 설정되지 않았으면 설정
-                                    targetTime = if (it.targetTime == 0) meeting.targetTime else it.targetTime,
-                                    // restInterval, restDuration도 업데이트
-                                    restInterval = if (it.restInterval == 0) meeting.restInterval else it.restInterval,
-                                    restDuration = if (it.restDuration == 0) meeting.restDuration else it.restDuration
-                                ) 
-                            }
-
-                            // 휴식 시간 피드백 스케줄링
-                            val currentState = state.value
-                            if (currentState.targetTime > 0 && currentState.restInterval > 0 && currentState.restDuration > 0) {
-                                Log.d(
-                                    TAG,
-                                    "[6-4] 휴식 시간 피드백 스케줄링 시작: targetTime=${currentState.targetTime}분, restInterval=${currentState.restInterval}분, restDuration=${currentState.restDuration}분"
-                                )
-                                scheduleRestBreakFeedbacks(
-                                    startMillis,
-                                    currentState.targetTime,
-                                    currentState.restInterval,
-                                    currentState.restDuration
-                                )
-                                Log.d(TAG, "[6-4 완료] 휴식 시간 피드백 스케줄링 완료")
-                            } else {
-                                Log.d(TAG, "[6-4 스킵] 휴식 시간 설정이 없어 스케줄링을 건너뜁니다 (targetTime=${currentState.targetTime}, restInterval=${currentState.restInterval}, restDuration=${currentState.restDuration})")
-                            }
-
-                            // 회의 종료 10분 전 피드백 스케줄링
-                            if (currentState.targetTime > 0) {
-                                Log.d(
-                                    TAG,
-                                    "[6-5] 회의 종료 피드백 스케줄링 시작: targetTime=${currentState.targetTime}분"
-                                )
-                                scheduleMeetingEndFeedback(startMillis, currentState.targetTime)
-                                Log.d(TAG, "[6-5 완료] 회의 종료 피드백 스케줄링 완료")
-                            } else {
-                                Log.d(TAG, "[6-5 스킵] 목표 시간이 없어 스케줄링을 건너뜁니다 (targetTime=${currentState.targetTime})")
-                            }
-                            Log.d(TAG, "[6-3 완료] State 업데이트 완료")
-                        }
-
-                        Log.d(TAG, "========================================")
-                        Log.d(TAG, "[6단계 완료] 연결 확립 처리 완료")
-                        Log.d(TAG, "========================================")
-                    }
-
-                    is ApiResult.Failure -> {
-                        Log.e(TAG, "[6-2 실패] Meeting Detail 조회 실패: ${meetingDetailResult.message}")
-                    }
+                val startMillis = if (actualStartTime != null && actualStartTime.isNotBlank()) {
+                    Log.d(TAG, "[6-1] actualStartTime 원본 값: $actualStartTime")
+                    val calculated = DateTimeUtils.isoLocalDateTimeToMillis(actualStartTime)
+                    val startTimeFormatted = DateTimeUtils.millisToHourMinute(calculated)
+                    Log.d(TAG, "[6-1-1] startMillis 계산 결과: $calculated (${startTimeFormatted})")
+                    Log.d(TAG, "[6-1-2] 현재 시간: ${System.currentTimeMillis()} (${DateTimeUtils.millisToHourMinute(System.currentTimeMillis())})")
+                    calculated
+                } else {
+                    Log.w(TAG, "[6-1 경고] actualStartTime이 null이거나 비어있습니다. 현재 시간을 사용합니다.")
+                    val currentTime = System.currentTimeMillis()
+                    Log.d(TAG, "[6-1-1] 현재 시간을 startMillis로 사용: $currentTime (${DateTimeUtils.millisToHourMinute(currentTime)})")
+                    currentTime
                 }
+
+                // state 업데이트 (targetTime, restInterval, restDuration은 refreshAll()에서 이미 로드됨)
+                withContext(Dispatchers.Main) {
+                    Log.d(TAG, "[6-2] State 업데이트 시작")
+                    _state.update { 
+                        it.copy(startTime = startMillis)
+                    }
+
+                    // 휴식 시간 피드백 스케줄링
+                    val currentState = state.value
+                    if (currentState.targetTime > 0 && currentState.restInterval > 0 && currentState.restDuration > 0) {
+                        Log.d(
+                            TAG,
+                            "[6-3] 휴식 시간 피드백 스케줄링 시작: targetTime=${currentState.targetTime}분, restInterval=${currentState.restInterval}분, restDuration=${currentState.restDuration}분"
+                        )
+                        scheduleRestBreakFeedbacks(
+                            startMillis,
+                            currentState.targetTime,
+                            currentState.restInterval,
+                            currentState.restDuration
+                        )
+                        Log.d(TAG, "[6-3 완료] 휴식 시간 피드백 스케줄링 완료")
+                    } else {
+                        Log.d(TAG, "[6-3 스킵] 휴식 시간 설정이 없어 스케줄링을 건너뜁니다 (targetTime=${currentState.targetTime}, restInterval=${currentState.restInterval}, restDuration=${currentState.restDuration})")
+                    }
+
+                    // 회의 종료 10분 전 피드백 스케줄링
+                    if (currentState.targetTime > 0) {
+                        Log.d(
+                            TAG,
+                            "[6-4] 회의 종료 피드백 스케줄링 시작: targetTime=${currentState.targetTime}분"
+                        )
+                        scheduleMeetingEndFeedback(startMillis, currentState.targetTime)
+                        Log.d(TAG, "[6-4 완료] 회의 종료 피드백 스케줄링 완료")
+                    } else {
+                        Log.d(TAG, "[6-4 스킵] 목표 시간이 없어 스케줄링을 건너뜁니다 (targetTime=${currentState.targetTime})")
+                    }
+                    Log.d(TAG, "[6-2 완료] State 업데이트 완료")
+                }
+
+                Log.d(TAG, "========================================")
+                Log.d(TAG, "[6단계 완료] 연결 확립 처리 완료")
+                Log.d(TAG, "========================================")
             } catch (e: Exception) {
                 Log.e(TAG, "[6단계 실패] 연결 확립 처리 중 오류: ${e.message}", e)
             }

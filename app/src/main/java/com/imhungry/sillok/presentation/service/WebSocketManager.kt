@@ -105,7 +105,17 @@ class WebSocketManager(
                     Log.d(TAG, "[WebSocket-4-1] 응답 파싱 완료: data=${response.data != null}")
                     response.data?.let {
                         Log.d(TAG, "[WebSocket-4-2] lastProcessedChunkId: ${it.lastProcessedChunkId}")
+                        Log.d(TAG, "[WebSocket-4-2-1] actualStartTime: ${it.actualStartTime}")
                         onConnectionEstablished(it.lastProcessedChunkId, webSocket)
+                        // ServiceEvent에 actualStartTime 포함하여 발행
+                        serviceScope.launch {
+                            serviceEvents.emit(
+                                ServiceEvent.ConnectionEstablished(
+                                    lastProcessedChunkId = it.lastProcessedChunkId,
+                                    actualStartTime = it.actualStartTime
+                                )
+                            )
+                        }
                         Log.d(TAG, "[WebSocket-4-3] onConnectionEstablished 콜백 호출 완료")
                     } ?: run {
                         Log.w(TAG, "[WebSocket-4-경고] CONNECTION_ESTABLISHED 응답 데이터가 null입니다")

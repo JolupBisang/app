@@ -9,7 +9,10 @@ import com.imhungry.sillok.data.model.realtime.RealtimeSegmentDto
  * Service 이벤트 타입 정의
  */
 sealed class ServiceEvent {
-    data class ConnectionEstablished(val lastProcessedChunkId: Long?) : ServiceEvent()
+    data class ConnectionEstablished(
+        val lastProcessedChunkId: Long?,
+        val actualStartTime: String?
+    ) : ServiceEvent()
     data class DiarizedSegment(val segment: RealtimeSegmentDto) : ServiceEvent()
     data object CompletionScheduled : ServiceEvent()
     data class MeetingCompleted(val message: String?) : ServiceEvent()
