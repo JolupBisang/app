@@ -247,11 +247,11 @@ class HomeViewModel @Inject constructor(
         val calendar = Calendar.getInstance()
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH) + 1
-        loadHomeDataForMonth(year, month)
+        loadHomeDataForMonthWithLoading(year, month)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun loadHomeDataForMonth(year: Int, month: Int) {
+    fun loadHomeDataForMonthWithLoading(year: Int, month: Int) {
         viewModelScope.launch {
             Log.d(TAG, "loadHomeDataForMonth 시작: year=$year, month=$month")
             _state.update { it.copy(isLoading = true, error = null) }
@@ -437,11 +437,24 @@ class HomeViewModel @Inject constructor(
     // 검색 기능
     // ========================================
 
+    fun clearSearch() {
+        _state.update { 
+            it.copy(
+                searchText = "",
+                searchQuery = "",
+                searchResults = emptyList(),
+                isSearching = false
+            ) 
+        }
+        _searchPagingFlow.value = null
+    }
+
     private fun performSearch(query: String) {
         _state.update { 
             it.copy(
                 searchQuery = query,
                 isSearching = true,
+                isLoading = true,
                 searchResults = emptyList()
             ) 
         }
@@ -461,7 +474,12 @@ class HomeViewModel @Inject constructor(
         ).flow.cachedIn(viewModelScope)
         
         _searchPagingFlow.value = pagingFlow
-        _state.update { it.copy(isSearching = false) }
+        _state.update { 
+            it.copy(
+                isSearching = false,
+                isLoading = false
+            ) 
+        }
     }
 
     // ========================================

@@ -200,7 +200,7 @@ fun HeaderSection(
                                 Text(
                                     text = location,
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Medium,
+                                    fontWeight = FontWeight.Normal,
                                     color = tertiary,
                                 )
                                 Spacer(Modifier.height(8.dp))
