@@ -12,7 +12,6 @@ data class MeetingMinutesState(
     val meetingDateAndLocation: String = "",
     val meetingTitle: String = "",
     val agendas: List<Agenda> = emptyList(),
-    val feedbacks: List<FeedbackUi> = emptyList(),
     val scheduledStartTime: String = "",
     val scheduledEndTime: String = "",
     val targetTime: Int = 0,
@@ -20,8 +19,6 @@ data class MeetingMinutesState(
     val actualEndTime: String = "",
     val actualDurationMinutes: Long = 0L,
     val participationRates: List<UserParticipationRate> = emptyList(),
-    val segments: List<SegmentUi> = emptyList(),
-    val summaries: List<SummaryUi> = emptyList(),
     val recapSummary: String = "",
     val audio: AudioInfo = AudioInfo(
         userId = 1L,
@@ -29,14 +26,6 @@ data class MeetingMinutesState(
     ),
     val isLoading: Boolean = false,
     val error: String? = null,
-    // 페이징 관련 상태
-    val segmentsPage: Int = 0,
-    val summariesPage: Int = 0,
-    val feedbacksPage: Int = 0,
-    val hasMoreSegments: Boolean = true,
-    val hasMoreSummaries: Boolean = true,
-    val hasMoreFeedbacks: Boolean = true,
-    val isLoadingMoreSegments: Boolean = false,
-    val isLoadingMoreSummaries: Boolean = false,
-    val isLoadingMoreFeedbacks: Boolean = false
+    val startMillis: Long? = null,
+    val currentUserId: Long? = null
 )

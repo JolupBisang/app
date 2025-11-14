@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
@@ -41,14 +40,18 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
 import com.imhungry.sillok.R
 import com.imhungry.sillok.domain.model.agenda.Agenda
+import com.imhungry.sillok.domain.model.segment.Segment
 import com.imhungry.sillok.presentation.screen.meeting.component.ChatBubble
 import com.imhungry.sillok.presentation.screen.meeting.component.CheckItem
 import com.imhungry.sillok.presentation.screen.meetingminutes.components.MeetingTabRow
 import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.presentation.viewmodel.meetingminutes.MeetingMinutesViewModel
-import com.imhungry.sillok.ui.components.Divider
 import com.imhungry.sillok.ui.theme.tertiary
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -64,9 +67,10 @@ fun MeetingMinutesRecordScreen(
     meetingMinutesViewModel: MeetingMinutesViewModel
 ) {
     val state by meetingMinutesViewModel.state.collectAsState()
+    val segmentsPagingFlowState = meetingMinutesViewModel.segmentsPagingFlow
+    val segmentsPagingFlow by segmentsPagingFlowState.collectAsState()
 
     val agendas = state.agendas
-    val segments = state.segments
 
     val context = LocalContext.current
     val lastCheckedIndex = remember { mutableStateOf(0) }
@@ -74,12 +78,28 @@ fun MeetingMinutesRecordScreen(
     var isCollapsed by rememberSaveable { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
     var isScrolling by remember { mutableStateOf(false) }
+    
+    // Paging Items
+    val pagingItems: LazyPagingItems<Segment>? = segmentsPagingFlow?.let { 
+        it.collectAsLazyPagingItems() 
+    }
+    
     // 1. 재생 위치에 가장 가까운 segment index 찾기
-    val currentSegmentIndex = remember(playbackPosition, segments) {
-        if (segments.isEmpty()) 0
+    val currentSegmentIndex = remember(playbackPosition, pagingItems, state.startMillis) {
+        if (pagingItems == null || pagingItems.itemCount == 0) 0
         else {
-            segments.mapIndexedNotNull { index, segment ->
-                val elapsed = DateTimeUtils.timeStringToMillis(segment.timestamp)
+            (0 until pagingItems.itemCount).mapNotNull { index ->
+                val segment = pagingItems[index] ?: return@mapNotNull null
+                val prevSegment = if (index > 0) pagingItems[index - 1] else null
+                val nextSegment = if (index < pagingItems.itemCount - 1) pagingItems[index + 1] else null
+                val segmentUi = meetingMinutesViewModel.convertSegmentToUi(
+                    segment = segment,
+                    prevSegment = prevSegment,
+                    nextSegment = nextSegment,
+                    startMillis = state.startMillis,
+                    currentUserId = state.currentUserId
+                )
+                val elapsed = DateTimeUtils.timeStringToMillis(segmentUi.timestamp)
                 if (elapsed != null) {
                     index to kotlin.math.abs(elapsed - playbackPosition)
                 } else null
@@ -89,8 +109,8 @@ fun MeetingMinutesRecordScreen(
 
     // 2. 재생 위치 바뀔 때마다 해당 index로 scroll
     var lastScrolledIndex by rememberSaveable { mutableStateOf(-1) }
-    LaunchedEffect(currentSegmentIndex) {
-        if (segments.isEmpty()) return@LaunchedEffect
+    LaunchedEffect(currentSegmentIndex, pagingItems) {
+        if (pagingItems == null || pagingItems.itemCount == 0) return@LaunchedEffect
         
         val first = listState.firstVisibleItemIndex
         val visibleItemCount = listState.layoutInfo.visibleItemsInfo.size
@@ -105,7 +125,7 @@ fun MeetingMinutesRecordScreen(
         
         if (shouldScroll) {
             // 세그먼트를 화면에 보이도록 스크롤
-            val targetIndex = currentSegmentIndex.coerceIn(0, segments.lastIndex)
+            val targetIndex = currentSegmentIndex.coerceIn(0, pagingItems.itemCount - 1)
             listState.animateScrollToItem(targetIndex)
             lastScrolledIndex = currentSegmentIndex
         }
@@ -129,29 +149,46 @@ fun MeetingMinutesRecordScreen(
             onTabClick = onTabClick
         )
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxSize()
-        ) {
-            itemsIndexed(segments) { index, segment ->
-                if (index == 0) {
-                    Spacer(modifier = Modifier.padding(top = 4.dp))
-                }
-
-                ChatBubble(
-                    segment = segment,
-                    highlighted = (isPlaying || playbackPosition > 0) && index == currentSegmentIndex,
-                    onSegmentClick = { clickedTimestamp ->
-                        val seekMillis = DateTimeUtils.timeStringToMillis(clickedTimestamp)
-                        if (seekMillis != null) {
-                            onSeekToPosition(seekMillis.coerceAtLeast(0L))
-                        }
+        if (pagingItems != null) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+            ) {
+                items(
+                    count = pagingItems.itemCount,
+                    key = pagingItems.itemKey { it.id },
+                    contentType = pagingItems.itemContentType { "segment" }
+                ) { index ->
+                    val segment = pagingItems[index] ?: return@items
+                    val prevSegment = if (index > 0) pagingItems[index - 1] else null
+                    val nextSegment = if (index < pagingItems.itemCount - 1) pagingItems[index + 1] else null
+                    val segmentUi = meetingMinutesViewModel.convertSegmentToUi(
+                        segment = segment,
+                        prevSegment = prevSegment,
+                        nextSegment = nextSegment,
+                        startMillis = state.startMillis,
+                        currentUserId = state.currentUserId
+                    )
+                    
+                    if (index == 0) {
+                        Spacer(modifier = Modifier.padding(top = 4.dp))
                     }
-                )
-                if (index == segments.lastIndex) {
-                    Spacer(modifier = Modifier.padding(bottom = 30.dp))
+
+                    ChatBubble(
+                        segment = segmentUi,
+                        highlighted = (isPlaying || playbackPosition > 0) && index == currentSegmentIndex,
+                        onSegmentClick = { clickedTimestamp ->
+                            val seekMillis = DateTimeUtils.timeStringToMillis(clickedTimestamp)
+                            if (seekMillis != null) {
+                                onSeekToPosition(seekMillis.coerceAtLeast(0L))
+                            }
+                        }
+                    )
+                    if (index == pagingItems.itemCount - 1) {
+                        Spacer(modifier = Modifier.padding(bottom = 30.dp))
+                    }
                 }
             }
         }

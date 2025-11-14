@@ -21,8 +21,16 @@ import com.imhungry.sillok.presentation.state.meeting.SummaryUi
 import com.imhungry.sillok.presentation.state.meetingminutes.MeetingMinutesState
 import com.imhungry.sillok.presentation.util.DateTimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import com.imhungry.sillok.data.paging.SegmentPagingSource
+import com.imhungry.sillok.data.paging.SummaryPagingSource
+import com.imhungry.sillok.data.paging.FeedbackPagingSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,6 +59,16 @@ class MeetingMinutesViewModel @Inject constructor(
     // 사용자 정보 캐시 (userId -> nickname, profileImage)
     private val userNicknameCache = mutableMapOf<Long, String>()
     private val userProfileImageCache = mutableMapOf<Long, String>()
+    
+    // Paging Flows
+    private val _segmentsPagingFlow = MutableStateFlow<Flow<PagingData<com.imhungry.sillok.domain.model.segment.Segment>>?>(null)
+    val segmentsPagingFlow: StateFlow<Flow<PagingData<com.imhungry.sillok.domain.model.segment.Segment>>?> = _segmentsPagingFlow.asStateFlow()
+    
+    private val _summariesPagingFlow = MutableStateFlow<Flow<PagingData<com.imhungry.sillok.domain.model.summary.Summary>>?>(null)
+    val summariesPagingFlow: StateFlow<Flow<PagingData<com.imhungry.sillok.domain.model.summary.Summary>>?> = _summariesPagingFlow.asStateFlow()
+    
+    private val _feedbacksPagingFlow = MutableStateFlow<Flow<PagingData<com.imhungry.sillok.domain.model.feedback.Feedback>>?>(null)
+    val feedbacksPagingFlow: StateFlow<Flow<PagingData<com.imhungry.sillok.domain.model.feedback.Feedback>>?> = _feedbacksPagingFlow.asStateFlow()
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun initialize(meetingId: Long) {
@@ -65,29 +83,65 @@ class MeetingMinutesViewModel @Inject constructor(
             _state.update {
                 it.copy(
                     isLoading = true,
-                    error = null,
-                    // 페이징 상태 초기화
-                    segmentsPage = 0,
-                    summariesPage = 0,
-                    feedbacksPage = 0,
-                    hasMoreSegments = true,
-                    hasMoreSummaries = true,
-                    hasMoreFeedbacks = true
+                    error = null
                 )
             }
 
             val meetingId = state.value.meetingId
 
             val detailDeferred = async { getMeetingDetailUseCase(meetingId) }
-            // 전체 데이터를 한 번에 로드 (충분히 큰 size 사용)
-            val segmentsDeferred = async { getSegmentsUseCase(meetingId, page = 0, size = 1000) }
-            val summariesDeferred = async { getSummariesUseCase(meetingId, page = 0, size = 500) }
             val recapDeferred =
                 async { getSummariesUseCase(meetingId, isRecap = true, page = 0, size = 1) }
             val participationDeferred = async { getParticipationRateHistoryUseCase(meetingId) }
-            // 전체 데이터를 한 번에 로드
-            val feedbacksDeferred = async { getFeedbacksUseCase(meetingId, page = 0, size = 500) }
             val audioDeferred = async { getAudioListUseCase(meetingId) }
+            
+            // Paging Flows 생성
+            val segmentsPagingFlow = Pager(
+                config = PagingConfig(
+                    pageSize = 500,
+                    enablePlaceholders = false
+                ),
+                pagingSourceFactory = {
+                    SegmentPagingSource(
+                        getSegmentsUseCase = getSegmentsUseCase,
+                        meetingId = meetingId,
+                        pageSize = 500
+                    )
+                }
+            ).flow.cachedIn(viewModelScope)
+            
+            val summariesPagingFlow = Pager(
+                config = PagingConfig(
+                    pageSize = 500,
+                    enablePlaceholders = false
+                ),
+                pagingSourceFactory = {
+                    SummaryPagingSource(
+                        getSummariesUseCase = getSummariesUseCase,
+                        meetingId = meetingId,
+                        isRecap = false,
+                        pageSize = 500
+                    )
+                }
+            ).flow.cachedIn(viewModelScope)
+            
+            val feedbacksPagingFlow = Pager(
+                config = PagingConfig(
+                    pageSize = 500,
+                    enablePlaceholders = false
+                ),
+                pagingSourceFactory = {
+                    FeedbackPagingSource(
+                        getFeedbacksUseCase = getFeedbacksUseCase,
+                        meetingId = meetingId,
+                        pageSize = 500
+                    )
+                }
+            ).flow.cachedIn(viewModelScope)
+            
+            _segmentsPagingFlow.value = segmentsPagingFlow
+            _summariesPagingFlow.value = summariesPagingFlow
+            _feedbacksPagingFlow.value = feedbacksPagingFlow
 
             var errorMessage: String? = null
 
@@ -118,7 +172,8 @@ class MeetingMinutesViewModel @Inject constructor(
                             actualEndTime = actualEndTime,
                             actualDurationMinutes = actualDurationMinutes,
                             targetTime = meeting.targetTime,
-                            agendas = meeting.agendas
+                            agendas = meeting.agendas,
+                            startMillis = startMillis
                         )
                     }
                     Log.d(TAG, "회의 상세 로드 성공: ${meeting}")
@@ -155,12 +210,13 @@ class MeetingMinutesViewModel @Inject constructor(
                 }
             }
 
-            // 현재 사용자 ID 가져오기
+            // 현재 사용자 ID 가져오기 (세그먼트 변환에 필요)
             var currentUserId: Long? = null
             try {
                 when (val result = getMyProfileUseCase()) {
                     is ApiResult.Success -> {
                         currentUserId = result.data.id
+                        _state.update { it.copy(currentUserId = currentUserId) }
                     }
                     is ApiResult.Failure -> {
                         Log.w(TAG, "현재 사용자 프로필 로드 실패: ${result.message}")
@@ -168,62 +224,6 @@ class MeetingMinutesViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "현재 사용자 프로필 로드 예외: ${e.message}", e)
-            }
-
-            when (val result = segmentsDeferred.await()) {
-                is ApiResult.Success -> {
-                    val ui = result.data.mapIndexed { index, seg ->
-                        val prevUserId = if (index > 0) result.data[index - 1].userId else null
-                        val nextUserId =
-                            if (index < result.data.lastIndex) result.data[index + 1].userId else null
-                        val isSameAsPrevious = prevUserId != null && prevUserId == seg.userId
-                        val isSameAsNext = nextUserId != null && nextUserId == seg.userId
-
-                        val millis = DateTimeUtils.isoLocalDateTimeToMillis(seg.timestamp)
-                        SegmentUi(
-                            timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
-                            text = seg.text,
-                            nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
-                            profileImage = userProfileImageCache[seg.userId] ?: "",
-                            isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
-                            isSameAsPrevious = isSameAsPrevious,
-                            isSameAsNext = isSameAsNext
-                        )
-                    }
-                    _state.update {
-                        it.copy(
-                            segments = ui,
-                            segmentsPage = 0,
-                            hasMoreSegments = false // 전체 로드이므로 더 이상 없음
-                        )
-                    }
-                }
-
-                is ApiResult.Failure -> Log.e(TAG, "세그먼트 로드 실패: ${result.message}")
-            }
-
-            when (val result = summariesDeferred.await()) {
-                is ApiResult.Success -> {
-                    val ui = result.data.map {
-                        val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
-                        SummaryUi(
-                            content = it.content,
-                            timestamp = DateTimeUtils.getElapsedStringFromMillis(
-                                startMillis,
-                                millis
-                            )
-                        )
-                    }
-                    _state.update {
-                        it.copy(
-                            summaries = ui,
-                            summariesPage = 0,
-                            hasMoreSummaries = false // 전체 로드이므로 더 이상 없음
-                        )
-                    }
-                }
-
-                is ApiResult.Failure -> Log.e(TAG, "요약 로드 실패: ${result.message}")
             }
 
             when (val result = recapDeferred.await()) {
@@ -254,30 +254,6 @@ class MeetingMinutesViewModel @Inject constructor(
                 is ApiResult.Failure -> Log.e(TAG, "참여율 로드 실패: ${result.message}")
             }
 
-            when (val result = feedbacksDeferred.await()) {
-                is ApiResult.Success -> {
-                    val ui = result.data.map {
-                        val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
-                        FeedbackUi(
-                            comment = it.comment,
-                            timestamp = DateTimeUtils.getElapsedStringFromMillis(
-                                startMillis,
-                                millis
-                            ),
-                            isRead = false
-                        )
-                    }
-                    _state.update {
-                        it.copy(
-                            feedbacks = ui,
-                            feedbacksPage = 0,
-                            hasMoreFeedbacks = false // 전체 로드이므로 더 이상 없음
-                        )
-                    }
-                }
-
-                is ApiResult.Failure -> Log.e(TAG, "피드백 로드 실패: ${result.message}")
-            }
 
             when (val result = audioDeferred.await()) {
                 is ApiResult.Success -> {
@@ -297,6 +273,30 @@ class MeetingMinutesViewModel @Inject constructor(
 
             _state.update { it.copy(isLoading = false, error = errorMessage) }
         }
+    }
+    
+    // Segment를 SegmentUi로 변환하는 헬퍼 함수
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun convertSegmentToUi(
+        segment: com.imhungry.sillok.domain.model.segment.Segment,
+        prevSegment: com.imhungry.sillok.domain.model.segment.Segment?,
+        nextSegment: com.imhungry.sillok.domain.model.segment.Segment?,
+        startMillis: Long?,
+        currentUserId: Long?
+    ): SegmentUi {
+        val isSameAsPrevious = prevSegment != null && prevSegment.userId == segment.userId
+        val isSameAsNext = nextSegment != null && nextSegment.userId == segment.userId
+
+        val millis = DateTimeUtils.isoLocalDateTimeToMillis(segment.timestamp)
+        return SegmentUi(
+            timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
+            text = segment.text,
+            nickname = userNicknameCache[segment.userId] ?: "사용자 ${segment.userId}",
+            profileImage = userProfileImageCache[segment.userId] ?: "",
+            isFromCurrentUser = currentUserId != null && segment.userId == currentUserId,
+            isSameAsPrevious = isSameAsPrevious,
+            isSameAsNext = isSameAsNext
+        )
     }
 
     /**
@@ -739,27 +739,27 @@ class MeetingMinutesViewModel @Inject constructor(
                 isRead = true
             )
         )
-        _state.update { current ->
-            current.copy(
-                meetingTitle = "프로젝트 킥오프 회의",
-                meetingDateAndLocation = "2025.03.26 수, IT관 777호",
-                agendas = dummyAgendas,
-                feedbacks = dummyFeedbacks,
-                scheduledStartTime = "14:00",
-                scheduledEndTime = "15:30",
-                targetTime = 90,
-                actualStartTime = actualStartTime,
-                actualEndTime = actualEndTime,
-                actualDurationMinutes = actualDurationMinutes,
-                participationRates = dummyParticipation.sortedByDescending { it.rate },
-                segments = dummySegments,
-                summaries = dummySummaries,
-                recapSummary = "목표/범위 합의, 1차 마일스톤 정의",
-                audio = AudioInfo(1, "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"),
-                isLoading = false,
-                error = null
-            )
-        }
+//        _state.update { current ->
+//            current.copy(
+//                meetingTitle = "프로젝트 킥오프 회의",
+//                meetingDateAndLocation = "2025.03.26 수, IT관 777호",
+//                agendas = dummyAgendas,
+//                feedbacks = dummyFeedbacks,
+//                scheduledStartTime = "14:00",
+//                scheduledEndTime = "15:30",
+//                targetTime = 90,
+//                actualStartTime = actualStartTime,
+//                actualEndTime = actualEndTime,
+//                actualDurationMinutes = actualDurationMinutes,
+//                participationRates = dummyParticipation.sortedByDescending { it.rate },
+//                segments = dummySegments,
+//                summaries = dummySummaries,
+//                recapSummary = "목표/범위 합의, 1차 마일스톤 정의",
+//                audio = AudioInfo(1, "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"),
+//                isLoading = false,
+//                error = null
+//            )
+//        }
         }
     }
 }

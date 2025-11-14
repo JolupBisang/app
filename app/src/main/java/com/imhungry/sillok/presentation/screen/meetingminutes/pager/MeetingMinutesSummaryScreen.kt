@@ -33,10 +33,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
 import com.imhungry.sillok.R
+import com.imhungry.sillok.domain.model.summary.Summary
 import com.imhungry.sillok.presentation.screen.meeting.component.ConversationSummaryBar
 import com.imhungry.sillok.presentation.screen.meeting.component.SummaryListItem
 import com.imhungry.sillok.presentation.screen.meetingminutes.components.MeetingTabRow
+import com.imhungry.sillok.presentation.state.meeting.SummaryUi
 import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.presentation.viewmodel.meetingminutes.MeetingMinutesViewModel
 import com.imhungry.sillok.ui.components.Divider
@@ -51,9 +57,16 @@ fun MeetingMinutesSummaryScreen(
     meetingMinutesViewModel: MeetingMinutesViewModel
 ) {
     val state by meetingMinutesViewModel.state.collectAsState()
-    val summaries = state.summaries
+    val summariesPagingFlowState = meetingMinutesViewModel.summariesPagingFlow
+    val summariesPagingFlow by summariesPagingFlowState.collectAsState()
+    
     val recapSummary = state.recapSummary
     val participationRates = state.participationRates
+    
+    // Paging Items
+    val pagingItems: LazyPagingItems<Summary>? = summariesPagingFlow?.let { 
+        it.collectAsLazyPagingItems() 
+    }
     var isExpanded by rememberSaveable { mutableStateOf(true) }
     var isExpanded2 by rememberSaveable { mutableStateOf(true) }
     var isExpanded3 by rememberSaveable { mutableStateOf(true) }
@@ -160,30 +173,41 @@ fun MeetingMinutesSummaryScreen(
                     title = "중간 요약",
                     onToggle = { isExpanded4 = !isExpanded4 },
                     showDivider = false,
-                    content = {
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            summaries.forEachIndexed { index, summary ->
-                                SummaryListItem(
-                                    summary = summary,
-                                    onClick = {
-                                        // 중간 요약의 timestamp를 밀리초로 변환하여 오디오 재생 위치로 이동
-                                        val seekMillis = DateTimeUtils.timeStringToMillis(summary.timestamp)
-                                        if (seekMillis != null) {
-                                            onTimeClick(seekMillis.coerceAtLeast(0L))
-                                        }
-                                    }
-                                )
-                                Spacer(Modifier.height(16.dp))
-                                if (index == summaries.lastIndex) {
-                                    Spacer(Modifier.height(28.dp))
-                                }
-                            }
-                        }
-                    },
+                    content = {},
                     expanded = isExpanded4
                 )
+            }
+            
+            // 중간 요약 항목들을 LazyColumn의 items로 직접 포함
+            if (pagingItems != null) {
+                items(
+                    count = if (isExpanded4) pagingItems.itemCount else 0,
+                    key = pagingItems.itemKey { it.id },
+                    contentType = pagingItems.itemContentType { "summary" }
+                ) { index ->
+                    val summary = pagingItems[index] ?: return@items
+                    val summaryUi = SummaryUi(
+                        content = summary.content,
+                        timestamp = DateTimeUtils.getElapsedStringFromMillis(
+                            state.startMillis,
+                            DateTimeUtils.isoLocalDateTimeToMillis(summary.generatedDateTime)
+                        )
+                    )
+                    SummaryListItem(
+                        summary = summaryUi,
+                        onClick = {
+                            // 중간 요약의 timestamp를 밀리초로 변환하여 오디오 재생 위치로 이동
+                            val seekMillis = DateTimeUtils.timeStringToMillis(summaryUi.timestamp)
+                            if (seekMillis != null) {
+                                onTimeClick(seekMillis.coerceAtLeast(0L))
+                            }
+                        }
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    if (index == pagingItems.itemCount - 1) {
+                        Spacer(Modifier.height(28.dp))
+                    }
+                }
             }
         }
     }
