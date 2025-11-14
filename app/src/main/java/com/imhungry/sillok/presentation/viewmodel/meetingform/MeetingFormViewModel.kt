@@ -1135,9 +1135,9 @@ class MeetingFormViewModel @Inject constructor(
             errors["title"] = "제목을 입력해주세요"
         }
 
-        if (_state.value.participantEmails.isEmpty()) {
-            errors["participants"] = "참석자를 한 명 이상 추가해주세요"
-        }
+//        if (_state.value.participantEmails.isEmpty()) {
+//            errors["participants"] = "참석자를 한 명 이상 추가해주세요"
+//        }
 
         if (_state.value.date.trim().isEmpty()) {
             errors["date"] = "날짜를 선택해주세요"
