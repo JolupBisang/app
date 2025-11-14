@@ -8,6 +8,7 @@ import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import com.imhungry.sillok.data.model.realtime.AgendaStatusChangedMessage
 import com.imhungry.sillok.data.model.realtime.ErrorResponse
+import com.imhungry.sillok.data.model.realtime.MeetingSessionConnectedMessage
 import com.imhungry.sillok.data.model.realtime.RealtimeSegmentDto
 import com.imhungry.sillok.data.model.realtime.SocketResponse
 import com.imhungry.sillok.data.model.realtime.SocketResponseType
@@ -96,11 +97,19 @@ class WebSocketManager(
 
             when (socketType) {
                 SocketResponseType.CONNECTION_ESTABLISHED -> {
-                    val response = gson.fromJson<SocketResponse<Long>>(
+                    Log.d(TAG, "[WebSocket-4] CONNECTION_ESTABLISHED 메시지 수신")
+                    val response = gson.fromJson<SocketResponse<MeetingSessionConnectedMessage>>(
                         jsonString,
-                        object : TypeToken<SocketResponse<Long>>() {}.type
+                        object : TypeToken<SocketResponse<MeetingSessionConnectedMessage>>() {}.type
                     )
-                    onConnectionEstablished(response.data, webSocket)
+                    Log.d(TAG, "[WebSocket-4-1] 응답 파싱 완료: data=${response.data != null}")
+                    response.data?.let {
+                        Log.d(TAG, "[WebSocket-4-2] lastProcessedChunkId: ${it.lastProcessedChunkId}")
+                        onConnectionEstablished(it.lastProcessedChunkId, webSocket)
+                        Log.d(TAG, "[WebSocket-4-3] onConnectionEstablished 콜백 호출 완료")
+                    } ?: run {
+                        Log.w(TAG, "[WebSocket-4-경고] CONNECTION_ESTABLISHED 응답 데이터가 null입니다")
+                    }
                 }
 
                 SocketResponseType.DIARIZED_SEGMENT -> {
