@@ -218,9 +218,9 @@ fun TeamFormScreen(
                     if (state.memberEmails.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         SelectedEmailsList(
-                            emails = state.memberEmails,
-                            onEmailRemoved = { index ->
-                                viewModel.removeEmail(index)
+                            emails = state.memberEmails.toSet(),
+                            onEmailRemoved = { email ->
+                                viewModel.removeEmail(email)
                             },
                             isReadOnly = false,
                             hostEmail = null,

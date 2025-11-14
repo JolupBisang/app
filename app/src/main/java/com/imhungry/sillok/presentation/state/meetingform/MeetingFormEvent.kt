@@ -7,7 +7,7 @@ sealed class MeetingFormEvent {
     data class TitleTextFieldValueChanged(val textFieldValue: TextFieldValue) : MeetingFormEvent()
     data class ParticipantsChanged(val participants: String) : MeetingFormEvent()
     data class ParticipantEmailSelected(val email: String) : MeetingFormEvent()
-    data class ParticipantEmailRemoved(val index: Int) : MeetingFormEvent()
+    data class ParticipantEmailRemoved(val email: String) : MeetingFormEvent()
     data class DateChanged(val date: String) : MeetingFormEvent()
     data class StartTimeChanged(val startTime: String) : MeetingFormEvent()
     data class EndTimeChanged(val endTime: String) : MeetingFormEvent()

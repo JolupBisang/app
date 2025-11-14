@@ -289,10 +289,10 @@ fun MeetingFormScreen(
                                                         )
                                                     )
                                                 },
-                                                onEmailRemoved = { index ->
+                                                onEmailRemoved = { email ->
                                                     viewModel.onEvent(
                                                         MeetingFormEvent.ParticipantEmailRemoved(
-                                                            index
+                                                            email
                                                         )
                                                     )
                                                 },

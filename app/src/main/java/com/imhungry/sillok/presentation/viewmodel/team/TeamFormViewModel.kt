@@ -65,9 +65,9 @@ class TeamFormViewModel @Inject constructor(
         }
     }
 
-    fun removeEmail(index: Int) {
+    fun removeEmail(email: String) {
         _state.update { current ->
-            val updatedEmails = current.memberEmails.filterIndexed { i, _ -> i != index }
+            val updatedEmails = current.memberEmails.filter { it != email }
             current.copy(
                 memberEmails = updatedEmails,
                 showValidationErrors = false

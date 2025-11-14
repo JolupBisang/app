@@ -108,7 +108,7 @@ fun MeetingDetailScreen(
                         item {
                             EmailInputFieldWithAutocomplete(
                                 label = "참석자",
-                                participantEmails = state.participantEmails,
+                                participantEmails = state.participantEmails.toSet(),
                                 onValueChange = {},
                                 onEmailSelected = {},
                                 onEmailSubmitted = {},

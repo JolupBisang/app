@@ -55,10 +55,10 @@ fun EmailInputFieldWithAutocomplete(
     emailSuggestions: List<String> = emptyList(),
     showEmailSuggestions: Boolean = false,
     isSearching: Boolean = false,
-    participantEmails: List<String>,
+    participantEmails: Set<String>,
     onEmailSelected: (String) -> Unit,
     onEmailSubmitted: (String) -> Unit,
-    onEmailRemoved: (Int) -> Unit,
+    onEmailRemoved: (String) -> Unit,
     isReadOnly: Boolean = false,
     hostEmail: String? = null,
     modifier: Modifier = Modifier
@@ -161,8 +161,8 @@ fun EmailInputFieldWithAutocomplete(
 
 @Composable
 fun SelectedEmailsList(
-    emails: List<String>,
-    onEmailRemoved: (Int) -> Unit,
+    emails: Set<String>,
+    onEmailRemoved: (String) -> Unit,
     isReadOnly: Boolean = false,
     hostEmail: String? = null,
     modifier: Modifier = Modifier
@@ -172,7 +172,7 @@ fun SelectedEmailsList(
             .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        emails.forEachIndexed { index, email ->
+        emails.forEach { email ->
             val isHost = hostEmail == email
             val borderColor = when {
                 isReadOnly && isHost -> green300
@@ -210,7 +210,7 @@ fun SelectedEmailsList(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
                             ) {
-                                onEmailRemoved(index)
+                                onEmailRemoved(email)
                             }
                     )
                 }

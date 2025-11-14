@@ -221,7 +221,7 @@ class MeetingFormViewModel @Inject constructor(
                                 },
                                 breakInterval = meetingData.breakInterval,
                                 breakDuration = meetingData.breakDuration,
-                                participantEmails = meetingData.participants,
+                                participantEmails = meetingData.participants.toSet(),
                                 isLoading = false,
                                 error = null
                             )
@@ -239,7 +239,7 @@ class MeetingFormViewModel @Inject constructor(
                                     ""
                                 )
                             }),
-                            participantEmails = meetingData.participants
+                            participantEmails = meetingData.participants.toSet()
                         )
                     } catch (e: Exception) {
                         _state.update { it.copy(isLoading = false, error = e.message) }
@@ -286,10 +286,7 @@ class MeetingFormViewModel @Inject constructor(
 
                     is MeetingFormEvent.ParticipantEmailSelected -> {
                         val currentEmails = _state.value.participantEmails
-                        if (event.email.isNotEmpty() && !currentEmails.contains(event.email) && isValidEmail(
-                                event.email
-                            )
-                        ) {
+                        if (event.email.isNotEmpty() && isValidEmail(event.email)) {
                             _state.update {
                                 it.copy(
                                     participantEmails = currentEmails + event.email,
@@ -304,7 +301,7 @@ class MeetingFormViewModel @Inject constructor(
                         val currentEmails = _state.value.participantEmails
                         _state.update {
                             it.copy(
-                                participantEmails = currentEmails.filterIndexed { i, _ -> i != event.index }
+                                participantEmails = currentEmails - event.email
                             )
                         }
                     }
@@ -588,22 +585,9 @@ class MeetingFormViewModel @Inject constructor(
                             val selectedMemberInfos = teamMembers
                                 .filter { selectedMembers.contains(it.id) }
                             
-                            // 이미 같은 팀이 선택되어 있는지 확인
-                            val existingTeam = _state.value.selectedTeams.find { it.teamId == selectedTeam.id }
-                            
-                            // 기존 팀의 멤버 이메일들을 먼저 제거
-                            val emailsToRemove = existingTeam?.selectedMembers?.map { it.email }?.toSet() ?: emptySet()
-                            var updatedParticipantEmails = _state.value.participantEmails.filter { 
-                                !emailsToRemove.contains(it)
-                            }
-                            
-                            // 새로 선택된 멤버의 이메일 추가
-                            val emailsToAdd = selectedMemberInfos
-                                .map { it.email }
-                                .filter { email ->
-                                    !updatedParticipantEmails.contains(email)
-                                }
-                            updatedParticipantEmails = updatedParticipantEmails + emailsToAdd
+                            // 선택된 멤버의 이메일을 Set에 추가
+                            val emailsToAdd = selectedMemberInfos.map { it.email }.toSet()
+                            val updatedParticipantEmails = _state.value.participantEmails + emailsToAdd
                             
                             // 선택된 팀 정보 생성
                             val newSelectedTeam = SelectedTeamInfo(
@@ -613,6 +597,7 @@ class MeetingFormViewModel @Inject constructor(
                             )
                             
                             // 선택된 팀 목록 업데이트
+                            val existingTeam = _state.value.selectedTeams.find { it.teamId == selectedTeam.id }
                             val updatedSelectedTeams = if (existingTeam != null) {
                                 // 기존 팀 정보 업데이트
                                 _state.value.selectedTeams.map { 
@@ -639,22 +624,9 @@ class MeetingFormViewModel @Inject constructor(
                     is MeetingFormEvent.RemoveSelectedTeam -> {
                         val teamToRemove = _state.value.selectedTeams.find { it.teamId == event.teamId }
                         if (teamToRemove != null) {
-                            // 제거할 팀의 멤버 이메일 목록
+                            // 제거할 팀의 멤버 이메일을 Set에서 제거
                             val teamEmailsToRemove = teamToRemove.selectedMembers.map { it.email }.toSet()
-                            
-                            // 다른 팀들에 속한 멤버 이메일 목록 (제거할 팀 제외)
-                            val otherTeamsEmails = _state.value.selectedTeams
-                                .filter { it.teamId != event.teamId }
-                                .flatMap { it.selectedMembers.map { member -> member.email } }
-                                .toSet()
-                            
-                            // 제거할 이메일 = 제거할 팀의 이메일 중에서 다른 팀에 속하지 않은 이메일만
-                            // (다른 팀에 속한 이메일은 유지, 수동으로 추가된 이메일도 유지)
-                            val emailsToRemove = teamEmailsToRemove - otherTeamsEmails
-                            
-                            val updatedParticipantEmails = _state.value.participantEmails.filter { 
-                                !emailsToRemove.contains(it)
-                            }
+                            val updatedParticipantEmails = _state.value.participantEmails - teamEmailsToRemove
                             
                             // 선택된 팀 목록에서 제거
                             val updatedSelectedTeams = _state.value.selectedTeams.filter { 
@@ -810,9 +782,11 @@ class MeetingFormViewModel @Inject constructor(
                 when (val result = createMeetingUseCase(request)) {
                     is ApiResult.Success -> {
                         val meetingId = result.data
-                        // 참석자 추가
-                        val emails =
-                            s.participantEmails.map { it.trim() }.filter { it.isNotEmpty() }
+                        // 참석자 추가 (Set을 List로 변환)
+                        val emails = s.participantEmails
+                            .map { it.trim() }
+                            .filter { it.isNotEmpty() }
+                            .toList()
                         var addOk = true
                         if (emails.isNotEmpty()) {
                             when (val addRes = addMeetingUserUseCase(meetingId, emails)) {
@@ -904,6 +878,7 @@ class MeetingFormViewModel @Inject constructor(
 
                 val emailsToAdd = desiredEmails.subtract(originalEmails)
                 if (emailsToAdd.isNotEmpty()) {
+                    // API 요청 시 Set을 List로 변환
                     when (val addRes = addMeetingUserUseCase(meetingId, emailsToAdd.toList())) {
                         is ApiResult.Failure -> {
                             _state.update { it.copy(isLoading = false, error = addRes.message) }
@@ -1055,7 +1030,7 @@ class MeetingFormViewModel @Inject constructor(
                 snap.duration != s.duration ||
                 snap.location != s.location ||
                 snap.agendas != s.agendas ||
-                snap.participantEmails.toSet() != s.participantEmails.toSet()
+                snap.participantEmails != s.participantEmails
     }
 
     private data class FormSnapshot(
@@ -1066,7 +1041,7 @@ class MeetingFormViewModel @Inject constructor(
         val duration: String,
         val location: String,
         val agendas: List<String>,
-        val participantEmails: List<String>
+        val participantEmails: Set<String>
     )
 
     // 이메일 형식 유효성 검사 함수

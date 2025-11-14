@@ -26,7 +26,7 @@ data class MeetingFormState(
     val title: String = "",
     val titleTextFieldValue: TextFieldValue = TextFieldValue(""),
     val participants: String = "",
-    val participantEmails: List<String> = emptyList(),
+    val participantEmails: Set<String> = emptySet(),
     val date: String = "",
     val startTime: String = "",
     val endTime: String = "",
