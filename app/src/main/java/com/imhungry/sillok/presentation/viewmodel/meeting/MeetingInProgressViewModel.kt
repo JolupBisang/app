@@ -215,8 +215,8 @@ class MeetingInProgressViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun handleConnectionEstablishedFromService(
-        lastProcessedChunkId: Long?,
-        actualStartTime: String?
+        lastProcessedChunkId: Long,
+        actualStartTime: String
     ) {
         Log.d(TAG, "========================================")
         Log.d(TAG, "[6단계] 연결 확립 처리 시작")

@@ -10,8 +10,8 @@ import com.imhungry.sillok.data.model.realtime.RealtimeSegmentDto
  */
 sealed class ServiceEvent {
     data class ConnectionEstablished(
-        val lastProcessedChunkId: Long?,
-        val actualStartTime: String?
+        val lastProcessedChunkId: Long,
+        val actualStartTime: String
     ) : ServiceEvent()
     data class DiarizedSegment(val segment: RealtimeSegmentDto) : ServiceEvent()
     data object CompletionScheduled : ServiceEvent()
@@ -20,7 +20,6 @@ sealed class ServiceEvent {
     data class Feedback(val feedback: LiveFeedbackDto) : ServiceEvent()
     data class Summary(val summary: LiveSummaryDto) : ServiceEvent()
     data class Error(val error: ErrorResponse?) : ServiceEvent()
-    data object MicEnabled : ServiceEvent()
     data class AgendaUpdated(val agendaId: Long, val isCompleted: Boolean) : ServiceEvent()
 }
 
