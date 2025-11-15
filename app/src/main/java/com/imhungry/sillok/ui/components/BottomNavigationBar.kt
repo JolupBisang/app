@@ -40,7 +40,7 @@ fun BottomNavigationBar(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color.Transparent,
+                        Color(0xB4FAFAF9),
                         primaryBackground
                     )
                 )

@@ -32,6 +32,7 @@ import com.imhungry.sillok.presentation.screen.folder.FolderDetailScreen
 import com.imhungry.sillok.presentation.screen.folder.FolderFormScreen
 import com.imhungry.sillok.presentation.screen.folder.FolderListScreen
 import com.imhungry.sillok.presentation.screen.folder.FolderMeetingAddScreen
+import com.imhungry.sillok.presentation.screen.mypage.MyPageScreen
 import com.imhungry.sillok.presentation.screen.notification.NotificationHistoryScreen
 import com.imhungry.sillok.presentation.screen.splash.SplashScreen
 import com.imhungry.sillok.presentation.screen.team.TeamDetailScreen
@@ -95,6 +96,7 @@ sealed class Screen(val route: String) {
     object FolderMeetingAdd : Screen("folder_meeting_add/{folderId}") {
         fun createRoute(folderId: Long) = "folder_meeting_add/$folderId"
     }
+    object MyPage : Screen("my_page")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -144,6 +146,8 @@ fun SillokNavigation(
     // 하단 네비게이션을 표시할 라우트 목록
     val showBottomNavigationRoutes = setOf(
         Screen.Home.route,
+        Screen.NotificationHistory.route,
+        Screen.MyPage.route
         //Screen.TeamList.route,
         //Screen.FolderList.route
     )
@@ -564,6 +568,20 @@ fun SillokNavigation(
                 }
             )
         }
+
+            // 홈 화면
+            composable(Screen.MyPage.route) {
+//                MyPageScreen(
+//                    onBackClick = {
+//                        navController.popBackStack()
+//                    },
+//                    onNavigateToLogin = {
+//                        navController.navigate(Screen.Login.route) {
+//                            popUpTo(0) { inclusive = true }
+//                        }
+//                    }
+//                )
+            }
     }
     
         // 하단 네비게이션 바 (NavHost 위에 배치)

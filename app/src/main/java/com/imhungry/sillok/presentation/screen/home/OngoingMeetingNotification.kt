@@ -87,7 +87,7 @@ fun OngoingMeetingNotification(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 20.dp)
+                .padding(top = 8.dp)
         ) {
             Row {
                 Text(

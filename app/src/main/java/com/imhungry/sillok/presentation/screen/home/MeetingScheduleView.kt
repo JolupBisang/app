@@ -3,6 +3,7 @@ package com.imhungry.sillok.presentation.screen.home
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -182,7 +184,7 @@ private fun SelectedDateMeetingList(
                 }
             } else {
                 // 회의가 있을 때
-                items(meetingsOnSelectedDate) { meeting ->
+                itemsIndexed(meetingsOnSelectedDate) { index, meeting ->
                         val backgroundColor: Color
                         val borderColor: Color
                         val borderWith: Dp
@@ -218,6 +220,7 @@ private fun SelectedDateMeetingList(
                             }
                         }
 
+                    val isLastItem = index == meetingsOnSelectedDate.size - 1
                     MeetingListItem(
                         meeting = meeting,
                         onClick = { onMeetingItemClick(meeting) },
@@ -225,9 +228,11 @@ private fun SelectedDateMeetingList(
                         borderColor = borderColor,
                         borderWith = borderWith,
                         titleColor = titleColor,
-                        timeColor = timeColor
+                        timeColor = timeColor,
+                        modifier = if (isLastItem) Modifier.padding(bottom = 62.dp) else Modifier
                     )
                 }
+
             }
         }
     }

@@ -164,20 +164,20 @@ fun HomeScreen(
         onExitDialogShow = { viewModel.showExitDialog() }
     )
 
-    ModalNavigationDrawer(
-        drawerState = materialDrawerState,
-        drawerContent = {
-            Sidebar(
-                userName = userName,
-                profileImage = profileImage,
-                onNewMeeting = onNewMeetingClick,
-                onTeamManagement = onTeamManagementClick,
-                //onFeedbackHistory = onFeedbackHistoryClick,
-                onMeetingFolder = onMeetingFolderClick,
-                onLogout = onNavigateToLogin
-            )
-        }
-    ) {
+//    ModalNavigationDrawer(
+//        drawerState = materialDrawerState,
+//        drawerContent = {
+//            Sidebar(
+//                userName = userName,
+//                profileImage = profileImage,
+//                onNewMeeting = onNewMeetingClick,
+//                onTeamManagement = onTeamManagementClick,
+//                //onFeedbackHistory = onFeedbackHistoryClick,
+//                onMeetingFolder = onMeetingFolderClick,
+//                onLogout = onNavigateToLogin
+//            )
+//        }
+//    ) {
         HomeContent(
             homeState = homeState,
             notificationState = notificationState,
@@ -222,7 +222,7 @@ fun HomeScreen(
                 }
             }
         )
-    }
+//    }
 }
 
 @Composable
@@ -308,31 +308,6 @@ private fun clearSearchFocus(
     onFocusCleared()
 }
 
-@Composable
-private fun DrawerContent(
-    userName: String,
-    profileImage: String,
-    onNewMeeting: () -> Unit,
-    onTeamManagement: () -> Unit,
-    onFeedbackHistory: () -> Unit,
-    onMeetingFolder: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(sideBar)
-    ) {
-        Sidebar(
-            userName = userName,
-            profileImage = profileImage,
-            onNewMeeting = onNewMeeting,
-            onTeamManagement = onTeamManagement,
-            onFeedbackHistory = onFeedbackHistory,
-            onMeetingFolder = onMeetingFolder
-        )
-    }
-}
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun HomeContent(
@@ -396,13 +371,6 @@ private fun HomeContent(
                 meetings = homeState.meetings,
                 onMeetingItemClick = onMeetingItemClick,
                 onMonthChanged = onMonthChanged
-            )
-
-            BottomButtons(
-                ongoingList = ongoingList,
-                showOngoingMeeting = notificationState.showOngoingMeeting.value,
-                onJoinOngoingMeeting = onJoinOngoingMeeting,
-                onCreateMeeting = onCreateMeeting
             )
         }
     }
@@ -497,14 +465,14 @@ private fun TopHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = painterResource(id = R.drawable.menu),
-            contentDescription = "메뉴",
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "로고",
             modifier = Modifier
-                .size(20.dp)
+                .size(40.dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
-                ) { onMenuClick() }
+                ) {  }
         )
         Spacer(Modifier.weight(1f))
 
@@ -652,39 +620,6 @@ private fun SearchResultListWrapper(
         isLoading = isLoading,
         onItemClick = onItemClick
     )
-}
-
-@Composable
-private fun BottomButtons(
-    ongoingList: List<MeetingUi>,
-    showOngoingMeeting: Boolean,
-    onJoinOngoingMeeting: (MeetingUi) -> Unit,
-    onCreateMeeting: () -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Spacer(modifier = Modifier.height(16.dp))
-
-//        if (ongoingList.isNotEmpty() && showOngoingMeeting) {
-//            // 항상 첫 번째 요소 사용
-//            val current = ongoingList.firstOrNull()
-//            current?.let { meeting ->
-//                SillokButton(
-//                    text = "현재 진행 중인 회의 참여하기",
-//                    onClick = { onJoinOngoingMeeting(meeting) },
-//                    modifier = Modifier.fillMaxWidth()
-//                )
-//            }
-//        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        SillokButton(
-            text = "새 회의 만들기",
-            backgroundColor = primaryTextColor,
-            onClick = onCreateMeeting,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
