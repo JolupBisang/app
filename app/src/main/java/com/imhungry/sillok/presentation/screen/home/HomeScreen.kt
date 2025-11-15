@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -678,6 +679,7 @@ private fun SearchResultList(
                 }
             }
 
+            val isLastItem = index == pagingItems.itemCount - 1
             MeetingListItem(
                 meeting = meeting,
                 onClick = { onItemClick(meeting) },
@@ -685,7 +687,8 @@ private fun SearchResultList(
                 borderColor = borderColor,
                 borderWith = borderWith,
                 titleColor = titleColor,
-                timeColor = timeColor
+                timeColor = timeColor,
+                modifier = if (isLastItem) Modifier.padding(bottom = 62.dp) else Modifier
             )
         }
     }
