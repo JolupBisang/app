@@ -465,16 +465,16 @@ private fun TopHeader(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.logo),
-            contentDescription = "로고",
-            modifier = Modifier
-                .size(40.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {  }
-        )
+//        Image(
+//            painter = painterResource(id = R.drawable.logo),
+//            contentDescription = "로고",
+//            modifier = Modifier
+//                .size(40.dp)
+//                .clickable(
+//                    interactionSource = remember { MutableInteractionSource() },
+//                    indication = null
+//                ) {  }
+//        )
         Spacer(Modifier.weight(1f))
 
         Image(
