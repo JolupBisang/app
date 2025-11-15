@@ -208,20 +208,6 @@ fun MeetingRecordScreen(
                             Spacer(modifier = Modifier.padding(top = 4.dp))
                         }
 
-                        // 이전 세그먼트 확인
-                        val prevSegment = if (index > 0) segments[index - 1] else null
-                        val isPrevInRestBreak = prevSegment != null && isInRestBreak(
-                            prevSegment.timestamp,
-                            restBreakPeriods
-                        )
-                        val isCurrentInRestBreak =
-                            isInRestBreak(message.timestamp, restBreakPeriods)
-
-                        // 쉬는 시간 시작
-                        if (!isPrevInRestBreak && isCurrentInRestBreak) {
-                            DividerWithText()
-                        }
-
                         ChatBubble(segment = message)
 
                         if (index == segments.lastIndex) {
@@ -235,34 +221,74 @@ fun MeetingRecordScreen(
 
         // 새로운 피드백 알림 표시
         if (showNotification && displayedFeedback != null) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 68.dp,
-                        start = 20.dp,
-                        end = 20.dp)
-            ) {
-                SwipeToDismissNotification(
-                    feedback = displayedFeedback!!,
-                    onDismiss = {
-                        // 피드백 읽음 처리
-                        val feedbackIndex = feedbacks.indexOfLast {
-                            it.comment == displayedFeedback!!.comment &&
-                                    it.timestamp == displayedFeedback!!.timestamp
-                        }
-                        if (feedbackIndex >= 0) {
-                            meetingInProgressViewModel.markFeedbackReadAt(feedbackIndex)
-                        }
+            // 쉬는 시간 알림인 경우 DividerWithText 표시
+            val isRestBreakNotification = displayedFeedback == scheduledFeedback && 
+                    displayedFeedback!!.comment.contains("휴식 시간")
+            
+            if (isRestBreakNotification) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 68.dp,
+                            start = 20.dp,
+                            end = 20.dp)
+                ) {
+                    Column {
+                        DividerWithText()
+                        Spacer(modifier = Modifier.height(12.dp))
+                        SwipeToDismissNotification(
+                            feedback = displayedFeedback!!,
+                            onDismiss = {
+                                // 피드백 읽음 처리
+                                val feedbackIndex = feedbacks.indexOfLast {
+                                    it.comment == displayedFeedback!!.comment &&
+                                            it.timestamp == displayedFeedback!!.timestamp
+                                }
+                                if (feedbackIndex >= 0) {
+                                    meetingInProgressViewModel.markFeedbackReadAt(feedbackIndex)
+                                }
 
-                        // 스케줄링된 피드백인 경우 해제
-                        if (displayedFeedback == scheduledFeedback) {
-                            meetingInProgressViewModel.dismissScheduledFeedback()
-                        }
+                                // 스케줄링된 피드백인 경우 해제
+                                if (displayedFeedback == scheduledFeedback) {
+                                    meetingInProgressViewModel.dismissScheduledFeedback()
+                                }
 
-                        showNotification = false
-                        displayedFeedback = null
+                                showNotification = false
+                                displayedFeedback = null
+                            }
+                        )
                     }
-                )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 68.dp,
+                            start = 20.dp,
+                            end = 20.dp)
+                ) {
+                    SwipeToDismissNotification(
+                        feedback = displayedFeedback!!,
+                        onDismiss = {
+                            // 피드백 읽음 처리
+                            val feedbackIndex = feedbacks.indexOfLast {
+                                it.comment == displayedFeedback!!.comment &&
+                                        it.timestamp == displayedFeedback!!.timestamp
+                            }
+                            if (feedbackIndex >= 0) {
+                                meetingInProgressViewModel.markFeedbackReadAt(feedbackIndex)
+                            }
+
+                            // 스케줄링된 피드백인 경우 해제
+                            if (displayedFeedback == scheduledFeedback) {
+                                meetingInProgressViewModel.dismissScheduledFeedback()
+                            }
+
+                            showNotification = false
+                            displayedFeedback = null
+                        }
+                    )
+                }
             }
         }
     }
