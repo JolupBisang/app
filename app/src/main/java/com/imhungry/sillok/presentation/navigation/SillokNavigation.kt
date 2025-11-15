@@ -569,18 +569,15 @@ fun SillokNavigation(
             )
         }
 
-            // 홈 화면
+            // 마이페이지 화면
             composable(Screen.MyPage.route) {
-//                MyPageScreen(
-//                    onBackClick = {
-//                        navController.popBackStack()
-//                    },
-//                    onNavigateToLogin = {
-//                        navController.navigate(Screen.Login.route) {
-//                            popUpTo(0) { inclusive = true }
-//                        }
-//                    }
-//                )
+                MyPageScreen(
+                    onNavigateToLogin = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
             }
     }
     
@@ -604,7 +601,7 @@ fun SillokNavigation(
                         navController.navigate(Screen.FolderList.route)
                     },
                     onMyPageClick = {
-                        // 마이페이지
+                        navController.navigate(Screen.MyPage.route)
                     },
                     selectedRoute = currentRoute
                 )
