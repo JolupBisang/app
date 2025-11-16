@@ -77,14 +77,24 @@ fun MeetingRecordScreen(
     val topSheetHeightPx = remember { mutableStateOf(0) }
 
     var autoScrollEnabled by remember { mutableStateOf(true) }
+    val NEAR_BOTTOM_THRESHOLD = 3 // 마지막 아이템에서 5개 위까지는 자동 스크롤 허용
 
     // 표시할 피드백 추적
     var displayedFeedback by remember { mutableStateOf<FeedbackUi?>(null) }
     var showNotification by remember { mutableStateOf(false) }
 
     LaunchedEffect(listState.firstVisibleItemIndex, segments.size) {
-        val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-        autoScrollEnabled = lastVisibleIndex == segments.lastIndex
+        if (segments.isEmpty()) {
+            autoScrollEnabled = true
+            return@LaunchedEffect
+        }
+        
+        val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+        val lastItemIndex = segments.lastIndex
+        
+        // 마지막에서 5개 이내에 있으면 자동 스크롤 활성화
+        val distanceFromBottom = lastItemIndex - lastVisibleIndex
+        autoScrollEnabled = distanceFromBottom <= NEAR_BOTTOM_THRESHOLD
     }
 
     LaunchedEffect(segments.size) {
@@ -250,16 +260,28 @@ fun MeetingRecordScreen(
                             }
                         }
 
-                        // 쉬는 시간이 시작되는지 확인
+                        // 쉬는 시간이 시작되는 시점인지 확인
+                        // 세그먼트 존재 여부와 관계없이 쉬는 시간 시작 시점에 DividerWithText 표시
                         val shouldShowRestBreakDivider = remember(segments, index, restBreakPeriods) {
-                            val currentInRestBreak = isInRestBreak(message.timestamp, restBreakPeriods)
-                            if (index == 0) {
-                                // 첫 번째 세그먼트가 쉬는 시간이면 표시
-                                currentInRestBreak
+                            if (restBreakPeriods.isEmpty()) {
+                                false
                             } else {
-                                // 이전 세그먼트는 쉬는 시간이 아니고, 현재 세그먼트가 쉬는 시간이면 표시
-                                val previousInRestBreak = isInRestBreak(segments[index - 1].timestamp, restBreakPeriods)
-                                currentInRestBreak && !previousInRestBreak
+                                val currentTimestampSeconds = timestampToSeconds(message.timestamp)
+                                
+                                // 각 쉬는 시간 구간의 시작 시점과 비교
+                                restBreakPeriods.any { (startTime, _) ->
+                                    val startSeconds = timestampToSeconds(startTime)
+                                    
+                                    if (index == 0) {
+                                        // 첫 번째 세그먼트가 쉬는 시간 시작 시점 이후면 표시
+                                        currentTimestampSeconds >= startSeconds
+                                    } else {
+                                        // 이전 세그먼트는 쉬는 시간 시작 시점 이전이고,
+                                        // 현재 세그먼트가 쉬는 시간 시작 시점 이후면 표시
+                                        val previousTimestampSeconds = timestampToSeconds(segments[index - 1].timestamp)
+                                        previousTimestampSeconds < startSeconds && currentTimestampSeconds >= startSeconds
+                                    }
+                                }
                             }
                         }
 
@@ -267,12 +289,12 @@ fun MeetingRecordScreen(
                             segment = message,
                             shouldShowTimestamp = shouldShowTimestamp
                         )
-                        
+
                         // 쉬는 시간이 시작될 때만 DividerWithText 표시
                         if (shouldShowRestBreakDivider) {
                             DividerWithText()
                         }
-                        
+
                         if (index == segments.lastIndex) {
                             Spacer(modifier = Modifier.padding(bottom = 28.dp))
                         }

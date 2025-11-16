@@ -84,7 +84,7 @@ private fun MyMessage(segment: SegmentUi, highlighted: Boolean, shouldShowTimest
             verticalAlignment = Alignment.Bottom
         ) {
             // 이전 메시지와 3초 이상 차이나면 타임스탬프 표시
-            if (shouldShowTimestamp) {
+            if (shouldShowTimestamp || !segment.isSameAsPrevious) {
                 TimestampText(
                     time = segment.timestamp,
                     modifier = Modifier
