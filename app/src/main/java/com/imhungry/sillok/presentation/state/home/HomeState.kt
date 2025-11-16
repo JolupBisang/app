@@ -67,5 +67,6 @@ data class HomeState(
     val showExitDialog: Boolean = false,
     val showGeneratingMeetingNoteDialog: Boolean = false,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val shouldNavigateToLogin: Boolean = false
 ) 

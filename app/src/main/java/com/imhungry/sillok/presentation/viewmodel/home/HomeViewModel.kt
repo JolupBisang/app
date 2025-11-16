@@ -76,16 +76,20 @@ class HomeViewModel @Inject constructor(
                     val user = result.data
                     Log.d(TAG, "사용자 프로필 로드 성공: id=${user.id}, nickname=${user.nickname}, pictureURL=${user.pictureURL}")
                     updateUserInfo(user)
+                    // 성공 시 로그인 화면으로 이동 플래그 초기화
+                    _state.update { it.copy(shouldNavigateToLogin = false) }
                 }
                 is ApiResult.Failure -> {
-                    Log.e(TAG, "사용자 프로필 로드 실패: ${result.message}")
-                    // 실패 시 빈 상태로 처리
+                    Log.e(TAG, "사용자 프로필 로드 실패: ${result.message}, 로그인 화면으로 이동")
+                    // 실패 시 빈 상태로 처리하고 로그인 화면으로 이동
                     updateUserInfo(null)
+                    _state.update { it.copy(shouldNavigateToLogin = true) }
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "사용자 프로필 로드 예외 발생: ${e.message}", e)
+            Log.e(TAG, "사용자 프로필 로드 예외 발생: ${e.message}, 로그인 화면으로 이동", e)
             updateUserInfo(null)
+            _state.update { it.copy(shouldNavigateToLogin = true) }
         }
     }
 
@@ -172,6 +176,10 @@ class HomeViewModel @Inject constructor(
 
     fun clearError() {
         _state.update { it.copy(error = null) }
+    }
+
+    fun clearNavigateToLogin() {
+        _state.update { it.copy(shouldNavigateToLogin = false) }
     }
 
     fun logout() {

@@ -105,6 +105,14 @@ fun HomeScreen(
     val userName = homeState.userName
     val profileImage = homeState.profileImage
 
+    // 사용자 조회 실패 시 로그인 화면으로 이동
+    LaunchedEffect(homeState.shouldNavigateToLogin) {
+        if (homeState.shouldNavigateToLogin) {
+            viewModel.clearNavigateToLogin()
+            onNavigateToLogin()
+        }
+    }
+
     val onNewMeetingClick = remember(scope, materialDrawerState, onNavigateToCreateMeeting) {
         {
             scope.launch { materialDrawerState.close() }
