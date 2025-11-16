@@ -38,7 +38,7 @@ class UserStore @Inject constructor(
         val exists = (id != null && email != null && nickname != null)
 
         if (exists) {
-            User(id = id!!, email = email!!, nickname = nickname!!, pictureURL = pictureURL!!)
+            User(id = id!!, email = email!!, nickname = nickname!!, pictureURL = pictureURL)
         } else {
             null
         }

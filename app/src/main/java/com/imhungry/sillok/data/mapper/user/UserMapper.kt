@@ -10,7 +10,7 @@ class UserMapper @Inject constructor() {
             id = dto.id,
             email = dto.email,
             nickname = dto.nickname,
-            pictureURL = dto.pictureURL
+            pictureURL = dto.pictureURL ?: "" // null일 경우 빈 문자열로 처리
         )
     }
 }
