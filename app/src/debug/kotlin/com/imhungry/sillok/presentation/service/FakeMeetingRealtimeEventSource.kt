@@ -75,6 +75,7 @@ class FakeMeetingRealtimeEventSource @Inject constructor(
             val sampleTexts = listOf(
                 "오늘 회의 목표는 앱 출시 일정 정리입니다.",
                 "UI 쪽은 이번 주까지 시안 확정하는 걸로 할게요.",
+                "네",
                 "백엔드는 로그인과 회의 생성 API가 우선입니다.",
                 "실시간 자막 기능은 다음 스프린트에서 논의하죠.",
                 "지금까지 진행 상황 다시 한 번 정리해볼게요."

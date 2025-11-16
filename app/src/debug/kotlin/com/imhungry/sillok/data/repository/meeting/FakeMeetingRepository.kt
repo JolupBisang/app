@@ -111,7 +111,7 @@ class FakeMeetingRepository @Inject constructor() : MeetingRepository {
                 .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 
             val meeting = MeetingDetailSummary(
-                id = 101L,
+                id = 1002L,
                 title = "프로젝트 기획 회의",
                 scheduledStartTime = scheduledStartTime,
                 targetTime = 60,

@@ -98,6 +98,9 @@ class MeetingInProgressViewModel @Inject constructor(
     // 사용자 정보 캐시 (userId -> nickname)
     private val userNicknameCache = mutableMapOf<Long, String>()
     private val userProfileImageCache = mutableMapOf<Long, String>()
+    
+    // 현재 사용자 ID 캐시
+    private var cachedCurrentUserId: Long? = null
 
     // 스케줄링 Job 추적 (중복 실행 방지)
     private var restBreakSchedulingJob: Job? = null
@@ -256,6 +259,22 @@ class MeetingInProgressViewModel @Inject constructor(
         Log.d(TAG, "[2-2] meetingId: $meetingId")
 
         coroutineScope {
+            // 현재 사용자 ID 캐시 (처음 한 번만 호출)
+            if (cachedCurrentUserId == null) {
+                Log.d(TAG, "[2-2-1] 현재 사용자 정보 조회 시작 (캐시)")
+                when (val result = getMyProfileUseCase()) {
+                    is ApiResult.Success -> {
+                        cachedCurrentUserId = result.data.id
+                        Log.d(TAG, "[2-2-1 완료] 현재 사용자 ID 캐시 완료: ${cachedCurrentUserId}")
+                    }
+                    is ApiResult.Failure -> {
+                        Log.e(TAG, "[2-2-1 실패] 현재 사용자 정보 조회 실패: ${result.message}")
+                    }
+                }
+            } else {
+                Log.d(TAG, "[2-2-1 스킵] 현재 사용자 ID 캐시 사용: ${cachedCurrentUserId}")
+            }
+            
             val meeting = loadMeetingDetail(meetingId) ?: return@coroutineScope
             // 참가자 정보를 먼저 로드하고 완료될 때까지 대기
             loadUserInfoForParticipants(meeting.participants)
@@ -336,13 +355,8 @@ class MeetingInProgressViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun loadMeetingData(meetingId: Long, startMillis: Long) {
         coroutineScope {
-            val currentUserId = when (val result = getMyProfileUseCase()) {
-                is ApiResult.Success -> result.data.id
-                is ApiResult.Failure -> {
-                    Log.e(TAG, "현재 사용자 정보 조회 실패: ${result.message}")
-                    null
-                }
-            }
+            // 캐시된 현재 사용자 ID 사용
+            val currentUserId = cachedCurrentUserId
             //val segmentsDeferred = async { getSegmentsUseCase(meetingId, page = 0, size = 10000) }
             val summariesDeferred = async { getSummariesUseCase(meetingId, isRecap = false, page = 0, size = 10000) }
             val participationDeferred = async { getParticipationRateHistoryUseCase(meetingId) }
@@ -593,13 +607,8 @@ class MeetingInProgressViewModel @Inject constructor(
         viewModelScope.launch {
             val currentState = state.value
             val startMillis = currentState.startTime
-            val currentUserId = when (val result = getMyProfileUseCase()) {
-                is ApiResult.Success -> result.data.id
-                is ApiResult.Failure -> {
-                    Log.e(TAG, "현재 사용자 정보 조회 실패: ${result.message}")
-                    null
-                }
-            }
+            // 캐시된 현재 사용자 ID 사용
+            val currentUserId = cachedCurrentUserId
 
             if (startMillis > 0) {
                 val currentSegments = currentState.segments.toMutableList()
@@ -647,26 +656,22 @@ class MeetingInProgressViewModel @Inject constructor(
     /**
      * COMPLETION_SCHEDULED 수신 시 처리
      * (녹음과 SSE 연결은 Service에서 이미 해제됨)
+     * 
+     * 중요: DataStore 저장은 Service에서 처리됩니다 (ViewModel이 파괴되었을 수 있으므로).
+     * 여기서는 홈으로 이동 이벤트만 발생시킵니다.
      */
     @RequiresApi(Build.VERSION_CODES.O)
     private fun handleCompletionScheduled() {
         Log.d(TAG, "========================================")
         Log.d(TAG, "회의 완료 예약 (회의록 생성 시작)")
         Log.d(TAG, "========================================")
-
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val meetingId = state.value.meetingId
-
-                // DataStore에 generatingMeetingNoteId 저장
-                generatingMeetingNoteStore.setGeneratingMeetingNoteId(meetingId)
-                Log.d(TAG, "DataStore generatingMeetingNoteId 저장 완료: meetingId=$meetingId")
-
-                // 홈으로 이동 이벤트 발생
-                _events.emit(MeetingInProgressEvent.NavigateToHome)
-            } catch (e: Exception) {
-                Log.e(TAG, "DataStore 저장 실패: ${e.message}", e)
-            }
+        Log.d(TAG, "[handleCompletionScheduled] DataStore 저장은 Service에서 처리됨")
+        Log.d(TAG, "[handleCompletionScheduled] 홈으로 이동 이벤트 발생")
+        
+        // DataStore 저장은 Service에서 처리되므로, 여기서는 홈으로 이동 이벤트만 발생
+        viewModelScope.launch {
+            _events.emit(MeetingInProgressEvent.NavigateToHome)
+            Log.d(TAG, "[handleCompletionScheduled] 홈으로 이동 이벤트 발생 완료")
         }
     }
 

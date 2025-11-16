@@ -115,10 +115,26 @@ class MeetingInProgressService : Service() {
         serviceScope.launch {
             serviceEvents.collectLatest { event ->
                 when (event) {
+                    is ServiceEvent.CompletionScheduled -> {
+                        Log.d(TAG, "CompletionScheduled 이벤트 수신 - 회의록 생성 시작 상태 저장")
+                        
+                        // DataStore에 generatingMeetingNoteId 저장 (ViewModel이 파괴되었을 수 있으므로 Service에서 처리)
+                        try {
+                            if (::generatingMeetingNoteStore.isInitialized) {
+                                generatingMeetingNoteStore.setGeneratingMeetingNoteId(currentMeetingId)
+                                Log.d(TAG, "DataStore generatingMeetingNoteId 저장 완료: meetingId=$currentMeetingId (Service에서 처리)")
+                            } else {
+                                Log.w(TAG, "GeneratingMeetingNoteStore가 초기화되지 않아 setGeneratingMeetingNoteId를 실행할 수 없습니다")
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "DataStore generatingMeetingNoteId 저장 실패: ${e.message}", e)
+                        }
+                    }
+                    
                     is ServiceEvent.MeetingCompleted -> {
                         Log.d(TAG, "MeetingCompleted 이벤트 수신 - 회의록 생성 완료 상태 업데이트 및 Service 종료")
                         
-                        // 회의록 생성 완료 상태 업데이트 (ViewModel이 파괴되었을 수 있으므로 Service에서 직접 처리)
+                        // 회의록 생성 완료 상태 업데이트
                         try {
                             if (::generatingMeetingNoteStore.isInitialized) {
                                 generatingMeetingNoteStore.clearGeneratingMeetingNoteId()
