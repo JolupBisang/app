@@ -250,11 +250,29 @@ fun MeetingRecordScreen(
                             }
                         }
 
+                        // 쉬는 시간이 시작되는지 확인
+                        val shouldShowRestBreakDivider = remember(segments, index, restBreakPeriods) {
+                            val currentInRestBreak = isInRestBreak(message.timestamp, restBreakPeriods)
+                            if (index == 0) {
+                                // 첫 번째 세그먼트가 쉬는 시간이면 표시
+                                currentInRestBreak
+                            } else {
+                                // 이전 세그먼트는 쉬는 시간이 아니고, 현재 세그먼트가 쉬는 시간이면 표시
+                                val previousInRestBreak = isInRestBreak(segments[index - 1].timestamp, restBreakPeriods)
+                                currentInRestBreak && !previousInRestBreak
+                            }
+                        }
+
                         ChatBubble(
                             segment = message,
                             shouldShowTimestamp = shouldShowTimestamp
                         )
-
+                        
+                        // 쉬는 시간이 시작될 때만 DividerWithText 표시
+                        if (shouldShowRestBreakDivider) {
+                            DividerWithText()
+                        }
+                        
                         if (index == segments.lastIndex) {
                             Spacer(modifier = Modifier.padding(bottom = 28.dp))
                         }
