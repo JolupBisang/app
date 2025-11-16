@@ -49,7 +49,7 @@ class TeamMapper @Inject constructor() {
             id = dto.id,
             name = dto.name,
             email = dto.email,
-            pictureURL = dto.pictureURL
+            pictureURL = dto.pictureURL ?: ""
         )
     }
 
