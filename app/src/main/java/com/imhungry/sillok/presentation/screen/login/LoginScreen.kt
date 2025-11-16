@@ -42,7 +42,7 @@ fun LoginScreen(
     val state by loginViewModel.state.collectAsState()
 
     LaunchedEffect(token) {
-        if (token != null && !state.isLoading) {
+        if (token != null) {
             loginViewModel.handleLogin(token)
         }
     }

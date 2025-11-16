@@ -99,7 +99,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent?) {
+        Log.d(TAG, "handleIntent 호출")
         intent?.data?.getQueryParameter("token")?.let { token ->
+            Log.d(TAG, "token 수신: $token")
             loginToken = token
         }
     }
