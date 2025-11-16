@@ -93,8 +93,13 @@ sealed class Screen(val route: String) {
                 "folder_detail/$folderId"
             }
     }
-    object FolderMeetingAdd : Screen("folder_meeting_add/{folderId}") {
-        fun createRoute(folderId: Long) = "folder_meeting_add/$folderId"
+    object FolderMeetingAdd : Screen("folder_meeting_add/{folderId}?folderName={folderName}") {
+        fun createRoute(folderId: Long, folderName: String = "") = 
+            if (folderName.isNotEmpty()) {
+                "folder_meeting_add/$folderId?folderName=${java.net.URLEncoder.encode(folderName, "UTF-8")}"
+            } else {
+                "folder_meeting_add/$folderId"
+            }
     }
     object MyPage : Screen("my_page")
 }
@@ -542,7 +547,7 @@ fun SillokNavigation(
                     // TODO: 회의 선택/해제 처리
                 },
                 onAddClick = {
-                    navController.navigate(Screen.FolderMeetingAdd.createRoute(folderId))
+                    navController.navigate(Screen.FolderMeetingAdd.createRoute(folderId, folderName))
                 },
                 onMeetingClick = { meetingId ->
                     navController.navigate(Screen.MeetingMinutes.createRoute(meetingId))
@@ -553,16 +558,25 @@ fun SillokNavigation(
         // 회의록 폴더 회의 추가 화면
         composable(
             route = Screen.FolderMeetingAdd.route,
-            arguments = listOf(navArgument("folderId") { type = NavType.LongType })
+            arguments = listOf(
+                navArgument("folderId") { type = NavType.LongType },
+                navArgument("folderName") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                    nullable = true
+                }
+            )
         ) { backStackEntry ->
             val folderId = backStackEntry.arguments?.getLong("folderId") ?: 1L
+            val folderName = backStackEntry.arguments?.getString("folderName") ?: ""
             FolderMeetingAddScreen(
                 folderId = folderId,
+                folderName = folderName,
                 onBackClick = {
                     navController.popBackStack()
                 },
                 onComplete = {
-                    navController.navigate(Screen.FolderDetail.createRoute(folderId)) {
+                    navController.navigate(Screen.FolderDetail.createRoute(folderId, folderName)) {
                         popUpTo(Screen.FolderDetail.route) { inclusive = true }
                     }
                 }

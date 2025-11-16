@@ -51,6 +51,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun FolderMeetingAddScreen(
     folderId: Long,
+    folderName: String = "",
     onBackClick: () -> Unit,
     onMeetingToggle: (Long, Boolean) -> Unit = { _, _ -> },
     onComplete: (String) -> Unit,
@@ -152,7 +153,7 @@ fun FolderMeetingAddScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             ScreenHeader(
-                title = "회의 추가",
+                title = folderName.ifEmpty { "회의 추가" },
                 onBackClick = onBackClick
             )
 
