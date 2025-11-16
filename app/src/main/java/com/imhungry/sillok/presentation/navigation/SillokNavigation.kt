@@ -169,7 +169,9 @@ fun SillokNavigation(
     val onFloatingButtonClick = remember(currentRoute) {
         {
             when {
-                currentRoute == Screen.Home.route || 
+                currentRoute == Screen.Home.route ||
+                        currentRoute == Screen.NotificationHistory.route ||
+                        currentRoute == Screen.MyPage.route ||
                 currentRoute?.startsWith("${Screen.Home.route}/") == true ||
                 currentRoute?.startsWith("${Screen.Home.route}?") == true -> {
                     navController.navigate(Screen.MeetingForm.route)
