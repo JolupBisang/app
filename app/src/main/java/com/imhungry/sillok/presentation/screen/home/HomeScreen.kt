@@ -355,6 +355,7 @@ private fun HomeContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(bottom = 32.dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
@@ -696,7 +697,7 @@ private fun SearchResultList(
                 borderWith = borderWith,
                 titleColor = titleColor,
                 timeColor = timeColor,
-                modifier = if (isLastItem) Modifier.padding(bottom = 62.dp) else Modifier
+                modifier = if (isLastItem) Modifier.padding(bottom = 30.dp) else Modifier
             )
         }
     }
