@@ -11,8 +11,10 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.imhungry.sillok.R
+import com.imhungry.sillok.data.local.GeneratingMeetingNoteStore
 import com.imhungry.sillok.presentation.util.DateTimeUtils
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -61,6 +63,9 @@ class MeetingInProgressService : Service() {
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @Inject
+    lateinit var generatingMeetingNoteStore: GeneratingMeetingNoteStore
 
     // 청크 ID 카운터
     private val chunkIdCounter = AtomicLong(0)
@@ -111,7 +116,20 @@ class MeetingInProgressService : Service() {
             serviceEvents.collectLatest { event ->
                 when (event) {
                     is ServiceEvent.MeetingCompleted -> {
-                        Log.d(TAG, "MeetingCompleted 이벤트 수신 - WebSocket 연결 종료 및 Service 종료")
+                        Log.d(TAG, "MeetingCompleted 이벤트 수신 - 회의록 생성 완료 상태 업데이트 및 Service 종료")
+                        
+                        // 회의록 생성 완료 상태 업데이트 (ViewModel이 파괴되었을 수 있으므로 Service에서 직접 처리)
+                        try {
+                            if (::generatingMeetingNoteStore.isInitialized) {
+                                generatingMeetingNoteStore.clearGeneratingMeetingNoteId()
+                                Log.d(TAG, "DataStore generatingMeetingNoteId 제거 완료 (Service에서 처리)")
+                            } else {
+                                Log.w(TAG, "GeneratingMeetingNoteStore가 초기화되지 않아 clearGeneratingMeetingNoteId를 실행할 수 없습니다")
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "DataStore generatingMeetingNoteId 제거 실패: ${e.message}", e)
+                        }
+                        
                         // WebSocket 연결 종료
                         webSocketManager.close()
                         // Service 종료

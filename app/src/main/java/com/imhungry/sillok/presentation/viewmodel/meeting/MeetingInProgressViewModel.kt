@@ -672,8 +672,8 @@ class MeetingInProgressViewModel @Inject constructor(
 
     /**
      * MEETING_COMPLETED 수신 시 처리
-     * Firebase에 회의록 생성 완료 상태 업데이트 (generatingMeetingNoteId 제거)
-     * WebSocket 연결과 Service 종료
+     * Service에서 이미 clearGeneratingMeetingNoteId를 처리하므로 여기서는 연결 해제만 수행
+     * (ViewModel이 파괴되었을 수 있으므로 Service에서 직접 처리)
      */
     @RequiresApi(Build.VERSION_CODES.O)
     private fun handleMeetingCompleted(message: String?) {
@@ -683,17 +683,12 @@ class MeetingInProgressViewModel @Inject constructor(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val meetingId = state.value.meetingId
-
-                // DataStore에서 회의록 생성 완료 상태 업데이트 (generatingMeetingNoteId 제거)
-                generatingMeetingNoteStore.clearGeneratingMeetingNoteId()
-                Log.d(TAG, "DataStore generatingMeetingNoteId 제거 완료: meetingId=$meetingId")
-
-                // clearGeneratingMeetingNoteId 완료 후 웹소켓과 Service 종료
+                // clearGeneratingMeetingNoteId는 Service에서 처리됨 (ViewModel이 파괴되었을 수 있으므로)
+                // 여기서는 연결 해제만 수행
                 meetingRealtimeEventSource.stop()
-                Log.d(TAG, "회의록 생성 완료 후 연결 해제 및 Service 종료 완료")
+                Log.d(TAG, "회의록 생성 완료 후 연결 해제 완료 (DataStore 업데이트는 Service에서 처리됨)")
             } catch (e: Exception) {
-                Log.e(TAG, "DataStore generatingMeetingNoteId 제거 실패: ${e.message}", e)
+                Log.e(TAG, "연결 해제 실패: ${e.message}", e)
             }
         }
     }
