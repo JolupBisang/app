@@ -11,6 +11,8 @@ interface FeedbackApi {
     suspend fun getFeedbacks(
         @Path("meetingId") meetingId: Long,
         @Query("page") page: Int = 0,
-        @Query("size") size: Int = 30
+        @Query("size") size: Int = 30,
+        @Query("sort") sort: String = "generatedDateTime",
+        @Query("direction") direction: String = "asc"
     ): Response<FeedbackListResDto>
 }

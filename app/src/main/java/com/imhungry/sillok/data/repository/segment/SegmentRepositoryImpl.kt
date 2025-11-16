@@ -1,5 +1,7 @@
 package com.imhungry.sillok.data.repository.segment
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.imhungry.sillok.data.mapper.segment.SegmentMapper
 import com.imhungry.sillok.data.remote.segment.SegmentApi
 import com.imhungry.sillok.data.util.ApiResult
@@ -14,13 +16,14 @@ class SegmentRepositoryImpl @Inject constructor(
     private val mapper: SegmentMapper
 ) : SegmentRepository {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override suspend fun getSegments(
         meetingId: Long,
         page: Int,
         size: Int
     ): ApiResult<List<Segment>> = withContext(Dispatchers.IO) {
         try {
-            val res = api.getSegments(meetingId, page, size)
+            val res = api.getSegments(meetingId, page, size, sort = "order", direction = "asc")
             if (res.isSuccessful) {
                 val dto = res.body()
                 if (dto != null) {

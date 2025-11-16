@@ -11,6 +11,8 @@ interface SegmentApi {
     suspend fun getSegments(
         @Path("meetingId") meetingId: Long,
         @Query("page") page: Int = 0,
-        @Query("size") size: Int = 40
+        @Query("size") size: Int = 40,
+        @Query("sort") sort: String = "order",
+        @Query("direction") direction: String = "asc"
     ): Response<SegmentListResDto>
 }

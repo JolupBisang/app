@@ -12,6 +12,8 @@ interface SummaryApi {
         @Path("meetingId") meetingId: Long,
         @Query("isRecap") isRecap: Boolean = false,
         @Query("page") page: Int = 0,
-        @Query("size") size: Int = 30
+        @Query("size") size: Int = 30,
+        @Query("sort") sort: String = "generatedDateTime",
+        @Query("direction") direction: String = "asc"
     ): Response<SummaryListResDto>
 }

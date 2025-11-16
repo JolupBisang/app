@@ -21,7 +21,7 @@ class SummaryRepositoryImpl @Inject constructor(
         size: Int
     ): ApiResult<List<Summary>> = withContext(Dispatchers.IO) {
         try {
-            val res = api.getSummaries(meetingId, isRecap, page, size)
+            val res = api.getSummaries(meetingId, isRecap, page, size, sort = "generatedDateTime", direction = "asc")
             if (res.isSuccessful) {
                 val dto = res.body()
                 if (dto != null) {
