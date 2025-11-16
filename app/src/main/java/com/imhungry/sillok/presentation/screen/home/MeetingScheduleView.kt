@@ -229,7 +229,7 @@ private fun SelectedDateMeetingList(
                         borderWith = borderWith,
                         titleColor = titleColor,
                         timeColor = timeColor,
-                        modifier = if (isLastItem) Modifier.padding(bottom = 62.dp) else Modifier
+                        modifier = if (isLastItem) Modifier.padding(bottom = 30.dp) else Modifier
                     )
                 }
 
