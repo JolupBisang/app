@@ -75,18 +75,29 @@ fun MeetingRecordScreen(
     val listState = rememberLazyListState()
     val topSheetHeightPx = remember { mutableStateOf(0) }
 
+    var autoScrollEnabled by remember { mutableStateOf(true) }
+
     // 표시할 피드백 추적
     var displayedFeedback by remember { mutableStateOf<FeedbackUi?>(null) }
     var showNotification by remember { mutableStateOf(false) }
 
+    LaunchedEffect(listState.firstVisibleItemIndex, segments.size) {
+        val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        autoScrollEnabled = lastVisibleIndex == segments.lastIndex
+    }
+
+    LaunchedEffect(segments.size) {
+        if (segments.isNotEmpty() && autoScrollEnabled) {
+            listState.animateScrollToItem(segments.lastIndex)
+        }
+    }
+
     // 새로운 피드백이 올 때마다 알림 표시
     LaunchedEffect(feedbacks) {
         if (feedbacks.isNotEmpty()) {
-            // 가장 최신 피드백 찾기 (읽지 않은 것)
             val latestUnreadFeedback = feedbacks.lastOrNull { !it.isRead }
 
             if (latestUnreadFeedback != null) {
-                // 새로운 피드백이거나 아직 표시하지 않은 피드백인 경우
                 val isNewFeedback = displayedFeedback == null ||
                         (latestUnreadFeedback.comment != displayedFeedback!!.comment ||
                                 latestUnreadFeedback.timestamp != displayedFeedback!!.timestamp)
@@ -102,7 +113,6 @@ fun MeetingRecordScreen(
     // 스케줄링된 피드백 (휴식 시간, 종료 시간 알림) 감시
     LaunchedEffect(scheduledFeedback) {
         if (scheduledFeedback != null) {
-            // 새로운 스케줄링된 피드백이 오면 알림 표시
             val isNewScheduledFeedback = displayedFeedback == null ||
                     (scheduledFeedback!!.comment != displayedFeedback!!.comment ||
                             scheduledFeedback!!.timestamp != displayedFeedback!!.timestamp)
@@ -117,9 +127,8 @@ fun MeetingRecordScreen(
     // 알림이 표시되면 4초 후 자동으로 닫기
     LaunchedEffect(showNotification, displayedFeedback) {
         if (showNotification && displayedFeedback != null) {
-            delay(4000) // 4초 대기
+            delay(4000)
 
-            // 피드백 읽음 처리
             val feedbackIndex = feedbacks.indexOfLast {
                 it.comment == displayedFeedback!!.comment &&
                         it.timestamp == displayedFeedback!!.timestamp
@@ -128,7 +137,6 @@ fun MeetingRecordScreen(
                 meetingInProgressViewModel.markFeedbackReadAt(feedbackIndex)
             }
 
-            // 스케줄링된 피드백인 경우 해제
             if (displayedFeedback == scheduledFeedback) {
                 meetingInProgressViewModel.dismissScheduledFeedback()
             }
@@ -193,7 +201,6 @@ fun MeetingRecordScreen(
                         }
                         .padding(top = 20.dp, start = 28.dp, end = 20.dp, bottom = 4.dp)
                 )
-
             }
 
             LazyColumn(
@@ -216,30 +223,26 @@ fun MeetingRecordScreen(
                     }
                 }
             }
-
         }
 
-        // 새로운 피드백 알림 표시
         if (showNotification && displayedFeedback != null) {
-            // 쉬는 시간 알림인 경우 DividerWithText 표시
-            val isRestBreakNotification = displayedFeedback == scheduledFeedback && 
+            val isRestBreakNotification = displayedFeedback == scheduledFeedback &&
                     displayedFeedback!!.comment.contains("휴식 시간")
-            
+
             if (isRestBreakNotification) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 68.dp,
+                        .padding(
+                            top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 68.dp,
                             start = 20.dp,
-                            end = 20.dp)
+                            end = 20.dp
+                        )
                 ) {
                     Column {
-                        DividerWithText()
-                        Spacer(modifier = Modifier.height(12.dp))
                         SwipeToDismissNotification(
                             feedback = displayedFeedback!!,
                             onDismiss = {
-                                // 피드백 읽음 처리
                                 val feedbackIndex = feedbacks.indexOfLast {
                                     it.comment == displayedFeedback!!.comment &&
                                             it.timestamp == displayedFeedback!!.timestamp
@@ -248,7 +251,6 @@ fun MeetingRecordScreen(
                                     meetingInProgressViewModel.markFeedbackReadAt(feedbackIndex)
                                 }
 
-                                // 스케줄링된 피드백인 경우 해제
                                 if (displayedFeedback == scheduledFeedback) {
                                     meetingInProgressViewModel.dismissScheduledFeedback()
                                 }
@@ -263,14 +265,15 @@ fun MeetingRecordScreen(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 68.dp,
+                        .padding(
+                            top = with(LocalDensity.current) { topSheetHeightPx.value.toDp() } + 68.dp,
                             start = 20.dp,
-                            end = 20.dp)
+                            end = 20.dp
+                        )
                 ) {
                     SwipeToDismissNotification(
                         feedback = displayedFeedback!!,
                         onDismiss = {
-                            // 피드백 읽음 처리
                             val feedbackIndex = feedbacks.indexOfLast {
                                 it.comment == displayedFeedback!!.comment &&
                                         it.timestamp == displayedFeedback!!.timestamp
@@ -279,7 +282,6 @@ fun MeetingRecordScreen(
                                 meetingInProgressViewModel.markFeedbackReadAt(feedbackIndex)
                             }
 
-                            // 스케줄링된 피드백인 경우 해제
                             if (displayedFeedback == scheduledFeedback) {
                                 meetingInProgressViewModel.dismissScheduledFeedback()
                             }
