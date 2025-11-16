@@ -12,7 +12,6 @@ import com.imhungry.sillok.BuildConfig
 import com.imhungry.sillok.data.local.FeedbackReadStore
 import com.imhungry.sillok.data.local.GeneratingMeetingNoteStore
 import com.imhungry.sillok.data.local.TokenStore
-import com.imhungry.sillok.data.local.UserStore
 import com.imhungry.sillok.data.model.meeting.TargetMeetingStatus
 import com.imhungry.sillok.data.model.realtime.ErrorResponse
 import com.imhungry.sillok.data.model.realtime.LiveFeedbackDto
@@ -28,8 +27,10 @@ import com.imhungry.sillok.domain.usecase.meeting.UpdateMeetingStatusUseCase
 import com.imhungry.sillok.domain.usecase.participation.GetParticipationRateHistoryUseCase
 import com.imhungry.sillok.domain.usecase.segment.GetSegmentsUseCase
 import com.imhungry.sillok.domain.usecase.summary.GetSummariesUseCase
+import com.imhungry.sillok.domain.usecase.user.GetMyProfileUseCase
 import com.imhungry.sillok.domain.usecase.user.GetUserInfoUseCase
 import com.imhungry.sillok.presentation.service.MeetingInProgressService
+import com.imhungry.sillok.presentation.service.MeetingRealtimeEventSource
 import com.imhungry.sillok.presentation.service.ServiceEvent
 import com.imhungry.sillok.presentation.state.meeting.FeedbackUi
 import com.imhungry.sillok.presentation.state.meeting.MeetingInProgressEvent
@@ -65,11 +66,12 @@ class MeetingInProgressViewModel @Inject constructor(
     private val getFeedbacksUseCase: GetFeedbacksUseCase,
     private val getMeetingDetailUseCase: GetMeetingDetailUseCase,
     private val getUserInfoUseCase: GetUserInfoUseCase,
+    private val getMyProfileUseCase: GetMyProfileUseCase,
     private val updateMeetingStatusUseCase: UpdateMeetingStatusUseCase,
-    private val userStore: UserStore,
     private val tokenStore: TokenStore,
     private val feedbackReadStore: FeedbackReadStore,
     private val generatingMeetingNoteStore: GeneratingMeetingNoteStore,
+    private val meetingRealtimeEventSource: MeetingRealtimeEventSource,
     private val app: Application,
 ) : AndroidViewModel(app) {
     companion object {
@@ -123,91 +125,52 @@ class MeetingInProgressViewModel @Inject constructor(
             }
             Log.d(TAG, "[3단계 완료] JWT 토큰 조회 완료")
 
-            // Service 시작
-            Log.d(TAG, "[4단계] Service 시작 요청")
-            startService(
+            // Service 이벤트 구독 (start() 호출 전에 구독 시작하여 이벤트를 놓치지 않도록)
+            Log.d(TAG, "[4단계] Service 이벤트 구독 시작")
+            observeServiceEvents()
+            Log.d(TAG, "[4단계 완료] Service 이벤트 구독 완료")
+
+            // 실시간 이벤트 소스 시작 (Real: Service + WebSocket/SSE, Debug: Fake)
+            Log.d(TAG, "[5단계] MeetingRealtimeEventSource.start 호출")
+            meetingRealtimeEventSource.start(
                 serverUrl = BuildConfig.BASE_URL,
                 meetingId = meetingId,
                 jwtToken = jwtToken
             )
             _state.update { it.copy(isLoading = false) }
-
-            // Service 이벤트 구독
-            Log.d(TAG, "[5단계] Service 이벤트 구독 시작")
-            observeServiceEvents()
-            Log.d(TAG, "[5단계 완료] Service 이벤트 구독 완료")
         }
     }
 
-    /**
-     * Service 시작
-     */
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun startService(serverUrl: String, meetingId: Long, jwtToken: String) {
-        Log.d(TAG, "[4-1] Service Intent 생성: serverUrl=$serverUrl, meetingId=$meetingId")
-        val intent = Intent(app, MeetingInProgressService::class.java).apply {
-            action = MeetingInProgressService.ACTION_START
-            putExtra(MeetingInProgressService.EXTRA_SERVER_URL, serverUrl)
-            putExtra(MeetingInProgressService.EXTRA_MEETING_ID, meetingId)
-            putExtra(MeetingInProgressService.EXTRA_JWT_TOKEN, jwtToken)
-        }
-        ContextCompat.startForegroundService(app, intent)
-        Log.d(TAG, "[4-2] Foreground Service 시작 요청 완료: meetingId=$meetingId")
-    }
 
     /**
-     * Service 이벤트 구독
+     * MeetingRealtimeEventSource 가 발행하는 ServiceEvent 구독
+     * (실제 환경: Service → WebSocket/SSE → ServiceEvent
+     *  디버그 환경: FakeEventSource → ServiceEvent)
      */
     @RequiresApi(Build.VERSION_CODES.O)
     private fun observeServiceEvents() {
         viewModelScope.launch {
-            Log.d(TAG, "[5-1] Service 이벤트 Flow 구독 시작")
-            MeetingInProgressService.serviceEvents.collectLatest { event ->
-                Log.d(TAG, "[5-2] Service 이벤트 수신: ${event::class.simpleName}")
+            meetingRealtimeEventSource.events.collectLatest { event ->
+                Log.d(TAG, "[ServiceEvent] 수신: ${event::class.simpleName}")
                 when (event) {
                     is ServiceEvent.ConnectionEstablished -> {
                         Log.d(
                             TAG,
-                            "[5-3] ConnectionEstablished 이벤트 처리 시작: lastProcessedChunkId=${event.lastProcessedChunkId}, actualStartTime=${event.actualStartTime}"
+                            "[5-3] ConnectionEstablished 이벤트 처리 시작: actualStartTime=${event.actualStartTime}"
                         )
-                        Log.d(TAG, "[5-3-1] handleConnectionEstablishedFromService 호출 전")
-                        handleConnectionEstablishedFromService(event.lastProcessedChunkId, event.actualStartTime)
-                        Log.d(TAG, "[5-3-2] handleConnectionEstablishedFromService 호출 후")
+                        handleConnectionEstablishedFromService(
+                            event.actualStartTime
+                        )
                     }
 
-                    is ServiceEvent.DiarizedSegment -> {
-                        handleDiarizedSegment(event.segment)
-                    }
-
-                    is ServiceEvent.CompletionScheduled -> {
-                        handleCompletionScheduled()
-                    }
-
-                    is ServiceEvent.MeetingCompleted -> {
-                        handleMeetingCompleted(event.message)
-                    }
-
-                    is ServiceEvent.ParticipationRate -> {
-                        handleParticipationRate(event.rates)
-                    }
-
-                    is ServiceEvent.Feedback -> {
-                        handleFeedback(event.feedback)
-                    }
-
-                    is ServiceEvent.Summary -> {
-                        handleSummary(event.summary)
-                    }
-
-                    is ServiceEvent.Error -> {
-                        handleError(event.error)
-                    }
-
-                    is ServiceEvent.AgendaUpdated -> {
-                        handleAgendaUpdated(event.agendaId, event.isCompleted)
-                    }
-
-                    else -> {}
+                    is ServiceEvent.DiarizedSegment -> handleDiarizedSegment(event.segment)
+                    is ServiceEvent.CompletionScheduled -> handleCompletionScheduled()
+                    is ServiceEvent.MeetingCompleted -> handleMeetingCompleted(event.message)
+                    is ServiceEvent.ParticipationRate -> handleParticipationRate(event.rates)
+                    is ServiceEvent.Feedback -> handleFeedback(event.feedback)
+                    is ServiceEvent.Summary -> handleSummary(event.summary)
+                    is ServiceEvent.Error -> handleError(event.error)
+                    is ServiceEvent.AgendaUpdated -> handleAgendaUpdated(event.agendaId, event.isCompleted)
                 }
             }
         }
@@ -215,17 +178,15 @@ class MeetingInProgressViewModel @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun handleConnectionEstablishedFromService(
-        lastProcessedChunkId: Long,
         actualStartTime: String
     ) {
         Log.d(TAG, "========================================")
         Log.d(TAG, "[6단계] 연결 확립 처리 시작")
-        Log.d(TAG, "  - lastProcessedChunkId: $lastProcessedChunkId")
         Log.d(TAG, "  - actualStartTime: $actualStartTime")
         Log.d(TAG, "========================================")
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val startMillis = if (actualStartTime != null && actualStartTime.isNotBlank()) {
+                val startMillis = if (!actualStartTime.isNullOrBlank()) {
                     Log.d(TAG, "[6-1] actualStartTime 원본 값: $actualStartTime")
                     val calculated = DateTimeUtils.isoLocalDateTimeToMillis(actualStartTime)
                     val startTimeFormatted = DateTimeUtils.millisToHourMinute(calculated)
@@ -301,7 +262,7 @@ class MeetingInProgressViewModel @Inject constructor(
             
             val startMillis = updateStartTimeIfAvailable(meeting)
             if (startMillis != null) {
-                loadMeetingData(meetingId, startMillis)
+                //loadMeetingData(meetingId, startMillis)
             }
         }
     }
@@ -375,13 +336,19 @@ class MeetingInProgressViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun loadMeetingData(meetingId: Long, startMillis: Long) {
         coroutineScope {
-            val currentUserId = userStore.user.first()?.id
-            val segmentsDeferred = async { getSegmentsUseCase(meetingId, page = 0, size = 10000) }
+            val currentUserId = when (val result = getMyProfileUseCase()) {
+                is ApiResult.Success -> result.data.id
+                is ApiResult.Failure -> {
+                    Log.e(TAG, "현재 사용자 정보 조회 실패: ${result.message}")
+                    null
+                }
+            }
+            //val segmentsDeferred = async { getSegmentsUseCase(meetingId, page = 0, size = 10000) }
             val summariesDeferred = async { getSummariesUseCase(meetingId, isRecap = false, page = 0, size = 10000) }
             val participationDeferred = async { getParticipationRateHistoryUseCase(meetingId) }
             val feedbacksDeferred = async { getFeedbacksUseCase(meetingId, page = 0, size = 10000) }
 
-            loadSegments(segmentsDeferred.await(), startMillis, currentUserId)
+            //loadSegments(segmentsDeferred.await(), startMillis, currentUserId)
             loadSummaries(summariesDeferred.await(), startMillis)
             // 참가자 정보가 로드된 후 participation rate 로드
             loadParticipationRates(participationDeferred.await())
@@ -570,18 +537,13 @@ class MeetingInProgressViewModel @Inject constructor(
     }
 
     /**
-     * 마이크 토글 (Service에 전달)
+     * 마이크 토글 → EventSource 통해 Service 로 전달
      */
     @RequiresApi(Build.VERSION_CODES.O)
     fun toggleMic() {
         val wasEnabled = _micEnabled.value
         val newState = !wasEnabled
-
-        val intent = Intent(app, MeetingInProgressService::class.java).apply {
-            action = MeetingInProgressService.ACTION_TOGGLE_MIC
-        }
-        app.startService(intent)
-
+        meetingRealtimeEventSource.toggleMic()
         _micEnabled.value = newState
         Log.d(TAG, "마이크 토글: ${if (newState) "켜짐" else "꺼짐"}")
     }
@@ -626,21 +588,17 @@ class MeetingInProgressViewModel @Inject constructor(
     private fun handleDiarizedSegment(data: RealtimeSegmentDto?) {
         if (data == null) return
 
-        Log.d(
-            TAG, """
-            실시간 음성→텍스트:
-            - 시간: ${data.timestamp}
-            - 사용자: ${data.userId}
-            - 순서: ${data.order}
-            - 내용: ${data.text}
-        """.trimIndent()
-        )
-
         // state에 세그먼트 추가
         viewModelScope.launch {
             val currentState = state.value
             val startMillis = currentState.startTime
-            val currentUserId = userStore.user.first()?.id
+            val currentUserId = when (val result = getMyProfileUseCase()) {
+                is ApiResult.Success -> result.data.id
+                is ApiResult.Failure -> {
+                    Log.e(TAG, "현재 사용자 정보 조회 실패: ${result.message}")
+                    null
+                }
+            }
 
             if (startMillis > 0) {
                 val currentSegments = currentState.segments.toMutableList()
@@ -721,8 +679,8 @@ class MeetingInProgressViewModel @Inject constructor(
                 generatingMeetingNoteStore.clearGeneratingMeetingNoteId()
                 Log.d(TAG, "DataStore generatingMeetingNoteId 제거 완료: meetingId=$meetingId")
 
-                // 웹소켓과 Service 종료
-                disconnectAll()
+                // clearGeneratingMeetingNoteId 완료 후 웹소켓과 Service 종료
+                meetingRealtimeEventSource.stop()
                 Log.d(TAG, "회의록 생성 완료 후 연결 해제 및 Service 종료 완료")
             } catch (e: Exception) {
                 Log.e(TAG, "DataStore generatingMeetingNoteId 제거 실패: ${e.message}", e)
@@ -824,23 +782,15 @@ class MeetingInProgressViewModel @Inject constructor(
     // 연결 해제
     // ========================================
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun disconnectAll() {
-        // Service 중지
-        stopService()
-        Log.d(TAG, "모든 연결 해제 완료")
-    }
-
     /**
-     * Service 중지
+     * 모든 연결 해제 (Service / WebSocket / SSE)
      */
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun stopService() {
-        val intent = Intent(app, MeetingInProgressService::class.java).apply {
-            action = MeetingInProgressService.ACTION_STOP
+    fun disconnectAll() {
+        viewModelScope.launch {
+            meetingRealtimeEventSource.stop()
+            Log.d(TAG, "모든 연결 해제 완료")
         }
-        app.startService(intent)
-        Log.d(TAG, "Service 중지 요청")
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

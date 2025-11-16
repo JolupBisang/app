@@ -111,7 +111,6 @@ class WebSocketManager(
                         serviceScope.launch {
                             serviceEvents.emit(
                                 ServiceEvent.ConnectionEstablished(
-                                    lastProcessedChunkId = it.lastProcessedChunkId,
                                     actualStartTime = it.actualStartTime
                                 )
                             )
