@@ -248,42 +248,42 @@ class MeetingInProgressService : Service() {
         serviceScope.launch(Dispatchers.IO) {
             try {
                 // lastProcessedChunkId가 null이 아닐 때만 재전송 수행
-                if (lastProcessedChunkId != null) {
-                    // 재전송이 필요한 청크 확인 및 재전송
-                    Log.d(TAG, "[Service-WebSocket-4-1] 재전송 필요한 청크 확인 시작 (lastProcessedChunkId=$lastProcessedChunkId)")
-                    val savedChunks = if (::chunkRetransmitter.isInitialized) {
-                        chunkRetransmitter.getSavedChunksForRetransmission(lastProcessedChunkId)
-                    } else {
-                        emptyList()
-                    }
-                    Log.d(TAG, "[Service-WebSocket-4-1 완료] 재전송 필요한 청크: ${savedChunks.size}개")
-
-                    // 재전송이 필요한 경우 먼저 재전송 완료 후 녹음 시작
-                    if (savedChunks.isNotEmpty()) {
-                        Log.d(TAG, "[Service-WebSocket-4-2] 청크 재전송 시작 (녹음 시작 전)")
-                        chunkRetransmitter.retransmitMissingChunks(webSocket, savedChunks)
-                        Log.d(TAG, "[Service-WebSocket-4-2 완료] 청크 재전송 완료 - 이제 녹음 시작 가능")
-
-                        // 청크 ID 카운터를 재전송한 마지막 청크 다음으로 설정
-                        val lastRetransmittedId = savedChunks.maxOfOrNull { it.chunkId } ?: -1
-                        chunkIdCounter.set(lastRetransmittedId + 1)
-                        Log.d(TAG, "[Service-WebSocket-4-3] 청크 ID 카운터 설정: ${lastRetransmittedId + 1}")
-                    } else {
-                        Log.d(TAG, "[Service-WebSocket-4-2 스킵] 재전송 필요한 청크 없음 - 바로 녹음 시작 가능")
-                        // 청크 ID 카운터를 서버 기준으로 설정
-                        chunkIdCounter.set(lastProcessedChunkId + 1)
-                        Log.d(
-                            TAG,
-                            "[Service-WebSocket-4-3] 청크 ID 카운터 설정: ${lastProcessedChunkId + 1} (서버 기준)"
-                        )
-                    }
-                } else {
-                    // lastProcessedChunkId가 null이면 재전송 없이 바로 녹음 시작
-                    Log.d(TAG, "[Service-WebSocket-4-1 스킵] lastProcessedChunkId가 null이므로 재전송 없음 (첫 연결)")
-                    chunkIdCounter.set(0)
-                    Log.d(TAG, "[Service-WebSocket-4-3] 청크 ID 카운터 설정: 0 (첫 연결)")
-                }
-
+//                if (lastProcessedChunkId != null) {
+//                    // 재전송이 필요한 청크 확인 및 재전송
+//                    Log.d(TAG, "[Service-WebSocket-4-1] 재전송 필요한 청크 확인 시작 (lastProcessedChunkId=$lastProcessedChunkId)")
+//                    val savedChunks = if (::chunkRetransmitter.isInitialized) {
+//                        chunkRetransmitter.getSavedChunksForRetransmission(lastProcessedChunkId)
+//                    } else {
+//                        emptyList()
+//                    }
+//                    Log.d(TAG, "[Service-WebSocket-4-1 완료] 재전송 필요한 청크: ${savedChunks.size}개")
+//
+//                    // 재전송이 필요한 경우 먼저 재전송 완료 후 녹음 시작
+//                    if (savedChunks.isNotEmpty()) {
+//                        Log.d(TAG, "[Service-WebSocket-4-2] 청크 재전송 시작 (녹음 시작 전)")
+//                        chunkRetransmitter.retransmitMissingChunks(webSocket, savedChunks)
+//                        Log.d(TAG, "[Service-WebSocket-4-2 완료] 청크 재전송 완료 - 이제 녹음 시작 가능")
+//
+//                        // 청크 ID 카운터를 재전송한 마지막 청크 다음으로 설정
+//                        val lastRetransmittedId = savedChunks.maxOfOrNull { it.chunkId } ?: -1
+//                        chunkIdCounter.set(lastRetransmittedId + 1)
+//                        Log.d(TAG, "[Service-WebSocket-4-3] 청크 ID 카운터 설정: ${lastRetransmittedId + 1}")
+//                    } else {
+//                        Log.d(TAG, "[Service-WebSocket-4-2 스킵] 재전송 필요한 청크 없음 - 바로 녹음 시작 가능")
+//                        // 청크 ID 카운터를 서버 기준으로 설정
+//                        chunkIdCounter.set(lastProcessedChunkId + 1)
+//                        Log.d(
+//                            TAG,
+//                            "[Service-WebSocket-4-3] 청크 ID 카운터 설정: ${lastProcessedChunkId + 1} (서버 기준)"
+//                        )
+//                    }
+//                } else {
+//                    // lastProcessedChunkId가 null이면 재전송 없이 바로 녹음 시작
+//                    Log.d(TAG, "[Service-WebSocket-4-1 스킵] lastProcessedChunkId가 null이므로 재전송 없음 (첫 연결)")
+//                    chunkIdCounter.set(0)
+//                    Log.d(TAG, "[Service-WebSocket-4-3] 청크 ID 카운터 설정: 0 (첫 연결)")
+//                }
+                chunkIdCounter.set(0)
                 // 재전송 완료 후 실시간 녹음 시작
                 Log.d(TAG, "[Service-WebSocket-4-4] 재전송 완료 후 실시간 녹음 시작")
                 withContext(Dispatchers.Main) {

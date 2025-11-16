@@ -15,6 +15,7 @@ data class SummaryUi(
 )
 
 data class SegmentUi(
+    val order: Int, // 세그먼트 순서 (같은 order로 업데이트되는 경우 덮어쓰기 위해 필요)
     val timestamp: String,
     val text: String,
     val nickname: String,
