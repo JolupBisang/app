@@ -45,6 +45,7 @@ import com.imhungry.sillok.presentation.screen.meeting.component.CheckItem
 import com.imhungry.sillok.presentation.screen.meeting.component.Notification
 import com.imhungry.sillok.presentation.screen.meeting.component.TopSheet
 import com.imhungry.sillok.presentation.state.meeting.FeedbackUi
+import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.presentation.viewmodel.meeting.AgendaViewModel
 import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewModel
 import com.imhungry.sillok.ui.components.ScreenHeader
@@ -215,7 +216,44 @@ fun MeetingRecordScreen(
                             Spacer(modifier = Modifier.padding(top = 4.dp))
                         }
 
-                        ChatBubble(segment = message)
+                        // 마지막으로 타임스탬프를 표시한 메시지의 인덱스 찾기
+                        val lastTimestampIndex = remember(segments, index) {
+                            var lastIndex = 0 // 첫 번째 메시지는 항상 타임스탬프 표시
+                            for (i in 1 until index) {
+                                val seg = segments[i]
+                                val lastTimestampSeg = segments[lastIndex]
+                                    val currentMillis = DateTimeUtils.timeStringToMillis(seg.timestamp) ?: 0L
+                                    val lastTimestampMillis = DateTimeUtils.timeStringToMillis(lastTimestampSeg.timestamp) ?: 0L
+                                if (currentMillis > 0 && lastTimestampMillis > 0) {
+                                    val diffSeconds = (currentMillis - lastTimestampMillis) / 1000
+                                    // 마지막 타임스탬프 표시 메시지와 3초 이상 차이나면 타임스탬프 표시
+                                    if (diffSeconds >= 3) {
+                                        lastIndex = i
+                                    }
+                                }
+                            }
+                            lastIndex
+                        }
+
+                        // 현재 메시지와 마지막 타임스탬프 표시 메시지와의 시간 차이 계산
+                        val shouldShowTimestamp = remember(segments, index, lastTimestampIndex) {
+                            if (index == 0) {
+                                true // 첫 번째 메시지는 항상 표시
+                            } else {
+                                val currentMillis = DateTimeUtils.timeStringToMillis(message.timestamp) ?: 0L
+                                val lastTimestampMillis = DateTimeUtils.timeStringToMillis(segments[lastTimestampIndex].timestamp) ?: 0L
+                                if (currentMillis > 0 && lastTimestampMillis > 0) {
+                                    (currentMillis - lastTimestampMillis) / 1000 >= 3
+                                } else {
+                                    false
+                                }
+                            }
+                        }
+
+                        ChatBubble(
+                            segment = message,
+                            shouldShowTimestamp = shouldShowTimestamp
+                        )
 
                         if (index == segments.lastIndex) {
                             Spacer(modifier = Modifier.padding(bottom = 28.dp))

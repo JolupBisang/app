@@ -176,8 +176,75 @@ fun MeetingMinutesRecordScreen(
                         Spacer(modifier = Modifier.padding(top = 4.dp))
                     }
 
+                    // 마지막으로 타임스탬프를 표시한 메시지의 인덱스 찾기
+                    val lastTimestampIndex = remember(pagingItems, index) {
+                        var lastIndex = 0 // 첫 번째 메시지는 항상 타임스탬프 표시
+                        for (i in 1 until index) {
+                            val seg = pagingItems[i] ?: continue
+                            val lastTimestampSeg = pagingItems[lastIndex] ?: continue
+                            val prevSeg = if (i > 0) pagingItems[i - 1] else null
+                            val lastPrevSeg = if (lastIndex > 0) pagingItems[lastIndex - 1] else null
+                            
+                            val segUi = meetingMinutesViewModel.convertSegmentToUi(
+                                segment = seg,
+                                prevSegment = prevSeg,
+                                nextSegment = if (i < pagingItems.itemCount - 1) pagingItems[i + 1] else null,
+                                startMillis = state.startMillis,
+                                currentUserId = state.currentUserId
+                            )
+                            val lastTimestampSegUi = meetingMinutesViewModel.convertSegmentToUi(
+                                segment = lastTimestampSeg,
+                                prevSegment = lastPrevSeg,
+                                nextSegment = if (lastIndex < pagingItems.itemCount - 1) pagingItems[lastIndex + 1] else null,
+                                startMillis = state.startMillis,
+                                currentUserId = state.currentUserId
+                            )
+                            
+                            val currentMillis = DateTimeUtils.timeStringToMillis(segUi.timestamp) ?: 0L
+                            val lastTimestampMillis = DateTimeUtils.timeStringToMillis(lastTimestampSegUi.timestamp) ?: 0L
+                            if (currentMillis > 0 && lastTimestampMillis > 0) {
+                                val diffSeconds = (currentMillis - lastTimestampMillis) / 1000
+                                // 마지막 타임스탬프 표시 메시지와 3초 이상 차이나면 타임스탬프 표시
+                                if (diffSeconds >= 3) {
+                                    lastIndex = i
+                                }
+                            }
+                        }
+                        lastIndex
+                    }
+
+                    // 현재 메시지와 마지막 타임스탬프 표시 메시지와의 시간 차이 계산
+                    val shouldShowTimestamp = remember(pagingItems, index, lastTimestampIndex, state.startMillis, state.currentUserId) {
+                        if (index == 0) {
+                            true // 첫 번째 메시지는 항상 표시
+                        } else {
+                            val lastTimestampSeg = pagingItems[lastTimestampIndex]
+                            if (lastTimestampSeg != null) {
+                                val lastPrevSeg = if (lastTimestampIndex > 0) pagingItems[lastTimestampIndex - 1] else null
+                                val lastTimestampSegUi = meetingMinutesViewModel.convertSegmentToUi(
+                                    segment = lastTimestampSeg,
+                                    prevSegment = lastPrevSeg,
+                                    nextSegment = if (lastTimestampIndex < pagingItems.itemCount - 1) pagingItems[lastTimestampIndex + 1] else null,
+                                    startMillis = state.startMillis,
+                                    currentUserId = state.currentUserId
+                                )
+                                
+                                val currentMillis = DateTimeUtils.timeStringToMillis(segmentUi.timestamp) ?: 0L
+                                val lastTimestampMillis = DateTimeUtils.timeStringToMillis(lastTimestampSegUi.timestamp) ?: 0L
+                                if (currentMillis > 0 && lastTimestampMillis > 0) {
+                                    (currentMillis - lastTimestampMillis) / 1000 >= 3
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        }
+                    }
+
                     ChatBubble(
                         segment = segmentUi,
+                        shouldShowTimestamp = shouldShowTimestamp,
                         highlighted = (isPlaying || playbackPosition > 0) && index == currentSegmentIndex,
                         onSegmentClick = { clickedTimestamp ->
                             val seekMillis = DateTimeUtils.timeStringToMillis(clickedTimestamp)

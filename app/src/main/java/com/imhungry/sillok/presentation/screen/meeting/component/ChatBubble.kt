@@ -1,5 +1,7 @@
 package com.imhungry.sillok.presentation.screen.meeting.component
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.imhungry.sillok.presentation.state.meeting.SegmentUi
+import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.ui.theme.brown200
 import com.imhungry.sillok.ui.theme.brown500
 import com.imhungry.sillok.ui.theme.green300
@@ -40,12 +43,15 @@ import com.imhungry.sillok.ui.theme.placeHolder
 import com.imhungry.sillok.ui.theme.primaryTextColor
 import com.imhungry.sillok.ui.theme.tertiary
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ChatBubble(
     segment: SegmentUi,
+    shouldShowTimestamp: Boolean = false,
     highlighted: Boolean = false,
     onSegmentClick: ((String) -> Unit)? = null
 ) {
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -62,22 +68,23 @@ fun ChatBubble(
         }
 
         if (segment.isFromCurrentUser) {
-            MyMessage(segment, highlighted)
+            MyMessage(segment, highlighted, shouldShowTimestamp)
         } else {
-            OthersMessage(segment, highlighted)
+            OthersMessage(segment, highlighted, shouldShowTimestamp)
         }
     }
 }
 
 @Composable
-private fun MyMessage(segment: SegmentUi, highlighted: Boolean) {
+private fun MyMessage(segment: SegmentUi, highlighted: Boolean, shouldShowTimestamp: Boolean) {
     Column(horizontalAlignment = Alignment.End) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.Bottom
         ) {
-            if (!segment.isSameAsNext) {
+            // 이전 메시지와 3초 이상 차이나면 타임스탬프 표시
+            if (shouldShowTimestamp) {
                 TimestampText(
                     time = segment.timestamp,
                     modifier = Modifier
@@ -104,7 +111,8 @@ private fun MyMessage(segment: SegmentUi, highlighted: Boolean) {
 @Composable
 private fun OthersMessage(
     segment: SegmentUi,
-    highlighted: Boolean
+    highlighted: Boolean,
+    shouldShowTimestamp: Boolean
 ) {
     Row(verticalAlignment = Alignment.Top) {
         if (!segment.isSameAsPrevious) {
@@ -140,7 +148,8 @@ private fun OthersMessage(
                         ),
                         highlighted = highlighted
                     )
-                    if (!segment.isSameAsNext) {
+                    // 이전 메시지와 3초 이상 차이나면 타임스탬프 표시
+                    if (shouldShowTimestamp || !segment.isSameAsNext) {
                         Spacer(modifier = Modifier.width(2.dp))
                         TimestampText(
                             time = segment.timestamp,
@@ -167,7 +176,8 @@ private fun OthersMessage(
                     ),
                     highlighted = highlighted
                 )
-                if (!segment.isSameAsNext) {
+                // 이전 메시지와 3초 이상 차이나면 타임스탬프 표시
+                if (shouldShowTimestamp) {
                     Spacer(modifier = Modifier.width(4.dp))
                     TimestampText(
                         time = segment.timestamp,
