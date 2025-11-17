@@ -39,6 +39,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -86,12 +87,22 @@ fun MeetingFormScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val participantsFocusRequester = remember { FocusRequester() }
+    val locationFocusRequester = remember { FocusRequester() }
 
     // 편집 모드일 때 기존 회의 데이터 로드
     LaunchedEffect(isEditMode, meetingId) {
         if (isEditMode && meetingId != null) {
             viewModel.setEditMode(meetingId)
+        }
+    }
+
+    // TeamSearchDialog가 열릴 때 키보드 닫기
+    LaunchedEffect(state.showTeamSearchDialog) {
+        if (state.showTeamSearchDialog) {
+            focusManager.clearFocus()
+            keyboardController?.hide()
         }
     }
 
@@ -414,6 +425,9 @@ fun MeetingFormScreen(
                                                     viewModel.onEvent(
                                                         MeetingFormEvent.TimePickerShown
                                                     )
+                                                },
+                                                onTimeComplete = {
+                                                    locationFocusRequester.requestFocus()
                                                 }
                                             )
                                             // 시간 에러 메시지
@@ -529,7 +543,8 @@ fun MeetingFormScreen(
                                                                         it
                                                                     )
                                                                 )
-                                                            }
+                                                            },
+                                                            focusRequester = locationFocusRequester
                                                         )
                                                         // 장소 에러 메시지
                                                         if (state.showValidationErrors && state.validationErrors.containsKey(

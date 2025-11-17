@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
@@ -52,7 +54,8 @@ fun InputField(
     ),
     onTextFieldValueChange: ((TextFieldValue) -> Unit)? = null,
     isReadOnly: Boolean = false,
-    onImeDone: (() -> Unit)? = null
+    onImeDone: (() -> Unit)? = null,
+    focusRequester: FocusRequester? = null
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -83,7 +86,14 @@ fun InputField(
                 .weight(1f)
                 .clip(RoundedCornerShape(4.dp))
                 .border(1.dp, border, RoundedCornerShape(4.dp))
-                .padding(horizontal = 12.dp, vertical = 9.dp),
+                .padding(horizontal = 12.dp, vertical = 9.dp)
+                .then(
+                    if (focusRequester != null) {
+                        Modifier.focusRequester(focusRequester)
+                    } else {
+                        Modifier
+                    }
+                ),
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 imeAction = ImeAction.Done

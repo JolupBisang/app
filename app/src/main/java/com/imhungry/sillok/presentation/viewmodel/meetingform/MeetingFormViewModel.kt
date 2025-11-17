@@ -767,8 +767,15 @@ class MeetingFormViewModel @Inject constructor(
                 // 선택된 팀 ID 리스트 (팀이 없으면 빈 리스트)
                 val teamIds = s.selectedTeams.map { it.teamId }
 
+                // 제목이 비어있으면 placeholder 텍스트 사용
+                val meetingTitle = if (s.title.trim().isEmpty()) {
+                    "${s.userName}님의 회의"
+                } else {
+                    s.title
+                }
+
                 val request = CreateMeetingRequest(
-                    title = s.title,
+                    title = meetingTitle,
                     location = s.location,
                     scheduledStartTime = scheduledStartTime,
                     targetTime = targetTime,
@@ -850,8 +857,15 @@ class MeetingFormViewModel @Inject constructor(
                 val restDuration = s.breakDuration.toIntOrNull() ?: 0
                 val agendas = s.agendas
 
+                // 제목이 비어있으면 placeholder 텍스트 사용
+                val meetingTitle = if (s.title.trim().isEmpty()) {
+                    "${s.userName}님의 회의"
+                } else {
+                    s.title
+                }
+
                 val updateReq = MeetingUpdateReqDto(
-                    title = s.title,
+                    title = meetingTitle,
                     location = s.location,
                     scheduledStartTime = scheduledStartTime,
                     targetTime = targetTime,
@@ -1106,9 +1120,9 @@ class MeetingFormViewModel @Inject constructor(
     private fun validateForm() {
         val errors = mutableMapOf<String, String>()
 
-        if (_state.value.title.trim().isEmpty()) {
-            errors["title"] = "제목을 입력해주세요"
-        }
+//        if (_state.value.title.trim().isEmpty()) {
+//            errors["title"] = "제목을 입력해주세요"
+//        }
 
 //        if (_state.value.participantEmails.isEmpty()) {
 //            errors["participants"] = "참석자를 한 명 이상 추가해주세요"
