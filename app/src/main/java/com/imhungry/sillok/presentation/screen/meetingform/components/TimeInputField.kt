@@ -61,10 +61,12 @@ fun TimeInputField(
     onTimePickerDismiss: () -> Unit = {},
     onStartTimeClick: () -> Unit = {},
     onEndTimeClick: () -> Unit = {},
+    onTimeComplete: () -> Unit = {},
     isReadOnly: Boolean = false
 ) {
     var editingField by remember { mutableStateOf<TimeField?>(null) }
     var wasEditingStartTime by remember { mutableStateOf(false) }
+    var previousEndTime by remember { mutableStateOf(endTime) }
 
     // 시작 시간과 종료 시간으로부터 목표 시간 자동 계산
     LaunchedEffect(startTime, endTime, showTimePicker) {
@@ -104,6 +106,15 @@ fun TimeInputField(
             }
         } else if (!showTimePicker && !wasEditingStartTime) {
             editingField = null
+            // 종료 시간이 변경되고 TimePicker가 닫혔을 때, 시작 시간과 종료 시간이 모두 입력되었는지 확인
+            if (endTime != previousEndTime && endTime.isNotEmpty() && endTime.length >= 4 &&
+                startTime.isNotEmpty() && startTime.length >= 4
+            ) {
+                previousEndTime = endTime
+                onTimeComplete()
+            } else if (endTime != previousEndTime) {
+                previousEndTime = endTime
+            }
         }
     }
 
