@@ -174,99 +174,99 @@ fun TeamDetailScreen(
                         }
 
                         // 한줄소개 섹션
-                        item {
-                            Spacer(Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                if (isEditingDescription) {
-                                    BasicTextField(
-                                        value = editedDescription,
-                                        onValueChange = { newValue ->
-                                            if (newValue.text.length <= 50) {
-                                                editedDescription = newValue
-                                            }
-                                        },
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .focusRequester(descriptionFocusRequester)
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .padding(end = 6.dp),
-                                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.Medium,
-                                            fontSize = 14.sp
-                                        ),
-                                        maxLines = 2,
-                                        keyboardOptions = KeyboardOptions(
-                                            imeAction = ImeAction.Done
-                                        ),
-                                        keyboardActions = KeyboardActions(
-                                            onDone = {
-                                                viewModel.updateTeamDescription(editedDescription.text)
-                                                isEditingDescription = false
-                                                focusManager.clearFocus()
-                                                keyboardController?.hide()
-                                            }
-                                        ),
-                                        decorationBox = { innerTextField ->
-                                            if (editedDescription.text.isEmpty()) {
-                                                Text(
-                                                    text = "한줄소개(50자)",
-                                                    color = gray400,
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    fontWeight = FontWeight.Medium,
-                                                    fontSize = 14.sp
-                                                )
-                                            }
-                                            innerTextField()
-                                        }
-                                    )
-                                } else {
-                                Text(
-                                        text = state.teamDescription.ifEmpty { "한줄소개(50자)" },
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 14.sp,
-                                    color = gray200,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                }
-                                Box(
-                                    modifier = Modifier.size(30.dp),
-                                    contentAlignment = Alignment.BottomCenter
-                                ) {
-                                    Image(
-                                        painter = painterResource(
-                                            id = if (isEditingDescription) R.drawable.save else R.drawable.edit
-                                        ),
-                                        contentDescription = if (isEditingDescription) "저장" else "편집",
-                                        modifier = Modifier
-                                            .size(16.dp)
-                                            .clickable(
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null
-                                            ) {
-                                                if (isEditingDescription) {
-                                                    // 저장
-                                                    viewModel.updateTeamDescription(editedDescription.text)
-                                                    isEditingDescription = false
-                                                    focusManager.clearFocus()
-                                                    keyboardController?.hide()
-                                                } else {
-                                                    // 편집 모드 시작 - 커서를 텍스트 끝에 위치
-                                                    val text = state.teamDescription
-                                                    editedDescription = TextFieldValue(
-                                                        text = text,
-                                                        selection = TextRange(text.length)
-                                                    )
-                                                    isEditingDescription = true
-                                                }
-                                            }
-                                    )
-                                }
-                            }
-                        }
+//                        item {
+//                            Spacer(Modifier.height(4.dp))
+//                            Row(
+//                                modifier = Modifier.fillMaxWidth(),
+//                                verticalAlignment = Alignment.CenterVertically
+//                            ) {
+//                                if (isEditingDescription) {
+//                                    BasicTextField(
+//                                        value = editedDescription,
+//                                        onValueChange = { newValue ->
+//                                            if (newValue.text.length <= 50) {
+//                                                editedDescription = newValue
+//                                            }
+//                                        },
+//                                        modifier = Modifier
+//                                            .weight(1f)
+//                                            .focusRequester(descriptionFocusRequester)
+//                                            .clip(RoundedCornerShape(4.dp))
+//                                            .padding(end = 6.dp),
+//                                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+//                                            fontWeight = FontWeight.Medium,
+//                                            fontSize = 14.sp
+//                                        ),
+//                                        maxLines = 2,
+//                                        keyboardOptions = KeyboardOptions(
+//                                            imeAction = ImeAction.Done
+//                                        ),
+//                                        keyboardActions = KeyboardActions(
+//                                            onDone = {
+//                                                viewModel.updateTeamDescription(editedDescription.text)
+//                                                isEditingDescription = false
+//                                                focusManager.clearFocus()
+//                                                keyboardController?.hide()
+//                                            }
+//                                        ),
+//                                        decorationBox = { innerTextField ->
+//                                            if (editedDescription.text.isEmpty()) {
+//                                                Text(
+//                                                    text = "한줄소개(50자)",
+//                                                    color = gray400,
+//                                                    style = MaterialTheme.typography.bodyMedium,
+//                                                    fontWeight = FontWeight.Medium,
+//                                                    fontSize = 14.sp
+//                                                )
+//                                            }
+//                                            innerTextField()
+//                                        }
+//                                    )
+//                                } else {
+//                                Text(
+//                                        text = state.teamDescription.ifEmpty { "한줄소개(50자)" },
+//                                    style = MaterialTheme.typography.bodyMedium,
+//                                    fontWeight = FontWeight.Medium,
+//                                    fontSize = 14.sp,
+//                                    color = gray200,
+//                                    modifier = Modifier.weight(1f)
+//                                )
+//                                }
+//                                Box(
+//                                    modifier = Modifier.size(30.dp),
+//                                    contentAlignment = Alignment.BottomCenter
+//                                ) {
+//                                    Image(
+//                                        painter = painterResource(
+//                                            id = if (isEditingDescription) R.drawable.save else R.drawable.edit
+//                                        ),
+//                                        contentDescription = if (isEditingDescription) "저장" else "편집",
+//                                        modifier = Modifier
+//                                            .size(16.dp)
+//                                            .clickable(
+//                                                interactionSource = remember { MutableInteractionSource() },
+//                                                indication = null
+//                                            ) {
+//                                                if (isEditingDescription) {
+//                                                    // 저장
+//                                                    viewModel.updateTeamDescription(editedDescription.text)
+//                                                    isEditingDescription = false
+//                                                    focusManager.clearFocus()
+//                                                    keyboardController?.hide()
+//                                                } else {
+//                                                    // 편집 모드 시작 - 커서를 텍스트 끝에 위치
+//                                                    val text = state.teamDescription
+//                                                    editedDescription = TextFieldValue(
+//                                                        text = text,
+//                                                        selection = TextRange(text.length)
+//                                                    )
+//                                                    isEditingDescription = true
+//                                                }
+//                                            }
+//                                    )
+//                                }
+//                            }
+//                        }
 
                         // 멤버 섹션
                         item {
