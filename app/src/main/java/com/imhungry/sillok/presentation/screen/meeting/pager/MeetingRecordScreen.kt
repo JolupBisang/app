@@ -21,6 +21,10 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,12 +54,14 @@ import com.imhungry.sillok.presentation.util.DateTimeUtils
 import com.imhungry.sillok.presentation.viewmodel.meeting.AgendaViewModel
 import com.imhungry.sillok.presentation.viewmodel.meeting.MeetingInProgressViewModel
 import com.imhungry.sillok.ui.components.ScreenHeader
+import com.imhungry.sillok.ui.components.SillokInfoDialog
 import com.imhungry.sillok.ui.theme.gray400
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
+@OptIn(ExperimentalMaterialApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun MeetingRecordScreen(
@@ -68,6 +75,7 @@ fun MeetingRecordScreen(
     val agendas = state.agendas
     val segments = state.segments
     val feedbacks = state.feedbacks
+    val isHost = state.isHost
     val scheduledFeedback by meetingInProgressViewModel.scheduledFeedback.collectAsState()
     val restBreakPeriods by meetingInProgressViewModel.restBreakPeriods.collectAsState()
     val isTopSheetExpanded by agendaViewModel.isTopSheetExpanded
@@ -75,9 +83,29 @@ fun MeetingRecordScreen(
     val peekIndex = if (firstUncheckedIndex == -1) agendas.lastIndex else firstUncheckedIndex
     val listState = rememberLazyListState()
     val topSheetHeightPx = remember { mutableStateOf(0) }
+    val coroutineScope = rememberCoroutineScope()
 
     var autoScrollEnabled by remember { mutableStateOf(true) }
-    val NEAR_BOTTOM_THRESHOLD = 3 // 마지막 아이템에서 5개 위까지는 자동 스크롤 허용
+    val NEAR_BOTTOM_THRESHOLD = 3 // 마지막 아이템에서 3개 위까지는 자동 스크롤 허용
+    
+    // Pull-to-Refresh 상태
+    var isRefreshing by remember { mutableStateOf(false) }
+    
+    // 호스트가 아닐 때 표시할 다이얼로그 상태
+    var showHostOnlyDialog by remember { mutableStateOf(false) }
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = {
+            coroutineScope.launch {
+                isRefreshing = true
+                try {
+                    meetingInProgressViewModel.loadPreviousSegments()
+                } finally {
+                    isRefreshing = false
+                }
+            }
+        }
+    )
 
     // 표시할 피드백 추적
     var displayedFeedback by remember { mutableStateOf<FeedbackUi?>(null) }
@@ -92,7 +120,7 @@ fun MeetingRecordScreen(
         val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
         val lastItemIndex = segments.lastIndex
         
-        // 마지막에서 5개 이내에 있으면 자동 스크롤 활성화
+        // 마지막에서 3개 이내에 있으면 자동 스크롤 활성화
         val distanceFromBottom = lastItemIndex - lastVisibleIndex
         autoScrollEnabled = distanceFromBottom <= NEAR_BOTTOM_THRESHOLD
     }
@@ -177,11 +205,15 @@ fun MeetingRecordScreen(
                             checked = agendas[peekIndex].isCompleted,
                             isFocused = !agendas[peekIndex].isCompleted,
                             onToggle = {
-                                meetingInProgressViewModel.changeAgendaStatus(
-                                    meetingId,
-                                    agendas[peekIndex].agendaId,
-                                    !agendas[peekIndex].isCompleted
-                                )
+                                if (isHost) {
+                                    meetingInProgressViewModel.changeAgendaStatus(
+                                        meetingId,
+                                        agendas[peekIndex].agendaId,
+                                        !agendas[peekIndex].isCompleted
+                                    )
+                                } else {
+                                    showHostOnlyDialog = true
+                                }
                             }
                         )
                     },
@@ -195,11 +227,15 @@ fun MeetingRecordScreen(
                                     checked = item.isCompleted,
                                     isFocused = !item.isCompleted && firstUncheckedIndex == i,
                                     onToggle = {
-                                        meetingInProgressViewModel.changeAgendaStatus(
-                                            meetingId,
-                                            item.agendaId,
-                                            !item.isCompleted
-                                        )
+                                        if (isHost) {
+                                            meetingInProgressViewModel.changeAgendaStatus(
+                                                meetingId,
+                                                item.agendaId,
+                                                !item.isCompleted
+                                            )
+                                        } else {
+                                            showHostOnlyDialog = true
+                                        }
                                     }
                                 )
                             }
@@ -214,12 +250,16 @@ fun MeetingRecordScreen(
                 )
             }
 
-            LazyColumn(
-                state = listState,
+            Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
+                    .pullRefresh(pullRefreshState)
             ) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize()
+                ) {
                 itemsIndexed(segments) { index, message ->
                     if (message.text.isNotBlank()) {
                         if (index == 0) {
@@ -300,6 +340,14 @@ fun MeetingRecordScreen(
                         }
                     }
                 }
+                }
+                
+                // Pull-to-Refresh 인디케이터
+                PullRefreshIndicator(
+                    refreshing = isRefreshing,
+                    state = pullRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
             }
         }
 
@@ -371,6 +419,14 @@ fun MeetingRecordScreen(
                 }
             }
         }
+        
+        // 호스트가 아닐 때 표시할 다이얼로그
+        SillokInfoDialog(
+            visible = showHostOnlyDialog,
+            message = "안건 상태 변경은 호스트만 가능합니다.",
+            confirmText = "확인",
+            onConfirm = { showHostOnlyDialog = false }
+        )
     }
 }
 

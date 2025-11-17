@@ -107,11 +107,11 @@ fun WaitingRoomScreen(
                                 checked = item.isCompleted,
                                 isFocused = !item.isCompleted,
                                 onToggle = {
-                                    waitingRoomViewModel.changeAgendaStatus(
-                                        meetingId,
-                                        item.agendaId,
-                                        !item.isCompleted
-                                    )
+//                                    waitingRoomViewModel.changeAgendaStatus(
+//                                        meetingId,
+//                                        item.agendaId,
+//                                        !item.isCompleted
+//                                    )
                                 }
                             )
                         }
@@ -126,11 +126,11 @@ fun WaitingRoomScreen(
                                     checked = item.isCompleted,
                                     isFocused = !item.isCompleted && firstUncheckedIndex == i,
                                     onToggle = {
-                                        waitingRoomViewModel.changeAgendaStatus(
-                                            meetingId,
-                                            item.agendaId,
-                                            !item.isCompleted
-                                        )
+//                                        waitingRoomViewModel.changeAgendaStatus(
+//                                            meetingId,
+//                                            item.agendaId,
+//                                            !item.isCompleted
+//                                        )
                                     }
                                 )
                             }
