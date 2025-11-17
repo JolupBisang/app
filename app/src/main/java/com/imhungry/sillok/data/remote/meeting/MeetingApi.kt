@@ -5,6 +5,7 @@ import com.imhungry.sillok.data.model.meeting.MeetingCreationResDto
 import com.imhungry.sillok.data.model.meeting.MeetingDetailResDto
 import com.imhungry.sillok.data.model.meeting.MeetingDetailSummaryResDto
 import com.imhungry.sillok.data.model.meeting.MeetingDetailUpdateResDto
+import com.imhungry.sillok.data.model.meeting.MeetingListResDto
 import com.imhungry.sillok.data.model.meeting.MeetingReqDto
 import com.imhungry.sillok.data.model.meeting.MeetingSearchSliceResDto
 import com.imhungry.sillok.data.model.meeting.MeetingStatusChangeResDto
@@ -38,7 +39,7 @@ interface MeetingApi {
     suspend fun getMeetings(
         @Query("year") year: Int,
         @Query("month") month: Int
-    ): Response<List<MeetingDetailSummaryResDto>>
+    ): Response<MeetingListResDto>
 
     @PUT("/api/v1/meetings/{meetingId}/status")
     suspend fun updateMeetingStatus(

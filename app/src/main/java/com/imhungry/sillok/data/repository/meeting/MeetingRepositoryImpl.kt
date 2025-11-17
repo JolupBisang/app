@@ -65,9 +65,13 @@ class MeetingRepositoryImpl @Inject constructor(
             try {
                 val res = api.getMeetings(year, month)
                 if (res.isSuccessful) {
-                    val dtoList = res.body()
-                    val summaries = dtoList?.map { mapper.toMeetingSummary(it) } ?: emptyList()
-                    ApiResult.Success(summaries)
+                    val dto = res.body()
+                    if (dto != null) {
+                        val summaries = dto.content.map { mapper.toMeetingSummary(it) }
+                        ApiResult.Success(summaries)
+                    } else {
+                        ApiResult.Failure("응답 파싱 오류")
+                    }
                 } else {
                     ApiResult.Failure(res.message())
                 }
