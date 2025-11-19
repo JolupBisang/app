@@ -37,6 +37,15 @@ interface MeetingApi {
 
     @GET("/api/v1/meetings")
     suspend fun getMeetings(
+        @Query("year") year: Int? = null,
+        @Query("month") month: Int? = null,
+        @Query("title") title: String? = null,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<MeetingSearchSliceResDto>
+
+    @GET("/api/v1/meetings")
+    suspend fun getMeetings2(
         @Query("year") year: Int,
         @Query("month") month: Int
     ): Response<MeetingListResDto>
@@ -71,7 +80,7 @@ interface MeetingApi {
         @Body request: TeamTagRemovalReqDto
     ): Response<TeamTagRemovalResDto>
 
-    @GET("/api/v1/meetings/search")
+    @GET("/api/v1/meetings")
     suspend fun searchMeetings(
         @Query("title") title: String,
         @Query("page") page: Int = 0,
