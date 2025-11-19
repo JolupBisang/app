@@ -2,6 +2,7 @@ package com.imhungry.sillok.data.mapper.user
 
 import com.imhungry.sillok.data.model.user.UserInfoResDto
 import com.imhungry.sillok.domain.model.user.User
+import com.imhungry.sillok.presentation.util.ProfileUtils
 import javax.inject.Inject
 
 class UserMapper @Inject constructor() {
@@ -10,7 +11,7 @@ class UserMapper @Inject constructor() {
             id = dto.id,
             email = dto.email,
             nickname = dto.nickname,
-            pictureURL = dto.pictureURL ?: "" // null일 경우 빈 문자열로 처리
+            pictureURL = dto.pictureURL ?: ProfileUtils.getProfileImagesForUser(dto.id)
         )
     }
 }
