@@ -150,8 +150,8 @@ fun HomeScreen(
 
     SillokInfoDialog(
         visible = homeState.showGeneratingMeetingNoteDialog,
-        message = "회의록을 생성하는 중입니다",
-        confirmText = "확인",
+        message = "음성 데이터 처리 중입니다.\n잠시 후 다시 시도해주세요.",
+        confirmText = "돌아가기",
         onConfirm = {
             viewModel.dismissGeneratingMeetingNoteDialog()
         }
@@ -396,7 +396,7 @@ private fun rememberGradientBrush(
     when {
         ongoingList.isNotEmpty() && showOngoingMeeting -> gradientBrush2
         upcomingList.isNotEmpty() && showScheduledMeeting -> gradientBrush3
-        else -> gradientBrush2
+        else -> null // 둘 다 없을 때는 gradientBrush 표시 안 함
     }
 }
 

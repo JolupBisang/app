@@ -17,6 +17,7 @@ import com.imhungry.sillok.domain.model.user.User
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingSummaryListUseCase
 import com.imhungry.sillok.domain.usecase.meeting.SearchMeetingsUseCase
 import com.imhungry.sillok.domain.usecase.user.GetMyProfileUseCase
+import com.imhungry.sillok.domain.usecase.audio.GetAudioListUseCase
 import com.imhungry.sillok.presentation.state.home.HomeState
 import com.imhungry.sillok.presentation.state.home.MeetingUi
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.imhungry.sillok.data.paging.MeetingPagingSource
+import com.imhungry.sillok.domain.usecase.meeting.GetMeetingListUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,9 +40,10 @@ import javax.inject.Inject
 @RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getMeetingSummaryListUseCase: GetMeetingSummaryListUseCase,
+    private val getMeetingSummaryListUseCase: GetMeetingListUseCase,
     private val searchMeetingsUseCase: SearchMeetingsUseCase,
     private val getMyProfileUseCase: GetMyProfileUseCase,
+    private val getAudioListUseCase: GetAudioListUseCase,
     private val dismissedMeetingStore: DismissedMeetingStore,
     private val generatingMeetingNoteStore: GeneratingMeetingNoteStore,
     private val tokenStore: TokenStore,
@@ -139,21 +142,52 @@ class HomeViewModel @Inject constructor(
         _state.update { it.copy(showGeneratingMeetingNoteDialog = false) }
     }
 
+    fun dismissMergingAudioDialog() {
+        _state.update { it.copy(showMergingAudioDialog = false) }
+    }
+
     fun onMeetingClick(meetingId: Long, onNavigate: (Long) -> Unit) {
         viewModelScope.launch {
             try {
-                val generatingMeetingNoteId = generatingMeetingNoteStore.getGeneratingMeetingNoteId()
-
-                if (generatingMeetingNoteId != null && generatingMeetingNoteId == meetingId) {
-                    // 회의록 생성 중이면 다이얼로그 표시
-                    _state.update { it.copy(showGeneratingMeetingNoteDialog = true) }
-                } else {
-                    // 회의록 생성 중이 아니면 바로 이동
+                // 현재 state에서 회의 상태 확인
+                val currentState = _state.value
+                val meeting = (currentState.meetings + currentState.ongoingMeetings + currentState.upcomingMeetings)
+                    .find { it.id == meetingId }
+                
+                // 완료된 회의가 아니면 바로 이동
+                val isCompleted = meeting?.status?.let { 
+                    MeetingStatus.from(it) == MeetingStatus.COMPLETED 
+                } ?: false
+                
+                if (!isCompleted) {
                     onNavigate(meetingId)
+                    return@launch
+                }
+                
+                // 완료된 회의만 오디오 목록 조회
+                when (val audioResult = getAudioListUseCase(meetingId)) {
+                    is ApiResult.Success -> {
+                        val audioList = audioResult.data
+                        // 오디오 목록이 비어있거나 모든 presignedUrl이 비어있는지 확인
+                        val hasValidAudio = audioList.isNotEmpty() && 
+                            audioList.any { it.presignedUrl.isNotBlank() }
+                        
+                        if (!hasValidAudio) {
+                            // 오디오를 병합하는 중 다이얼로그 표시
+                            _state.update { it.copy(showGeneratingMeetingNoteDialog = true) }
+                        } else {
+                            onNavigate(meetingId)
+                        }
+                    }
+                    is ApiResult.Failure -> {
+                        Log.e(TAG, "오디오 목록 조회 실패: ${audioResult.message}")
+                        // 오디오 조회 실패 시에도 다이얼로그 표시 (병합 중일 가능성)
+                        _state.update { it.copy(showGeneratingMeetingNoteDialog = true) }
+                    }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "회의록 생성 상태 확인 실패: ${e.message}")
-                // 에러 발생 시에도 이동 허용
+                Log.e(TAG, "회의 클릭 처리 중 예외 발생: ${e.message}", e)
+                // 예외 발생 시에는 바로 이동 (안전을 위해)
                 onNavigate(meetingId)
             }
         }
