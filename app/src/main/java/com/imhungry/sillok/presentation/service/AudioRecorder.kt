@@ -21,6 +21,7 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
+import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.coroutineContext
@@ -160,7 +161,7 @@ class AudioRecorder(
                 put("type", "AUDIO_CHUNK")
                 put("chunkId", chunkId)
                 put("encoding", "audio/pcm")
-                put("timestamp", DateTimeUtils.getCurrentTime())
+                put("timestamp", LocalDateTime.now())
             }
 
             val metaBytes = metaJson.toString().toByteArray(Charsets.UTF_8)
@@ -186,8 +187,15 @@ class AudioRecorder(
             // 로컬 파일로 저장
             packetDir?.let { dir ->
                 try {
+                    // 오디오 데이터 저장
                     val audioFile = File(dir, "chunk_${chunkId}.pcm")
                     FileOutputStream(audioFile).use { it.write(audioData) }
+                    
+                    // 메타데이터 JSON 저장
+                    val metaFile = File(dir, "chunk_${chunkId}.json")
+                    FileOutputStream(metaFile).use { 
+                        it.write(metaJson.toString().toByteArray(Charsets.UTF_8))
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "[Audio-Chunk-저장실패] 청크 파일 저장 실패: chunkId=$chunkId, ${e.message}", e)
                 }
