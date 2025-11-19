@@ -25,7 +25,7 @@ class SegmentPagingSource(
 
             Log.d(TAG, "load: page=$page, loadSize=$loadSize, meetingId=$meetingId")
 
-            when (val result = getSegmentsUseCase(meetingId, page, loadSize)) {
+            when (val result = getSegmentsUseCase(meetingId, page, loadSize, "asc")) {
                 is ApiResult.Success -> {
                     val segments = result.data
 

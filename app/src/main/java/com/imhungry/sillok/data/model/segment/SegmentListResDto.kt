@@ -8,7 +8,8 @@ data class SegmentListResDto(
     val numberOfElements: Int,
     val first: Boolean,
     val last: Boolean,
-    val empty: Boolean
+    val empty: Boolean,
+    val totalElements: Long? = null  // 전체 요소 개수 (서버에서 제공하는 경우)
 )
 
 data class SegmentItemDto(

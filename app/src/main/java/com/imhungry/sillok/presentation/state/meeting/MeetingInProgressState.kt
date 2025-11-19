@@ -6,23 +6,26 @@ import com.imhungry.sillok.domain.model.participation.UserParticipationRate
 data class FeedbackUi(
     val comment: String,
     val timestamp: String,
-    val isRead: Boolean = false
+    val isRead: Boolean = false,
+    val millis: Long = 0L
 )
 
 data class SummaryUi(
     val content: String,
-    val timestamp: String
+    val timestamp: String,
+    val millis: Long = 0L
 )
 
 data class SegmentUi(
-    val order: Int, // 세그먼트 순서 (같은 order로 업데이트되는 경우 덮어쓰기 위해 필요)
+    val order: Int,
     val timestamp: String,
     val text: String,
     val nickname: String,
     val profileImage: String,
     val isFromCurrentUser: Boolean,
     val isSameAsPrevious: Boolean,
-    val isSameAsNext: Boolean
+    val isSameAsNext: Boolean,
+    val millis: Long = 0L
 )
 
 data class MeetingInProgressState(

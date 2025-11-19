@@ -84,7 +84,7 @@ private fun MyMessage(segment: SegmentUi, highlighted: Boolean, shouldShowTimest
             verticalAlignment = Alignment.Bottom
         ) {
             // 이전 메시지와 3초 이상 차이나면 타임스탬프 표시
-            if (shouldShowTimestamp || !segment.isSameAsPrevious) {
+            //if (shouldShowTimestamp || !segment.isSameAsPrevious || !segment.isSameAsNext) {
                 TimestampText(
                     time = segment.timestamp,
                     modifier = Modifier
@@ -92,7 +92,7 @@ private fun MyMessage(segment: SegmentUi, highlighted: Boolean, shouldShowTimest
                         .padding(bottom = 2.dp, end = 1.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-            }
+            //}
             ChatBox(
                 text = segment.text,
                 backgroundColor = if (highlighted) green300 else green500,
@@ -117,12 +117,11 @@ private fun OthersMessage(
     Row(verticalAlignment = Alignment.Top) {
         if (!segment.isSameAsPrevious) {
             AsyncImage(
-                model = segment.profileImage.ifEmpty { null },
+                model = segment.profileImage,
                 contentDescription = "프로필 이미지",
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(CircleShape)
-                    .background(placeHolder),
+                    .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(6.dp))
@@ -149,7 +148,7 @@ private fun OthersMessage(
                         highlighted = highlighted
                     )
                     // 이전 메시지와 3초 이상 차이나면 타임스탬프 표시
-                    if (shouldShowTimestamp || !segment.isSameAsNext) {
+                    //if (shouldShowTimestamp || !segment.isSameAsNext || !segment.isSameAsPrevious) {
                         Spacer(modifier = Modifier.width(2.dp))
                         TimestampText(
                             time = segment.timestamp,
@@ -157,7 +156,7 @@ private fun OthersMessage(
                                 .align(Alignment.Bottom)
                                 .padding(bottom = 2.dp)
                         )
-                    }
+                    //}
                 }
             }
         } else {
@@ -177,7 +176,7 @@ private fun OthersMessage(
                     highlighted = highlighted
                 )
                 // 이전 메시지와 3초 이상 차이나면 타임스탬프 표시
-                if (shouldShowTimestamp) {
+                //if (shouldShowTimestamp || !segment.isSameAsNext || !segment.isSameAsPrevious) {
                     Spacer(modifier = Modifier.width(4.dp))
                     TimestampText(
                         time = segment.timestamp,
@@ -185,7 +184,7 @@ private fun OthersMessage(
                             .align(Alignment.Bottom)
                             .padding(bottom = 2.dp)
                     )
-                }
+                //}
             }
         }
     }

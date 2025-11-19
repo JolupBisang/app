@@ -138,7 +138,7 @@ class MeetingInProgressService : Service() {
                         try {
                             if (::generatingMeetingNoteStore.isInitialized) {
                                 generatingMeetingNoteStore.clearGeneratingMeetingNoteId()
-                                Log.d(TAG, "DataStore generatingMeetingNoteId 제거 완료 (Service에서 처리)")
+                                Log.d(TAG, "DataStore generatingMeetingNoteId 제거 완료")
                             } else {
                                 Log.w(TAG, "GeneratingMeetingNoteStore가 초기화되지 않아 clearGeneratingMeetingNoteId를 실행할 수 없습니다")
                             }

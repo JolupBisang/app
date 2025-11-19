@@ -10,11 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * 실제 앱에서 사용하는 Real 구현.
- * - Foreground Service( MeetingInProgressService )를 띄우고
- * - 해당 Service 가 발행하는 ServiceEvent Flow 를 그대로 노출한다.
- */
+
 @Singleton
 class RealMeetingRealtimeEventSource @Inject constructor(
     private val app: Application

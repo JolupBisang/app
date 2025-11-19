@@ -13,6 +13,6 @@ interface SegmentApi {
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 40,
         @Query("sort") sort: String = "order",
-        @Query("direction") direction: String = "asc"
+        @Query("direction") direction: String
     ): Response<SegmentListResDto>
 }

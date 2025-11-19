@@ -105,9 +105,11 @@ fun MeetingInProgressScreen(
     LaunchedEffect(state.startTime, state.targetTime) {
         if (state.startTime > 0 && state.targetTime > 0) {
             while (coroutineContext.isActive) {
-                val currentTime = System.currentTimeMillis()
-                val elapsedMillis = currentTime - state.startTime
-                val elapsedSeconds = (elapsedMillis / 1000).coerceAtLeast(0)
+                // state.startTime은 마이크로초 단위, currentTime도 마이크로초로 변환
+                val startTimeMicros = state.startTime
+                val currentTimeMicros = System.currentTimeMillis() * 1000L
+                val elapsedMicros = currentTimeMicros - startTimeMicros
+                val elapsedSeconds = (elapsedMicros / 1000000).coerceAtLeast(0)
 
                 // 경과 시간 포맷팅 (HH:MM:SS)
                 val h = elapsedSeconds / 3600
@@ -115,10 +117,10 @@ fun MeetingInProgressScreen(
                 val s = elapsedSeconds % 60
                 timeText = String.format("%02d:%02d:%02d", h, m, s)
 
-                // 남은 시간 계산
-                val targetMillis = state.targetTime * 60 * 1000L
-                val remainingMillis = (targetMillis - elapsedMillis).coerceAtLeast(0)
-                val remainingSeconds = (remainingMillis / 1000).coerceAtLeast(0)
+                // 남은 시간 계산 (마이크로초 단위)
+                val targetMicros = state.targetTime * 60 * 1000000L
+                val remainingMicros = (targetMicros - elapsedMicros).coerceAtLeast(0)
+                val remainingSeconds = (remainingMicros / 1000000).coerceAtLeast(0)
 
                 // 남은 시간 포맷팅 (HH:MM:SS)
                 val rh = remainingSeconds / 3600

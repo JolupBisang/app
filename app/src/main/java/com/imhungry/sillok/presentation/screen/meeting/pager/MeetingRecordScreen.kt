@@ -86,10 +86,13 @@ fun MeetingRecordScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var autoScrollEnabled by remember { mutableStateOf(true) }
-    val NEAR_BOTTOM_THRESHOLD = 3 // 마지막 아이템에서 3개 위까지는 자동 스크롤 허용
+    val NEAR_BOTTOM_THRESHOLD = 6 // 마지막 아이템에서 6개 위까지는 자동 스크롤 허용
     
     // Pull-to-Refresh 상태
     var isRefreshing by remember { mutableStateOf(false) }
+    
+    // 새로고침 전 첫 번째 보이는 아이템의 order 저장 (스크롤 위치 유지용)
+    var firstVisibleOrderBeforeRefresh by remember { mutableStateOf<Int?>(null) }
     
     // 호스트가 아닐 때 표시할 다이얼로그 상태
     var showHostOnlyDialog by remember { mutableStateOf(false) }
@@ -97,6 +100,10 @@ fun MeetingRecordScreen(
         refreshing = isRefreshing,
         onRefresh = {
             coroutineScope.launch {
+                // 새로고침 전에 현재 화면에 보이는 첫 번째 아이템의 order 저장
+                val firstVisibleIndex = listState.firstVisibleItemIndex
+                firstVisibleOrderBeforeRefresh = segments.getOrNull(firstVisibleIndex)?.order
+
                 isRefreshing = true
                 try {
                     meetingInProgressViewModel.loadPreviousSegments()
@@ -117,16 +124,35 @@ fun MeetingRecordScreen(
             return@LaunchedEffect
         }
         
+        // 새로고침 중이거나 스크롤 위치 복원 중일 때는 계산하지 않음
+        if (isRefreshing || firstVisibleOrderBeforeRefresh != null) {
+            return@LaunchedEffect
+        }
+        
         val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
         val lastItemIndex = segments.lastIndex
         
-        // 마지막에서 3개 이내에 있으면 자동 스크롤 활성화
+        // 마지막에서 6개 이내에 있으면 자동 스크롤 활성화
         val distanceFromBottom = lastItemIndex - lastVisibleIndex
         autoScrollEnabled = distanceFromBottom <= NEAR_BOTTOM_THRESHOLD
     }
 
+    // 새로고침 후 스크롤 위치 복원
+    LaunchedEffect(segments.size, isRefreshing) {
+        if (!isRefreshing && firstVisibleOrderBeforeRefresh != null && segments.isNotEmpty()) {
+            // 새로고침이 완료되고 저장된 order 있으면 해당 아이템으로 스크롤
+            val targetIndex = segments.indexOfFirst { it.order == firstVisibleOrderBeforeRefresh }
+            if (targetIndex >= 0) {
+                listState.scrollToItem(targetIndex)
+            }
+            // 복원 후 초기화 (다음 LaunchedEffect에서 autoScrollEnabled 재계산)
+            firstVisibleOrderBeforeRefresh = null
+        }
+    }
+
     LaunchedEffect(segments.size) {
-        if (segments.isNotEmpty() && autoScrollEnabled) {
+        // 새로고침 중이 아니고 자동 스크롤이 활성화되어 있을 때만 맨 아래로 스크롤
+        if (segments.isNotEmpty() && autoScrollEnabled && !isRefreshing && firstVisibleOrderBeforeRefresh == null) {
             listState.animateScrollToItem(segments.lastIndex)
         }
     }
