@@ -9,6 +9,7 @@ class GetSegmentsUseCase @Inject constructor(
     suspend operator fun invoke(
         meetingId: Long,
         page: Int = 0,
-        size: Int = 40
-    ) = repository.getSegments(meetingId, page, size)
+        size: Int = 40,
+        direction: String = "desc"
+    ) = repository.getSegments(meetingId, page, size, direction)
 }
