@@ -7,6 +7,7 @@ import com.imhungry.sillok.domain.model.team.AddTeamMemberRequest
 import com.imhungry.sillok.domain.model.team.CreateTeamRequest
 import com.imhungry.sillok.domain.model.team.Team
 import com.imhungry.sillok.domain.model.team.TeamListItem
+import com.imhungry.sillok.domain.model.team.TeamList
 import com.imhungry.sillok.domain.model.team.TeamMember
 import com.imhungry.sillok.domain.repository.team.TeamRepository
 import kotlinx.coroutines.Dispatchers
@@ -51,22 +52,29 @@ class TeamRepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun getMyTeams(): ApiResult<List<TeamListItem>> =
-        withContext(Dispatchers.IO) {
-            try {
-                val res = api.getMyTeams()
-                if (res.isSuccessful) {
-                    val wrapper = res.body()
-                    val dtoList = wrapper?.teams ?: emptyList()
+    override suspend fun getMyTeams(
+        name: String?,
+        page: Int,
+        size: Int
+    ): ApiResult<Pair<List<TeamListItem>, Boolean>> = withContext(Dispatchers.IO) {
+        try {
+            val res = api.getMyTeams(name, page, size)
+            if (res.isSuccessful) {
+                val wrapper = res.body()
+                if (wrapper != null) {
+                    val dtoList = wrapper.teams
                     val teams = dtoList.map { mapper.toTeamListItem(it) }
-                    ApiResult.Success(teams)
+                    ApiResult.Success(Pair(teams, wrapper.hasNext))
                 } else {
-                    ApiResult.Failure(res.message())
+                    ApiResult.Success(Pair(emptyList(), false))
                 }
-            } catch (e: Exception) {
-                ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
+            } else {
+                ApiResult.Failure(res.message())
             }
+        } catch (e: Exception) {
+            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
         }
+    }
 
     override suspend fun addTeamMember(
         teamId: Long,
@@ -97,6 +105,21 @@ class TeamRepositoryImpl @Inject constructor(
                     } else {
                         ApiResult.Success(emptyList())
                     }
+                } else {
+                    ApiResult.Failure(res.message())
+                }
+            } catch (e: Exception) {
+                ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
+            }
+        }
+
+    override suspend fun deleteTeam(teamId: Long): ApiResult<Long> =
+        withContext(Dispatchers.IO) {
+            try {
+                val res = api.deleteTeam(teamId)
+                if (res.isSuccessful) {
+                    val dto = res.body()
+                    ApiResult.Success(dto?.teamId ?: teamId)
                 } else {
                     ApiResult.Failure(res.message())
                 }

@@ -4,6 +4,7 @@ import com.imhungry.sillok.data.model.team.MemberDto
 import com.imhungry.sillok.data.model.team.TeamCreationReqDto
 import com.imhungry.sillok.data.model.team.TeamDetailResDto
 import com.imhungry.sillok.data.model.team.TeamListResDto
+import com.imhungry.sillok.data.model.team.TeamListWrapperDto
 import com.imhungry.sillok.data.model.team.TeamMemberAdditionReqDto
 import com.imhungry.sillok.data.model.team.TeamMemberResDto
 import com.imhungry.sillok.domain.model.team.AddTeamMemberRequest

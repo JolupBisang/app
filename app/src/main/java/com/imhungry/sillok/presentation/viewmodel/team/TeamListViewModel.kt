@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.team.TeamDetailSummary
 import com.imhungry.sillok.domain.model.team.TeamListItem
+import com.imhungry.sillok.domain.usecase.team.DeleteTeamUseCase
 import com.imhungry.sillok.domain.usecase.team.GetMyTeamsUseCase
 import com.imhungry.sillok.domain.usecase.team.GetTeamMembersUseCase
 import com.imhungry.sillok.presentation.state.team.TeamListState
@@ -31,7 +32,8 @@ import javax.inject.Inject
 class TeamListViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val getMyTeamsUseCase: GetMyTeamsUseCase,
-    private val getTeamMembersUseCase: GetTeamMembersUseCase
+    val getTeamMembersUseCase: GetTeamMembersUseCase,
+    private val deleteTeamUseCase: DeleteTeamUseCase
 ) : ViewModel() {
     companion object {
         private const val TAG = "TeamListViewModel"
@@ -39,49 +41,19 @@ class TeamListViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(TeamListState())
     val state: StateFlow<TeamListState> = _state.asStateFlow()
+    
+    // 검색어 상태
+    private val _searchQuery = MutableStateFlow<String?>(null)
+    val searchQuery: StateFlow<String?> = _searchQuery.asStateFlow()
 
     init {
         loadTeams()
     }
-
-    fun loadTeams() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-
-            try {
-                when (val result = getMyTeamsUseCase()) {
-                    is ApiResult.Success -> {
-                        val teams = convertToTeamDetailSummaries(result.data)
-                        Log.d(TAG, "팀 목록 로드 성공: ${teams.size}개")
-                        _state.update {
-                            it.copy(
-                                teams = teams,
-                                isLoading = false,
-                                error = null
-                            )
-                        }
-                    }
-
-                    is ApiResult.Failure -> {
-                        Log.e(TAG, "팀 목록 로드 실패: ${result.message}")
-                        _state.update {
-                            it.copy(
-                                isLoading = false,
-                                error = result.message
-                            )
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "팀 목록 로드 예외 발생: ${e.message}", e)
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.localizedMessage ?: "팀 목록을 불러오는데 실패했습니다."
-                    )
-                }
-            }
-        }
+    
+    fun updateSearchQuery(query: String?) {
+        val searchName = query?.takeIf { it.isNotBlank() }
+        _searchQuery.value = searchName
+        loadTeams(searchName)
     }
 
     private suspend fun convertToTeamDetailSummaries(teamListItems: List<TeamListItem>): List<TeamDetailSummary> = coroutineScope {
@@ -135,11 +107,126 @@ class TeamListViewModel @Inject constructor(
         }
     }
 
+    fun loadTeams(name: String? = null) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+
+            try {
+                // 큰 size로 모든 데이터를 한 번에 가져오기
+                val allTeams = mutableListOf<TeamListItem>()
+                var currentPage = 0
+                var hasNext = true
+                
+                while (hasNext && currentPage < 50) { // 최대 50페이지까지만
+                    when (val result = getMyTeamsUseCase(name, page = currentPage, size = 1000)) {
+                        is ApiResult.Success -> {
+                            val (teams, hasMore) = result.data
+                            if (teams.isEmpty()) {
+                                hasNext = false
+                                break
+                            }
+                            allTeams.addAll(teams)
+                            hasNext = hasMore
+                            currentPage++
+                            if (!hasNext) break
+                        }
+                        is ApiResult.Failure -> {
+                            Log.e(TAG, "팀 목록 로드 실패: ${result.message}")
+                            hasNext = false
+                            break
+                        }
+                    }
+                }
+                
+                val teams = convertToTeamDetailSummaries(allTeams)
+                Log.d(TAG, "팀 목록 로드 성공: ${teams.size}개")
+                _state.update {
+                    it.copy(
+                        teams = teams,
+                        isLoading = false,
+                        error = null
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "팀 목록 로드 예외 발생: ${e.message}", e)
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.localizedMessage ?: "팀 목록을 불러오는데 실패했습니다."
+                    )
+                }
+            }
+        }
+    }
+    
     fun refresh() {
-        loadTeams()
+        val currentQuery = _searchQuery.value
+        loadTeams(currentQuery)
     }
 
     fun clearError() {
         _state.update { it.copy(error = null) }
+    }
+    
+    fun deleteTeams(teamIds: Set<Long>, onSuccess: () -> Unit = {}) {
+        if (teamIds.isEmpty()) {
+            Log.w(TAG, "삭제할 팀이 선택되지 않았습니다")
+            return
+        }
+        
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            
+            try {
+                val failedDeletions = mutableListOf<Long>()
+                val currentQuery = _searchQuery.value
+                
+                // 선택된 모든 팀을 순차적으로 삭제
+                teamIds.forEach { teamId ->
+                    when (val result = deleteTeamUseCase(teamId)) {
+                        is ApiResult.Success -> {
+                            Log.d(TAG, "팀 삭제 성공: teamId=$teamId")
+                        }
+                        is ApiResult.Failure -> {
+                            Log.e(TAG, "팀 삭제 실패: teamId=$teamId, error=${result.message}")
+                            failedDeletions.add(teamId)
+                        }
+                    }
+                }
+                
+                // 삭제 결과에 따라 처리
+                if (failedDeletions.isEmpty()) {
+                    // 모든 삭제 성공
+                    Log.d(TAG, "모든 팀 삭제 성공: ${teamIds.size}개")
+                    // 목록 새로고침
+                    loadTeams(currentQuery)
+                    onSuccess()
+                } else {
+                    // 일부 실패
+                    val errorMessage = if (failedDeletions.size == teamIds.size) {
+                        "팀 삭제에 실패했습니다."
+                    } else {
+                        "${teamIds.size - failedDeletions.size}개 팀 삭제 완료, ${failedDeletions.size}개 실패"
+                    }
+                    Log.w(TAG, errorMessage)
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = errorMessage
+                        )
+                    }
+                    // 성공한 항목은 목록에서 제거되도록 새로고침
+                    loadTeams(currentQuery)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "팀 삭제 예외 발생: ${e.message}", e)
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.localizedMessage ?: "팀 삭제 중 오류가 발생했습니다."
+                    )
+                }
+            }
+        }
     }
 }
