@@ -96,7 +96,8 @@ class MeetingFormViewModel @Inject constructor(
                 // 팀 리스트 가져오기
                 when (val teamsResult = getMyTeamsUseCase()) {
                     is ApiResult.Success -> {
-                        val teams = teamsResult.data.map { teamListItem ->
+                        val (teamListItems, _) = teamsResult.data
+                        val teams = teamListItems.map { teamListItem ->
                             TeamInfo(id = teamListItem.teamId, name = teamListItem.teamName)
                         }
                         android.util.Log.d("MeetingFormViewModel", "팀 리스트 로드 성공: ${teams.size}개")
