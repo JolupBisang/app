@@ -48,24 +48,27 @@ class MeetingFolderRepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun getAllFolders(): ApiResult<MeetingFolderList> =
-        withContext(Dispatchers.IO) {
-            try {
-                val res = api.getAllFolders()
-                if (res.isSuccessful) {
-                    val dto = res.body()
-                    if (dto != null) {
-                        ApiResult.Success(mapper.toDomain(dto))
-                    } else {
-                        ApiResult.Failure("응답 데이터가 없습니다.")
-                    }
+    override suspend fun getAllFolders(
+        name: String?,
+        page: Int,
+        size: Int
+    ): ApiResult<MeetingFolderList> = withContext(Dispatchers.IO) {
+        try {
+            val res = api.getAllFolders(name, page, size)
+            if (res.isSuccessful) {
+                val dto = res.body()
+                if (dto != null) {
+                    ApiResult.Success(mapper.toDomain(dto))
                 } else {
-                    ApiResult.Failure(res.message())
+                    ApiResult.Failure("응답 데이터가 없습니다.")
                 }
-            } catch (e: Exception) {
-                ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
+            } else {
+                ApiResult.Failure(res.message())
             }
+        } catch (e: Exception) {
+            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
         }
+    }
 
     override suspend fun getFolderMeetings(folderId: Long): ApiResult<MeetingFolderDetail> =
         withContext(Dispatchers.IO) {

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -82,6 +83,7 @@ fun FolderListScreen(
         onSearchClose = {
             clearSearchFocus(focusManager, keyboardController) { isSearchFocused = false }
             searchText = ""
+            viewModel.updateSearchQuery(null)
         },
         onEditModeExit = { 
             selectedFolderIds = emptySet()
@@ -119,25 +121,25 @@ fun FolderListScreen(
                     onNavigateToNotificationHistory = onNavigateToNotificationHistory
                 )
 
-                // 검색바는 폴더가 있을 때만 표시
-                if (state.folders.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(16.dp))
+                // 검색바 표시
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    SearchBar(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        focusRequester = focusRequester,
-                        text = searchText,
-                        innerText = "폴더 이름으로 검색",
-                        onTextChange = { searchText = it },
-                        onFocusChange = { isSearchFocused = it },
-                        onImeAction = {
-                            clearSearchFocus(focusManager, keyboardController) {
-                                isSearchFocused = false
-                            }
+                SearchBar(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    focusRequester = focusRequester,
+                    text = searchText,
+                    innerText = "폴더 이름으로 검색",
+                    onTextChange = { searchText = it },
+                    onFocusChange = { isSearchFocused = it },
+                    onImeAction = {
+                        val query = searchText.trim()
+                        viewModel.updateSearchQuery(query.takeIf { it.isNotBlank() })
+                        clearSearchFocus(focusManager, keyboardController) {
+                            isSearchFocused = false
                         }
-                    )
-                }
+                    }
+                )
 
                 Spacer(Modifier.height(16.dp))
 
@@ -145,75 +147,53 @@ fun FolderListScreen(
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    if (!isSearchFocused && searchText.isEmpty()) {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            modifier = Modifier.weight(1f),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(state.folders) { folder ->
-                                val isSelected = selectedFolderIds.contains(folder.id)
-                                FolderCard(
-                                    folderName = folder.name,
-                                    date = folder.date,
-                                    meetingTitle = folder.meetingName ?: "",
-                                    timeRange = folder.timeRange,
-                                    onClick = { 
-                                        if (isEditMode) {
-                                            selectedFolderIds = if (selectedFolderIds.contains(folder.id)) {
-                                                selectedFolderIds - folder.id
-                                            } else {
-                                                selectedFolderIds + folder.id
-                                            }
-                                        } else {
-                                            onNavigateToFolderDetail(folder.id, folder.name)
-                                        }
-                                    },
-                                    editMode = isEditMode,
-                                    isPast = folder.isPast,
-                                    isSelected = isSelected,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
+                    FolderListContent(
+                        folders = state.folders,
+                        isLoading = state.isLoading,
+                        editMode = isEditMode,
+                        selectedFolderIds = selectedFolderIds,
+                        onFolderToggle = { folderId ->
+                            selectedFolderIds = if (selectedFolderIds.contains(folderId)) {
+                                selectedFolderIds - folderId
+                            } else {
+                                selectedFolderIds + folderId
                             }
-                        }
-                    } else {
-                        // 검색 결과 영역 (추후 구현)
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
+                        },
+                        onNavigateToFolderDetail = onNavigateToFolderDetail,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
                 Spacer(Modifier.height(16.dp))
 
                 // 버튼은 항상 하단에 고정
-                if (!(!isSearchFocused && searchText.isEmpty() && state.folders.isEmpty())) {
-                    val density = LocalDensity.current
+                val density = LocalDensity.current
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Box(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(32.dp)
-                                .background(
-                                    brush = Brush.verticalGradient(
-                                        colors = listOf(
-                                            Color.White.copy(alpha = 0f),
-                                            Color.White.copy(alpha = 0.3f),
-                                            Color.White.copy(alpha = 0.6f),
-                                            Color.White.copy(alpha = 0.9f)
-                                        ),
-                                        startY = 0f,
-                                        endY = with(density) { 32.dp.toPx() }
-                                    )
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(32.dp)
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0f),
+                                        Color.White.copy(alpha = 0.3f),
+                                        Color.White.copy(alpha = 0.6f),
+                                        Color.White.copy(alpha = 0.9f)
+                                    ),
+                                    startY = 0f,
+                                    endY = with(density) { 32.dp.toPx() }
                                 )
-                                .offset(y = (-32).dp)
-                        )
+                            )
+                            .offset(y = (-32).dp)
+                    )
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                             if (isEditMode) {
                                 // Edit 모드: 이전으로, 삭제하기
                                 SillokButton(
@@ -264,55 +244,7 @@ fun FolderListScreen(
                 }
             }
 
-            if (!isSearchFocused && searchText.isEmpty() && state.folders.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Image(
-                            painter = rememberAsyncImagePainter(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(R.drawable.bubble2)
-                                    .decoderFactory(GifDecoder.Factory())
-                                    .build()
-                            ),
-                            contentDescription = "말풍선 gif",
-                            modifier = Modifier.size(140.dp)
-                        )
-                        Text(
-                            text = "회의록 폴더에 대해",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            "회의를 더욱 체계적으로 정리할 수 있습니다.",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Normal,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            "폴더를 생성하여 시작해보세요!",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Normal,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(64.dp))
-                        SillokButton(
-                            text = "폴더 생성하기",
-                            onClick = onNavigateToCreateFolder,
-                            modifier = Modifier.padding(horizontal = 48.dp)
-                        )
-                    }
-                }
-            }
         }
-    }
 }
 
 private fun clearSearchFocus(
@@ -323,6 +255,93 @@ private fun clearSearchFocus(
     focusManager.clearFocus()
     keyboardController?.hide()
     onFocusCleared()
+}
+
+@Composable
+private fun FolderListContent(
+    folders: List<com.imhungry.sillok.domain.model.folder.MeetingMinutesFolderDetailSummary>,
+    isLoading: Boolean,
+    editMode: Boolean,
+    selectedFolderIds: Set<Long>,
+    onFolderToggle: (Long) -> Unit,
+    onNavigateToFolderDetail: (Long, String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (folders.isEmpty() && !isLoading) {
+        // 빈 상태 표시
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(R.drawable.bubble2)
+                            .decoderFactory(GifDecoder.Factory())
+                            .build()
+                    ),
+                    contentDescription = "말풍선 gif",
+                    modifier = Modifier.size(140.dp)
+                )
+                Text(
+                    text = "회의록 폴더에 대해",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    "회의를 더욱 체계적으로 정리할 수 있습니다.",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Normal,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    "폴더를 생성하여 시작해보세요!",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Normal,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    } else {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = modifier,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(
+                top = 0.dp,
+                bottom = 16.dp
+            )
+        ) {
+            items(folders) { folder ->
+                val isSelected = selectedFolderIds.contains(folder.id)
+                
+                FolderCard(
+                    folderName = folder.name,
+                    date = folder.date,
+                    meetingTitle = folder.meetingName ?: "",
+                    timeRange = folder.timeRange,
+                    onClick = { 
+                        if (editMode) {
+                            onFolderToggle(folder.id)
+                        } else {
+                            onNavigateToFolderDetail(folder.id, folder.name)
+                        }
+                    },
+                    editMode = editMode,
+                    isPast = folder.isPast,
+                    isSelected = isSelected,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
 }
 
 @Composable

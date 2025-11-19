@@ -14,7 +14,14 @@ import com.imhungry.sillok.domain.model.meeting.RemoveTeamTagRequest
 interface MeetingRepository {
     suspend fun createMeeting(request: CreateMeetingRequest): ApiResult<Long>
     suspend fun getMeetingDetail(meetingId: Long): ApiResult<Meeting>
-    suspend fun getMeetings(year: Int, month: Int): ApiResult<List<MeetingDetailSummary>>
+    suspend fun getMeetings(
+        year: Int? = null,
+        month: Int? = null,
+        title: String? = null,
+        page: Int = 0,
+        size: Int = 20
+    ): ApiResult<MeetingSearchSlice>
+    suspend fun getMeetings2(year: Int, month: Int): ApiResult<List<MeetingDetailSummary>>
     suspend fun updateMeetingStatus(
         meetingId: Long,
         targetStatus: TargetMeetingStatus

@@ -6,7 +6,10 @@ import javax.inject.Inject
 class GetAllFoldersUseCase @Inject constructor(
     private val repository: MeetingMinutesFolderRepository
 ) {
-    suspend operator fun invoke() =
-        repository.getAllFolders()
+    suspend operator fun invoke(
+        name: String? = null,
+        page: Int = 0,
+        size: Int = 20
+    ) = repository.getAllFolders(name, page, size)
 }
 

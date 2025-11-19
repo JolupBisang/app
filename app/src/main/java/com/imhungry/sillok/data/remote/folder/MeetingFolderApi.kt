@@ -6,6 +6,7 @@ import com.imhungry.sillok.data.model.folder.MeetingFolderDeletionReqDto
 import com.imhungry.sillok.data.model.folder.MeetingFolderDeletionResDto
 import com.imhungry.sillok.data.model.folder.MeetingFolderDetailResDto
 import com.imhungry.sillok.data.model.folder.MeetingFolderListResDto
+import retrofit2.http.Query
 import com.imhungry.sillok.data.model.folder.MeetingFolderUpdateReqDto
 import com.imhungry.sillok.data.model.folder.MeetingFolderUpdateResDto
 import retrofit2.Response
@@ -28,7 +29,11 @@ interface MeetingFolderApi {
     ): Response<MeetingFolderDeletionResDto>
 
     @GET("/api/v1/meeting-folders")
-    suspend fun getAllFolders(): Response<MeetingFolderListResDto>
+    suspend fun getAllFolders(
+        @Query("name") name: String? = null,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<MeetingFolderListResDto>
 
     @GET("/api/v1/meeting-folders/{folderId}/meetings")
     suspend fun getFolderMeetings(

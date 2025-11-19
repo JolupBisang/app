@@ -6,7 +6,10 @@ import javax.inject.Inject
 class GetMyTeamsUseCase @Inject constructor(
     private val repository: TeamRepository
 ) {
-    suspend operator fun invoke() =
-        repository.getMyTeams()
+    suspend operator fun invoke(
+        name: String? = null,
+        page: Int = 0,
+        size: Int = 20
+    ) = repository.getMyTeams(name, page, size)
 }
 

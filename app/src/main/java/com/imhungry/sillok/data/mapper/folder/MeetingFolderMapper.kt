@@ -71,5 +71,6 @@ class MeetingFolderMapper @Inject constructor() {
             scheduledEndTime = dto.scheduledEndTime?.take(19)
         )
     }
+    
 }
 

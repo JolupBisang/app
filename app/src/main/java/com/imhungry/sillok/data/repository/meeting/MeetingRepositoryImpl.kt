@@ -60,10 +60,34 @@ class MeetingRepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun getMeetings(year: Int, month: Int): ApiResult<List<MeetingDetailSummary>> =
+    override suspend fun getMeetings(
+        year: Int?,
+        month: Int?,
+        title: String?,
+        page: Int,
+        size: Int
+    ): ApiResult<MeetingSearchSlice> = withContext(Dispatchers.IO) {
+        try {
+            val res = api.getMeetings(year, month, title, page, size)
+            if (res.isSuccessful) {
+                val dto = res.body()
+                if (dto != null) {
+                    ApiResult.Success(mapper.toMeetingSearchSlice(dto))
+                } else {
+                    ApiResult.Failure("응답 파싱 오류")
+                }
+            } else {
+                ApiResult.Failure(res.message())
+            }
+        } catch (e: Exception) {
+            ApiResult.Failure(e.localizedMessage ?: "알 수 없는 오류")
+        }
+    }
+
+    override suspend fun getMeetings2(year: Int, month: Int): ApiResult<List<MeetingDetailSummary>> =
         withContext(Dispatchers.IO) {
             try {
-                val res = api.getMeetings(year, month)
+                val res = api.getMeetings2(year, month)
                 if (res.isSuccessful) {
                     val dto = res.body()
                     if (dto != null) {

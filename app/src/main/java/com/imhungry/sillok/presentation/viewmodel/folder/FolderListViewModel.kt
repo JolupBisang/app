@@ -9,11 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.folder.DeleteMeetingFoldersRequest
 import com.imhungry.sillok.domain.model.folder.MeetingFolderInfo
-import com.imhungry.sillok.domain.model.folder.MeetingMinutesFolderDetailSummary
 import com.imhungry.sillok.domain.usecase.folder.DeleteMeetingFoldersUseCase
 import com.imhungry.sillok.domain.usecase.folder.GetAllFoldersUseCase
 import com.imhungry.sillok.presentation.state.folder.FolderListState
-import com.imhungry.sillok.presentation.util.DateTimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,8 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -34,6 +30,10 @@ class FolderListViewModel @Inject constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow(FolderListState())
     val state: StateFlow<FolderListState> = _state.asStateFlow()
+    
+    // 검색어 상태
+    private val _searchQuery = MutableStateFlow<String?>(null)
+    val searchQuery: StateFlow<String?> = _searchQuery.asStateFlow()
 
     companion object {
         private const val TAG = "FolderListViewModel"
@@ -42,15 +42,43 @@ class FolderListViewModel @Inject constructor(
     init {
         loadFolders()
     }
-
-    fun loadFolders() {
+    
+    fun updateSearchQuery(query: String?) {
+        val searchName = query?.takeIf { it.isNotBlank() }
+        _searchQuery.value = searchName
+        loadFolders(searchName)
+    }
+    
+    fun loadFolders(name: String? = null) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
             try {
-                when (val result = getAllFoldersUseCase()) {
+                when (val result = getAllFoldersUseCase(name)) {
                     is ApiResult.Success -> {
-                        val folders = convertToDetailSummary(result.data.folders)
+                        val folderList = result.data
+                        val allFolders = mutableListOf<MeetingFolderInfo>()
+                        allFolders.addAll(folderList.folders)
+                        
+                        // 추가 페이지가 있으면 모두 가져오기 (일반 리스트이므로 page 파라미터는 무시됨)
+                        // 하지만 서버가 페이지네이션을 지원한다면 계속 요청
+                        var currentPage = 1
+                        while (currentPage < 50) { // 최대 50페이지까지만
+                            when (val nextResult = getAllFoldersUseCase(name, page = currentPage)) {
+                                is ApiResult.Success -> {
+                                    val nextFolderList = nextResult.data
+                                    if (nextFolderList.folders.isEmpty()) break
+                                    allFolders.addAll(nextFolderList.folders)
+                                    currentPage++
+                                }
+                                is ApiResult.Failure -> {
+                                    Log.e(TAG, "폴더 목록 추가 로드 실패: ${nextResult.message}")
+                                    break
+                                }
+                            }
+                        }
+                        
+                        val folders = convertToDetailSummary(allFolders)
                         _state.update {
                             it.copy(
                                 folders = folders,
@@ -80,18 +108,18 @@ class FolderListViewModel @Inject constructor(
             }
         }
     }
-
-    private fun convertToDetailSummary(folders: List<MeetingFolderInfo>): List<MeetingMinutesFolderDetailSummary> {
+    
+    private fun convertToDetailSummary(folders: List<MeetingFolderInfo>): List<com.imhungry.sillok.domain.model.folder.MeetingMinutesFolderDetailSummary> {
         return folders.map { folder ->
             val date = if (folder.scheduledStartTime != null) {
-                DateTimeUtils.localIsoToDateStringWithoutDayOfWeek(folder.scheduledStartTime)
+                com.imhungry.sillok.presentation.util.DateTimeUtils.localIsoToDateStringWithoutDayOfWeek(folder.scheduledStartTime)
             } else {
                 ""
             }
 
             val timeRange = if (folder.scheduledStartTime != null && folder.scheduledEndTime != null) {
-                val start = DateTimeUtils.localIsoToTimeString(folder.scheduledStartTime)
-                val end = DateTimeUtils.localIsoToTimeString(folder.scheduledEndTime)
+                val start = com.imhungry.sillok.presentation.util.DateTimeUtils.localIsoToTimeString(folder.scheduledStartTime)
+                val end = com.imhungry.sillok.presentation.util.DateTimeUtils.localIsoToTimeString(folder.scheduledEndTime)
                 "$start~$end"
             } else {
                 ""
@@ -99,7 +127,7 @@ class FolderListViewModel @Inject constructor(
 
             val isPast = calculateIsPast(folder.scheduledEndTime)
 
-            MeetingMinutesFolderDetailSummary(
+            com.imhungry.sillok.domain.model.folder.MeetingMinutesFolderDetailSummary(
                 id = folder.folderId,
                 name = folder.folderName,
                 meetingName = folder.meetingName,
@@ -113,16 +141,21 @@ class FolderListViewModel @Inject constructor(
     private fun calculateIsPast(scheduledEndTime: String?): Boolean {
         if (scheduledEndTime.isNullOrBlank()) return false
         return try {
-            val endTime = LocalDateTime.parse(
+            val endTime = java.time.LocalDateTime.parse(
                 scheduledEndTime.take(19),
-                DateTimeFormatter.ISO_LOCAL_DATE_TIME
+                java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
             )
-            val now = LocalDateTime.now()
+            val now = java.time.LocalDateTime.now()
             endTime.isBefore(now)
         } catch (e: Exception) {
             Log.e(TAG, "날짜 파싱 실패: $scheduledEndTime", e)
             false
         }
+    }
+    
+    fun refresh() {
+        val currentQuery = _searchQuery.value
+        loadFolders(currentQuery)
     }
 
     fun deleteFolders(folderIds: List<Long>, onSuccess: () -> Unit) {
@@ -139,7 +172,7 @@ class FolderListViewModel @Inject constructor(
                     is ApiResult.Success -> {
                         Log.d(TAG, "폴더 삭제 성공: ${result.data}")
                         // 삭제 성공 후 폴더 목록 새로고침
-                        loadFolders()
+                        refresh()
                         onSuccess()
                     }
                     is ApiResult.Failure -> {
