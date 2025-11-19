@@ -93,12 +93,12 @@ fun LoginScreen(
             Image(
                 painter = rememberAsyncImagePainter(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(R.drawable.splash)
+                        .data(R.drawable.sealog_)
                         .decoderFactory(GifDecoder.Factory())
                         .build()
                 ),
                 contentDescription = "splash gif",
-                modifier = Modifier.size(230.dp)
+                modifier = Modifier.size(130.dp)
             )
             Spacer(modifier = Modifier.height(60.dp))
 
@@ -148,6 +148,16 @@ private fun LoginScreenPreview() {
                             .padding(top = 100.dp)
                     )
                 }
+                Image(
+                    painter = rememberAsyncImagePainter(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(R.drawable.sealog_)
+                            .decoderFactory(GifDecoder.Factory())
+                            .build()
+                    ),
+                    contentDescription = "splash gif",
+                    modifier = Modifier.size(230.dp)
+                )
                 Spacer(modifier = Modifier.height(60.dp))
 
                 Text(

@@ -87,7 +87,7 @@ fun SplashScreen(
                         .build()
                 ),
                 contentDescription = "splash gif",
-                modifier = Modifier.size(230.dp)
+                modifier = Modifier.size(200.dp)
             )
         }
     }
