@@ -26,6 +26,7 @@ import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
 import com.imhungry.sillok.domain.usecase.meeting.UpdateMeetingStatusUseCase
 import com.imhungry.sillok.domain.usecase.participation.GetParticipationRateHistoryUseCase
 import com.imhungry.sillok.domain.usecase.segment.GetSegmentsUseCase
+import com.imhungry.sillok.domain.usecase.segment.GetTotalSegmentCountUseCase
 import com.imhungry.sillok.domain.usecase.summary.GetSummariesUseCase
 import com.imhungry.sillok.domain.usecase.user.GetMyProfileUseCase
 import com.imhungry.sillok.domain.usecase.user.GetUserInfoUseCase
@@ -61,6 +62,7 @@ import javax.inject.Inject
 class MeetingInProgressViewModel @Inject constructor(
     private val changeAgendaStatusUseCase: ChangeAgendaStatusUseCase,
     private val getSegmentsUseCase: GetSegmentsUseCase,
+    private val getTotalSegmentCountUseCase: GetTotalSegmentCountUseCase,
     private val getSummariesUseCase: GetSummariesUseCase,
     private val getParticipationRateHistoryUseCase: GetParticipationRateHistoryUseCase,
     private val getFeedbacksUseCase: GetFeedbacksUseCase,
@@ -99,12 +101,24 @@ class MeetingInProgressViewModel @Inject constructor(
     private val userNicknameCache = mutableMapOf<Long, String>()
     private val userProfileImageCache = mutableMapOf<Long, String>()
     
+    // 세그먼트 translatedTime 캐시 (order -> translatedTime)
+    private val segmentTranslatedTimeCache = mutableMapOf<Int, String>()
+    
     // 현재 사용자 ID 캐시
     private var cachedCurrentUserId: Long? = null
 
     // 스케줄링 Job 추적 (중복 실행 방지)
     private var restBreakSchedulingJob: Job? = null
     private var meetingEndSchedulingJob: Job? = null
+    
+    // 이전 세그먼트 로딩 상태 추적
+    private var isLoadingPreviousSegments = false
+    private var hasMorePreviousSegments = true
+    
+    // 세그먼트 총 개수 (refreshAll에서 조회)
+    private var totalSegmentCount: Int = 0
+    // 현재까지 로드한 최대 페이지 번호 (desc 정렬이므로 page 0부터 시작)
+    private var currentMaxLoadedPage: Int = -1
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun initialize(meetingId: Long) {
@@ -140,7 +154,6 @@ class MeetingInProgressViewModel @Inject constructor(
                 meetingId = meetingId,
                 jwtToken = jwtToken
             )
-            _state.update { it.copy(isLoading = false) }
         }
     }
 
@@ -189,17 +202,17 @@ class MeetingInProgressViewModel @Inject constructor(
         Log.d(TAG, "========================================")
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val startMillis = if (!actualStartTime.isNullOrBlank()) {
+                val startMicros = if (!actualStartTime.isNullOrBlank()) {
                     Log.d(TAG, "[6-1] actualStartTime 원본 값: $actualStartTime")
-                    val calculated = DateTimeUtils.isoLocalDateTimeToMillis(actualStartTime)
-                    val startTimeFormatted = DateTimeUtils.millisToHourMinute(calculated)
-                    Log.d(TAG, "[6-1-1] startMillis 계산 결과: $calculated (${startTimeFormatted})")
+                    val calculated = DateTimeUtils.isoLocalDateTimeToMicros(actualStartTime)
+                    val startTimeFormatted = DateTimeUtils.microsToHourMinute(calculated)
+                    Log.d(TAG, "[6-1-1] startMicros 계산 결과: $calculated (${startTimeFormatted})")
                     Log.d(TAG, "[6-1-2] 현재 시간: ${System.currentTimeMillis()} (${DateTimeUtils.millisToHourMinute(System.currentTimeMillis())})")
                     calculated
                 } else {
                     Log.w(TAG, "[6-1 경고] actualStartTime이 null이거나 비어있습니다. 현재 시간을 사용합니다.")
-                    val currentTime = System.currentTimeMillis()
-                    Log.d(TAG, "[6-1-1] 현재 시간을 startMillis로 사용: $currentTime (${DateTimeUtils.millisToHourMinute(currentTime)})")
+                    val currentTime = System.currentTimeMillis() * 1000L // 마이크로초로 변환
+                    Log.d(TAG, "[6-1-1] 현재 시간을 startMicros로 사용: $currentTime (${DateTimeUtils.microsToHourMinute(currentTime)})")
                     currentTime
                 }
 
@@ -207,7 +220,7 @@ class MeetingInProgressViewModel @Inject constructor(
                 withContext(Dispatchers.Main) {
                     Log.d(TAG, "[6-2] State 업데이트 시작")
                     _state.update { 
-                        it.copy(startTime = startMillis)
+                        it.copy(startTime = startMicros)
                     }
 
                     // 휴식 시간 피드백 스케줄링
@@ -218,7 +231,7 @@ class MeetingInProgressViewModel @Inject constructor(
                             "[6-3] 휴식 시간 피드백 스케줄링 시작: targetTime=${currentState.targetTime}분, restInterval=${currentState.restInterval}분, restDuration=${currentState.restDuration}분"
                         )
                         scheduleRestBreakFeedbacks(
-                            startMillis,
+                            startMicros,
                             currentState.targetTime,
                             currentState.restInterval,
                             currentState.restDuration
@@ -234,7 +247,7 @@ class MeetingInProgressViewModel @Inject constructor(
                             TAG,
                             "[6-4] 회의 종료 피드백 스케줄링 시작: targetTime=${currentState.targetTime}분"
                         )
-                        scheduleMeetingEndFeedback(startMillis, currentState.targetTime)
+                        scheduleMeetingEndFeedback(startMicros, currentState.targetTime)
                         Log.d(TAG, "[6-4 완료] 회의 종료 피드백 스케줄링 완료")
                     } else {
                         Log.d(TAG, "[6-4 스킵] 목표 시간이 없어 스케줄링을 건너뜁니다 (targetTime=${currentState.targetTime})")
@@ -245,6 +258,7 @@ class MeetingInProgressViewModel @Inject constructor(
                 Log.d(TAG, "========================================")
                 Log.d(TAG, "[6단계 완료] 연결 확립 처리 완료")
                 Log.d(TAG, "========================================")
+                _state.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
                 Log.e(TAG, "[6단계 실패] 연결 확립 처리 중 오류: ${e.message}", e)
             }
@@ -279,9 +293,9 @@ class MeetingInProgressViewModel @Inject constructor(
             // 참가자 정보를 먼저 로드하고 완료될 때까지 대기
             loadUserInfoForParticipants(meeting.participants)
             
-            val startMillis = updateStartTimeIfAvailable(meeting)
-            if (startMillis != null) {
-                //loadMeetingData(meetingId, startMillis)
+            val startMicros = updateStartTimeIfAvailable(meeting)
+            if (startMicros != null) {
+                loadMeetingData(meetingId, startMicros)
             }
         }
     }
@@ -323,6 +337,7 @@ class MeetingInProgressViewModel @Inject constructor(
                             is ApiResult.Success -> {
                                 userNicknameCache[participant.userId] = userResult.data.nickname
                                 userProfileImageCache[participant.userId] = userResult.data.pictureURL
+                                Log.d(TAG, "사용자 정보 (userId: ${participant.userId}, email: ${participant.email})")
                             }
                             is ApiResult.Failure -> {
                                 Log.w(
@@ -346,34 +361,83 @@ class MeetingInProgressViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun updateStartTimeIfAvailable(meeting: Meeting): Long? {
         return meeting.actualStartTime?.let { actualStartTime ->
-            val startMillis = DateTimeUtils.isoLocalDateTimeToMillis(actualStartTime)
-            _state.update { it.copy(startTime = startMillis) }
-            startMillis
+            val startMicros = DateTimeUtils.isoLocalDateTimeToMicros(actualStartTime)
+            _state.update { it.copy(startTime = startMicros) }
+            startMicros
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun loadMeetingData(meetingId: Long, startMillis: Long) {
+    private suspend fun loadMeetingData(meetingId: Long, startMicros: Long) {
         coroutineScope {
             // 캐시된 현재 사용자 ID 사용
             val currentUserId = cachedCurrentUserId
-            //val segmentsDeferred = async { getSegmentsUseCase(meetingId, page = 0, size = 10000) }
+            // 세그먼트 총 개수 조회 (totalElements 우선 사용, 없으면 fallback)
+            val totalCountDeferred = async { getTotalSegmentCountUseCase(meetingId) }
             val summariesDeferred = async { getSummariesUseCase(meetingId, isRecap = false, page = 0, size = 10000) }
             val participationDeferred = async { getParticipationRateHistoryUseCase(meetingId) }
             val feedbacksDeferred = async { getFeedbacksUseCase(meetingId, page = 0, size = 10000) }
 
-            //loadSegments(segmentsDeferred.await(), startMillis, currentUserId)
-            loadSummaries(summariesDeferred.await(), startMillis)
+            // 세그먼트 총 개수 확인
+            when (val totalCountResult = totalCountDeferred.await()) {
+                is ApiResult.Success -> {
+                    val totalElements = totalCountResult.data
+                    if (totalElements != null) {
+                        // 서버에서 totalElements 제공: 신뢰성 높음
+                        totalSegmentCount = totalElements.toInt()
+                        Log.d(TAG, "[loadMeetingData] 세그먼트 총 개수 확인 (totalElements): $totalSegmentCount")
+                    } else {
+                        // totalElements가 없으면 fallback: 큰 size로 요청하여 확인
+                        Log.w(TAG, "[loadMeetingData] totalElements가 없어 fallback 방식 사용")
+                        when (val segmentsResult = getSegmentsUseCase(meetingId, page = 0, size = 10000)) {
+                            is ApiResult.Success -> {
+                                totalSegmentCount = segmentsResult.data.size
+                                Log.d(TAG, "[loadMeetingData] 세그먼트 총 개수 확인 (fallback): $totalSegmentCount")
+                                // ⚠️ 주의: 10,000개를 넘으면 정확하지 않을 수 있음
+                                if (segmentsResult.data.size >= 10000) {
+                                    Log.w(TAG, "[loadMeetingData] 경고: 세그먼트가 10,000개 이상일 수 있습니다. totalElements를 서버에서 제공하도록 요청하세요.")
+                                }
+                            }
+                            is ApiResult.Failure -> {
+                                Log.e(TAG, "[loadMeetingData] 세그먼트 총 개수 조회 실패: ${segmentsResult.message}")
+                                totalSegmentCount = 0
+                            }
+                        }
+                    }
+                    // desc 정렬이므로 page 0부터 시작
+                    currentMaxLoadedPage = -1 // 첫 번째 호출 시 0이 되도록 -1로 초기화
+                }
+                is ApiResult.Failure -> {
+                    Log.e(TAG, "[loadMeetingData] totalElements 조회 실패, fallback 사용: ${totalCountResult.message}")
+                    // totalElements 조회 실패 시 fallback
+                    when (val segmentsResult = getSegmentsUseCase(meetingId, page = 0, size = 10000)) {
+                        is ApiResult.Success -> {
+                            totalSegmentCount = segmentsResult.data.size
+                            Log.d(TAG, "[loadMeetingData] 세그먼트 총 개수 확인 (fallback): $totalSegmentCount")
+                            if (segmentsResult.data.size >= 10000) {
+                                Log.w(TAG, "[loadMeetingData] 경고: 세그먼트가 10,000개 이상일 수 있습니다.")
+                            }
+                        }
+                        is ApiResult.Failure -> {
+                            Log.e(TAG, "[loadMeetingData] 세그먼트 총 개수 조회 실패: ${segmentsResult.message}")
+                            totalSegmentCount = 0
+                        }
+                    }
+                    currentMaxLoadedPage = -1
+                }
+            }
+            
+            loadSummaries(summariesDeferred.await(), startMicros)
             // 참가자 정보가 로드된 후 participation rate 로드
             loadParticipationRates(participationDeferred.await())
-            loadFeedbacks(feedbacksDeferred.await(), meetingId, startMillis)
+            loadFeedbacks(feedbacksDeferred.await(), meetingId, startMicros)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun loadSegments(
         result: ApiResult<List<com.imhungry.sillok.domain.model.segment.Segment>>,
-        startMillis: Long,
+        startMicros: Long,
         currentUserId: Long?
     ) {
         when (result) {
@@ -383,10 +447,10 @@ class MeetingInProgressViewModel @Inject constructor(
                     val nextUserId = if (index < result.data.lastIndex) result.data[index + 1].userId else null
                     val isSameAsPrevious = prevUserId != null && prevUserId == seg.userId
                     val isSameAsNext = nextUserId != null && nextUserId == seg.userId
-                    val millis = DateTimeUtils.isoLocalDateTimeToMillis(seg.timestamp)
+                    val micros = DateTimeUtils.isoLocalDateTimeToMicros(seg.timestamp)
                     SegmentUi(
                         order = seg.segmentOrder,
-                        timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
+                        timestamp = DateTimeUtils.getElapsedStringFromMicros(startMicros, micros),
                         text = seg.text,
                         nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
                         profileImage = userProfileImageCache[seg.userId] ?: "",
@@ -401,18 +465,144 @@ class MeetingInProgressViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 위로 무한 스크롤: 이전 메시지를 20개씩 불러오기
+     * desc 정렬이므로 page 0부터 순차적으로 로드하고, 로드된 세그먼트는 reverse해서 앞에 붙입니다.
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    suspend fun loadPreviousSegments() {
+        if (isLoadingPreviousSegments || !hasMorePreviousSegments) {
+            Log.d(TAG, "[loadPreviousSegments] 스킵: isLoading=$isLoadingPreviousSegments, hasMore=$hasMorePreviousSegments")
+            return
+        }
+
+        val currentState = state.value
+        val meetingId = currentState.meetingId
+        val startMicros = currentState.startTime
+
+        if (startMicros <= 0) {
+            return
+        }
+
+        // 총 개수가 0이면 아직 refreshAll이 완료되지 않았거나 세그먼트가 없음
+        if (totalSegmentCount == 0) {
+            Log.d(TAG, "[loadPreviousSegments] 스킵: 총 세그먼트 개수가 0입니다")
+            return
+        }
+
+        isLoadingPreviousSegments = true
+        Log.d(TAG, "[loadPreviousSegments] 시작: 총 개수=$totalSegmentCount, 현재 최대 페이지=$currentMaxLoadedPage")
+
+        try {
+            // 다음 페이지 번호 계산 (desc 정렬이므로 page 0부터 순차적으로 증가)
+            val nextPage = currentMaxLoadedPage + 1
+            
+            // 다음 페이지의 시작 인덱스가 총 개수를 초과하는지 확인
+            val nextPageStartIndex = nextPage * 20
+            if (nextPageStartIndex >= totalSegmentCount) {
+                hasMorePreviousSegments = false
+                Log.d(TAG, "[loadPreviousSegments] 더 이상 불러올 세그먼트가 없음 (다음 페이지 시작 인덱스=$nextPageStartIndex >= 총 개수=$totalSegmentCount)")
+                return
+            }
+
+            Log.d(TAG, "[loadPreviousSegments] 다음 페이지 로드: page=$nextPage")
+
+            // 다음 페이지의 세그먼트 불러오기 (desc 정렬로 반환됨)
+            when (val result = getSegmentsUseCase(meetingId, page = nextPage, size = 20)) {
+                is ApiResult.Success -> {
+                    val loadedSegments = result.data
+                    Log.d(TAG, "[loadPreviousSegments] 세그먼트 로드 성공: ${loadedSegments.size}개")
+
+                    if (loadedSegments.isEmpty()) {
+                        hasMorePreviousSegments = false
+                        Log.d(TAG, "[loadPreviousSegments] 더 이상 불러올 세그먼트가 없음 (빈 결과)")
+                        return
+                    }
+
+                    // 현재 최대 페이지 번호 업데이트
+                    currentMaxLoadedPage = nextPage
+
+                    // 로드된 세그먼트를 SegmentUi로 변환
+                    val currentUserId = cachedCurrentUserId
+                    val newSegmentsUi = loadedSegments.mapIndexed { index, seg ->
+                        val prevSeg = if (index > 0) loadedSegments[index - 1] else null
+                        val nextSeg = if (index < loadedSegments.lastIndex) loadedSegments[index + 1] else null
+
+                        val prevUserId = prevSeg?.userId
+                        val nextUserId = nextSeg?.userId
+                        val isSameAsPrevious = prevUserId != null && prevUserId == seg.userId
+                        val isSameAsNext = nextUserId != null && nextUserId == seg.userId
+
+                        val micros = DateTimeUtils.isoLocalDateTimeToMicros(seg.timestamp)
+                        SegmentUi(
+                            order = seg.segmentOrder,
+                            timestamp = DateTimeUtils.getElapsedStringFromMicros(startMicros, micros),
+                            text = seg.text,
+                            nickname = userNicknameCache[seg.userId] ?: "사용자 ${seg.userId}",
+                            profileImage = userProfileImageCache[seg.userId] ?: "",
+                            isFromCurrentUser = currentUserId != null && seg.userId == currentUserId,
+                            isSameAsPrevious = isSameAsPrevious,
+                            isSameAsNext = isSameAsNext
+                        )
+                    }
+
+                    // desc 정렬로 받았으므로 reverse해서 오름차순으로 변경
+                    val reversedSegments = newSegmentsUi.reversed()
+
+                    // ⚠️ Race Condition 방지: 네트워크 응답 후 최신 state를 다시 읽어야 함
+                    // 네트워크 호출 중 handleDiarizedSegment()가 실시간 세그먼트를 추가했을 수 있음
+                    val currentSegments = state.value.segments
+                    val existingOrders = currentSegments.map { it.order }.toSet()
+                    val uniqueNewSegments = reversedSegments.filter { it.order !in existingOrders }
+
+                    // 새로 가져온 세그먼트를 0번 인덱스부터 붙이고, 기존 세그먼트는 그 뒤에 붙임
+                    val mergedSegments = uniqueNewSegments + currentSegments
+
+                    // isSameAsPrevious, isSameAsNext 재계산
+                    val finalSegments = mergedSegments.mapIndexed { index, seg ->
+                        val prevSeg = if (index > 0) mergedSegments[index - 1] else null
+                        val nextSeg = if (index < mergedSegments.lastIndex) mergedSegments[index + 1] else null
+
+                        val isSameAsPrevious = prevSeg != null && prevSeg.nickname == seg.nickname
+                        val isSameAsNext = nextSeg != null && nextSeg.nickname == seg.nickname
+
+                        seg.copy(
+                            isSameAsPrevious = isSameAsPrevious,
+                            isSameAsNext = isSameAsNext
+                        )
+                    }
+
+                    _state.update { it.copy(segments = finalSegments) }
+                    Log.d(TAG, "[loadPreviousSegments] 완료: 총 세그먼트 수=${finalSegments.size} (새로 추가: ${uniqueNewSegments.size}개), 현재 최대 페이지=$currentMaxLoadedPage")
+
+                    // 다음 페이지의 시작 인덱스가 총 개수를 초과하거나 로드된 세그먼트가 20개 미만이면 더 이상 없음
+                    val nextPageStartIndex = (currentMaxLoadedPage + 1) * 20
+                    if (nextPageStartIndex >= totalSegmentCount || loadedSegments.size < 20) {
+                        hasMorePreviousSegments = false
+                        Log.d(TAG, "[loadPreviousSegments] 더 이상 불러올 세그먼트가 없음 (다음 페이지 시작 인덱스=$nextPageStartIndex >= 총 개수=$totalSegmentCount 또는 로드된 세그먼트 < 20)")
+                    }
+                }
+                is ApiResult.Failure -> {
+                    Log.e(TAG, "[loadPreviousSegments] 세그먼트 로드 실패: ${result.message}")
+                }
+            }
+        } finally {
+            isLoadingPreviousSegments = false
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     private fun loadSummaries(
         result: ApiResult<List<com.imhungry.sillok.domain.model.summary.Summary>>,
-        startMillis: Long
+        startMicros: Long
     ) {
         when (result) {
             is ApiResult.Success -> {
                 val ui = result.data.map {
-                    val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
+                    val micros = DateTimeUtils.isoLocalDateTimeToMicros(it.generatedDateTime)
                     SummaryUi(
                         content = it.content,
-                        timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis)
+                        timestamp = DateTimeUtils.getElapsedStringFromMicros(startMicros, micros)
                     )
                 }
                 _state.update { it.copy(summaries = ui) }
@@ -442,7 +632,7 @@ class MeetingInProgressViewModel @Inject constructor(
             }
         }
     }
-    
+
     /**
      * 회의 참가자 정보를 기반으로 초기 participation rate 설정 (모두 0.0)
      */
@@ -456,7 +646,7 @@ class MeetingInProgressViewModel @Inject constructor(
                 rate = 0.0
             )
         }.sortedByDescending { it.rate }
-        
+
         if (initialRates.isNotEmpty()) {
             _state.update { it.copy(participationRates = initialRates) }
             Log.d(TAG, "참가자 기반 초기 참여율 설정: ${initialRates.size}명")
@@ -469,15 +659,15 @@ class MeetingInProgressViewModel @Inject constructor(
     private suspend fun loadFeedbacks(
         result: ApiResult<List<com.imhungry.sillok.domain.model.feedback.Feedback>>,
         meetingId: Long,
-        startMillis: Long
+        startMicros: Long
     ) {
         when (result) {
             is ApiResult.Success -> {
                 val ui = result.data.map {
-                    val millis = DateTimeUtils.isoLocalDateTimeToMillis(it.generatedDateTime)
+                    val micros = DateTimeUtils.isoLocalDateTimeToMicros(it.generatedDateTime)
                     FeedbackUi(
                         comment = it.comment,
-                        timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
+                        timestamp = DateTimeUtils.getElapsedStringFromMicros(startMicros, micros),
                         isRead = false
                     )
                 }
@@ -606,17 +796,28 @@ class MeetingInProgressViewModel @Inject constructor(
         // state에 세그먼트 추가
         viewModelScope.launch {
             val currentState = state.value
-            val startMillis = currentState.startTime
+            val startMicros = currentState.startTime
             // 캐시된 현재 사용자 ID 사용
             val currentUserId = cachedCurrentUserId
 
-            if (startMillis > 0) {
+            if (startMicros > 0) {
                 val currentSegments = currentState.segments.toMutableList()
-                
-                // 같은 order를 가진 기존 세그먼트가 있으면 제거 (덮어쓰기)
+
+                // 같은 order를 가진 기존 세그먼트가 있으면 translatedTime 비교
                 val existingIndex = currentSegments.indexOfFirst { it.order == data.order }
                 if (existingIndex != -1) {
-                    Log.d(TAG, "[handleDiarizedSegment] 같은 order(${data.order})의 기존 세그먼트 제거: index=$existingIndex")
+                    val existingTranslatedTime = segmentTranslatedTimeCache[data.order]
+                    if (existingTranslatedTime != null) {
+                        // translatedTime 비교: 더 최신인 경우에만 덮어쓰기 (마이크로초 단위)
+                        val existingMicros = DateTimeUtils.isoLocalDateTimeToMicros(existingTranslatedTime)
+                        val newMicros = DateTimeUtils.isoLocalDateTimeToMicros(data.translatedTime)
+
+                        if (newMicros <= existingMicros) {
+                            // 기존 것이 더 최신이거나 같으면 업데이트하지 않음
+                            return@launch
+                        }
+                    }
+                    // 기존 세그먼트 제거
                     currentSegments.removeAt(existingIndex)
                 }
 
@@ -627,11 +828,15 @@ class MeetingInProgressViewModel @Inject constructor(
                 val profileImage = userProfileImageCache[data.userId] ?: ""
                 val isSameAsPrevious = lastSegment != null && lastSegment.nickname == nickname
 
-                val millis = DateTimeUtils.isoLocalDateTimeToMillis(data.timestamp)
+                // 시간 관련 로그
+
+                val micros = DateTimeUtils.isoLocalDateTimeToMicros(data.spokenTime)
+
+                val elapsedString = DateTimeUtils.getElapsedStringFromMicros(startMicros, micros)
 
                 val segmentUi = SegmentUi(
                     order = data.order,
-                    timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
+                    timestamp = elapsedString,
                     text = data.text,
                     nickname = nickname,
                     profileImage = profileImage,
@@ -639,6 +844,9 @@ class MeetingInProgressViewModel @Inject constructor(
                     isSameAsPrevious = isSameAsPrevious,
                     isSameAsNext = false // 다음 세그먼트는 아직 없으므로 false
                 )
+
+                // translatedTime 캐시 업데이트
+                segmentTranslatedTimeCache[data.order] = data.translatedTime
 
                 // 이전 세그먼트의 isSameAsNext 업데이트
                 if (lastSegment != null && isSameAsPrevious) {
@@ -665,7 +873,6 @@ class MeetingInProgressViewModel @Inject constructor(
         Log.d(TAG, "========================================")
         Log.d(TAG, "회의 완료 예약 (회의록 생성 시작)")
         Log.d(TAG, "========================================")
-        Log.d(TAG, "[handleCompletionScheduled] DataStore 저장은 Service에서 처리됨")
         Log.d(TAG, "[handleCompletionScheduled] 홈으로 이동 이벤트 발생")
         
         // DataStore 저장은 Service에서 처리되므로, 여기서는 홈으로 이동 이벤트만 발생
@@ -742,16 +949,16 @@ class MeetingInProgressViewModel @Inject constructor(
         // state에 피드백 추가
         viewModelScope.launch {
             val currentState = state.value
-            val startMillis = currentState.startTime
+            val startMicros = currentState.startTime
             val currentFeedbacks = currentState.feedbacks.toMutableList()
 
-            if (startMillis > 0) {
+            if (startMicros > 0) {
                 val currentTime = DateTimeUtils.getCurrentTime()
-                val millis = DateTimeUtils.isoLocalDateTimeToMillis(currentTime)
+                val currentMicros = DateTimeUtils.isoLocalDateTimeToMicros(currentTime)
 
                 val feedbackUi = FeedbackUi(
                     comment = feedback.comment,
-                    timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
+                    timestamp = DateTimeUtils.getElapsedStringFromMicros(startMicros, currentMicros),
                     isRead = false
                 )
 
@@ -769,16 +976,16 @@ class MeetingInProgressViewModel @Inject constructor(
         // state에 요약 추가
         viewModelScope.launch {
             val currentState = state.value
-            val startMillis = currentState.startTime
+            val startMicros = currentState.startTime
             val currentSummaries = currentState.summaries.toMutableList()
 
-            if (startMillis > 0) {
+            if (startMicros > 0) {
                 val currentTime = DateTimeUtils.getCurrentTime()
-                val millis = DateTimeUtils.isoLocalDateTimeToMillis(currentTime)
+                val currentMicros = DateTimeUtils.isoLocalDateTimeToMicros(currentTime)
 
                 val summaryUi = SummaryUi(
                     content = summary.summary,
-                    timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis)
+                    timestamp = DateTimeUtils.getElapsedStringFromMicros(startMicros, currentMicros)
                 )
 
                 currentSummaries.add(summaryUi)
@@ -815,18 +1022,18 @@ class MeetingInProgressViewModel @Inject constructor(
 
     /**
      * 휴식 시간 피드백 생성 및 스케줄링
-     * startMillis 기준으로 restInterval마다 휴식 시간이 있고, 각 휴식 시간 시작 1분 전에 피드백 알림 표시
+     * startMicros 기준으로 restInterval마다 휴식 시간이 있고, 각 휴식 시간 시작 1분 전에 피드백 알림 표시
      * 쉬는 시간 범위도 계산하여 StateFlow에 저장
      */
     @RequiresApi(Build.VERSION_CODES.O)
     private fun scheduleRestBreakFeedbacks(
-        startMillis: Long,
+        startMicros: Long,
         targetTime: Int,
         restInterval: Int,
         restDuration: Int
     ) {
         Log.d(TAG, "[scheduleRestBreakFeedbacks] 호출됨")
-        Log.d(TAG, "  - startMillis: $startMillis")
+        Log.d(TAG, "  - startMicros: $startMicros")
         Log.d(TAG, "  - targetTime: $targetTime")
         Log.d(TAG, "  - restInterval: $restInterval")
         Log.d(TAG, "  - restDuration: $restDuration")
@@ -842,40 +1049,40 @@ class MeetingInProgressViewModel @Inject constructor(
 
         // 쉬는 시간 범위 계산 및 저장
         viewModelScope.launch {
-            val targetMillis = targetTime * 60 * 1000L
-            val endMillis = startMillis + targetMillis
-            var restStartMillis = startMillis + restInterval * 60 * 1000L // 첫 번째 휴식 시작 시간
+            val targetMicros = targetTime * 60 * 1000000L
+            val endMicros = startMicros + targetMicros
+            var restStartMicros = startMicros + restInterval * 60 * 1000000L // 첫 번째 휴식 시작 시간
             val restBreakPeriodsList = mutableListOf<Pair<String, String>>()
             
             Log.d(TAG, "[휴식 시간 계산] 시작")
-            Log.d(TAG, "  - 회의 시작 시간: ${DateTimeUtils.millisToHourMinute(startMillis)} ($startMillis)")
-            Log.d(TAG, "  - 회의 종료 시간: ${DateTimeUtils.millisToHourMinute(endMillis)} ($endMillis)")
-            Log.d(TAG, "  - 목표 시간: ${targetTime}분 (${targetMillis}ms)")
+            Log.d(TAG, "  - 회의 시작 시간: ${DateTimeUtils.microsToHourMinute(startMicros)} ($startMicros)")
+            Log.d(TAG, "  - 회의 종료 시간: ${DateTimeUtils.microsToHourMinute(endMicros)} ($endMicros)")
+            Log.d(TAG, "  - 목표 시간: ${targetTime}분 (${targetMicros}micros)")
             Log.d(TAG, "  - 휴식 간격: ${restInterval}분")
             Log.d(TAG, "  - 휴식 지속 시간: ${restDuration}분")
 
             var restCount = 0
-            while (restStartMillis < endMillis) {
+            while (restStartMicros < endMicros) {
                 restCount++
-                val restEndMillis = restStartMillis + restDuration * 60 * 1000L // 휴식 종료 시간
+                val restEndMicros = restStartMicros + restDuration * 60 * 1000000L // 휴식 종료 시간
 
                 // 쉬는 시간 범위를 경과 시간 문자열로 변환
                 val restStartElapsed =
-                    DateTimeUtils.getElapsedStringFromMillis(startMillis, restStartMillis)
+                    DateTimeUtils.getElapsedStringFromMicros(startMicros, restStartMicros)
                 val restEndElapsed =
-                    DateTimeUtils.getElapsedStringFromMillis(startMillis, restEndMillis)
+                    DateTimeUtils.getElapsedStringFromMicros(startMicros, restEndMicros)
                 
-                val restStartTime = DateTimeUtils.millisToHourMinute(restStartMillis)
-                val restEndTime = DateTimeUtils.millisToHourMinute(restEndMillis)
+                val restStartTime = DateTimeUtils.microsToHourMinute(restStartMicros)
+                val restEndTime = DateTimeUtils.microsToHourMinute(restEndMicros)
 
                 Log.d(TAG, "  [휴식 #$restCount]")
-                Log.d(TAG, "    - 시작: $restStartTime ($restStartMillis) - 경과: $restStartElapsed")
-                Log.d(TAG, "    - 종료: $restEndTime ($restEndMillis) - 경과: $restEndElapsed")
+                Log.d(TAG, "    - 시작: $restStartTime ($restStartMicros) - 경과: $restStartElapsed")
+                Log.d(TAG, "    - 종료: $restEndTime ($restEndMicros) - 경과: $restEndElapsed")
 
                 restBreakPeriodsList.add(Pair(restStartElapsed, restEndElapsed))
 
                 // 다음 휴식 시간으로 이동
-                restStartMillis += restInterval * 60 * 1000L
+                restStartMicros += restInterval * 60 * 1000000L
             }
             
             Log.d(TAG, "[휴식 시간 계산] 완료: 총 ${restCount}개의 휴식 시간 계산됨")
@@ -885,25 +1092,25 @@ class MeetingInProgressViewModel @Inject constructor(
 
         // 쉬는 시간 1분 전 알림 스케줄링
         restBreakSchedulingJob = viewModelScope.launch(Dispatchers.IO) {
-            val targetMillis = targetTime * 60 * 1000L
-            var restStartMillis = startMillis + restInterval * 60 * 1000L // 첫 번째 휴식 시작 시간
+            val targetMicros = targetTime * 60 * 1000000L
+            var restStartMicros = startMicros + restInterval * 60 * 1000000L // 첫 번째 휴식 시작 시간
 
-            while (restStartMillis < startMillis + targetMillis) {
-                val restEndMillis = restStartMillis + restDuration * 60 * 1000L // 휴식 종료 시간
-                val feedbackTimeMillis = restStartMillis - 60 * 1000L // 휴식 시작 1분 전
+            while (restStartMicros < startMicros + targetMicros) {
+                val restEndMicros = restStartMicros + restDuration * 60 * 1000000L // 휴식 종료 시간
+                val feedbackTimeMicros = restStartMicros - 60 * 1000000L // 휴식 시작 1분 전
 
                 // 현재 시간 이후의 휴식 시간만 처리
-                val delayMillis = feedbackTimeMillis - System.currentTimeMillis()
-                if (delayMillis > 0) {
-                    delay(delayMillis)
+                val delayMicros = feedbackTimeMicros - System.currentTimeMillis() * 1000L
+                if (delayMicros > 0) {
+                    delay(delayMicros / 1000) // delay는 밀리초 단위
 
                     // 휴식 시간 포맷팅 (HH:MM 형식)
-                    val restStartTime = DateTimeUtils.millisToHourMinute(restStartMillis)
-                    val restEndTime = DateTimeUtils.millisToHourMinute(restEndMillis)
+                    val restStartTime = DateTimeUtils.microsToHourMinute(restStartMicros)
+                    val restEndTime = DateTimeUtils.microsToHourMinute(restEndMicros)
 
                     val feedbackMessage = "잠시 후 휴식 시간입니다.\n쉬는 시간: $restStartTime ~ $restEndTime"
                     val feedbackTimestamp =
-                        DateTimeUtils.getElapsedStringFromMillis(startMillis, feedbackTimeMillis)
+                        DateTimeUtils.getElapsedStringFromMicros(startMicros, feedbackTimeMicros)
 
                     val feedbackUi = FeedbackUi(
                         comment = feedbackMessage,
@@ -917,19 +1124,19 @@ class MeetingInProgressViewModel @Inject constructor(
                 }
 
                 // 다음 휴식 시간으로 이동
-                restStartMillis += restInterval * 60 * 1000L
+                restStartMicros += restInterval * 60 * 1000000L
             }
         }
     }
 
     /**
      * 회의 종료 10분 전 피드백 생성 및 스케줄링
-     * startMillis 기준으로 targetTime이 끝나기 10분 전에 피드백 알림 표시
+     * startMicros 기준으로 targetTime이 끝나기 10분 전에 피드백 알림 표시
      */
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun scheduleMeetingEndFeedback(startMillis: Long, targetTime: Int) {
+    private fun scheduleMeetingEndFeedback(startMicros: Long, targetTime: Int) {
         Log.d(TAG, "[scheduleMeetingEndFeedback] 호출됨")
-        Log.d(TAG, "  - startMillis: $startMillis")
+        Log.d(TAG, "  - startMicros: $startMicros")
         Log.d(TAG, "  - targetTime: $targetTime")
         
         if (targetTime <= 0) {
@@ -943,28 +1150,28 @@ class MeetingInProgressViewModel @Inject constructor(
 
         meetingEndSchedulingJob = viewModelScope.launch(Dispatchers.IO) {
             // 회의 종료 시간 계산
-            val endMillis = startMillis + targetTime * 60 * 1000L
-            val feedbackTimeMillis = endMillis - 10 * 60 * 1000L // 종료 10분 전
+            val endMicros = startMicros + targetTime * 60 * 1000000L
+            val feedbackTimeMicros = endMicros - 10 * 60 * 1000000L // 종료 10분 전
             
             Log.d(TAG, "[회의 종료 시간 계산]")
-            Log.d(TAG, "  - 회의 시작 시간: ${DateTimeUtils.millisToHourMinute(startMillis)} ($startMillis)")
-            Log.d(TAG, "  - 목표 시간: ${targetTime}분 (${targetTime * 60 * 1000L}ms)")
-            Log.d(TAG, "  - 회의 종료 시간: ${DateTimeUtils.millisToHourMinute(endMillis)} ($endMillis)")
-            Log.d(TAG, "  - 피드백 알림 시간 (종료 10분 전): ${DateTimeUtils.millisToHourMinute(feedbackTimeMillis)} ($feedbackTimeMillis)")
+            Log.d(TAG, "  - 회의 시작 시간: ${DateTimeUtils.microsToHourMinute(startMicros)} ($startMicros)")
+            Log.d(TAG, "  - 목표 시간: ${targetTime}분 (${targetTime * 60 * 1000000L}micros)")
+            Log.d(TAG, "  - 회의 종료 시간: ${DateTimeUtils.microsToHourMinute(endMicros)} ($endMicros)")
+            Log.d(TAG, "  - 피드백 알림 시간 (종료 10분 전): ${DateTimeUtils.microsToHourMinute(feedbackTimeMicros)} ($feedbackTimeMicros)")
             Log.d(TAG, "  - 현재 시간: ${DateTimeUtils.millisToHourMinute(System.currentTimeMillis())} (${System.currentTimeMillis()})")
 
             // 현재 시간 이후의 피드백만 처리
-            val delayMillis = feedbackTimeMillis - System.currentTimeMillis()
-            Log.d(TAG, "  - 피드백까지 남은 시간: ${delayMillis / 1000 / 60}분 ${(delayMillis / 1000) % 60}초 (${delayMillis}ms)")
-            if (delayMillis > 0) {
-                delay(delayMillis)
+            val delayMicros = feedbackTimeMicros - System.currentTimeMillis() * 1000L
+            Log.d(TAG, "  - 피드백까지 남은 시간: ${delayMicros / 1000000 / 60}분 ${(delayMicros / 1000000) % 60}초 (${delayMicros}micros)")
+            if (delayMicros > 0) {
+                delay(delayMicros / 1000) // delay는 밀리초 단위
 
                 // 종료 예정 시각 포맷팅 (HH:MM 형식)
-                val endTime = DateTimeUtils.millisToHourMinute(endMillis)
+                val endTime = DateTimeUtils.microsToHourMinute(endMicros)
 
                 val feedbackMessage = "회의 종료까지 10분 남았습니다.\n예정 종료 시각: $endTime"
                 val feedbackTimestamp =
-                    DateTimeUtils.getElapsedStringFromMillis(startMillis, feedbackTimeMillis)
+                    DateTimeUtils.getElapsedStringFromMicros(startMicros, feedbackTimeMicros)
 
                 val feedbackUi = FeedbackUi(
                     comment = feedbackMessage,

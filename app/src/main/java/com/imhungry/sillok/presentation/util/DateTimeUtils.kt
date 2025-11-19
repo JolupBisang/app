@@ -63,6 +63,15 @@ object DateTimeUtils {
         return String.format("%02d:%02d:%02d", h, m, s)
     }
 
+    fun getElapsedStringFromMicros(startMicros: Long?, endMicros: Long): String {
+        if (startMicros == null || startMicros <= 0) return "00:00:00"
+        val elapsed = ((endMicros - startMicros) / 1000000).coerceAtLeast(0)
+        val h = elapsed / 3600
+        val m = (elapsed % 3600) / 60
+        val s = elapsed % 60
+        return String.format("%02d:%02d:%02d", h, m, s)
+    }
+
     fun localIsoToDateString(isoLocalTimestamp: String?): String {
         if (isoLocalTimestamp.isNullOrBlank()) return "-"
         return try {
@@ -133,6 +142,12 @@ object DateTimeUtils {
         return formatter.format(Instant.ofEpochMilli(millis))
     }
 
+    fun microsToHourMinute(micros: Long): String {
+        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+            .withZone(ZoneId.of("Asia/Seoul"))
+        return formatter.format(Instant.ofEpochMilli(micros / 1000))
+    }
+
     fun timeStringToMillis(timeString: String): Long? {
         return try {
             val parts = timeString.split(":")
@@ -156,10 +171,58 @@ object DateTimeUtils {
     fun getCurrentTime(): String {
         return try {
             val now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"))
+            Log.d("DateTimeUtils", "현재 시간: $now")
             now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         } catch (e: Exception) {
             Log.e("DateTimeUtils", "현재 시간 변환 실패", e)
             ""
+        }
+    }
+
+    /**
+     * ISO 8601 형식의 문자열을 마이크로초로 변환
+     * 예: "2025-11-17T21:41:02.521051" -> 마이크로초 (Long)
+     * 소수점 자릿수는 가변적일 수 있음 (0~9자리)
+     */
+    fun isoLocalDateTimeToMicros(isoLocalDateTime: String?): Long {
+        if (isoLocalDateTime.isNullOrBlank()) return 0L
+        return try {
+            // "T"로 날짜와 시간 분리
+            val parts = isoLocalDateTime.split("T")
+            if (parts.size != 2) return 0L
+
+            // 날짜 부분 파싱
+            val datePart = parts[0]
+            val timePart = parts[1]
+
+            // 시간 부분에서 소수점 분리
+            val timeParts = timePart.split(".")
+            val timeWithoutFraction = timeParts[0] // "21:41:02"
+            val fractionPart = if (timeParts.size > 1) timeParts[1] else "0" // "521051" 또는 "0"
+
+            // LocalDateTime 파싱 (소수점 제외)
+            val localDateTime = LocalDateTime.parse(
+                "${datePart}T${timeWithoutFraction}",
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME
+            )
+
+            // 초 단위를 마이크로초로 변환
+            val koreaZoned = localDateTime.atZone(ZoneId.of("Asia/Seoul"))
+            val epochMicros = koreaZoned.toInstant().toEpochMilli() * 1000L
+
+            // 소수점 부분을 마이크로초로 변환 (최대 6자리)
+            val fractionMicros = if (fractionPart.isNotEmpty()) {
+                val fractionDigits = fractionPart.take(6) // 최대 6자리만 사용
+                val paddedFraction = fractionDigits.padEnd(6, '0') // 6자리로 패딩
+                paddedFraction.toLongOrNull() ?: 0L
+            } else {
+                0L
+            }
+
+            epochMicros + fractionMicros
+        } catch (e: Exception) {
+            Log.e("DateTimeUtils", "마이크로초 변환 실패: $isoLocalDateTime", e)
+            0L
         }
     }
 }
