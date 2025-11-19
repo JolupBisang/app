@@ -117,7 +117,7 @@ fun AudioPlayerBar(
             lastSeekedPosition = currentPosition
             // 시크 완료 후 안정화 시간 (300ms)
             coroutineScope.launch {
-                delay(300L)
+                //delay(300L)
                 isSeeking = false
             }
         }
@@ -165,7 +165,7 @@ fun AudioPlayerBar(
                 onPositionChange(seekPosition)
                 // 시크 완료 후 안정화 시간 (300ms)
                 coroutineScope.launch {
-                    delay(300L)
+                    //delay(300L)
                     isSeeking = false
                 }
             }
@@ -242,7 +242,7 @@ fun AudioPlayerBar(
                                 onPositionChange(seek)
                                 // 시크 완료 후 안정화 시간 (300ms)
                                 coroutineScope.launch {
-                                    delay(300L)
+                                   // delay(300L)
                                     isSeeking = false
                                 }
                             }
@@ -311,7 +311,7 @@ fun AudioPlayerBar(
                                 onPositionChange(seek)
                                 // 시크 완료 후 안정화 시간 (300ms)
                                 coroutineScope.launch {
-                                    delay(300L)
+                                    //delay(300L)
                                     isSeeking = false
                                 }
                             }

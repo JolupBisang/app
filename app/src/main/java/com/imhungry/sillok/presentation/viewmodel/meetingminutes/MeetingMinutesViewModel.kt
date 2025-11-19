@@ -5,8 +5,14 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import com.imhungry.sillok.data.paging.FeedbackPagingSource
+import com.imhungry.sillok.data.paging.SegmentPagingSource
+import com.imhungry.sillok.data.paging.SummaryPagingSource
 import com.imhungry.sillok.data.util.ApiResult
-import com.imhungry.sillok.domain.model.audio.AudioInfo
 import com.imhungry.sillok.domain.usecase.audio.GetAudioListUseCase
 import com.imhungry.sillok.domain.usecase.feedback.GetFeedbacksUseCase
 import com.imhungry.sillok.domain.usecase.meeting.GetMeetingDetailUseCase
@@ -21,13 +27,6 @@ import com.imhungry.sillok.presentation.state.meeting.SummaryUi
 import com.imhungry.sillok.presentation.state.meetingminutes.MeetingMinutesState
 import com.imhungry.sillok.presentation.util.DateTimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import androidx.paging.cachedIn
-import com.imhungry.sillok.data.paging.SegmentPagingSource
-import com.imhungry.sillok.data.paging.SummaryPagingSource
-import com.imhungry.sillok.data.paging.FeedbackPagingSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
@@ -157,11 +156,27 @@ class MeetingMinutesViewModel @Inject constructor(
                     val date = DateTimeUtils.localIsoToDateString(meeting.scheduledStartTime)
                     val location = meeting.location
                     if (meeting.actualStartTime != null && meeting.scheduledEndTime != null) {
+                        Log.d(TAG, "[refreshAll] 시간 변환 시작")
+                        Log.d(TAG, "  - 원본 actualStartTime: ${meeting.actualStartTime}")
+                        Log.d(TAG, "  - 원본 scheduledEndTime: ${meeting.scheduledEndTime}")
+                        
                         startMillis = DateTimeUtils.isoLocalDateTimeToMillis(meeting.actualStartTime)
                         endMillis = DateTimeUtils.isoLocalDateTimeToMillis(meeting.scheduledEndTime)
+                        
+                        Log.d(TAG, "  - 변환된 startMillis: $startMillis (${DateTimeUtils.millisToHourMinute(startMillis)})")
+                        Log.d(TAG, "  - 변환된 endMillis: $endMillis (${DateTimeUtils.millisToHourMinute(endMillis)})")
+                        
                         actualStartTime = DateTimeUtils.localIsoToTimeString(meeting.actualStartTime)
                         actualEndTime = DateTimeUtils.localIsoToTimeString(meeting.scheduledEndTime)
+                        
                         actualDurationMinutes = DateTimeUtils.getDurationMinutes(startMillis, endMillis)!!
+                        
+                        Log.d(TAG, "  - 회의 지속 시간: ${actualDurationMinutes}분")
+                        Log.d(TAG, "  - 시간 차이: ${(endMillis - startMillis) / 1000}초 (${(endMillis - startMillis) / 60000}분)")
+                    } else {
+                        Log.w(TAG, "[refreshAll] actualStartTime 또는 scheduledEndTime이 null입니다")
+                        Log.w(TAG, "  - actualStartTime: ${meeting.actualStartTime}")
+                        Log.w(TAG, "  - scheduledEndTime: ${meeting.scheduledEndTime}")
                     }
 
                     _state.update {
@@ -257,12 +272,21 @@ class MeetingMinutesViewModel @Inject constructor(
 
             when (val result = audioDeferred.await()) {
                 is ApiResult.Success -> {
-                    val first = result.data.firstOrNull()
-                    if (first != null) {
-                        _state.update { it.copy(audio = first) }
-                        Log.d(TAG, "오디오 로드 성공: ${first}")
+                    // 사용자 ID로 필터링하여 해당 사용자의 오디오 찾기
+                    val userAudio = if (currentUserId != null) {
+                        result.data.find { it.userId == currentUserId }
                     } else {
-                        Log.d(TAG, "오디오 목록이 비어 있습니다")
+                        null
+                    }
+                    if (userAudio != null) {
+                        _state.update { it.copy(audio = userAudio) }
+                        Log.d(TAG, "오디오 로드 성공 (userId: $currentUserId): ${userAudio}")
+                    } else {
+                        if (currentUserId == null) {
+                            Log.w(TAG, "현재 사용자 ID가 없어 오디오를 찾을 수 없습니다")
+                        } else {
+                            Log.d(TAG, "사용자 ID($currentUserId)에 해당하는 오디오가 없습니다")
+                        }
                     }
                 }
 
@@ -287,16 +311,82 @@ class MeetingMinutesViewModel @Inject constructor(
         val isSameAsPrevious = prevSegment != null && prevSegment.userId == segment.userId
         val isSameAsNext = nextSegment != null && nextSegment.userId == segment.userId
 
+        Log.d(TAG, "[convertSegmentToUi] 세그먼트 변환 시작 (order: ${segment.segmentOrder})")
+        Log.d(TAG, "  - 원본 timestamp: ${segment.timestamp}")
+        Log.d(TAG, "  - startMillis: $startMillis")
+        
         val millis = DateTimeUtils.isoLocalDateTimeToMillis(segment.timestamp)
+        val elapsedString = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis)
+        
+        Log.d(TAG, "  - 변환된 millis: $millis (${DateTimeUtils.millisToHourMinute(millis)})")
+        Log.d(TAG, "  - 경과 시간 문자열: $elapsedString")
+        if (startMillis != null && startMillis > 0) {
+            Log.d(TAG, "  - 시작 시간으로부터 경과: ${(millis - startMillis) / 1000}초")
+        }
+        
         return SegmentUi(
-            timestamp = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis),
+            timestamp = elapsedString,
             text = segment.text,
             nickname = userNicknameCache[segment.userId] ?: "사용자 ${segment.userId}",
             profileImage = userProfileImageCache[segment.userId] ?: "",
             isFromCurrentUser = currentUserId != null && segment.userId == currentUserId,
             isSameAsPrevious = isSameAsPrevious,
             isSameAsNext = isSameAsNext,
-            order = segment.segmentOrder
+            order = segment.segmentOrder,
+            millis = millis
+        )
+    }
+
+    // Feedback을 FeedbackUi로 변환하는 헬퍼 함수
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun convertFeedbackToUi(
+        feedback: com.imhungry.sillok.domain.model.feedback.Feedback,
+        startMillis: Long?
+    ): FeedbackUi {
+        Log.d(TAG, "[convertFeedbackToUi] 피드백 변환 시작")
+        Log.d(TAG, "  - 원본 generatedDateTime: ${feedback.generatedDateTime}")
+        Log.d(TAG, "  - startMillis: $startMillis")
+        
+        val millis = DateTimeUtils.isoLocalDateTimeToMillis(feedback.generatedDateTime)
+        val elapsedString = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis)
+        
+        Log.d(TAG, "  - 변환된 millis: $millis (${DateTimeUtils.millisToHourMinute(millis)})")
+        Log.d(TAG, "  - 경과 시간 문자열: $elapsedString")
+        if (startMillis != null && startMillis > 0) {
+            Log.d(TAG, "  - 시작 시간으로부터 경과: ${(millis - startMillis) / 1000}초")
+        }
+        
+        return FeedbackUi(
+            comment = feedback.comment,
+            timestamp = elapsedString,
+            isRead = false,
+            millis = millis
+        )
+    }
+
+    // Summary를 SummaryUi로 변환하는 헬퍼 함수
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun convertSummaryToUi(
+        summary: com.imhungry.sillok.domain.model.summary.Summary,
+        startMillis: Long?
+    ): SummaryUi {
+        Log.d(TAG, "[convertSummaryToUi] 요약 변환 시작")
+        Log.d(TAG, "  - 원본 generatedDateTime: ${summary.generatedDateTime}")
+        Log.d(TAG, "  - startMillis: $startMillis")
+        
+        val millis = DateTimeUtils.isoLocalDateTimeToMillis(summary.generatedDateTime)
+        val elapsedString = DateTimeUtils.getElapsedStringFromMillis(startMillis, millis)
+        
+        Log.d(TAG, "  - 변환된 millis: $millis (${DateTimeUtils.millisToHourMinute(millis)})")
+        Log.d(TAG, "  - 경과 시간 문자열: $elapsedString")
+        if (startMillis != null && startMillis > 0) {
+            Log.d(TAG, "  - 시작 시간으로부터 경과: ${(millis - startMillis) / 1000}초")
+        }
+        
+        return SummaryUi(
+            content = summary.content,
+            timestamp = elapsedString,
+            millis = millis
         )
     }
 }

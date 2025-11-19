@@ -124,9 +124,8 @@ fun MeetingMinutesScreen(
                                 },
                                 playbackPosition = playbackPosition,
                                 isPlaying = isPlaying,
-                                onSeekToPosition = { newPosition ->
-                                    // 세그먼트 클릭 시 오디오 위치 업데이트
-                                    playbackPosition = newPosition
+                                onSeekToPosition = { newPositionMillis ->
+                                    playbackPosition = newPositionMillis
                                 },
                                 meetingMinutesViewModel = meetingMinutesViewModel
                             )

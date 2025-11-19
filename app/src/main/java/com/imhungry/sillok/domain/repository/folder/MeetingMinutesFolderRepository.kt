@@ -11,7 +11,11 @@ import com.imhungry.sillok.domain.model.folder.RemoveMeetingsFromFolderRequest
 interface MeetingMinutesFolderRepository {
     suspend fun createFolder(request: CreateMeetingFolderRequest): ApiResult<Long>
     suspend fun deleteFolders(request: DeleteMeetingFoldersRequest): ApiResult<List<Long>>
-    suspend fun getAllFolders(): ApiResult<MeetingFolderList>
+    suspend fun getAllFolders(
+        name: String? = null,
+        page: Int = 0,
+        size: Int = 20
+    ): ApiResult<MeetingFolderList>
     suspend fun getFolderMeetings(folderId: Long): ApiResult<MeetingFolderDetail>
     suspend fun addMeetingsToFolder(request: AddMeetingsToFolderRequest): ApiResult<List<Long>>
     suspend fun removeMeetingsFromFolder(request: RemoveMeetingsFromFolderRequest): ApiResult<List<Long>>

@@ -53,7 +53,7 @@ import com.imhungry.sillok.ui.components.HighlightText
 fun MeetingMinutesSummaryScreen(
     selectedTab: Int,
     onTabClick: (Int) -> Unit,
-    onTimeClick: (Long) -> Unit,
+    onTimeClick: (Long) -> Unit, // millis
     meetingMinutesViewModel: MeetingMinutesViewModel
 ) {
     val state by meetingMinutesViewModel.state.collectAsState()
@@ -186,12 +186,9 @@ fun MeetingMinutesSummaryScreen(
                     contentType = pagingItems.itemContentType { "summary" }
                 ) { index ->
                     val summary = pagingItems[index] ?: return@items
-                    val summaryUi = SummaryUi(
-                        content = summary.content,
-                        timestamp = DateTimeUtils.getElapsedStringFromMillis(
-                            state.startMillis,
-                            DateTimeUtils.isoLocalDateTimeToMillis(summary.generatedDateTime)
-                        )
+                    val summaryUi = meetingMinutesViewModel.convertSummaryToUi(
+                        summary = summary,
+                        startMillis = state.startMillis
                     )
                     SummaryListItem(
                         summary = summaryUi,

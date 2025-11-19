@@ -31,7 +31,7 @@ import com.imhungry.sillok.presentation.viewmodel.meetingminutes.MeetingMinutesV
 fun MeetingMinutesFeedbackScreen(
     selectedTab: Int,
     onTabClick: (Int) -> Unit,
-    onTimeClick: (Long) -> Unit,
+    onTimeClick: (Long) -> Unit, // millis
     meetingMinutesViewModel: MeetingMinutesViewModel
 ) {
     val state by meetingMinutesViewModel.state.collectAsState()
@@ -62,13 +62,9 @@ fun MeetingMinutesFeedbackScreen(
                     contentType = pagingItems.itemContentType { "feedback" }
                 ) { index ->
                     val feedback = pagingItems[index] ?: return@items
-                    val feedbackUi = FeedbackUi(
-                        comment = feedback.comment,
-                        timestamp = DateTimeUtils.getElapsedStringFromMillis(
-                            state.startMillis,
-                            DateTimeUtils.isoLocalDateTimeToMillis(feedback.generatedDateTime)
-                        ),
-                        isRead = false
+                    val feedbackUi = meetingMinutesViewModel.convertFeedbackToUi(
+                        feedback = feedback,
+                        startMillis = state.startMillis
                     )
                     
                     if (index == 0) {
