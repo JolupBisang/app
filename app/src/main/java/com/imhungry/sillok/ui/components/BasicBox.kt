@@ -125,7 +125,7 @@ fun BasicBoxWithGradientBurshBackground(
     statusBarColor: Color,
     navigationBarColor: Color,
     backgroundColor: Color,
-    gradientBrush: Brush = gradientBrush2,
+    gradientBrush: Brush? = gradientBrush2,
     isLoading: Boolean,
     content: @Composable () -> Unit
 ) {
@@ -138,7 +138,13 @@ fun BasicBoxWithGradientBurshBackground(
         modifier = Modifier
             .fillMaxSize()
             .background(backgroundColor)
-            .background(gradientBrush)
+            .then(
+                if (gradientBrush != null) {
+                    Modifier.background(gradientBrush)
+                } else {
+                    Modifier
+                }
+            )
     ) {
         Box(
             modifier = Modifier
