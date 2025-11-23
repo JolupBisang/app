@@ -11,12 +11,6 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * debug 전용 FeedbackRepository.
- *
- * 회의 진행 중 생성된 피드백을 시뮬레이션합니다.
- * 다양한 피드백 유형을 제공하여 UI 테스트에 유용합니다.
- */
 @Singleton
 @RequiresApi(Build.VERSION_CODES.O)
 class FakeFeedbackRepository @Inject constructor() : FeedbackRepository {
@@ -24,21 +18,21 @@ class FakeFeedbackRepository @Inject constructor() : FeedbackRepository {
     companion object {
         // 더미 피드백 내용 목록
         private val DUMMY_FEEDBACK_COMMENTS = listOf(
-            "속도 좋습니다!",
-            "요구사항 정리 항목 추가 제안",
-            "회의 진행이 너무 빠릅니다. 조금 천천히 진행해주세요.",
-            "좋은 의견들이 나오고 있습니다.",
-            "다음 회의에서는 더 구체적인 계획을 논의하면 좋을 것 같습니다.",
-            "시간 관리가 잘 되고 있습니다.",
-            "아젠다 순서를 조정하면 더 효율적일 것 같습니다.",
-            "참여율이 높아서 좋습니다.",
-            "녹음 품질이 좋습니다.",
-            "요약이 정확하게 나오고 있습니다.",
-            "회의록 생성이 빠르게 진행되고 있습니다.",
-            "다음 회의 일정을 미리 정하면 좋을 것 같습니다.",
-            "의사결정이 명확해서 좋습니다.",
-            "토론이 활발하게 이루어지고 있습니다.",
-            "시간을 잘 지키고 있어서 좋습니다."
+            "이전 피드백 1",
+            "이전 피드백 2",
+            "이전 피드백 3",
+            "이전 피드백 4",
+            "이전 피드백 5",
+            "이전 피드백 6",
+            "이전 피드백 7",
+            "이전 피드백 8",
+            "이전 피드백 9",
+            "이전 피드백 10",
+            "이전 피드백 11",
+            "이전 피드백 12",
+            "이전 피드백 13",
+            "이전 피드백 14",
+            "이전 피드백 15"
         )
     }
 

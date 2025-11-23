@@ -6,11 +6,6 @@ import com.imhungry.sillok.domain.repository.agenda.AgendaRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * debug 전용 AgendaRepository
- * - 서버 요청 없이 UI / ViewModel 테스트 가능
- * - 더미 아젠다 리스트를 제공하여 회의 진행 화면 테스트에 유용
- */
 @Singleton
 class FakeAgendaRepository @Inject constructor() : AgendaRepository {
 
@@ -25,8 +20,6 @@ class FakeAgendaRepository @Inject constructor() : AgendaRepository {
     }
 
     override suspend fun getAgendas(meetingId: Long): ApiResult<List<Agenda>> {
-        // 더미 아젠다 리스트 생성
-        // 첫 번째 아젠다는 완료 상태, 나머지는 미완료 상태
         val agendas = DUMMY_AGENDA_CONTENTS.mapIndexed { index, content ->
             Agenda(
                 agendaId = meetingId * 100L + index + 1, // 고유 ID 생성
@@ -38,8 +31,6 @@ class FakeAgendaRepository @Inject constructor() : AgendaRepository {
     }
 
     override suspend fun addAgenda(meetingId: Long, content: List<String>): ApiResult<List<Long>> {
-        // 신규 Agenda ID 리스트를 가짜로 반환
-        // meetingId를 기반으로 고유한 ID 생성
         val baseId = meetingId * 100L + DUMMY_AGENDA_CONTENTS.size + 1
         val fakeIds = content.indices.map { baseId + it }
         return ApiResult.Success(fakeIds)

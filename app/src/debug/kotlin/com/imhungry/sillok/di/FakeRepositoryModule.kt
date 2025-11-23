@@ -30,12 +30,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-/**
- * debug 빌드에서 실제 RepositoryImpl 대신 FakeRepository들을 주입하기 위한 모듈.
- *
- * main/release 쪽에는 실제 구현체(XXXRepositoryImpl)를 바인딩하는 모듈이 있고,
- * debug 빌드에서는 이 모듈이 우선 적용되도록 src/debug 에 위치시킨다.
- */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class FakeRepositoryModule {

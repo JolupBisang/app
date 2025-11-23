@@ -21,14 +21,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
 
-/**
- * 서버, Foreground Service, WebSocket, SSE 없이
- * MeetingInProgressViewModel 에 ServiceEvent 를 흘려보내는 Fake 구현.
- *
- * - debug 빌드에서만 컴파일됨 (src/debug 아래라서)
- * - 1초마다 DiarizedSegment, 몇 초마다 Feedback / Summary / ParticipationRate 를 흘려보내서
- *   UI 가 실시간으로 잘 동작하는지 확인할 수 있다.
- */
 @Singleton
 class FakeMeetingRealtimeEventSource @Inject constructor(
 ) : MeetingRealtimeEventSource {
@@ -105,7 +97,8 @@ class FakeMeetingRealtimeEventSource @Inject constructor(
                     userId = userId,
                     order = segmentOrder++,
                     text = text,
-                    timestamp = nowIso
+                    spokenTime = nowIso,
+                    translatedTime = nowIso
                 )
                 _events.emit(ServiceEvent.DiarizedSegment(segment))
 

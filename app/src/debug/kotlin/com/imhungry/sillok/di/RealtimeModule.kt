@@ -1,4 +1,3 @@
-// app/src/debug/java/com/imhungry/sillok/di/RealtimeModule.kt
 package com.imhungry.sillok.di
 
 import com.imhungry.sillok.presentation.service.FakeMeetingRealtimeEventSource

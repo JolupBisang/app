@@ -22,13 +22,6 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * 서버에 요청을 보내지 않는 debug 전용 MeetingRepository 구현체.
- *
- * - create / update 계열은 모두 Success 로 응답
- * - getMeetingDetail: 더미 Meeting 객체 반환
- * - searchMeetings: 더미 검색 결과 반환
- */
 @Singleton
 @RequiresApi(Build.VERSION_CODES.O)
 class FakeMeetingRepository @Inject constructor() : MeetingRepository {
@@ -100,6 +93,16 @@ class FakeMeetingRepository @Inject constructor() : MeetingRepository {
     }
 
     override suspend fun getMeetings(
+        year: Int?,
+        month: Int?,
+        title: String?,
+        page: Int,
+        size: Int
+    ): ApiResult<MeetingSearchSlice> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getMeetings2(
         year: Int,
         month: Int
     ): ApiResult<List<MeetingDetailSummary>> {

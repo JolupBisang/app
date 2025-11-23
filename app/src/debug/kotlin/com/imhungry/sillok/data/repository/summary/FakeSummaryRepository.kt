@@ -11,13 +11,6 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * debug 전용 SummaryRepository.
- *
- * 회의 진행 중 요약 리스트를 시뮬레이션합니다.
- * - isRecap=false: 중간 요약 (회의 진행 중 생성)
- * - isRecap=true: 최종 요약 (회의 종료 후 생성)
- */
 @Singleton
 @RequiresApi(Build.VERSION_CODES.O)
 class FakeSummaryRepository @Inject constructor() : SummaryRepository {
@@ -25,16 +18,16 @@ class FakeSummaryRepository @Inject constructor() : SummaryRepository {
     companion object {
         // 중간 요약 더미 데이터
         private val INTERIM_SUMMARY_CONTENTS = listOf(
-            "회의 목적과 범위를 합의함",
-            "핵심 액션 아이템 3개 도출했고 길게 작성했을 때는 이런 모습이고, 가로 너비는 고정되어 있으니 아래로 길어짐.",
-            "프로젝트 일정과 마일스톤 논의 완료",
-            "담당자 배정 및 역할 분담 결정",
-            "다음 회의까지 완료해야 할 작업 항목 정리",
-            "예산 및 리소스 할당에 대한 합의",
-            "기술 스택 선택 및 아키텍처 방향성 확정",
-            "디자인 시스템 구축 방안 논의",
-            "사용자 피드백 반영 계획 수립",
-            "품질 관리 및 테스트 전략 수립"
+            "이전 요약 1",
+            "이전 요약 2",
+            "이전 요약 3",
+            "이전 요약 4",
+            "이전 요약 5",
+            "이전 요약 6",
+            "이전 요약 7",
+            "이전 요약 8",
+            "이전 요약 9",
+            "이전 요약 10"
         )
 
         // 최종 요약 더미 데이터

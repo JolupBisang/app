@@ -3,15 +3,10 @@ package com.imhungry.sillok.data.repository.user
 import com.imhungry.sillok.data.util.ApiResult
 import com.imhungry.sillok.domain.model.user.User
 import com.imhungry.sillok.domain.repository.user.UserRepository
+import com.imhungry.sillok.presentation.util.ProfileUtils
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * debug 전용 UserRepository.
- * - 이메일로 검색 시 해당 이메일에 맞는 더미 사용자 반환
- * - 알려진 이메일이 아니면 기본 사용자 반환
- * - 회의 참가자 시뮬레이션에 유용
- */
 @Singleton
 class FakeUserRepository @Inject constructor() : UserRepository {
 
@@ -28,19 +23,19 @@ class FakeUserRepository @Inject constructor() : UserRepository {
                 id = 2L,
                 email = "hong@example.com",
                 nickname = "홍길동",
-                pictureURL = "https://i.pravatar.cc/150?img=1"
+                pictureURL = ProfileUtils.getProfileImagesForUser(2L)
             ),
             "kim@example.com" to User(
                 id = 3L,
                 email = "kim@example.com",
                 nickname = "김영희",
-                pictureURL = "https://i.pravatar.cc/150?img=2"
+                pictureURL = ProfileUtils.getProfileImagesForUser(3L)
             ),
             "park@example.com" to User(
                 id = 4L,
                 email = "park@example.com",
                 nickname = "박철수",
-                pictureURL = "https://i.pravatar.cc/150?img=4"
+                pictureURL = ProfileUtils.getProfileImagesForUser(4L)
             )
         )
 
